@@ -3,7 +3,7 @@ name: Initial Game Logic
 description: First-draft deterministic core for Datacenter Tycoon — entities, catalogs, capacity math, economy, contracts, and the monthly simulation tick.
 status: started
 created: 2026-04-30
-updated: 2026-04-30
+updated: 2026-05-01
 owner: game-logic
 ---
 
@@ -37,33 +37,33 @@ owner: game-logic
   - [x] 4.3 `tickRevenue(state)` — sum payments for fulfilled contracts this tick
   - [x] 4.4 Unit tests for economy math (idempotent, deterministic)
 
-- [ ] **Phase 5 — Contracts**
-  - [ ] 5.1 `generateContract(rng, difficulty)` — seeded procedural contract w/ themed names
-  - [ ] 5.2 `refreshContractMarket(state)` — top up the available pool each tick
-  - [ ] 5.3 `acceptContract(state, contractId, dcId)` — move from market to active, set start tick
-  - [ ] 5.4 `evaluateContract(dc, contract)` — fulfilled / breached / underutilized
-  - [ ] 5.5 Contract lifecycle: active → completed (term ended) | breached (capacity gap) | cancelled
-  - [ ] 5.6 Unit tests covering generation determinism and lifecycle transitions
+- [x] **Phase 5 — Contracts**
+  - [x] 5.1 `generateContract(rng, difficulty)` — seeded procedural contract w/ themed names
+  - [x] 5.2 `refreshContractMarket(state)` — top up the available pool each tick
+  - [x] 5.3 `acceptContract(state, contractId, dcId)` — move from market to active, set start tick
+  - [x] 5.4 `evaluateContract(dc, contract)` — fulfilled / breached / underutilized
+  - [x] 5.5 Contract lifecycle: active → completed (term ended) | breached (capacity gap) | cancelled
+  - [x] 5.6 Unit tests covering generation determinism and lifecycle transitions
 
-- [ ] **Phase 6 — Simulation tick & RNG**
-  - [ ] 6.1 Implement seeded PRNG in `sim/rng.ts` (mulberry32 / sfc32)
-  - [ ] 6.2 Implement `tick(state)` orchestrator (opex → contract eval → revenue → market refresh → time++)
-  - [ ] 6.3 Determinism test: same seed + same actions → identical state after N ticks
+- [x] **Phase 6 — Simulation tick & RNG**
+  - [x] 6.1 Implement seeded PRNG in `sim/rng.ts` (mulberry32 / sfc32)
+  - [x] 6.2 Implement `tick(state)` orchestrator (opex → contract eval → revenue → market refresh → time++)
+  - [x] 6.3 Determinism test: same seed + same actions → identical state after N ticks
 
-- [ ] **Phase 7 — Reducer & public API**
-  - [ ] 7.1 Define the `Action` discriminated union (BuildDatacenter, PlaceRack, RemoveRack, AcceptContract, CancelContract, Tick)
-  - [ ] 7.2 Implement `reduce(state, action): state` as a pure function
-  - [ ] 7.3 `newGame(seed, options?)` factory returning the initial `GameState`
-  - [ ] 7.4 Wire everything through `src/index.ts`
+- [x] **Phase 7 — Reducer & public API**
+  - [x] 7.1 Define the `Action` discriminated union (BuildDatacenter, PlaceRack, RemoveRack, AcceptContract, CancelContract, Tick)
+  - [x] 7.2 Implement `reduce(state, action): state` as a pure function
+  - [x] 7.3 `newGame(seed, options?)` factory returning the initial `GameState`
+  - [x] 7.4 Wire everything through `src/index.ts`
 
-- [ ] **Phase 8 — Save/load serialization**
-  - [ ] 8.1 `serialize(state): string` and `deserialize(json): GameState` with a `saveVersion`
-  - [ ] 8.2 Round-trip tests asserting structural equality
-  - [ ] 8.3 Schema version field + migration stub
+- [x] **Phase 8 — Save/load serialization**
+  - [x] 8.1 `serialize(state): string` and `deserialize(json): GameState` with a `saveVersion`
+  - [x] 8.2 Round-trip tests asserting structural equality
+  - [x] 8.3 Schema version field + migration stub
 
-- [ ] **Phase 9 — Integration smoke test**
-  - [ ] 9.1 End-to-end scripted game: build DC, place racks, accept contract, run 12 ticks, assert profit
-  - [ ] 9.2 Document the public API in `packages/game-logic/README.md`
+- [x] **Phase 9 — Integration smoke test**
+  - [x] 9.1 End-to-end scripted game: build DC, place racks, accept contract, run 12 ticks, assert profit
+  - [x] 9.2 Document the public API in `packages/game-logic/README.md`
 
 ## Overview
 
@@ -542,3 +542,8 @@ packages/game-logic/src/
 - 2026-04-30 — completed Phase 2 rack/datacenter catalogs, baseline economy constants, and catalog invariants tests.
 - 2026-04-30 — completed Phase 3 capacity aggregation and rack placement validation helpers with tests.
 - 2026-04-30 — completed Phase 4 capex, opex, aggregate contract revenue evaluation, and economy tests.
+- 2026-05-01 — completed Phase 5 contract generation, market refresh/acceptance, lifecycle evaluation, and contract tests.
+- 2026-05-01 — completed Phase 6 seeded RNG, monthly tick orchestration, and determinism tests.
+- 2026-05-01 — completed Phase 7 reducer actions, initial game factory, and state tests.
+- 2026-05-01 — completed Phase 8 save envelope serialization, round-trip tests, and migration stub.
+- 2026-05-01 — completed Phase 9 integration smoke test and package README.
