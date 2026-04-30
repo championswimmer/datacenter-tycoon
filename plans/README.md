@@ -6,7 +6,7 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 
 ## Index
 
-_No plans yet._
+- [`001-initial-game-logic.md`](./001-initial-game-logic.md) — first-draft deterministic core (entities, catalogs, capacity, economy, contracts, tick). _status: created_
 
 ## Conventions
 
