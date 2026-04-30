@@ -18,6 +18,7 @@ datacenter-tycoon/
 │   ├── desktop/      # Electron app (planned, not yet implemented)
 │   └── server/       # Scoring, leaderboard, multiplayer backend
 ├── .agents/
+│   ├── plans/        # Numbered implementation plans
 │   └── skills/       # Project-local agent skills (SKILL.md format)
 ├── AGENTS.md         # (this file)
 └── package.json      # Workspace root
@@ -70,12 +71,12 @@ npm run dev                # dev mode where applicable
 
 Project-local agent skills live in `.agents/skills/<skill-name>/SKILL.md`. Load a skill when its description matches the current task.
 
-- **`planning`** — how to create, structure, track, and execute phased plans under `plans/`. Load this whenever a task is non-trivial (multi-file, multi-session, architectural) or when the user asks to plan / design / scope / continue work.
+- **`planning`** — how to create, structure, track, and execute phased plans under `.agents/plans/`. Load this whenever a task is non-trivial (multi-file, multi-session, architectural) or when the user asks to plan / design / scope / continue work.
 - **`game-balance-tuning`** — guardrails for changing numeric balance constants.
 
 ## Plans
 
-Non-trivial work is captured as numbered plans in `plans/NNN-slug.md`. Always check `plans/` for an active plan related to the current task before starting work, and update its progress checklist as you go. See the `planning` skill for the full workflow.
+Non-trivial work is captured as numbered plans in `.agents/plans/NNN-slug.md`. Always check `.agents/plans/` for an active plan related to the current task before starting work, and update its progress checklist as you go. See the `planning` skill for the full workflow.
 
 ## When in Doubt
 
