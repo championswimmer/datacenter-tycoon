@@ -1,6 +1,6 @@
 ---
 name: planning
-description: Use when the user asks to plan, design, or scope a feature, refactor, or any multi-step body of work before implementation. Triggers include phrases like "make a plan", "plan this out", "design a feature", "let's scope X", "break this down", "write a spec", "execute the plan", "continue the plan", or whenever a task is too large to implement in a single pass and benefits from being decomposed into phases and steps. Also use when updating, resuming, or marking progress on existing plans in the `plans/` directory.
+description: Use when the user asks to plan, design, or scope a feature, refactor, or any multi-step body of work before implementation. Triggers include phrases like "make a plan", "plan this out", "design a feature", "let's scope X", "break this down", "write a spec", "execute the plan", "continue the plan", or whenever a task is too large to implement in a single pass and benefits from being decomposed into phases and steps. Also use when updating, resuming, or marking progress on existing plans in the `.agents/plans/` directory.
 version: 0.1.0
 ---
 
@@ -30,17 +30,17 @@ Plans are the single source of truth for "what we're going to build and how" —
 
 ## Where Plans Live
 
-All plans live in **`plans/`** at the repo root:
+All plans live in **`.agents/plans/`** at the repo root:
 
 ```
-plans/
+.agents/plans/
 ├── README.md           # auto-maintained index of all plans (optional)
 ├── 001-first-plan.md
 ├── 002-second-plan.md
 └── 003-third-plan.md
 ```
 
-Create the `plans/` directory if it does not yet exist.
+Create the `.agents/plans/` directory if it does not yet exist.
 
 ## Plan File Naming
 
@@ -51,7 +51,7 @@ Create the `plans/` directory if it does not yet exist.
 - `rack-model.md` ❌ (no number)
 - `1-rack.md` ❌ (not zero-padded)
 
-To find the next number: `ls plans/ | grep -E '^[0-9]{3}-' | sort | tail -1` then increment.
+To find the next number: `ls .agents/plans/ | grep -E '^[0-9]{3}-' | sort | tail -1` then increment.
 
 ## Plan File Structure
 
@@ -180,9 +180,9 @@ Links to: relevant `AGENTS.md` sections, external docs, prior art, GitHub issues
 
 ## How to Create a New Plan
 
-1. **Pick a number**: `ls plans/` → next zero-padded 3-digit.
+1. **Pick a number**: `ls .agents/plans/` → next zero-padded 3-digit.
 2. **Pick a slug**: short kebab-case noun phrase.
-3. **Create** `plans/NNN-slug.md` using the template below.
+3. **Create** `.agents/plans/NNN-slug.md` using the template below.
 4. **Status** starts at `created`.
 5. **Show the user the plan** (or a summary) before implementing — they may want to revise phases/steps.
 6. Do **not** start implementation in the same turn unless the user explicitly says "make the plan and execute it".
