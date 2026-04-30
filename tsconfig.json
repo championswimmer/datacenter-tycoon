@@ -1,0 +1,9 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/game-logic" },
+    { "path": "./packages/web" },
+    { "path": "./packages/server" },
+    { "path": "./packages/desktop" }
+  ]
+}

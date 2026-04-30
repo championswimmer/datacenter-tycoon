@@ -1,0 +1,21 @@
+{
+  "name": "@datacenter-tycoon/desktop",
+  "version": "0.1.0",
+  "description": "Electron desktop app for Datacenter Tycoon (planned).",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "echo 'desktop not yet implemented' && exit 0",
+    "dev": "echo 'desktop not yet implemented' && exit 0",
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'no tests yet' && exit 0",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@datacenter-tycoon/game-logic": "*",
+    "@datacenter-tycoon/web": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

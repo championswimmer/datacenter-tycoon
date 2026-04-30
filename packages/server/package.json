@@ -1,0 +1,23 @@
+{
+  "name": "@datacenter-tycoon/server",
+  "version": "0.1.0",
+  "description": "Backend for scoring, leaderboards, and multiplayer.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --import tsx 'src/**/*.test.ts'",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@datacenter-tycoon/game-logic": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "name": "datacenter-tycoon",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A tycoon game about building and managing data centers. Monorepo root — single entrypoint for all package builds.",
+  "workspaces": [
+    "packages/game-logic",
+    "packages/web",
+    "packages/desktop",
+    "packages/server"
+  ],
+  "scripts": {
+    "build": "npm run build:logic && npm run build:web && npm run build:server && npm run build:desktop",
+    "build:logic": "npm run build -w @datacenter-tycoon/game-logic",
+    "build:web": "npm run build -w @datacenter-tycoon/web",
+    "build:desktop": "npm run build -w @datacenter-tycoon/desktop",
+    "build:server": "npm run build -w @datacenter-tycoon/server",
+
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:logic": "npm run dev -w @datacenter-tycoon/game-logic",
+    "dev:web": "npm run dev -w @datacenter-tycoon/web",
+    "dev:server": "npm run dev -w @datacenter-tycoon/server",
+    "dev:desktop": "npm run dev -w @datacenter-tycoon/desktop",
+
+    "test": "npm run test --workspaces --if-present",
+    "test:logic": "npm run test -w @datacenter-tycoon/game-logic",
+    "test:web": "npm run test -w @datacenter-tycoon/web",
+    "test:server": "npm run test -w @datacenter-tycoon/server",
+    "test:desktop": "npm run test -w @datacenter-tycoon/desktop",
+
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present && rm -rf node_modules/.cache",
+
+    "fresh": "npm run clean && rm -rf node_modules packages/*/node_modules && npm install && npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.9.0",
+    "tsx": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=20",
+    "npm": ">=10"
+  }
+}
