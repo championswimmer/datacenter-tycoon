@@ -28,7 +28,7 @@ export function CashSparkline() {
     <div className={styles.wrap}>
       <div className={styles.labelRow}>
         <span className={styles.label}>CASH TREND</span>
-        <span className={styles.ticks}>{tick > 0 ? `last ${Math.min(tick, HISTORY_LEN)} ticks` : "no data yet"}</span>
+        <span className={styles.ticks}>{tick > 0 ? `last ${Math.min(tick, HISTORY_LEN)} months` : "no data yet"}</span>
       </div>
       <canvas
         ref={canvasRef}

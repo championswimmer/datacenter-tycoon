@@ -26,11 +26,11 @@ owner: web
   - [x] 4.2 ActiveList: replace "Expires next tick!" with month/day phrasing; show term as "X months" and elapsed as "Y months Z days"
   - [x] 4.3 ContractsPage: update sort labels referring to "expiry" to use months/days copy if needed
   - [x] 4.4 Update MarketList / ActiveList tests
-- [ ] **Phase 5 — Other UI surfaces**
-  - [ ] 5.1 LogFeed: replace `T{tick}` badge with `formatGameDateShort(entry.tick)`
-  - [ ] 5.2 CashSparkline: "last N ticks" → "last N months"
-  - [ ] 5.3 Speed selector tooltip / aria copy: drop "tick" wording
-  - [ ] 5.4 Audit remaining `tick` strings in `packages/web/src/ui` (rg) and fix any stragglers
+- [x] **Phase 5 — Other UI surfaces**
+  - [x] 5.1 LogFeed: replace `T{tick}` badge with `formatGameDateShort(entry.tick)`
+  - [x] 5.2 CashSparkline: "last N ticks" → "last N months"
+  - [x] 5.3 Speed selector tooltip / aria copy: drop "tick" wording
+  - [x] 5.4 Audit remaining `tick` strings in `packages/web/src/ui` (rg) and fix any stragglers
 - [ ] **Phase 6 — First-time help & docs**
   - [ ] 6.1 Update first-time help screen copy (plan 004) to use months/days
   - [ ] 6.2 Update web `README.md` and any in-app tooltips that mention ticks
