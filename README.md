@@ -1,5 +1,7 @@
 # Datacenter Tycoon
 
+[![Codecov](https://img.shields.io/codecov/c/github/championswimmer/datacenter-tycoon?logo=codecov)](https://codecov.io/gh/championswimmer/datacenter-tycoon)
+
 A tycoon game about building data centers, buying racks, managing capex/opex, and fulfilling compute/memory/storage/GPU contracts.
 
 ## Monorepo Structure

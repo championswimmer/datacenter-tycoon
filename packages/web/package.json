@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "test": "vitest run",
+    "test:ci": "mkdir -p coverage && vitest run --coverage --reporter=default --reporter=junit --outputFile.junit=coverage/junit.xml",
     "test:watch": "vitest",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
@@ -24,6 +25,7 @@
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.5.1",
+    "@vitest/coverage-v8": "^3.2.4",
     "jsdom": "^26.1.0",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
