@@ -1,0 +1,57 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-4);
+  overflow: auto;
+  height: 100%;
+}
+
+/* ── Column header row ────────────────────────────────────── */
+
+.colHeaders {
+  display: grid;
+  grid-template-columns: 2.25rem repeat(var(--cols, 4), minmax(64px, 1fr));
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.corner {
+  /* top-left empty cell */
+}
+
+.colLabel {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--fg-3);
+  text-align: center;
+  letter-spacing: 0.08em;
+}
+
+/* ── Row ──────────────────────────────────────────────────── */
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 2.25rem repeat(var(--cols, 4), minmax(64px, 1fr));
+  gap: 4px;
+  min-height: 100px;
+}
+
+.rowLabel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--fg-3);
+  letter-spacing: 0.1em;
+}

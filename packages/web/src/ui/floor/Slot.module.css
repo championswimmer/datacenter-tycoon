@@ -1,0 +1,51 @@
+.slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 80px;
+  border-radius: var(--radius-sm);
+  position: relative;
+  transition: border-color var(--duration-fast), background var(--duration-fast);
+}
+
+/* Empty slot — button */
+button.slot {
+  background: transparent;
+  border: 1px dashed rgba(94, 240, 255, 0.22);
+  cursor: pointer;
+}
+
+button.slot:hover,
+button.slot:focus-visible {
+  border-color: rgba(94, 240, 255, 0.65);
+  background: rgba(94, 240, 255, 0.04);
+  box-shadow: inset 0 0 8px rgba(94, 240, 255, 0.06);
+}
+
+button.slot:focus-visible {
+  outline: 1px solid var(--neon-cyan);
+  outline-offset: 2px;
+}
+
+.emptyPlus {
+  font-size: 1.4rem;
+  font-weight: 300;
+  color: rgba(94, 240, 255, 0.22);
+  line-height: 1;
+  transition: color var(--duration-fast), transform var(--duration-fast);
+  pointer-events: none;
+}
+
+button.slot:hover .emptyPlus,
+button.slot:focus-visible .emptyPlus {
+  color: rgba(94, 240, 255, 0.7);
+  transform: scale(1.2);
+}
+
+/* Filled slot — div wrapper */
+div.slot {
+  border: none;
+  padding: 0;
+}

@@ -30,17 +30,17 @@ owner: web
   - [x] 4.2 Left rail: datacenter list + "New Datacenter" CTA
   - [x] 4.3 Main viewport: tabbed view per datacenter (Floor / Power / Contracts) - URL state via hash routing (no router dep)
   - [x] 4.4 Right rail: alerts/log feed (last 50 ledger entries, contract events)
-- [x] **Phase 5 — Datacenter onboarding flow**
+- [x] **Phase 5 - Datacenter onboarding flow**
   - [x] 5.1 "New Datacenter" modal: pick spec from `DATACENTER_CATALOG`, see capex/staff/power preview, confirm
   - [x] 5.2 Empty-state for floor view when no datacenter exists
   - [x] 5.3 Insufficient-funds disabled state with explanatory badge
-- [ ] **Phase 6 - Rack floor (the core interaction)**
-  - [ ] 6.1 Grid renderer: CSS grid sized to `spec.rows × spec.positionsPerRow`
-  - [ ] 6.2 Empty slot component: dashed neon outline, hover glow, click → opens "Buy Rack" picker
-  - [ ] 6.3 Rack picker popover: filter by kind, show capex/power/heat/capacity per spec, disable invalid (power/cooling/funds)
-  - [ ] 6.4 Rack component visual: vertical 1U-stack illustration with status LEDs (power, activity, fault), kind badge, tier pips
-  - [ ] 6.5 Placement action dispatches `PlaceRack`; rack appears with subtle "boot-up" animation; LEDs animate
-  - [ ] 6.6 Right-click / context menu: inspect rack, decommission (`RemoveRack`)
+- [x] **Phase 6 — Rack floor (the core interaction)**
+  - [x] 6.1 Grid renderer: CSS grid sized to `spec.rows × spec.positionsPerRow`; row labels A/B/C…, column labels 1..N
+  - [x] 6.2 Empty slot: dashed neon outline, hover glow, click/Enter → opens RackPicker
+  - [x] 6.3 Rack picker modal: filter chips by kind, cards with capex/power/capacity, `canPlaceRack` disables invalid with reason
+  - [x] 6.4 RackTile visual: bezel + blade stripes + LED row (power/activity/fault) + kind badge + tier pips, boot animation on mount
+  - [x] 6.5 Placement action: dispatches `PlaceRack` with fresh `placementId`; rack mounts with 600 ms boot animation
+  - [x] 6.6 Decommission: hover-reveal × button → inline confirm → dispatches `RemoveRack`
 - [ ] **Phase 7 - Stats & resource panels**
   - [ ] 7.1 Datacenter header strip: power used/cap, cooling used/cap, bandwidth used/cap, slots used/cap (segmented neon bars)
   - [ ] 7.2 Capacity tiles: vCPU / RAM / Storage / GPU totals across all DCs and per-DC

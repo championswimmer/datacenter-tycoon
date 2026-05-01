@@ -2,6 +2,7 @@ import { useSelector } from "../../store/storeContext.js";
 import { selectDatacenter } from "../../store/selectors.js";
 import { navigate, type DcTab } from "../../router/hashRouter.js";
 import type { DatacenterId } from "@datacenter-tycoon/game-logic";
+import { FloorView } from "../floor/FloorView.js";
 import styles from "./DatacenterView.module.css";
 
 interface DatacenterViewProps {
@@ -75,10 +76,12 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
 }
 
 function TabContent({ dcId, tab }: { dcId: DatacenterId; tab: DcTab }) {
-  // Phases 6 & 7 will replace these placeholders
-  const placeholders: Record<DcTab, { icon: string; label: string; phase: string }> = {
-    floor:     { icon: "▦", label: "Rack Floor",         phase: "Phase 6" },
-    power:     { icon: "⚡", label: "Power & Cooling",    phase: "Phase 7" },
+  if (tab === "floor") {
+    return <FloorView dcId={dcId} />;
+  }
+  // Phases 7 & 8 will replace these
+  const placeholders: Record<Exclude<DcTab, "floor">, { icon: string; label: string; phase: string }> = {
+    power:     { icon: "⚡", label: "Power & Cooling",     phase: "Phase 7" },
     contracts: { icon: "📋", label: "Datacenter Contracts", phase: "Phase 8" },
   };
   const { icon, label, phase } = placeholders[tab];

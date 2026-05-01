@@ -1,0 +1,195 @@
+/* ── Tile container ───────────────────────────────────────── */
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+  overflow: hidden;
+  position: relative;
+  cursor: default;
+  /* Boot animation — runs once on mount */
+  animation: rackBoot 0.6s var(--ease-out-expo) both;
+}
+
+@keyframes rackBoot {
+  from { opacity: 0; transform: scaleY(0.5); filter: brightness(3); }
+  to   { opacity: 1; transform: scaleY(1);   filter: brightness(1); }
+}
+
+/* Kind colour theming */
+.kind-compute { border-color: rgba(94,240,255,.5);  background: rgba(94,240,255,.06);  }
+.kind-memory  { border-color: rgba(96,165,250,.5);  background: rgba(96,165,250,.06);  }
+.kind-storage { border-color: rgba(192,132,252,.5); background: rgba(192,132,252,.06); }
+.kind-gpu     { border-color: rgba(255,177,60,.5);  background: rgba(255,177,60,.06);  }
+
+/* ── Bezel ────────────────────────────────────────────────── */
+
+.bezel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 4px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  flex-shrink: 0;
+}
+
+.tierPips {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.pip {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+
+.kind-compute .pip  { background: var(--neon-cyan);    }
+.kind-memory  .pip  { background: var(--neon-blue);    }
+.kind-storage .pip  { background: var(--neon-purple);  }
+.kind-gpu     .pip  { background: var(--neon-amber);   }
+
+.specId {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+}
+
+.kind-compute .specId { color: var(--neon-cyan);   }
+.kind-memory  .specId { color: var(--neon-blue);   }
+.kind-storage .specId { color: var(--neon-purple); }
+.kind-gpu     .specId { color: var(--neon-amber);  }
+
+/* ── Blades ───────────────────────────────────────────────── */
+
+.blades {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 4px;
+  overflow: hidden;
+}
+
+.blade {
+  flex: 1;
+  border-radius: 1px;
+  min-height: 3px;
+}
+
+.kind-compute .blade { background: rgba(94,240,255,.12);  }
+.kind-memory  .blade { background: rgba(96,165,250,.12);  }
+.kind-storage .blade { background: rgba(192,132,252,.12); }
+.kind-gpu     .blade { background: rgba(255,177,60,.12);  }
+
+/* ── LED row ──────────────────────────────────────────────── */
+
+.ledRow {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 4px;
+  border-top: 1px solid rgba(255,255,255,.05);
+  flex-shrink: 0;
+}
+
+.kindBadge {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
+}
+
+.kind-compute .kindBadge { color: var(--neon-cyan);   }
+.kind-memory  .kindBadge { color: var(--neon-blue);   }
+.kind-storage .kindBadge { color: var(--neon-purple); }
+.kind-gpu     .kindBadge { color: var(--neon-amber);  }
+
+/* ── Decommission button (reveal on hover) ────────────────── */
+
+.decommBtn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--fg-2);
+  background: var(--bg-2);
+  border: 1px solid var(--grid);
+  border-radius: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--duration-fast), color var(--duration-fast);
+  padding: 0;
+}
+
+.tile:hover .decommBtn {
+  opacity: 1;
+}
+
+.decommBtn:hover {
+  color: var(--neon-red) !important;
+  border-color: var(--neon-red) !important;
+}
+
+/* ── Decommission confirm overlay ─────────────────────────── */
+
+.tileConfirm {
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-2);
+  animation: none; /* don't re-animate */
+}
+
+.confirmMsg {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--neon-red);
+  text-align: center;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.confirmBtns {
+  display: flex;
+  gap: 3px;
+}
+
+.confirmYes,
+.confirmNo {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 5px;
+  border-radius: 2px;
+  cursor: pointer;
+  border: 1px solid;
+  background: transparent;
+}
+
+.confirmYes {
+  color: var(--neon-red);
+  border-color: var(--neon-red);
+}
+.confirmYes:hover { background: rgba(255,84,112,.15); }
+
+.confirmNo {
+  color: var(--fg-2);
+  border-color: var(--grid);
+}
+.confirmNo:hover { color: var(--fg-0); }
