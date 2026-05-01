@@ -1,7 +1,7 @@
 import { useSelector } from "../../store/storeContext.js";
 import { selectAllDatacenters, selectResourceUsage } from "../../store/selectors.js";
 import { LedSegment } from "../../theme/primitives/index.js";
-import { navigateToDc } from "../../router/hashRouter.js";
+import { navigateToDc, navigate } from "../../router/hashRouter.js";
 import type { Route } from "../../router/hashRouter.js";
 import styles from "./DatacenterList.module.css";
 
@@ -17,8 +17,19 @@ export function DatacenterList({ currentRoute, onNewDatacenter }: DatacenterList
 
   const selectedDcId = currentRoute.view === "dc" ? currentRoute.dcId : null;
 
+  const openContracts = () => navigate({ view: "contracts" });
+
   return (
     <div className={styles.rail}>
+      <button
+        className={styles.contractsBtn}
+        onClick={openContracts}
+        title="Open contracts market"
+        aria-label="Open contracts market"
+      >
+        📋 CONTRACTS
+      </button>
+
       <div className={styles.header}>
         <span className={styles.headerLabel}>DATACENTERS</span>
         <span className={styles.count}>{datacenters.length}</span>

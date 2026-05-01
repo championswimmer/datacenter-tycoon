@@ -121,15 +121,6 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
 
       {/* ── Right: alerts + help + speed ── */}
       <div className={styles.right}>
-        <button
-          className={styles.contractsBtn}
-          title="Open contracts market"
-          aria-label="Open contracts market"
-          onClick={openContracts}
-        >
-          CONTRACTS
-        </button>
-
         {banner && (
           <button
             className={[
