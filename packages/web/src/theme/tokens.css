@@ -1,0 +1,101 @@
+/* Datacenter Tycoon — Design Tokens
+   Neon Control Center theme
+   Import once from main.tsx; all components reference these custom properties.
+*/
+
+:root {
+  /* ── Backgrounds ─────────────────────────────────────────────────────── */
+  --bg-0: #05070b; /* deepest backdrop */
+  --bg-1: #0a0e16; /* panel surface */
+  --bg-2: #11182a; /* raised surface / modal */
+  --bg-3: #18213a; /* hover surface */
+  --grid: #1a2238; /* grid lines, dividers */
+
+  /* ── Foregrounds ─────────────────────────────────────────────────────── */
+  --fg-0: #e6f1ff; /* primary text */
+  --fg-1: #8aa0c8; /* secondary text */
+  --fg-2: #4a5a7a; /* disabled / placeholder */
+  --fg-3: #2a3550; /* very subtle */
+
+  /* ── Neon Accent Colors ──────────────────────────────────────────────── */
+  --neon-cyan:    #5ef0ff;
+  --neon-magenta: #ff4dd2;
+  --neon-amber:   #ffb13c;
+  --neon-lime:    #9bff5a;
+  --neon-red:     #ff5470;
+  --neon-purple:  #c084fc;
+  --neon-blue:    #60a5fa;
+
+  /* ── Semantic colors (map to neon) ───────────────────────────────────── */
+  --color-capex:    var(--neon-magenta);
+  --color-opex:     var(--neon-amber);
+  --color-revenue:  var(--neon-lime);
+  --color-penalty:  var(--neon-red);
+  --color-compute:  var(--neon-cyan);
+  --color-memory:   var(--neon-blue);
+  --color-storage:  var(--neon-purple);
+  --color-gpu:      var(--neon-amber);
+
+  /* ── Glow / Shadow ───────────────────────────────────────────────────── */
+  --glow-cyan:    0 0 6px var(--neon-cyan),    0 0 18px rgba(94,240,255,.45);
+  --glow-magenta: 0 0 6px var(--neon-magenta), 0 0 18px rgba(255,77,210,.4);
+  --glow-amber:   0 0 6px var(--neon-amber),   0 0 18px rgba(255,177,60,.4);
+  --glow-lime:    0 0 6px var(--neon-lime),    0 0 18px rgba(155,255,90,.4);
+  --glow-red:     0 0 6px var(--neon-red),     0 0 18px rgba(255,84,112,.45);
+  --glow-sm-cyan: 0 0 4px var(--neon-cyan);
+
+  --shadow-panel: 0 4px 24px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.03);
+  --shadow-float: 0 8px 40px rgba(0,0,0,.8);
+
+  /* ── Borders ─────────────────────────────────────────────────────────── */
+  --border-panel:  1px solid var(--grid);
+  --border-neon:   1px solid var(--neon-cyan);
+  --border-focus:  1px solid var(--neon-cyan);
+
+  /* ── Typography ──────────────────────────────────────────────────────── */
+  --font-display: "Orbitron", "Rajdhani", system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, "Cascadia Code", monospace;
+
+  --text-xs:   0.6875rem; /*  11px */
+  --text-sm:   0.75rem;   /*  12px */
+  --text-base: 0.875rem;  /*  14px */
+  --text-md:   1rem;      /*  16px */
+  --text-lg:   1.125rem;  /*  18px */
+  --text-xl:   1.375rem;  /*  22px */
+  --text-2xl:  1.75rem;   /*  28px */
+  --text-3xl:  2.25rem;   /*  36px */
+
+  --leading-tight: 1.2;
+  --leading-base:  1.5;
+
+  /* ── Spacing scale (8-point) ─────────────────────────────────────────── */
+  --space-1:  0.25rem;  /*  4px */
+  --space-2:  0.5rem;   /*  8px */
+  --space-3:  0.75rem;  /* 12px */
+  --space-4:  1rem;     /* 16px */
+  --space-5:  1.25rem;  /* 20px */
+  --space-6:  1.5rem;   /* 24px */
+  --space-8:  2rem;     /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+
+  /* ── Radii ───────────────────────────────────────────────────────────── */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+
+  /* ── Transitions ─────────────────────────────────────────────────────── */
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-in-out:   cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast:   120ms;
+  --duration-normal: 240ms;
+  --duration-slow:   400ms;
+
+  /* ── Z-index stack ───────────────────────────────────────────────────── */
+  --z-base:    0;
+  --z-raised:  10;
+  --z-overlay: 100;
+  --z-modal:   200;
+  --z-toast:   300;
+}

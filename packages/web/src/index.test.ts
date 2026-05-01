@@ -1,6 +1,9 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { describe, it, expect } from "vitest";
+import { VERSION } from "@datacenter-tycoon/game-logic";
 
-test("hello world: web test runner works", () => {
-	assert.equal("hello".toUpperCase(), "HELLO");
+describe("web package bootstrap", () => {
+  it("imports VERSION from game-logic", () => {
+    expect(typeof VERSION).toBe("string");
+    expect(VERSION.length).toBeGreaterThan(0);
+  });
 });

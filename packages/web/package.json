@@ -1,21 +1,33 @@
 {
   "name": "@datacenter-tycoon/web",
   "version": "0.1.0",
-  "description": "Web frontend for Datacenter Tycoon.",
+  "description": "Web frontend for Datacenter Tycoon — React 18 + Vite, neon control center theme.",
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "echo 'web build not yet configured' && exit 0",
-    "dev": "echo 'web dev not yet configured' && exit 0",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --import tsx 'src/**/*.test.ts'",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@datacenter-tycoon/game-logic": "*"
+    "@datacenter-tycoon/game-logic": "*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.5.1",
+    "jsdom": "^26.1.0",
     "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vite": "^6.3.4",
+    "vitest": "^3.1.3"
   }
 }

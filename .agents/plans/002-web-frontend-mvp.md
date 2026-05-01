@@ -1,7 +1,7 @@
 ---
 name: Web Frontend MVP — Neon Control Center
 description: Initial React+Vite web UI for Datacenter Tycoon with a dark neon "control center" theme, rack grid placement, contracts panel, and live game stats — all driven by `@datacenter-tycoon/game-logic`.
-status: created
+status: started
 created: 2026-05-01
 updated: 2026-05-01
 owner: web
@@ -9,22 +9,22 @@ owner: web
 
 ## Progress
 
-- [ ] **Phase 1 — Toolchain & framework decision**
-  - [ ] 1.1 Adopt React 18 + Vite + TypeScript (decision recorded in `AGENTS.md`)
-  - [ ] 1.2 Scaffold Vite project inside `packages/web` (preserve existing `package.json` fields, add deps)
-  - [ ] 1.3 Wire `dev` / `build` / `preview` / `typecheck` scripts; verify `@datacenter-tycoon/game-logic` import works
-  - [ ] 1.4 Add ESLint/Prettier config consistent with repo (or defer to root config if present)
-- [ ] **Phase 2 — Theme system (neon control center)**
-  - [ ] 2.1 Define CSS custom properties for color tokens, fonts, spacing, glow effects in `src/theme/tokens.css`
-  - [ ] 2.2 Global reset + base typography (monospace + display font) in `src/theme/global.css`
-  - [ ] 2.3 Reusable primitives: `Panel`, `StatTile`, `NeonButton`, `LedSegment`, `ProgressBar`
-  - [ ] 2.4 Storybook-lite playground route `/__theme` to eyeball primitives (no Storybook dep)
-- [ ] **Phase 3 — Game store (UI ↔ game-logic bridge)**
-  - [ ] 3.1 `src/store/gameStore.ts`: thin reactive wrapper around `reduce(state, action)` using `useSyncExternalStore`
-  - [ ] 3.2 Tick loop driver (real-time tick every N ms, pause/play/speed controls) — pure, testable
-  - [ ] 3.3 Selectors: `selectCash`, `selectDatacenter(id)`, `selectActiveContracts`, `selectMarket`, `selectOpexBreakdown`, `selectCapacity`
-  - [ ] 3.4 ID factory helpers (UUID-ish, deterministic when seeded — for replay-friendliness)
-  - [ ] 3.5 Persist save to `localStorage` via `serialize`/`deserialize` from `game-logic/save`
+- [x] **Phase 1 — Toolchain & framework decision**
+  - [x] 1.1 Adopt React 18 + Vite + TypeScript (decision recorded in `AGENTS.md`)
+  - [x] 1.2 Scaffold Vite project inside `packages/web` (preserve existing `package.json` fields, add deps)
+  - [x] 1.3 Wire `dev` / `build` / `preview` / `typecheck` scripts; verify `@datacenter-tycoon/game-logic` import works
+  - [x] 1.4 Add ESLint/Prettier config consistent with repo (or defer to root config if present)
+- [x] **Phase 2 — Theme system (neon control center)**
+  - [x] 2.1 Define CSS custom properties for color tokens, fonts, spacing, glow effects in `src/theme/tokens.css`
+  - [x] 2.2 Global reset + base typography (monospace + display font) in `src/theme/global.css`
+  - [x] 2.3 Reusable primitives: `Panel`, `StatTile`, `NeonButton`, `LedSegment`, `ProgressBar`
+  - [x] 2.4 Storybook-lite playground route `/__theme` to eyeball primitives (no Storybook dep)
+- [x] **Phase 3 — Game store (UI ↔ game-logic bridge)**
+  - [x] 3.1 `src/store/gameStore.ts`: thin reactive wrapper around `reduce(state, action)` using `useSyncExternalStore`
+  - [x] 3.2 Tick loop driver (real-time tick every N ms, pause/play/speed controls) — pure, testable
+  - [x] 3.3 Selectors: `selectCash`, `selectDatacenter(id)`, `selectActiveContracts`, `selectMarket`, `selectOpexBreakdown`, `selectCapacity`, `selectFreeCapacity`, `selectMonthlyPnl`, `selectResourceUsage`
+  - [x] 3.4 ID factory helpers (`nextDcId`, `nextRackPlacementId`) backed by `crypto.randomUUID`
+  - [x] 3.5 Persist save to `localStorage` via `serialize`/`deserialize` from `game-logic/save`; autosave every 5 ticks + on every non-Tick dispatch
 - [ ] **Phase 4 — App shell & routing**
   - [ ] 4.1 Top bar: company name, cash, monthly P&L, game date, tick speed controls (⏸ ▶ ▶▶ ▶▶▶)
   - [ ] 4.2 Left rail: datacenter list + "New Datacenter" CTA

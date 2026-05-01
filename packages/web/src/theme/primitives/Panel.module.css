@@ -1,0 +1,37 @@
+.panel {
+  background: var(--bg-1);
+  border: var(--border-panel);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  padding: var(--space-4);
+  position: relative;
+}
+
+.panel::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 2px;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  opacity: 0;
+  transition: opacity var(--duration-normal);
+}
+
+/* Accent top-border glow */
+.accent-cyan::before    { background: var(--neon-cyan);    box-shadow: var(--glow-cyan);    opacity: 1; }
+.accent-amber::before   { background: var(--neon-amber);   box-shadow: var(--glow-amber);   opacity: 1; }
+.accent-lime::before    { background: var(--neon-lime);    box-shadow: var(--glow-lime);    opacity: 1; }
+.accent-magenta::before { background: var(--neon-magenta); box-shadow: var(--glow-magenta); opacity: 1; }
+.accent-red::before     { background: var(--neon-red);     box-shadow: var(--glow-red);     opacity: 1; }
+
+/* Variant overrides */
+.variant-raised {
+  background: var(--bg-2);
+}
+
+.variant-ghost {
+  background: transparent;
+  box-shadow: none;
+  border-color: var(--grid);
+}

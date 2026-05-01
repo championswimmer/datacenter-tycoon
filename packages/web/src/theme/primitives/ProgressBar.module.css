@@ -1,0 +1,39 @@
+.wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.track {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  flex: 1;
+}
+
+.segment {
+  flex: 1;
+  height: 100%;
+  border-radius: 1px;
+  transition: background var(--duration-fast), box-shadow var(--duration-fast);
+}
+
+.empty {
+  background: var(--bg-3);
+}
+
+/* Filled colors */
+.filled-cyan    { background: var(--neon-cyan);    box-shadow: 0 0 3px var(--neon-cyan); }
+.filled-amber   { background: var(--neon-amber);   box-shadow: 0 0 3px var(--neon-amber); }
+.filled-lime    { background: var(--neon-lime);     box-shadow: 0 0 3px var(--neon-lime); }
+.filled-red     { background: var(--neon-red);      box-shadow: 0 0 3px var(--neon-red); }
+.filled-magenta { background: var(--neon-magenta);  box-shadow: 0 0 3px var(--neon-magenta); }
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-1);
+  min-width: 2.5rem;
+  text-align: right;
+}

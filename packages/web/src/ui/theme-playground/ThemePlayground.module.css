@@ -1,0 +1,95 @@
+.root {
+  min-height: 100vh;
+  padding: var(--space-8);
+  background: var(--bg-0);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  border-bottom: var(--border-panel);
+  padding-bottom: var(--space-4);
+}
+
+.note {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-2);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.section h3 {
+  color: var(--fg-2);
+  font-size: var(--text-sm);
+  border-bottom: 1px solid var(--grid);
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 480px;
+}
+
+.swatch {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-1);
+}
+
+.barRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.barLabel {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-2);
+  min-width: 6rem;
+}
+
+.colorSwatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.colorBlock {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+}
+
+.colorName {
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  color: var(--fg-0);
+  letter-spacing: 0.1em;
+}
+
+.colorToken {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--fg-2);
+}
