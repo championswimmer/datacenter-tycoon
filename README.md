@@ -1,33 +1,31 @@
 # Datacenter Tycoon
 
+[![Play Game ->](https://img.shields.io/badge/Play%20Game%20-%3E-2ea44f?style=for-the-badge)](https://dctycoon.arnav.tech)
 [![Codecov](https://img.shields.io/codecov/c/github/championswimmer/datacenter-tycoon?logo=codecov)](https://codecov.io/gh/championswimmer/datacenter-tycoon)
-
-A tycoon game about building data centers, buying racks, managing capex/opex, and fulfilling compute/memory/storage/GPU contracts.
 
 ![](./assets/images/game-banner-001.jpg)
 
-## Monorepo Structure
+Welcome to **Datacenter Tycoon**, an idle/tycoon management game where you design, build, and operate your very own global data center empire! 
 
-This is a TypeScript monorepo using npm workspaces.
+## Game Overview
 
-- **`packages/game-logic`** — Core game logic library (pure TS, framework-agnostic). All game rules, state, simulation, and economy live here.
-- **`packages/web`** — Web app frontend of the game.
-- **`packages/desktop`** — Electron app wrapper (planned).
-- **`packages/server`** — Backend for scoring, leaderboards, and future multiplayer.
+In Datacenter Tycoon, you act as the CEO and lead architect of a burgeoning infrastructure provider. Your goal is to construct facilities, procure server racks, balance your budgets, and fulfill contracts from clients demanding compute, memory, storage, and GPU resources.
 
-## Getting Started
+### How to Play
 
-```bash
-npm install
-npm run build
-npm run dev
-```
+1. **Build Datacenters:** Start by constructing a datacenter facility. Each facility provides a baseline of physical space (for racks), power capacity, and cooling.
+2. **Install Racks:** Populate your datacenters with specialized server racks. You can buy racks focused on:
+   - **Compute (vCPUs):** For processing-heavy workloads.
+   - **Memory (RAM):** For caching and memory-intensive applications.
+   - **Storage (Disks):** For data archiving and databases.
+   - **GPU:** For machine learning and rendering tasks.
+3. **Manage Finances:**
+   - **Capex (Capital Expenditure):** Building datacenters and buying hardware costs upfront capital. 
+   - **Opex (Operational Expenditure):** Running datacenters incurs continuous costs for power, cooling, and maintenance. You must ensure your contract income exceeds your running costs.
+4. **Fulfill Contracts:** Accept client contracts that demand specific resource capacities over time. Fulfilling these contracts earns you revenue, but failing to meet their demands will incur financial penalties.
 
-## Game Concept
+Keep an eye on your cash flow, optimize your rack configurations, and expand your empire to become the ultimate Datacenter Tycoon!
 
-Players build and operate data centers:
-- **Build**: Construct datacenters, fill them with racks (compute, memory, storage, GPU).
-- **Manage**: Balance **capex** (hardware, construction) against **opex** (power, cooling, staff).
-- **Earn**: Fulfill **contracts** that demand specific capacities of compute, memory, storage, and GPU resources.
+## Developer Information
 
-See [AGENTS.md](./AGENTS.md) for guidance when working on this codebase with AI agents.
+If you are a human developer or an AI coding agent looking to contribute to the codebase, please see [AGENTS.md](./AGENTS.md) for code structure, style rules, contribution guidelines, and local development setup.

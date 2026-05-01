@@ -1,6 +1,6 @@
-# AGENTS.md
+# AGENTS.md (Developer Guide)
 
-Guidance for AI coding agents working on **Datacenter Tycoon**.
+Guidance for human developers and AI coding agents contributing to **Datacenter Tycoon**. This document outlines the project requirements, code structure, architectural guidelines, and contribution rules.
 
 ## Project Overview
 
@@ -26,7 +26,9 @@ datacenter-tycoon/
 
 Each package has its own `AGENTS.md` with package-specific guidance. Nested AGENTS.md files take precedence for files in their subtree.
 
-## Setup Commands
+## Setup & Contribution Commands
+
+To get started with local development, clone the repository and run the following commands:
 
 ```bash
 npm install                # install all workspace deps
@@ -36,7 +38,7 @@ npm run test               # run tests across workspaces
 npm run dev                # dev mode where applicable
 ```
 
-## Code Style
+## Code Style & Guidelines
 
 - **Language**: TypeScript, `strict: true`. No `any` unless justified with a comment.
 - **Modules**: ESM (`"type": "module"`).
@@ -67,14 +69,14 @@ npm run dev                # dev mode where applicable
 - Game logic must have high test coverage — it's the deterministic core.
 - Run `npm run test -w @datacenter-tycoon/game-logic` to test just the core.
 
-## Skills
+## AI Agent Skills
 
-Project-local agent skills live in `.agents/skills/<skill-name>/SKILL.md`. Load a skill when its description matches the current task.
+Project-local agent skills live in `.agents/skills/<skill-name>/SKILL.md`. AI agents should load a skill when its description matches the current task.
 
 - **`planning`** — how to create, structure, track, and execute phased plans under `.agents/plans/`. Load this whenever a task is non-trivial (multi-file, multi-session, architectural) or when the user asks to plan / design / scope / continue work.
 - **`game-balance-tuning`** — guardrails for changing numeric balance constants.
 
-## Plans
+## Development Plans
 
 Non-trivial work is captured as numbered plans in `.agents/plans/NNN-slug.md`. Always check `.agents/plans/` for an active plan related to the current task before starting work, and update its progress checklist as you go. See the `planning` skill for the full workflow.
 
