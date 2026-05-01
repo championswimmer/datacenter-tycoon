@@ -66,6 +66,7 @@
   padding: 0 6px;
   min-width: 20px;
   text-align: center;
+  text-shadow: none;
 }
 
 .badgeRed {
