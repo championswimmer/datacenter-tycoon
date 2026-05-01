@@ -39,6 +39,18 @@ describe("TopBar", () => {
     expect(screen.getByTitle("3× speed")).toBeTruthy();
   });
 
+  it("always renders a contracts button that navigates to contracts", () => {
+    render(
+      <Wrapper>
+        <TopBar speed={1} onSpeedChange={() => {}} />
+      </Wrapper>,
+    );
+
+    const button = screen.getByTitle("Open contracts market");
+    button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(window.location.hash).toBe("#/contracts");
+  });
+
   it("marks the active speed button as pressed", () => {
     render(
       <Wrapper>
