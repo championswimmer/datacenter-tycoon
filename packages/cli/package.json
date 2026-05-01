@@ -1,0 +1,27 @@
+{
+  "name": "@datacenter-tycoon/cli",
+  "version": "0.1.0",
+  "description": "CLI and TUI client for Datacenter Tycoon.",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "dct": "bin/dct.js"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsx watch src/cli.ts",
+    "start": "node dist/cli.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --import tsx $(find src -type f -name '*.test.ts' | sort)",
+    "test:ci": "mkdir -p coverage && c8 --report-dir=coverage --reporter=lcov --reporter=text-summary --all --include=src/**/*.ts --exclude='src/**/*.test.ts' node --test --import tsx --test-reporter=junit --test-reporter-destination=coverage/junit.xml $(find src -type f -name '*.test.ts' | sort)",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@datacenter-tycoon/game-logic": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
