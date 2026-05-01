@@ -21,11 +21,11 @@ owner: web
   - [x] 3.2 Remove the `TICK` HUD slot; show full date only
   - [x] 3.3 Update `expiringOffers` / `endingActive` thresholds to month-aware copy
   - [x] 3.4 Update TopBar tests + snapshots
-- [ ] **Phase 4 — Contracts UI**
-  - [ ] 4.1 MarketList: "X tick(s) left" → "X months Y days left" (or "expires today")
-  - [ ] 4.2 ActiveList: replace "Expires next tick!" with month/day phrasing; show term as "X months" and elapsed as "Y months Z days"
-  - [ ] 4.3 ContractsPage: update sort labels referring to "expiry" to use months/days copy if needed
-  - [ ] 4.4 Update MarketList / ActiveList tests
+- [x] **Phase 4 — Contracts UI**
+  - [x] 4.1 MarketList: "X tick(s) left" → "X months Y days left" (or "expires today")
+  - [x] 4.2 ActiveList: replace "Expires next tick!" with month/day phrasing; show term as "X months" and elapsed as "Y months Z days"
+  - [x] 4.3 ContractsPage: update sort labels referring to "expiry" to use months/days copy if needed
+  - [x] 4.4 Update MarketList / ActiveList tests
 - [ ] **Phase 5 — Other UI surfaces**
   - [ ] 5.1 LogFeed: replace `T{tick}` badge with `formatGameDateShort(entry.tick)`
   - [ ] 5.2 CashSparkline: "last N ticks" → "last N months"

@@ -64,9 +64,11 @@ function renderActive(state = buildActiveState()) {
 }
 
 describe("ActiveList", () => {
-  it("shows elapsed contract progress in months", () => {
+  it("shows elapsed contract progress with month-based remaining label", () => {
     renderActive();
-    expect(screen.getByText("1/3 mo · 2 left")).toBeTruthy();
+    // tick=1, started=0, termMonths=3 → elapsed=1, monthsLeft=2
+    // formatRemaining(2, 0) = '2 months left'
+    expect(screen.getByText("1/3 mo · 2 months left")).toBeTruthy();
   });
 
   it("confirms cancellation before dispatching CancelContract", () => {

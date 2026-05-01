@@ -6,6 +6,8 @@ import {
 } from "../../store/selectors.js";
 import { canFulfill, dcFreeCapacity, contractDealScore } from "./contractUtils.js";
 import { playSound } from "../../audio/AudioEngine.js";
+import { useTickFraction } from "../../store/tickFractionStore.js";
+import { monthsAndDaysBetween, formatRemaining } from "../../store/gameTime.js";
 import styles from "./MarketList.module.css";
 
 function fmt(n: number): string {
@@ -73,6 +75,7 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
   const activeContracts = useSelector(selectActiveContracts);
   const tick            = useSelector(selectTick);
   const dispatch        = useGameDispatch();
+  const fraction        = useTickFraction();
 
   const [accepting, setAccepting] = useState<string | null>(null);
   const [pendingAssignment, setPendingAssignment] = useState<{
@@ -95,7 +98,10 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
     <div className={styles.list}>
       {contracts.map(c => {
         const fit = fitStatus(c, datacenters, activeContracts);
-        const ticksLeft = c.expiresAtTick - tick;
+        const { months, days } = monthsAndDaysBetween(tick, fraction, c.expiresAtTick, 0);
+        const expired = months <= 0 && days <= 0;
+        const expiryLabel = expired ? "EXPIRED" : formatRemaining(months, days);
+        const urgent = !expired && months === 0 && days <= 7;
         const isAccepting = accepting === c.id;
         const networkFree = sumFreeCapacity(datacenters, activeContracts);
         const isConfirming = pendingAssignment?.contractId === c.id;
@@ -116,8 +122,8 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
                   <div className={styles.meta}>
                     <span>{c.termMonths} mo</span>
                     <span className={styles.dot}>·</span>
-                    <span className={ticksLeft <= 1 ? styles.expiring : styles.expiry}>
-                      {ticksLeft <= 0 ? "EXPIRED" : `${ticksLeft} tick${ticksLeft > 1 ? "s" : ""} left`}
+                    <span className={urgent ? styles.expiring : styles.expiry}>
+                      {expiryLabel}
                     </span>
                     {c.urgency === "rush" && (
                       <>
