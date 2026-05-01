@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { useSelector } from "../../store/storeContext.js";
+import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import {
   selectCash,
   selectPlayerName,
@@ -8,6 +8,7 @@ import {
   selectMonthlyPnl,
   selectActiveContracts,
   selectMarket,
+  selectAudioEnabled,
 } from "../../store/selectors.js";
 import { LedSegment } from "../../theme/primitives/index.js";
 import { navigate } from "../../router/hashRouter.js";
@@ -41,12 +42,14 @@ interface TopBarProps {
 const SPEED_LABELS: Record<Speed, string> = { 0: "⏸", 1: "▶", 2: "▶▶", 3: "▶▶▶" };
 
 export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
+  const dispatch        = useGameDispatch();
   const playerName      = useSelector(selectPlayerName);
   const cash            = useSelector(selectCash);
   const tick            = useSelector(selectTick);
   const pnl             = useSelector(selectMonthlyPnl);
   const activeContracts = useSelector(selectActiveContracts);
   const market          = useSelector(selectMarket);
+  const audioEnabled    = useSelector(selectAudioEnabled);
 
   const breachedCount = activeContracts.filter(c => c.status === "breached").length;
   const expiringOffers = market.filter(c => c.expiresAtTick - tick <= 1).length;
@@ -135,6 +138,15 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
             {banner.label}
           </button>
         )}
+
+        <button
+          className={styles.helpBtn}
+          onClick={() => dispatch({ type: "SetAudioEnabled", enabled: !audioEnabled })}
+          title={audioEnabled ? "Mute sounds" : "Unmute sounds"}
+          aria-label={audioEnabled ? "Mute sounds" : "Unmute sounds"}
+        >
+          {audioEnabled ? "🔊" : "🔇"}
+        </button>
 
         <button
           className={styles.helpBtn}

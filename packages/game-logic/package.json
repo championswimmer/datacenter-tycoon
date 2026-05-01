@@ -16,7 +16,7 @@
     "build": "tsc -b",
     "dev": "tsc -b --watch",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --import tsx 'src/**/*.test.ts'",
+    "test": "node --test --import tsx $(find src -type f -name '*.test.ts' | sort)",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "devDependencies": {

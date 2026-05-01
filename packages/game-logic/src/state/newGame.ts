@@ -36,6 +36,7 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 		contractMarket: [],
 		activeContracts: [],
 		ledger: [],
+		audioEnabled: true,
 	};
 
 	return refreshContractMarket(initialState);

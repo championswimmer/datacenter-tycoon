@@ -10,9 +10,10 @@ import type {
   PlacementFailureReason,
 } from "@datacenter-tycoon/game-logic";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
-import { selectCash } from "../../store/selectors.js";
+import { selectCash, selectAudioEnabled } from "../../store/selectors.js";
 import { nextRackPlacementId } from "../../store/ids.js";
 import { InsufficientFunds } from "../onboarding/InsufficientFunds.js";
+import { playSound } from "../../audio/AudioEngine.js";
 import styles from "./RackPicker.module.css";
 
 export interface RackPickerProps {
@@ -62,8 +63,9 @@ function rowLabel(row: number): string {
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export function RackPicker({ datacenter, row, position, onClose }: RackPickerProps) {
-  const cash     = useSelector(selectCash);
-  const dispatch = useGameDispatch();
+  const cash         = useSelector(selectCash);
+  const audioEnabled = useSelector(selectAudioEnabled);
+  const dispatch     = useGameDispatch();
 
   const [kindFilter, setKindFilter] = useState<KindFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -99,8 +101,9 @@ export function RackPicker({ datacenter, row, position, onClose }: RackPickerPro
       position,
       placementId: nextRackPlacementId(),
     });
+    playSound("click", !audioEnabled);
     onClose();
-  }, [selectedSpec, canInstall, dispatch, datacenter.id, row, position, onClose]);
+  }, [selectedSpec, canInstall, dispatch, datacenter.id, row, position, onClose, audioEnabled]);
 
   // ESC closes
   useEffect(() => {
