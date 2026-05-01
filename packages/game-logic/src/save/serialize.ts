@@ -20,6 +20,16 @@ export function migrate(envelope: SaveEnvelope): SaveEnvelope {
 		return envelope;
 	}
 
+	if (envelope.saveVersion === 0) {
+		const state = envelope.state as GameState;
+		for (const contract of [...state.activeContracts, ...state.contractMarket]) {
+			const c = contract as unknown as Record<string, unknown>;
+			if (!("urgency" in c)) c.urgency = "standard";
+			if (!("tier" in c)) c.tier = 1;
+		}
+		return { saveVersion: SAVE_VERSION, state: envelope.state };
+	}
+
 	throw new Error(`Unsupported save version: ${envelope.saveVersion}`);
 }
 

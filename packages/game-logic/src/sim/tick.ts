@@ -45,7 +45,17 @@ export function tick(state: GameState): GameState {
 		state.datacenters.reduce((total, datacenter) => total + tickOpex(datacenter).total, 0),
 	);
 	const revenueResult = tickRevenue(state);
-	const finalizedContracts = revenueResult.updatedContracts.map((contract) => finalizeContract(contract, nextTick));
+
+	const autoCancelledContracts = revenueResult.updatedContracts.map((contract): Contract => {
+		if (contract.status === "breached" && state.activeContracts.some(
+			(prev) => prev.id === contract.id && prev.status === "breached",
+		)) {
+			return { ...contract, status: "cancelled" };
+		}
+		return contract;
+	});
+
+	const finalizedContracts = autoCancelledContracts.map((contract) => finalizeContract(contract, nextTick));
 	const netCashDelta = roundMoney(revenueResult.revenue - totalOpex);
 	const ledgerEntries: LedgerEntry[] = [];
 

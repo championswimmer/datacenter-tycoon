@@ -37,8 +37,10 @@ function buildActiveState(): GameState {
     penaltyPerMonth: 4000,
     termMonths: 3,
     status: "active",
+    urgency: "standard",
+    tier: 1,
     offeredAtTick: 0,
-    expiresAtTick: 3,
+    expiresAtTick: 6,
     startedAtTick: 0,
     assignedDcId: dcId,
   };

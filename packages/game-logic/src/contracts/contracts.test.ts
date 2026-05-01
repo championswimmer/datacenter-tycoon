@@ -8,6 +8,7 @@ import {
 	advanceContract,
 	evaluateContract,
 	generateContract,
+	marketDifficulty,
 	refreshContractMarket,
 } from "../contracts/index.js";
 import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
@@ -74,8 +75,10 @@ function makeContract(id: string, overrides: Partial<Contract> = {}): Contract {
 		penaltyPerMonth: 8_000,
 		termMonths: 6,
 		status: "offered",
+		urgency: "standard",
+		tier: 1,
 		offeredAtTick: tick(0),
-		expiresAtTick: tick(3),
+		expiresAtTick: tick(6),
 		...overrides,
 	};
 }
@@ -141,7 +144,7 @@ test("acceptContract moves an offered contract into the active list with assignm
 
 	const nextState = acceptContract(state, offeredContract.id, state.datacenters[0]!.id);
 
-	assert.equal(nextState.contractMarket.length, 0);
+	assert.equal(nextState.contractMarket.length, MARKET_REFRESH_SIZE);
 	assert.equal(nextState.activeContracts.length, 1);
 	assert.deepEqual(nextState.activeContracts[0], {
 		...offeredContract,
@@ -199,4 +202,103 @@ test("advanceContract transitions between active, breached, completed, and cance
 	assert.equal(advanceContract(baseContract, breachedDatacenter, 5).status, "breached");
 	assert.equal(advanceContract(baseContract, datacenter, 8).status, "completed");
 	assert.equal(advanceContract(baseContract, breachedDatacenter, 8).status, "cancelled");
+});
+
+test("acceptContract backfills the market slot immediately to keep MARKET_REFRESH_SIZE offers", () => {
+	const offers = Array.from({ length: MARKET_REFRESH_SIZE }, (_, i) =>
+		makeContract(`offer-${i}`, {
+			status: "offered",
+			offeredAtTick: tick(0),
+			expiresAtTick: tick(6),
+		}),
+	);
+	const state = makeState({ contractMarket: offers });
+
+	const nextState = acceptContract(state, offers[0]!.id, state.datacenters[0]!.id);
+
+	assert.equal(nextState.contractMarket.length, MARKET_REFRESH_SIZE);
+	assert.ok(nextState.activeContracts.length === 1);
+	assert.equal(nextState.activeContracts[0]!.status, "active");
+});
+
+test("marketDifficulty clamps low for ticks 0-5 and caps at 0.85 for later ticks", () => {
+	assert.ok(marketDifficulty(0, 0) <= 0.25);
+	assert.ok(marketDifficulty(3, 1) <= 0.25);
+	assert.ok(marketDifficulty(5, 1) <= 0.25);
+	assert.ok(marketDifficulty(100, 1) <= 0.85);
+	assert.ok(marketDifficulty(200, 1) <= 0.85);
+});
+
+test("generateContract at low difficulty never requires GPU", () => {
+	const rng = createRng(42);
+	for (let i = 0; i < 20; i++) {
+		const contract = generateContract(rng, 0.1);
+		assert.equal(contract.requirements.gpuFlops, 0, `${contract.name} should not require GPU at low difficulty`);
+	}
+});
+
+test("generateContract produces rush, anchor, and standard urgency types over a large sample", () => {
+	const rng = createRng(9999);
+	const urgencies = new Set<string>();
+	for (let i = 0; i < 200; i++) {
+		const contract = generateContract(rng, 0.5);
+		urgencies.add(contract.urgency);
+	}
+	assert.ok(urgencies.has("standard"), "should produce standard contracts");
+	assert.ok(urgencies.has("rush"), "should produce rush contracts");
+	assert.ok(urgencies.has("anchor"), "should produce anchor contracts");
+});
+
+test("rush contracts have shorter term and higher payment than standard of same difficulty", () => {
+	const rng = createRng(7777);
+	let rush: Contract | undefined;
+	let standard: Contract | undefined;
+	for (let i = 0; i < 200 && (!rush || !standard); i++) {
+		const c = generateContract(rng, 0.5);
+		if (c.urgency === "rush" && !rush) rush = c;
+		if (c.urgency === "standard" && !standard) standard = c;
+	}
+	assert.ok(rush, "should find a rush contract");
+	assert.ok(standard, "should find a standard contract");
+	assert.ok(rush!.termMonths <= 2, `rush term ${rush!.termMonths} should be <= 2`);
+	assert.ok(rush!.expiresAtTick <= 2, `rush offer window ${rush!.expiresAtTick} should be <= 2`);
+});
+
+test("anchor contracts have longer term and lower penalty ratio", () => {
+	const rng = createRng(5555);
+	let anchor: Contract | undefined;
+	for (let i = 0; i < 200 && !anchor; i++) {
+		const c = generateContract(rng, 0.5);
+		if (c.urgency === "anchor") anchor = c;
+	}
+	assert.ok(anchor, "should find an anchor contract");
+	assert.ok(anchor!.termMonths >= 8, `anchor term ${anchor!.termMonths} should be >= 8`);
+});
+
+test("advanceContract auto-cancels a contract that was already breached", () => {
+	const dc = makeDatacenter("dc-1", [placement("rack-1", "C1", 0, 0)]);
+	const contract = makeContract("breach-1", {
+		status: "breached",
+		startedAtTick: tick(2),
+		assignedDcId: dc.id,
+		requirements: { vCpu: 500, ramGb: 5_000, storageTb: 500, gpuFlops: 500 },
+		termMonths: 10,
+	});
+
+	const result = advanceContract(contract, dc, 4);
+	assert.equal(result.status, "cancelled");
+});
+
+test("advanceContract keeps a newly-breachd contract as breached for one tick", () => {
+	const dc = makeDatacenter("dc-1", [placement("rack-1", "C1", 0, 0)]);
+	const contract = makeContract("active-1", {
+		status: "active",
+		startedAtTick: tick(2),
+		assignedDcId: dc.id,
+		requirements: { vCpu: 500, ramGb: 5_000, storageTb: 500, gpuFlops: 500 },
+		termMonths: 10,
+	});
+
+	const result = advanceContract(contract, dc, 4);
+	assert.equal(result.status, "breached");
 });

@@ -70,6 +70,8 @@ describe("TopBar", () => {
         penaltyPerMonth: 100,
         termMonths: 1,
         status: "offered",
+        urgency: "standard",
+        tier: 1,
         offeredAtTick: 0,
         expiresAtTick: 1,
       }],

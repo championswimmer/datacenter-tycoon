@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
+import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
 import { tick as tickState } from "../sim/tick.js";
 import type {
 	Contract,
@@ -61,8 +62,10 @@ function makeContract(id: string, dcId: DatacenterId): Contract {
 		penaltyPerMonth: 2_000,
 		termMonths: 3,
 		status: "active",
+		urgency: "standard",
+		tier: 1,
 		offeredAtTick: tick(0),
-		expiresAtTick: tick(3),
+		expiresAtTick: tick(6),
 		startedAtTick: tick(0),
 		assignedDcId: dcId,
 	};
@@ -162,8 +165,10 @@ test("reduce handles AcceptContract and delegates validation", () => {
 				penaltyPerMonth: 250,
 				termMonths: 2,
 				status: "offered",
+				urgency: "standard",
+				tier: 1,
 				offeredAtTick: tick(0),
-				expiresAtTick: tick(3),
+				expiresAtTick: tick(6),
 			},
 		],
 	};
@@ -174,7 +179,7 @@ test("reduce handles AcceptContract and delegates validation", () => {
 		dcId: datacenterId("dc-1"),
 	});
 
-	assert.equal(nextState.contractMarket.length, 0);
+	assert.equal(nextState.contractMarket.length, MARKET_REFRESH_SIZE);
 	assert.equal(nextState.activeContracts[0]?.status, "active");
 	assert.equal(nextState.activeContracts[0]?.assignedDcId, datacenterId("dc-1"));
 	assert.throws(

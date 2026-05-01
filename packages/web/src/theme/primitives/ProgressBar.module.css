@@ -37,3 +37,12 @@
   min-width: 2.5rem;
   text-align: right;
 }
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.pulse {
+  animation: pulse-glow 1.2s ease-in-out infinite;
+}

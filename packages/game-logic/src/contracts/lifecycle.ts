@@ -35,8 +35,12 @@ export function advanceContract(
 		};
 	}
 
-	return {
-		...contract,
-		status: evaluation === "fulfilled" ? "active" : "breached",
-	};
+	if (evaluation === "breached") {
+		if (contract.status === "breached") {
+			return { ...contract, status: "cancelled" };
+		}
+		return { ...contract, status: "breached" };
+	}
+
+	return { ...contract, status: "active" };
 }

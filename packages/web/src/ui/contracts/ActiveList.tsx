@@ -1,10 +1,12 @@
 import { useState, useCallback } from "react";
 import type { Contract, ContractStatus } from "@datacenter-tycoon/game-logic";
+import { tickOpex } from "@datacenter-tycoon/game-logic";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import {
   selectActiveContracts, selectAllDatacenters, selectTick,
 } from "../../store/selectors.js";
 import { ProgressBar } from "../../theme/primitives/index.js";
+import { dcFreeCapacity, canFulfill } from "./contractUtils.js";
 import styles from "./ActiveList.module.css";
 
 function fmt(n: number): string {
@@ -57,6 +59,22 @@ export function ActiveList() {
         const isConfirming = confirming === c.id;
         const canCancel = c.status === "active" || c.status === "breached";
 
+        const dc = datacenters.find(d => d.id === c.assignedDcId);
+        const contractsOnDc = contracts.filter(
+          x => x.assignedDcId === dc?.id && x.status === "active",
+        );
+        const attributedOpex = dc
+          ? tickOpex(dc).total / Math.max(contractsOnDc.length, 1)
+          : 0;
+        const margin = c.monthlyPayment - attributedOpex;
+
+        const free = dc ? dcFreeCapacity(dc, contracts) : null;
+        const bufferLow = free !== null && canFulfill(free, c.requirements) &&
+          (free.vCpu < c.requirements.vCpu * 0.1 ||
+           free.ramGb < c.requirements.ramGb * 0.1 ||
+           (c.requirements.storageTb > 0 && free.storageTb < c.requirements.storageTb * 0.1) ||
+           (c.requirements.gpuFlops > 0 && free.gpuFlops < c.requirements.gpuFlops * 0.1));
+
         return (
           <div key={c.id} className={[styles.card, styles[`status-${c.status}`]].join(" ")}>
             <div className={styles.cardTop}>
@@ -71,10 +89,16 @@ export function ActiveList() {
               </div>
               <div className={styles.financials}>
                 <div className={styles.payment}>{fmt(c.monthlyPayment)}<span className={styles.unit}>/mo</span></div>
+                <div className={styles.marginLine}>
+                  {fmt(margin)}<span className={styles.unit}> margin</span>
+                </div>
               </div>
             </div>
 
-            {/* Progress bar */}
+            {bufferLow && c.status === "active" && (
+              <div className={styles.warningBadge}>Capacity buffer low</div>
+            )}
+
             <div className={styles.progressRow}>
               <ProgressBar
                 value={progress * 100}
@@ -84,13 +108,16 @@ export function ActiveList() {
                 showLabel
                 height={6}
                 label={`Contract progress: ${Math.round(progress * 100)}%`}
+                pulse={monthsLeft <= 2 && c.status === "active"}
               />
               <span className={styles.progressMeta}>
                 {elapsedMonths}/{c.termMonths} mo · {monthsLeft} left
+                {monthsLeft === 1 && c.status === "active" && (
+                  <span className={styles.expiryUrgent}> · Expires next tick!</span>
+                )}
               </span>
             </div>
 
-            {/* Cancel */}
             {canCancel && !isConfirming && (
               <button className={styles.cancelBtn} onClick={() => setConfirming(c.id)}>
                 CANCEL CONTRACT

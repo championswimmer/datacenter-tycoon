@@ -68,8 +68,10 @@ function makeContract(id: string, datacenter: Datacenter, overrides: Partial<Con
 		penaltyPerMonth: 8_000,
 		termMonths: 6,
 		status: "active",
+		urgency: "standard",
+		tier: 1,
 		offeredAtTick: tickValue(0),
-		expiresAtTick: tickValue(3),
+		expiresAtTick: tickValue(6),
 		startedAtTick: tickValue(0),
 		assignedDcId: datacenter.id,
 		...overrides,
@@ -166,4 +168,26 @@ test("tick is deterministic across multiple months for the same seed and startin
 	assert.deepEqual(firstRun, secondRun);
 	assert.equal(firstRun.tick, 6);
 	assert.equal(firstRun.contractMarket.length, MARKET_REFRESH_SIZE);
+});
+
+test("tick auto-cancels a previously breached contract after one penalty tick", () => {
+	const weakDatacenter = makeDatacenter("dc-1", [placement("rack-1", "C1", 0, 0)]);
+	const breachedContract = makeContract("contract-1", weakDatacenter, {
+		status: "breached",
+		requirements: { vCpu: 500, ramGb: 5_000, storageTb: 500, gpuFlops: 500 },
+		penaltyPerMonth: 6_000,
+		termMonths: 10,
+		startedAtTick: tickValue(0),
+	});
+	const state = makeState({
+		tick: tickValue(1),
+		datacenters: [weakDatacenter],
+		activeContracts: [breachedContract],
+	});
+	const opex = tickOpex(weakDatacenter).total;
+
+	const nextState = tick(state);
+
+	assert.equal(nextState.activeContracts[0]?.status, "cancelled");
+	assert.equal(nextState.player.cash, state.player.cash - opex - breachedContract.penaltyPerMonth);
 });

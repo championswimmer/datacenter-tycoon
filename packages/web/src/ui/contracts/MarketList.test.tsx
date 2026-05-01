@@ -5,6 +5,7 @@ import {
   reduce,
   DATACENTER_CATALOG,
   RACK_CATALOG,
+  MARKET_REFRESH_SIZE,
 } from "@datacenter-tycoon/game-logic";
 import type { Contract, GameState } from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "../../store/gameStore.js";
@@ -37,8 +38,10 @@ function buildMarketState(): GameState {
     penaltyPerMonth: 4000,
     termMonths: 3,
     status: "offered",
+    urgency: "standard",
+    tier: 1,
     offeredAtTick: state.tick,
-    expiresAtTick: (state.tick + 1) as Contract["expiresAtTick"],
+    expiresAtTick: (state.tick + 6) as Contract["expiresAtTick"],
   };
 
   return {
@@ -52,7 +55,7 @@ function renderMarket(state = buildMarketState()) {
   const store = createGameStore(state);
   render(
     <StoreProvider store={store}>
-      <MarketList />
+      <MarketList contracts={store.getState().contractMarket} />
     </StoreProvider>,
   );
   return store;
@@ -75,7 +78,7 @@ describe("MarketList", () => {
     expect(screen.getByText("CONFIRM ACCEPT")).toBeTruthy();
     fireEvent.click(screen.getByText("CONFIRM ACCEPT"));
 
-    expect(store.getState().contractMarket).toHaveLength(0);
+    expect(store.getState().contractMarket).toHaveLength(MARKET_REFRESH_SIZE);
     expect(store.getState().activeContracts).toHaveLength(1);
     expect(store.getState().activeContracts[0]?.name).toBe("Burst Compute");
   });

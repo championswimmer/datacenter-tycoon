@@ -16,6 +16,8 @@ export type RackKind = "compute" | "memory" | "storage" | "gpu";
 export type RackTier = 1 | 2 | 3;
 export type CoolingType = "air" | "liquid";
 export type ContractStatus = "offered" | "active" | "breached" | "completed" | "cancelled";
+export type ContractUrgency = "standard" | "rush" | "anchor";
+export type ContractTier = 1 | 2 | 3;
 export type LedgerEntryType = "capex" | "opex" | "revenue" | "penalty" | "adjustment";
 
 export interface Capacity {
@@ -92,6 +94,8 @@ export interface Contract {
 	penaltyPerMonth: Money;
 	termMonths: number;
 	status: ContractStatus;
+	urgency: ContractUrgency;
+	tier: ContractTier;
 	offeredAtTick: Tick;
 	expiresAtTick: Tick;
 	startedAtTick?: Tick;

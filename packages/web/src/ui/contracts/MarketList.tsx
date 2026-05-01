@@ -2,9 +2,9 @@ import { useState, useCallback } from "react";
 import type { Capacity, Contract, Datacenter } from "@datacenter-tycoon/game-logic";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import {
-  selectMarket, selectAllDatacenters, selectActiveContracts, selectTick,
+  selectAllDatacenters, selectActiveContracts, selectTick,
 } from "../../store/selectors.js";
-import { canFulfill, dcFreeCapacity } from "./contractUtils.js";
+import { canFulfill, dcFreeCapacity, contractDealScore } from "./contractUtils.js";
 import styles from "./MarketList.module.css";
 
 function fmt(n: number): string {
@@ -13,7 +13,6 @@ function fmt(n: number): string {
   return `$${n.toLocaleString()}`;
 }
 
-/** Tri-state fit indicator for a market contract against all DCs. */
 function fitStatus(
   contract: Contract,
   datacenters: Datacenter[],
@@ -32,13 +31,29 @@ function fitStatus(
     if (canFulfill(free, reqs)) anyFits = true;
   }
 
-  if (anyFits)                   return "fits";
+  if (anyFits)                     return "fits";
   if (canFulfill(totalFree, reqs)) return "partial";
   return "none";
 }
 
 const FIT_ICON:  Record<string, string> = { fits: "✅", partial: "⚠", none: "❌" };
 const FIT_LABEL: Record<string, string> = { fits: "DC available", partial: "No single DC fits", none: "Insufficient capacity" };
+
+const CATEGORY_MAP: Record<string, { abbr: string; color: string }> = {
+  "AI Model Training Job":          { abbr: "AI", color: "purple" },
+  "Realtime Analytics Cluster":     { abbr: "AN", color: "cyan"   },
+  "Edge Compute Burst":             { abbr: "EC", color: "lime"   },
+  "Small Data Storage Startup":     { abbr: "ST", color: "blue"   },
+  "Rendering Farm":                 { abbr: "RF", color: "amber"  },
+  "In-Memory Database Migration":   { abbr: "DB", color: "pink"   },
+};
+
+function dealScoreLabel(score: number): string {
+  if (score >= 1.4) return "★ Great";
+  if (score >= 1.2) return "★ Good";
+  if (score >= 1.0) return "Fair";
+  return "Low";
+}
 
 function sumFreeCapacity(datacenters: Datacenter[], activeContracts: Contract[]): Capacity {
   return datacenters.reduce<Capacity>((acc, dc) => {
@@ -52,8 +67,7 @@ function sumFreeCapacity(datacenters: Datacenter[], activeContracts: Contract[])
   }, { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 });
 }
 
-export function MarketList() {
-  const market          = useSelector(selectMarket);
+export function MarketList({ contracts }: { contracts: Contract[] }) {
   const datacenters     = useSelector(selectAllDatacenters);
   const activeContracts = useSelector(selectActiveContracts);
   const tick            = useSelector(selectTick);
@@ -72,22 +86,29 @@ export function MarketList() {
     setPendingAssignment(null);
   }, [dispatch]);
 
-  if (market.length === 0) {
-    return <p className={styles.empty}>No contracts available — check back after next tick.</p>;
+  if (contracts.length === 0) {
+    return <p className={styles.empty}>No contracts match the current filter.</p>;
   }
 
   return (
     <div className={styles.list}>
-      {market.map(c => {
+      {contracts.map(c => {
         const fit = fitStatus(c, datacenters, activeContracts);
         const ticksLeft = c.expiresAtTick - tick;
         const isAccepting = accepting === c.id;
         const networkFree = sumFreeCapacity(datacenters, activeContracts);
         const isConfirming = pendingAssignment?.contractId === c.id;
+        const score = contractDealScore(c);
+        const cat = CATEGORY_MAP[c.name];
         return (
           <div key={c.id} className={[styles.card, styles[`fit-${fit}`]].join(" ")}>
             <div className={styles.cardTop}>
               <div className={styles.cardLeft}>
+                {cat && (
+                  <span className={[styles.categoryBadge, styles[`cat-${cat.color}`]].join(" ")}>
+                    {cat.abbr}
+                  </span>
+                )}
                 <span className={styles.fitBadge} title={FIT_LABEL[fit]}>{FIT_ICON[fit]}</span>
                 <div>
                   <div className={styles.name}>{c.name}</div>
@@ -97,11 +118,24 @@ export function MarketList() {
                     <span className={ticksLeft <= 1 ? styles.expiring : styles.expiry}>
                       {ticksLeft <= 0 ? "EXPIRED" : `${ticksLeft} tick${ticksLeft > 1 ? "s" : ""} left`}
                     </span>
+                    {c.urgency === "rush" && (
+                      <>
+                        <span className={styles.dot}>·</span>
+                        <span className={styles.rushBadge}>RUSH</span>
+                      </>
+                    )}
+                    {c.urgency === "anchor" && (
+                      <>
+                        <span className={styles.dot}>·</span>
+                        <span className={styles.anchorBadge}>ANCHOR</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
               <div className={styles.financials}>
                 <div className={styles.payment}>{fmt(c.monthlyPayment)}<span className={styles.unit}>/mo</span></div>
+                <div className={styles.dealScore}>{dealScoreLabel(score)}</div>
                 <div className={styles.penalty}>−{fmt(c.penaltyPerMonth)}<span className={styles.unit}>/mo breach</span></div>
               </div>
             </div>
@@ -109,7 +143,6 @@ export function MarketList() {
             <RequirementsRow reqs={c.requirements} />
             <CapacityComparison reqs={c.requirements} free={networkFree} />
 
-            {/* Accept / DC selector */}
             {!isAccepting && !isConfirming ? (
               <button
                 className={styles.acceptBtn}

@@ -1,9 +1,8 @@
-import { datacenterCapacity } from "@datacenter-tycoon/game-logic";
+import { datacenterCapacity, PRICING_WEIGHTS } from "@datacenter-tycoon/game-logic";
 import type { Capacity, Contract, Datacenter } from "@datacenter-tycoon/game-logic";
 
 const ZERO: Capacity = { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 };
 
-/** Free capacity for a single DC (total - demand from active/breached contracts). */
 export function dcFreeCapacity(dc: Datacenter, activeContracts: Contract[]): Capacity {
   const total = datacenterCapacity(dc);
   const demand = activeContracts
@@ -22,10 +21,20 @@ export function dcFreeCapacity(dc: Datacenter, activeContracts: Contract[]): Cap
   };
 }
 
-/** True if `free` capacity satisfies `req`. */
 export function canFulfill(free: Capacity, req: Contract["requirements"]): boolean {
   return free.vCpu      >= req.vCpu      &&
          free.ramGb     >= req.ramGb     &&
          free.storageTb >= req.storageTb &&
          free.gpuFlops  >= req.gpuFlops;
+}
+
+export function contractDealScore(contract: Contract): number {
+  const r = contract.requirements;
+  const weightedSum =
+    r.vCpu      * PRICING_WEIGHTS.vCpu +
+    r.ramGb     * PRICING_WEIGHTS.ramGb +
+    r.storageTb * PRICING_WEIGHTS.storageTb +
+    r.gpuFlops  * PRICING_WEIGHTS.gpuFlops;
+  if (weightedSum === 0) return 0;
+  return contract.monthlyPayment / weightedSum;
 }

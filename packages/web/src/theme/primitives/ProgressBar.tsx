@@ -15,6 +15,8 @@ export interface ProgressBarProps {
   height?: number;
   /** Accessible label */
   label?: string;
+  /** Pulse animation for urgency */
+  pulse?: boolean;
 }
 
 function resolveColor(color: ProgressBarProps["color"], pct: number): string {
@@ -32,6 +34,7 @@ export function ProgressBar({
   showLabel = false,
   height = 8,
   label,
+  pulse = false,
 }: ProgressBarProps) {
   const pct = Math.min(Math.max(value / max, 0), 1);
   const filled = Math.round(pct * segments);
@@ -46,7 +49,7 @@ export function ProgressBar({
       aria-valuemax={max}
       aria-label={label}
     >
-      <span className={styles.track} style={{ height }}>
+      <span className={[styles.track, pulse ? styles.pulse : ""].join(" ")} style={{ height }}>
         {Array.from({ length: segments }, (_, i) => (
           <span
             key={i}

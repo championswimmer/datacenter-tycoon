@@ -3,11 +3,14 @@ import { rngFromState } from "../sim/rng.js";
 import type { ContractId, DatacenterId, GameState } from "../types.js";
 import { generateContract } from "./generator.js";
 
-const OFFER_DURATION_TICKS = 3;
+import { OFFER_DURATION_TICKS } from "./generator.js";
 
-function marketDifficulty(currentTick: number, roll: number): number {
+export function marketDifficulty(currentTick: number, roll: number): number {
 	const baseline = 0.15 + Math.min(0.65, currentTick * 0.015);
-	return Math.max(0.05, Math.min(1, baseline + roll * 0.35 - 0.1));
+	if (currentTick <= 5) {
+		return Math.max(0.05, Math.min(0.25, baseline + roll * 0.15));
+	}
+	return Math.max(0.05, Math.min(0.85, baseline + roll * 0.35 - 0.1));
 }
 
 export function refreshContractMarket(state: GameState): GameState {
@@ -23,7 +26,7 @@ export function refreshContractMarket(state: GameState): GameState {
 		refreshedOffers.push({
 			...generatedContract,
 			offeredAtTick: state.tick,
-			expiresAtTick: state.tick + OFFER_DURATION_TICKS,
+			expiresAtTick: state.tick + generatedContract.expiresAtTick,
 			status: "offered",
 		});
 	}
@@ -55,9 +58,25 @@ export function acceptContract(
 		throw new Error(`Unknown market contract: ${contractId}`);
 	}
 
+	const remainingMarket = state.contractMarket.filter((contract) => contract.id !== contractId);
+
+	const rng = rngFromState(state.rngState);
+	const backfilledMarket = [...remainingMarket];
+	while (backfilledMarket.length < MARKET_REFRESH_SIZE) {
+		const difficulty = marketDifficulty(state.tick, rng.next());
+		const generatedContract = generateContract(rng, difficulty);
+		backfilledMarket.push({
+			...generatedContract,
+			offeredAtTick: state.tick,
+			expiresAtTick: state.tick + generatedContract.expiresAtTick,
+			status: "offered",
+		});
+	}
+
 	return {
 		...state,
-		contractMarket: state.contractMarket.filter((contract) => contract.id !== contractId),
+		contractMarket: backfilledMarket,
+		rngState: rng.state(),
 		activeContracts: [
 			...state.activeContracts,
 			{

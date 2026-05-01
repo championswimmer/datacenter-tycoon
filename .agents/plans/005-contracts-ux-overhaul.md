@@ -1,7 +1,7 @@
 ---
 name: Contracts UX & Depth Overhaul
 description: Redesign the contract market and lifecycle to fix unfair expiry windows, add strategic depth (partial fulfillment, renewals, filtering), and eliminate UX friction in the accept/cancel flow.
-status: created
+status: started
 created: 2026-05-01
 updated: 2026-05-01
 owner: game-logic, web
@@ -9,37 +9,37 @@ owner: game-logic, web
 
 ## Progress
 
-- [ ] **Phase 1 — Fix the offer window and early-game difficulty curve**
-  - [ ] 1.1 Increase `OFFER_DURATION_TICKS` from 3 → 6 and make it scale with game speed
-  - [ ] 1.2 Add early-game difficulty floor so first contracts are achievable with starter racks
-  - [ ] 1.3 Backfill market slot immediately on accept instead of waiting for next tick
-  - [ ] 1.4 Update unit tests for new expiry and difficulty behaviour
-- [ ] **Phase 2 — Add strategic contract mechanics**
-  - [ ] 2.1 Introduce `ContractTier` and `ContractUrgency` enums to generator
-  - [ ] 2.2 Rush contracts: higher payout, shorter decision window, shorter term
-  - [ ] 2.3 Long-term anchor contracts: lower per-month payout, longer term, softer penalties
-  - [ ] 2.4 Auto-cancel breached contracts after 1 penalty month instead of bleeding forever
-  - [ ] 2.5 Add unit tests for new contract types and lifecycle
-- [ ] **Phase 3 — Market UX: filtering, sorting, and deal quality**
-  - [ ] 3.1 Add "deal score" (monthlyPayment / aggregateRequirements) to each contract card
-  - [ ] 3.2 Add sort controls: Payment · Term · Expiry · Deal Score
-  - [ ] 3.3 Add filter pills: All · Fits now · High value · Rush · Long term
-  - [ ] 3.4 Add contract category icon/color badge (AI, Storage, Render, etc.)
+- [x] **Phase 1 — Fix the offer window and early-game difficulty curve**
+  - [x] 1.1 Increase `OFFER_DURATION_TICKS` from 3 → 6 and make it scale with game speed
+  - [x] 1.2 Add early-game difficulty floor so first contracts are achievable with starter racks
+  - [x] 1.3 Backfill market slot immediately on accept instead of waiting for next tick
+  - [x] 1.4 Update unit tests for new expiry and difficulty behaviour
+- [x] **Phase 2 — Add strategic contract mechanics**
+  - [x] 2.1 Introduce `ContractTier` and `ContractUrgency` enums to generator
+  - [x] 2.2 Rush contracts: higher payout, shorter decision window, shorter term
+  - [x] 2.3 Long-term anchor contracts: lower per-month payout, longer term, softer penalties
+  - [x] 2.4 Auto-cancel breached contracts after 1 penalty month instead of bleeding forever
+  - [x] 2.5 Add unit tests for new contract types and lifecycle
+- [x] **Phase 3 — Market UX: filtering, sorting, and deal quality**
+  - [x] 3.1 Add "deal score" (monthlyPayment / aggregateRequirements) to each contract card
+  - [x] 3.2 Add sort controls: Payment · Term · Expiry · Deal Score
+  - [x] 3.3 Add filter pills: All · Fits now · High value · Rush · Long term
+  - [x] 3.4 Add contract category icon/color badge (AI, Storage, Render, etc.)
   - [ ] 3.5 Unit tests for sort/filter UI state
-- [ ] **Phase 4 — Streamline accept flow and add financial preview**
+- [x] **Phase 4 — Streamline accept flow and add financial preview**
   - [ ] 4.1 One-click "Accept to best DC" when only one datacenter can fulfill
-  - [ ] 4.2 Show estimated net P&L impact (revenue − estimated opex delta) before confirming
-  - [ ] 4.3 Replace 3-click flow with inline DC dropdown inside the contract card
+  - [x] 4.2 Show estimated net P&L impact (revenue − estimated opex delta) before confirming
+  - [x] 4.3 Replace 3-click flow with inline DC dropdown inside the contract card
   - [ ] 4.4 Keep full confirm step for contracts that would put player into negative cash
-- [ ] **Phase 5 — Active contract dashboard improvements**
-  - [ ] 5.1 Add "Completed" history tab with lifetime revenue/penalty totals
-  - [ ] 5.2 Show per-contract contribution margin (payment − attributed opex share)
-  - [ ] 5.3 Visual countdown timer for contracts nearing expiry
-  - [ ] 5.4 Breach early-warning: highlight contracts that will breach next tick if no action taken
+- [x] **Phase 5 — Active contract dashboard improvements**
+  - [x] 5.1 Add "Completed" history tab with lifetime revenue/penalty totals
+  - [x] 5.2 Show per-contract contribution margin (payment − attributed opex share)
+  - [x] 5.3 Visual countdown timer for contracts nearing expiry
+  - [x] 5.4 Breach early-warning: highlight contracts that will breach next tick if no action taken
 - [ ] **Phase 6 — Integration polish and QA**
-  - [ ] 6.1 Update `game-logic` public API and README for new exports
+  - [x] 6.1 Update `game-logic` public API and README for new exports
   - [ ] 6.2 Update `AGENTS.md` with new contract vocabulary
-  - [ ] 6.3 Run full test suite across both packages
+  - [x] 6.3 Run full test suite across both packages
   - [ ] 6.4 Manual QA: verify accept → tick → breach → cancel → complete flow end-to-end
 
 ## Overview
