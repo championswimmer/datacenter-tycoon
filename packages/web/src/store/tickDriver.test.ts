@@ -46,13 +46,13 @@ describe("startTickDriver", () => {
 
     let now = T0;
     for (let i = 0; i < 5; i++) {
-      now += 1000;
+      now += 10000;
       flush(now);
     }
     expect(dispatch).not.toHaveBeenCalled();
   });
 
-  it("dispatches ~1 tick per 1000 ms at speed 1", () => {
+  it("dispatches ~1 tick per 10000 ms at speed 1", () => {
     const { raf, caf, flush } = createFakeRaf();
     startTickDriver(dispatch as (a: Action) => void, () => speed, raf, caf, T0);
 
@@ -65,7 +65,7 @@ describe("startTickDriver", () => {
     expect(dispatch).toHaveBeenCalledWith({ type: "Tick" });
   });
 
-  it("dispatches ~2 ticks per 1000 ms at speed 2", () => {
+  it("dispatches ~1 tick per 5000 ms at speed 2", () => {
     const { raf, caf, flush } = createFakeRaf();
     speed = 2;
     startTickDriver(dispatch as (a: Action) => void, () => speed, raf, caf, T0);
@@ -80,11 +80,11 @@ describe("startTickDriver", () => {
 
   it("dispatches multiple ticks per frame when frames are slow", () => {
     const { raf, caf, flush } = createFakeRaf();
-    speed = 3; // 1 tick / 250 ms
+    speed = 3; // 1 tick / 2500 ms
     startTickDriver(dispatch as (a: Action) => void, () => speed, raf, caf, T0);
 
-    // One big frame of 1000 ms → 4 ticks (1000 / 250)
-    flush(T0 + 1000);
+    // One big frame of 10000 ms → 4 ticks (10000 / 2500)
+    flush(T0 + 10000);
     expect(dispatch).toHaveBeenCalledTimes(4);
   });
 
@@ -93,14 +93,14 @@ describe("startTickDriver", () => {
     speed = 1;
     startTickDriver(dispatch as (a: Action) => void, () => speed, raf, caf, T0);
 
-    // Pause while 3000 ms elapse — no ticks should fire
+    // Pause while 30000 ms elapse — no ticks should fire
     speed = 0;
-    flush(T0 + 3000);
+    flush(T0 + 30000);
     expect(dispatch).not.toHaveBeenCalled();
 
-    // Resume — should fire exactly 1 tick (1000 ms elapsed since pause frame)
+    // Resume — should fire exactly 1 tick (10000 ms elapsed since pause frame)
     speed = 1;
-    flush(T0 + 4000);
+    flush(T0 + 40000);
     expect(dispatch).toHaveBeenCalledTimes(1);
   });
 
@@ -109,18 +109,18 @@ describe("startTickDriver", () => {
     const stop = startTickDriver(dispatch as (a: Action) => void, () => speed, raf, caf, T0);
     stop();
 
-    flush(T0 + 5000);
+    flush(T0 + 50000);
     expect(dispatch).not.toHaveBeenCalled();
     expect(caf).toHaveBeenCalledOnce();
   });
 
   it("caps catchup ticks to MAX_TICKS_PER_FRAME (8) on a very long frame", () => {
     const { raf, caf, flush } = createFakeRaf();
-    speed = 3; // 250 ms / tick
+    speed = 3; // 2500 ms / tick
     startTickDriver(dispatch as (a: Action) => void, () => speed, raf, caf, T0);
 
-    // 30 seconds gap → theoretically 120 ticks; should be capped at 8
-    flush(T0 + 30_000);
+    // 300 seconds gap → theoretically 120 ticks; should be capped at 8
+    flush(T0 + 300_000);
     expect(dispatch).toHaveBeenCalledTimes(8);
   });
 });
