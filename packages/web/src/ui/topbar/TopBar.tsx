@@ -33,11 +33,12 @@ function formatMoney(n: number, showSign = false): string {
 interface TopBarProps {
   speed: Speed;
   onSpeedChange: Dispatch<SetStateAction<Speed>>;
+  onOpenTutorial?: () => void;
 }
 
 const SPEED_LABELS: Record<Speed, string> = { 0: "⏸", 1: "▶", 2: "▶▶", 3: "▶▶▶" };
 
-export function TopBar({ speed, onSpeedChange }: TopBarProps) {
+export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
   const playerName      = useSelector(selectPlayerName);
   const cash            = useSelector(selectCash);
   const tick            = useSelector(selectTick);
@@ -116,7 +117,7 @@ export function TopBar({ speed, onSpeedChange }: TopBarProps) {
         </div>
       </div>
 
-      {/* ── Right: alerts + speed ── */}
+      {/* ── Right: alerts + help + speed ── */}
       <div className={styles.right}>
         {banner && (
           <button
@@ -128,6 +129,17 @@ export function TopBar({ speed, onSpeedChange }: TopBarProps) {
             onClick={() => navigate({ view: "contracts" })}
           >
             {banner.label}
+          </button>
+        )}
+
+        {onOpenTutorial && (
+          <button
+            className={styles.helpBtn}
+            onClick={onOpenTutorial}
+            title="How to Play"
+            aria-label="How to Play"
+          >
+            ?
           </button>
         )}
 

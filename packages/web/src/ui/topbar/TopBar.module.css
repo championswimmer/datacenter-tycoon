@@ -138,6 +138,29 @@
   50%       { box-shadow: var(--glow-red); }
 }
 
+.helpBtn {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--fg-2);
+  background: transparent;
+  border: 1px solid var(--grid);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color var(--duration-fast), border-color var(--duration-fast), box-shadow var(--duration-fast);
+}
+
+.helpBtn:hover {
+  color: var(--neon-cyan);
+  border-color: var(--neon-cyan);
+  box-shadow: var(--glow-sm-cyan);
+}
+
 .speeds {
   display: flex;
   gap: 2px;

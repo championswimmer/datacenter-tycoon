@@ -3,6 +3,7 @@ import { useSelector, useTickDriver } from "../../store/storeContext.js";
 import { selectAllDatacenters } from "../../store/selectors.js";
 import { useRoute, navigateToDc } from "../../router/hashRouter.js";
 import type { Speed } from "../../store/tickDriver.js";
+import { hasSeenTutorial } from "../../store/tutorialPersist.js";
 import { TopBar } from "../topbar/TopBar.js";
 import { DatacenterList } from "../left-rail/DatacenterList.js";
 import { DatacenterView } from "../dc-view/DatacenterView.js";
@@ -10,11 +11,17 @@ import { EmptyState } from "../dc-view/EmptyState.js";
 import { LogFeed } from "../log/LogFeed.js";
 import { NewDatacenterModal } from "../onboarding/NewDatacenterModal.js";
 import { ContractsPage } from "../contracts/ContractsPage.js";
+import { TutorialModal } from "../help/TutorialModal.js";
 import styles from "./Shell.module.css";
 
-export function Shell() {
+interface ShellProps {
+  isFreshStart?: boolean;
+}
+
+export function Shell({ isFreshStart = false }: ShellProps) {
   const [speed, setSpeed]               = useState<Speed>(1);
   const [showNewDcModal, setShowNewDcModal] = useState(false);
+  const [showTutorial, setShowTutorial]   = useState(false);
 
   const getSpeed = useCallback(() => speed, [speed]);
   useTickDriver(getSpeed);
@@ -29,12 +36,21 @@ export function Shell() {
     }
   }, [route.view, datacenters]);
 
+  // Auto-open tutorial on first fresh game launch
+  useEffect(() => {
+    if (isFreshStart && !hasSeenTutorial()) {
+      setShowTutorial(true);
+    }
+  }, [isFreshStart]);
+
   const openNewDcModal  = useCallback(() => setShowNewDcModal(true),  []);
   const closeNewDcModal = useCallback(() => setShowNewDcModal(false), []);
+  const openTutorial    = useCallback(() => setShowTutorial(true),   []);
+  const closeTutorial   = useCallback(() => setShowTutorial(false),  []);
 
   return (
     <div className={styles.shell}>
-      <TopBar speed={speed} onSpeedChange={setSpeed} />
+      <TopBar speed={speed} onSpeedChange={setSpeed} onOpenTutorial={openTutorial} />
 
       <div className={styles.body}>
         {/* ── Left rail ── */}
@@ -63,6 +79,9 @@ export function Shell() {
       {/* ── Modals (rendered above the grid so they overlay everything) ── */}
       {showNewDcModal && (
         <NewDatacenterModal onClose={closeNewDcModal} />
+      )}
+      {showTutorial && (
+        <TutorialModal onClose={closeTutorial} />
       )}
     </div>
   );

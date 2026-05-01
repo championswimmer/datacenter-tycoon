@@ -9,7 +9,7 @@ const ThemePlayground = lazy(
 );
 
 // Bootstrap once — outside the component to survive HMR re-renders.
-const { store } = bootstrapStore();
+const { store, isFreshStart } = bootstrapStore();
 
 export default function App() {
   // Dev-only route — bypass shell entirely
@@ -23,7 +23,7 @@ export default function App() {
 
   return (
     <StoreProvider store={store}>
-      <Shell />
+      <Shell isFreshStart={isFreshStart} />
     </StoreProvider>
   );
 }

@@ -88,12 +88,14 @@ export function attachAutosave(
 export function bootstrapStore(key = SAVE_KEY): {
   store: GameStore;
   stopAutosave: () => void;
+  isFreshStart: boolean;
 } {
   const saved = loadSave(key);
+  const isFreshStart = saved === null;
   const initial = saved ?? newGame(Math.floor(Math.random() * 2 ** 31));
 
   const store = createGameStore(initial);
   const stopAutosave = attachAutosave(store, key);
 
-  return { store, stopAutosave };
+  return { store, stopAutosave, isFreshStart };
 }
