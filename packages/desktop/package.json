@@ -8,7 +8,7 @@
     "build": "echo 'desktop not yet implemented' && exit 0",
     "dev": "echo 'desktop not yet implemented' && exit 0",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --import tsx 'src/**/*.test.ts'",
+    "test": "node --test --import tsx src",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
