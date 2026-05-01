@@ -59,6 +59,7 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
   const cashLow = cash < 100_000;
 
   const [showResetModal, setShowResetModal] = useState(false);
+  const openContracts = () => navigate({ view: "contracts" });
 
   const banner = breachedCount > 0
     ? { tone: "danger", label: `⚠ ${breachedCount} contract breach${breachedCount > 1 ? "es" : ""}` }
@@ -126,6 +127,15 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
 
       {/* ── Right: alerts + help + speed ── */}
       <div className={styles.right}>
+        <button
+          className={styles.contractsBtn}
+          title="Open contracts market"
+          aria-label="Open contracts market"
+          onClick={openContracts}
+        >
+          CONTRACTS
+        </button>
+
         {banner && (
           <button
             className={[
@@ -133,7 +143,7 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
               banner.tone === "danger" ? styles.alertDanger : banner.tone === "warn" ? styles.alertWarn : styles.alertInfo,
             ].join(" ")}
             title="Open contracts"
-            onClick={() => navigate({ view: "contracts" })}
+            onClick={openContracts}
           >
             {banner.label}
           </button>
