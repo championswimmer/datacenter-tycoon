@@ -1,8 +1,21 @@
 let ctx: AudioContext | null = null;
 
+function getAudioContextCtor():
+  | (new () => AudioContext)
+  | null {
+  const maybeCtor = window.AudioContext
+    ?? (window as typeof window & { webkitAudioContext?: new () => AudioContext }).webkitAudioContext;
+  return typeof maybeCtor === "function" ? maybeCtor : null;
+}
+
 function initContext() {
+  const AudioContextCtor = getAudioContextCtor();
+  if (!AudioContextCtor) {
+    return null;
+  }
+
   if (!ctx) {
-    ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    ctx = new AudioContextCtor();
   }
   if (ctx.state === "suspended") {
     ctx.resume();
@@ -17,6 +30,10 @@ export function playSound(type: SoundType, isMuted: boolean = false) {
 
   try {
     const context = initContext();
+    if (!context) {
+      return;
+    }
+
     const osc = context.createOscillator();
     const gain = context.createGain();
 
@@ -63,7 +80,7 @@ export function playSound(type: SoundType, isMuted: boolean = false) {
       osc.stop(now + 0.1);
     }
   } catch (err) {
-    // Silently fail if audio API is unsupported or blocked
+    // Fail softly if audio API is blocked by browser policy/runtime.
     console.warn("AudioContext playback failed", err);
   }
 }
