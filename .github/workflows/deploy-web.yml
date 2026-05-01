@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig*'
+      - '.github/workflows/deploy-web.yml'
+      # Exclude: docs, README, .agents, *.md
 
 permissions:
   contents: write
