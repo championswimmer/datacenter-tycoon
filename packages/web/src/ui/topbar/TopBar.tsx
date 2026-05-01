@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useSelector } from "../../store/storeContext.js";
 import {
@@ -11,6 +12,7 @@ import {
 import { LedSegment } from "../../theme/primitives/index.js";
 import { navigate } from "../../router/hashRouter.js";
 import type { Speed } from "../../store/tickDriver.js";
+import { ResetGameModal } from "./ResetGameModal.js";
 import styles from "./TopBar.module.css";
 
 const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN",
@@ -52,6 +54,8 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
     c => c.startedAtTick !== undefined && c.startedAtTick + c.termMonths - tick <= 1,
   ).length;
   const cashLow = cash < 100_000;
+
+  const [showResetModal, setShowResetModal] = useState(false);
 
   const banner = breachedCount > 0
     ? { tone: "danger", label: `⚠ ${breachedCount} contract breach${breachedCount > 1 ? "es" : ""}` }
@@ -132,6 +136,15 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
           </button>
         )}
 
+        <button
+          className={styles.helpBtn}
+          onClick={() => setShowResetModal(true)}
+          title="Reset Game"
+          aria-label="Reset Game"
+        >
+          ⟲
+        </button>
+
         {onOpenTutorial && (
           <button
             className={styles.helpBtn}
@@ -163,6 +176,10 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
           ))}
         </div>
       </div>
+
+      {showResetModal && (
+        <ResetGameModal onClose={() => setShowResetModal(false)} />
+      )}
     </header>
   );
 }
