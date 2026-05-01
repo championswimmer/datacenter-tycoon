@@ -7,6 +7,8 @@ import {
 } from "../../store/selectors.js";
 import { ProgressBar } from "../../theme/primitives/index.js";
 import { dcFreeCapacity, canFulfill } from "./contractUtils.js";
+import { useTickFraction } from "../../store/tickFractionStore.js";
+import { monthsAndDaysBetween, formatRemaining } from "../../store/gameTime.js";
 import styles from "./ActiveList.module.css";
 
 function fmt(n: number): string {
@@ -28,6 +30,7 @@ export function ActiveList() {
   const datacenters = useSelector(selectAllDatacenters);
   const tick        = useSelector(selectTick);
   const dispatch    = useGameDispatch();
+  const fraction    = useTickFraction();
   const [confirming, setConfirming] = useState<string | null>(null);
 
   const handleCancel = useCallback((contractId: string) => {
@@ -56,6 +59,13 @@ export function ActiveList() {
         const elapsedMonths = Math.max(0, tick - started);
         const progress = Math.min(1, elapsedMonths / Math.max(c.termMonths, 1));
         const monthsLeft = Math.max(0, c.termMonths - elapsedMonths);
+        // Day-level precision for the remaining label using sub-tick fraction
+        const { months: mLeft, days: dLeft } = monthsAndDaysBetween(
+          tick, fraction,
+          started + c.termMonths, 0,
+        );
+        const remainingLabel = formatRemaining(mLeft, dLeft);
+        const isExpiringThisMonth = monthsLeft <= 0 && c.status === "active";
         const isConfirming = confirming === c.id;
         const canCancel = c.status === "active" || c.status === "breached";
 
@@ -111,9 +121,9 @@ export function ActiveList() {
                 pulse={monthsLeft <= 2 && c.status === "active"}
               />
               <span className={styles.progressMeta}>
-                {elapsedMonths}/{c.termMonths} mo · {monthsLeft} left
-                {monthsLeft === 1 && c.status === "active" && (
-                  <span className={styles.expiryUrgent}> · Expires next tick!</span>
+                {elapsedMonths}/{c.termMonths} mo · {remainingLabel}
+                {isExpiringThisMonth && (
+                  <span className={styles.expiryUrgent}> · Expires this month!</span>
                 )}
               </span>
             </div>

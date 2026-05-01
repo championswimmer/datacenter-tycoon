@@ -68,6 +68,12 @@ describe("MarketList", () => {
     expect(screen.getByText("Burst Compute")).toBeTruthy();
   });
 
+  it("shows months-based expiry label (not ticks)", () => {
+    // state.tick = 0, expiresAtTick = 6 → 6 months left
+    renderMarket();
+    expect(screen.getByText("6 months left")).toBeTruthy();
+  });
+
   it("requires datacenter selection and confirmation before accepting", () => {
     const store = renderMarket();
     const dcName = store.getState().datacenters[0]!.name;
