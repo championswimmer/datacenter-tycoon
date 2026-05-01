@@ -16,7 +16,7 @@ owner: cli
   - [x] 1.4 Implement save-path resolver (`src/paths.ts`) using XDG / `%APPDATA%`
 - [ ] **Phase 2 — Daemon (game server) core**
   - [x] 2.1 Implement `GameRuntime` wrapping `GameState` + `reduce` + tick loop
-  - [ ] 2.2 Implement debounced autosave to JSON via `serialize()`
+  - [x] 2.2 Implement debounced autosave to JSON via `serialize()`
   - [ ] 2.3 Implement Unix-domain-socket JSON-RPC transport (`src/daemon/transport.ts`)
   - [ ] 2.4 Implement RPC handlers for all `Action`s + `query`/`subscribe`
   - [ ] 2.5 Implement daemon lifecycle: PID/lock file, graceful shutdown, idle exit
