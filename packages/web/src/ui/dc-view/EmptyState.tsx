@@ -23,7 +23,6 @@ export function EmptyState({ onNewDatacenter }: EmptyStateProps) {
       <button className={styles.cta} onClick={onNewDatacenter}>
         + BUILD FIRST DATACENTER
       </button>
-      <p className={styles.hint}>Phase 5 will open the build modal</p>
     </div>
   );
 }

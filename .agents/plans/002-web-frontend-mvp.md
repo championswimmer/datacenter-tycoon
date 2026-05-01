@@ -25,15 +25,15 @@ owner: web
   - [x] 3.3 Selectors: `selectCash`, `selectDatacenter(id)`, `selectActiveContracts`, `selectMarket`, `selectOpexBreakdown`, `selectCapacity`, `selectFreeCapacity`, `selectMonthlyPnl`, `selectResourceUsage`
   - [x] 3.4 ID factory helpers (`nextDcId`, `nextRackPlacementId`) backed by `crypto.randomUUID`
   - [x] 3.5 Persist save to `localStorage` via `serialize`/`deserialize` from `game-logic/save`; autosave every 5 ticks + on every non-Tick dispatch
-- [x] **Phase 4 — App shell & routing**
+- [x] **Phase 4 - App shell & routing**
   - [x] 4.1 Top bar: company name, cash, monthly P&L, game date, tick speed controls (⏸ ▶ ▶▶ ▶▶▶)
-  - [x] 4.2 Left rail: datacenter list + “New Datacenter” CTA
-  - [x] 4.3 Main viewport: tabbed view per datacenter (Floor / Power / Contracts) — URL state via hash routing (no router dep)
+  - [x] 4.2 Left rail: datacenter list + "New Datacenter" CTA
+  - [x] 4.3 Main viewport: tabbed view per datacenter (Floor / Power / Contracts) - URL state via hash routing (no router dep)
   - [x] 4.4 Right rail: alerts/log feed (last 50 ledger entries, contract events)
-- [ ] **Phase 5 - Datacenter onboarding flow**
-  - [ ] 5.1 "New Datacenter" modal: pick spec from `DATACENTER_CATALOG`, see capex/staff/power preview, confirm
-  - [ ] 5.2 Empty-state for floor view when no datacenter exists
-  - [ ] 5.3 Insufficient-funds disabled state with explanatory tooltip
+- [x] **Phase 5 — Datacenter onboarding flow**
+  - [x] 5.1 "New Datacenter" modal: pick spec from `DATACENTER_CATALOG`, see capex/staff/power preview, confirm
+  - [x] 5.2 Empty-state for floor view when no datacenter exists
+  - [x] 5.3 Insufficient-funds disabled state with explanatory badge
 - [ ] **Phase 6 - Rack floor (the core interaction)**
   - [ ] 6.1 Grid renderer: CSS grid sized to `spec.rows × spec.positionsPerRow`
   - [ ] 6.2 Empty slot component: dashed neon outline, hover glow, click → opens "Buy Rack" picker
