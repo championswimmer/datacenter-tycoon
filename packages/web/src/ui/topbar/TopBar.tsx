@@ -6,8 +6,10 @@ import {
   selectTick,
   selectMonthlyPnl,
   selectActiveContracts,
+  selectMarket,
 } from "../../store/selectors.js";
 import { LedSegment } from "../../theme/primitives/index.js";
+import { navigate } from "../../router/hashRouter.js";
 import type { Speed } from "../../store/tickDriver.js";
 import styles from "./TopBar.module.css";
 
@@ -41,9 +43,22 @@ export function TopBar({ speed, onSpeedChange }: TopBarProps) {
   const tick            = useSelector(selectTick);
   const pnl             = useSelector(selectMonthlyPnl);
   const activeContracts = useSelector(selectActiveContracts);
+  const market          = useSelector(selectMarket);
 
   const breachedCount = activeContracts.filter(c => c.status === "breached").length;
-  const cashLow       = cash < 100_000;
+  const expiringOffers = market.filter(c => c.expiresAtTick - tick <= 1).length;
+  const contractsEndingSoon = activeContracts.filter(
+    c => c.startedAtTick !== undefined && c.startedAtTick + c.termMonths - tick <= 1,
+  ).length;
+  const cashLow = cash < 100_000;
+
+  const banner = breachedCount > 0
+    ? { tone: "danger", label: `⚠ ${breachedCount} contract breach${breachedCount > 1 ? "es" : ""}` }
+    : contractsEndingSoon > 0
+      ? { tone: "warn", label: `${contractsEndingSoon} contract${contractsEndingSoon > 1 ? "s" : ""} ending soon` }
+      : expiringOffers > 0
+        ? { tone: "info", label: `${expiringOffers} market offer${expiringOffers > 1 ? "s" : ""} expiring soon` }
+        : null;
 
   return (
     <header className={styles.bar}>
@@ -103,10 +118,17 @@ export function TopBar({ speed, onSpeedChange }: TopBarProps) {
 
       {/* ── Right: alerts + speed ── */}
       <div className={styles.right}>
-        {breachedCount > 0 && (
-          <span className={styles.alertBadge} title={`${breachedCount} contract(s) breached`}>
-            ⚠ {breachedCount} BREACH{breachedCount > 1 ? "ES" : ""}
-          </span>
+        {banner && (
+          <button
+            className={[
+              styles.alertBadge,
+              banner.tone === "danger" ? styles.alertDanger : banner.tone === "warn" ? styles.alertWarn : styles.alertInfo,
+            ].join(" ")}
+            title="Open contracts"
+            onClick={() => navigate({ view: "contracts" })}
+          >
+            {banner.label}
+          </button>
         )}
 
         <LedSegment

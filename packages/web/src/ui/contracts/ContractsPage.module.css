@@ -1,0 +1,80 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.header {
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--grid);
+  flex-shrink: 0;
+  background: var(--bg-1);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  color: var(--fg-0);
+}
+
+.tabBar {
+  display: flex;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--grid);
+  padding: 0 var(--space-6);
+  flex-shrink: 0;
+  gap: 0;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--fg-2);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: var(--space-3) var(--space-5);
+  cursor: pointer;
+  transition: color var(--duration-fast), border-color var(--duration-fast);
+  text-transform: uppercase;
+  position: relative;
+  top: 1px;
+}
+
+.tab:hover { color: var(--fg-0); }
+
+.tabActive {
+  color: var(--neon-cyan) !important;
+  border-bottom-color: var(--neon-cyan);
+  text-shadow: var(--glow-sm-cyan);
+}
+
+.badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  background: var(--bg-3);
+  color: var(--fg-2);
+  border-radius: 99px;
+  padding: 0 6px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.badgeRed {
+  background: rgba(255,84,112,.2);
+  color: var(--neon-red);
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-5) var(--space-6);
+}

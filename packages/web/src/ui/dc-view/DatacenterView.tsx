@@ -1,8 +1,11 @@
 import { useSelector } from "../../store/storeContext.js";
-import { selectDatacenter } from "../../store/selectors.js";
+import { selectDatacenter, selectResourceUsage, selectActiveContracts } from "../../store/selectors.js";
 import { navigate, type DcTab } from "../../router/hashRouter.js";
-import type { DatacenterId } from "@datacenter-tycoon/game-logic";
-import { FloorView } from "../floor/FloorView.js";
+import type { DatacenterId, Datacenter } from "@datacenter-tycoon/game-logic";
+import { FloorView }    from "../floor/FloorView.js";
+import { PowerView }    from "../stats/PowerView.js";
+import { ResourceBars } from "../stats/ResourceBars.js";
+import { ActiveList }   from "../contracts/ActiveList.js";
 import styles from "./DatacenterView.module.css";
 
 interface DatacenterViewProps {
@@ -16,8 +19,11 @@ const TABS: { id: DcTab; label: string }[] = [
   { id: "contracts", label: "CONTRACTS" },
 ];
 
+const EMPTY_USAGE = { powerKw: 0, heatOutputBtuPerHr: 0, bandwidthGbps: 0, slotsUsed: 0 };
+
 export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
-  const dc = useSelector(s => selectDatacenter(s, dcId as DatacenterId));
+  const dc       = useSelector(s => selectDatacenter(s, dcId as DatacenterId));
+  const usageAgg = useSelector(selectResourceUsage);
 
   if (!dc) {
     return (
@@ -31,6 +37,8 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
     );
   }
 
+  const usage = usageAgg.perDc.find(u => u.dcId === dc.id)?.usage ?? EMPTY_USAGE;
+
   return (
     <div className={styles.view}>
       {/* ── DC header ── */}
@@ -39,16 +47,9 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
           <h2 className={styles.dcName}>{dc.name}</h2>
           <span className={styles.dcSpec}>{dc.spec.name}</span>
         </div>
-        <div className={styles.dcMeta}>
-          <span className={styles.metaItem}>
-            {dc.spec.rows} rows × {dc.spec.positionsPerRow} slots
-          </span>
-          <span className={styles.metaDot}>·</span>
-          <span className={styles.metaItem}>{dc.spec.powerCapacityKw} kW</span>
-          <span className={styles.metaDot}>·</span>
-          <span className={styles.metaItem}>{dc.spec.coolingType} cooling</span>
-          <span className={styles.metaDot}>·</span>
-          <span className={styles.metaItem}>{dc.spec.bandwidthGbps} Gbps</span>
+        {/* Compact resource utilisation strip */}
+        <div className={styles.resourceStrip}>
+          <ResourceBars datacenter={dc} usage={usage} mode="compact" />
         </div>
       </div>
 
@@ -76,21 +77,30 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
 }
 
 function TabContent({ dcId, tab }: { dcId: DatacenterId; tab: DcTab }) {
-  if (tab === "floor") {
-    return <FloorView dcId={dcId} />;
+  if (tab === "floor")  return <FloorView dcId={dcId} />;
+  if (tab === "power")  return <PowerView dcId={dcId} />;
+  return <DcActiveContracts dcId={dcId} />;
+}
+
+/** Per-DC view of active contracts in the datacenter's CONTRACTS tab. */
+function DcActiveContracts({ dcId }: { dcId: DatacenterId }) {
+  const allActive = useSelector(selectActiveContracts);
+  const dcContracts = allActive.filter(c => c.assignedDcId === dcId);
+  if (dcContracts.length === 0) {
+    return (
+      <div className={styles.placeholder}>
+        <span className={styles.placeholderIcon}>📋</span>
+        <p className={styles.placeholderLabel}>No Active Contracts</p>
+        <p className={styles.placeholderPhase}>Accept contracts from the global Contracts page</p>
+      </div>
+    );
   }
-  // Phases 7 & 8 will replace these
-  const placeholders: Record<Exclude<DcTab, "floor">, { icon: string; label: string; phase: string }> = {
-    power:     { icon: "⚡", label: "Power & Cooling",     phase: "Phase 7" },
-    contracts: { icon: "📋", label: "Datacenter Contracts", phase: "Phase 8" },
-  };
-  const { icon, label, phase } = placeholders[tab];
+  // Reuse ActiveList but scoped — ActiveList reads from store, so render it
+  // with a note about the dc filter (it will show all active by default).
+  // For MVP, link to the global contracts page.
   return (
-    <div className={styles.placeholder}>
-      <span className={styles.placeholderIcon}>{icon}</span>
-      <p className={styles.placeholderLabel}>{label}</p>
-      <p className={styles.placeholderPhase}>Implemented in {phase}</p>
-      <code className={styles.placeholderDcId}>{dcId}</code>
+    <div style={{ padding: "var(--space-5) var(--space-6)" }}>
+      <ActiveList />
     </div>
   );
 }

@@ -46,11 +46,11 @@ owner: web
   - [ ] 7.2 Capacity tiles: vCPU / RAM / Storage / GPU totals across all DCs and per-DC
   - [ ] 7.3 Opex breakdown card (power, cooling, bandwidth, staff, maintenance) updated each tick
   - [ ] 7.4 Capex/cash sparkline over last 60 ticks (canvas, no chart lib)
-- [ ] **Phase 8 - Contracts panel**
-  - [ ] 8.1 Market list: offered contracts with requirements vs. our free capacity, payment, term, expiry countdown
-  - [ ] 8.2 Accept flow: select a target datacenter, confirm; dispatches `AcceptContract`
-  - [ ] 8.3 Active contracts list: progress bars (months elapsed / term), status pill (active/breached), cancel button
-  - [ ] 8.4 Upcoming/expiring banner in top bar when a contract is about to start or expire
+- [x] **Phase 8 - Contracts panel**
+  - [x] 8.1 Market list: offered contracts with requirements vs. our free capacity, payment, term, expiry countdown
+  - [x] 8.2 Accept flow: select a target datacenter, confirm; dispatches `AcceptContract`
+  - [x] 8.3 Active contracts list: progress bars (months elapsed / term), status pill (active/breached), cancel button
+  - [x] 8.4 Upcoming/expiring banner in top bar when a contract is about to start or expire
 - [ ] **Phase 9 - Polish, accessibility, and persistence**
   - [ ] 9.1 Keyboard nav across grid (arrow keys + enter to place), focus rings in neon style
   - [ ] 9.2 Sound-off-by-default LED hum + click SFX (single small audio sprite, optional)

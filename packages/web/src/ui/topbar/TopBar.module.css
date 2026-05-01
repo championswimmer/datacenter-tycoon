@@ -110,13 +110,27 @@
 .alertBadge {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
-  color: var(--neon-red);
-  border: 1px solid var(--neon-red);
   border-radius: var(--radius-sm);
   padding: 2px 6px;
   letter-spacing: 0.08em;
   animation: alertPulse 1.5s ease-in-out infinite;
-  cursor: default;
+  background: transparent;
+  cursor: pointer;
+}
+
+.alertDanger {
+  color: var(--neon-red);
+  border: 1px solid var(--neon-red);
+}
+
+.alertWarn {
+  color: var(--neon-amber);
+  border: 1px solid var(--neon-amber);
+}
+
+.alertInfo {
+  color: var(--neon-cyan);
+  border: 1px solid var(--neon-cyan);
 }
 
 @keyframes alertPulse {

@@ -1,0 +1,76 @@
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+}
+
+@media (max-width: 600px) {
+  .tiles { grid-template-columns: repeat(2, 1fr); }
+}
+
+.tile {
+  background: var(--bg-2);
+  border: 1px solid var(--grid);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.tileLabel {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.tileTotal {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  line-height: 1;
+}
+.unit {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-2);
+  font-weight: 400;
+}
+
+.tileBar {
+  height: 3px;
+  background: var(--bg-3);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: var(--space-1) 0;
+}
+
+.tileFill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width var(--duration-slow) var(--ease-out-expo);
+}
+
+.tileSubRow {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.tileFree { color: var(--fg-2); }
+.tileUsed { color: var(--fg-3); }
+
+/* Color variants */
+.color-cyan   .tileTotal { color: var(--neon-cyan);   text-shadow: var(--glow-cyan);    }
+.color-blue   .tileTotal { color: var(--neon-blue);                                      }
+.color-purple .tileTotal { color: var(--neon-purple);                                    }
+.color-amber  .tileTotal { color: var(--neon-amber);  text-shadow: var(--glow-amber);   }
+
+.color-cyan   .tileFill  { background: var(--neon-cyan);   box-shadow: 0 0 4px var(--neon-cyan);   }
+.color-blue   .tileFill  { background: var(--neon-blue);   box-shadow: 0 0 4px var(--neon-blue);   }
+.color-purple .tileFill  { background: var(--neon-purple); box-shadow: 0 0 4px var(--neon-purple); }
+.color-amber  .tileFill  { background: var(--neon-amber);  box-shadow: 0 0 4px var(--neon-amber);  }

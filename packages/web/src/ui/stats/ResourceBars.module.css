@@ -1,0 +1,77 @@
+/* ── Compact (header strip) ───────────────────────────────── */
+
+.compact {
+  display: flex;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.compactItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 100px;
+  flex: 1;
+}
+
+.compactLabel {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--fg-3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Full (power tab) ─────────────────────────────────────── */
+
+.full {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr 9rem 3rem;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.rowLabel {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--fg-2);
+  text-align: right;
+}
+
+.barWrap {
+  /* ProgressBar fills this cell */
+}
+
+.rowNums {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-1);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.numSep {
+  color: var(--fg-3);
+  margin: 0 3px;
+}
+
+.rowPct {
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-align: right;
+}
+
+.pctGreen { color: var(--neon-cyan);  }
+.pctAmber { color: var(--neon-amber); }
+.pctRed   { color: var(--neon-red);   }

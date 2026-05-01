@@ -1,0 +1,168 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.empty {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--fg-3);
+  text-align: center;
+  padding: var(--space-8);
+}
+
+/* ── Card ─────────────────────────────────────────────────── */
+
+.card {
+  background: var(--bg-2);
+  border: 1px solid var(--grid);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border-left: 3px solid var(--grid);
+}
+
+.status-active    { border-left-color: var(--neon-lime);    }
+.status-breached  { border-left-color: var(--neon-red);     }
+.status-completed { border-left-color: var(--neon-cyan);    opacity: 0.7; }
+.status-cancelled { border-left-color: var(--fg-3);         opacity: 0.5; }
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.cardLeft {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+  min-width: 0;
+}
+
+/* Status pill */
+.statusPill {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 2px 6px;
+  border-radius: 2px;
+  width: fit-content;
+}
+
+.pill-active    { background: rgba(155,255,90,.15);  color: var(--neon-lime);   border: 1px solid rgba(155,255,90,.3);  }
+.pill-breached  { background: rgba(255,84,112,.15);  color: var(--neon-red);    border: 1px solid rgba(255,84,112,.3);  }
+.pill-completed { background: rgba(94,240,255,.12);  color: var(--neon-cyan);   border: 1px solid rgba(94,240,255,.25); }
+.pill-cancelled { background: rgba(255,255,255,.05); color: var(--fg-2);        border: 1px solid var(--grid);          }
+.pill-offered   { background: rgba(255,177,60,.12);  color: var(--neon-amber);  border: 1px solid rgba(255,177,60,.3);  }
+
+.name {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--fg-0);
+  text-transform: uppercase;
+}
+
+.dcLabel {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-2);
+}
+
+.financials { text-align: right; flex-shrink: 0; }
+
+.payment {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--neon-lime);
+}
+
+.unit {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-2);
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+/* Progress row */
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.progressMeta {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--fg-3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Cancel */
+.cancelBtn {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--neon-red);
+  background: transparent;
+  border: 1px solid rgba(255,84,112,.35);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: box-shadow var(--duration-fast), background var(--duration-fast);
+}
+.cancelBtn:hover { background: rgba(255,84,112,.08); box-shadow: var(--glow-red); }
+
+/* Confirm row */
+.confirmRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.confirmMsg {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--neon-amber);
+  flex: 1;
+}
+
+.confirmYes {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--neon-red);
+  background: rgba(255,84,112,.1);
+  border: 1px solid var(--neon-red);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.confirmYes:hover { background: rgba(255,84,112,.2); }
+
+.confirmNo {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-2);
+  background: transparent;
+  border: 1px solid var(--grid);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.confirmNo:hover { color: var(--fg-0); }

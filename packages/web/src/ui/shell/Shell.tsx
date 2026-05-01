@@ -9,6 +9,7 @@ import { DatacenterView } from "../dc-view/DatacenterView.js";
 import { EmptyState } from "../dc-view/EmptyState.js";
 import { LogFeed } from "../log/LogFeed.js";
 import { NewDatacenterModal } from "../onboarding/NewDatacenterModal.js";
+import { ContractsPage } from "../contracts/ContractsPage.js";
 import styles from "./Shell.module.css";
 
 export function Shell() {
@@ -81,7 +82,7 @@ function MainContent({ route, datacenters, onNewDatacenter }: MainContentProps) 
       return <DatacenterView dcId={route.dcId} tab={route.tab} />;
 
     case "contracts":
-      return <GlobalPlaceholder icon="📋" title="Contracts Market" phase="Phase 8" />;
+      return <ContractsPage />;
 
     case "log":
       return <GlobalPlaceholder icon="📜" title="Full Event Log" phase="Phase 9" />;
