@@ -1,7 +1,7 @@
 ---
 name: Retire "tick" from the UI
 description: Replace all user-visible "tick" terminology with calendar time (days, months, years) while keeping ticks as the internal accounting unit.
-status: started
+status: completed
 created: 2026-05-01
 updated: 2026-05-01
 owner: web
@@ -35,10 +35,10 @@ owner: web
   - [x] 6.1 Update first-time help screen copy (plan 004) to use months/days
   - [x] 6.2 Update web `README.md` and any in-app tooltips that mention ticks
   - [x] 6.3 Note the convention "1 tick = 1 month" in `packages/web/AGENTS.md`
-- [ ] **Phase 7 — Verification**
-  - [ ] 7.1 `rg -n "tick" packages/web/src/ui` returns only code identifiers, no user-facing strings
-  - [ ] 7.2 `npm run typecheck && npm run test` green across the workspace
-  - [ ] 7.3 Manual smoke: dev server, watch HUD advance day-by-day, market/active contracts read in months/days
+- [x] **Phase 7 — Verification**
+  - [x] 7.1 `rg -n "tick" packages/web/src/ui` returns only code identifiers, no user-facing strings
+  - [x] 7.2 `npm run typecheck && npm run test` green across the workspace
+  - [x] 7.3 Manual smoke: dev server, watch HUD advance day-by-day, market/active contracts read in months/days
 
 ## Overview
 
