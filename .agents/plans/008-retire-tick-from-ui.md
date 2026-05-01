@@ -16,11 +16,11 @@ owner: web
   - [x] 2.1 Extend `tickDriver` to publish a `tickFraction` (0..1) each frame
   - [x] 2.2 Add `selectTickFraction` / store-local fraction signal
   - [x] 2.3 Tests for fraction publishing and pause/reset behaviour
-- [ ] **Phase 3 — TopBar HUD**
-  - [ ] 3.1 Replace `tickToDate` with `formatGameDate` (day · month · year)
-  - [ ] 3.2 Remove the `TICK` HUD slot; show full date only
-  - [ ] 3.3 Update `expiringOffers` / `endingActive` thresholds to month-aware copy
-  - [ ] 3.4 Update TopBar tests + snapshots
+- [x] **Phase 3 — TopBar HUD**
+  - [x] 3.1 Replace `tickToDate` with `formatGameDate` (day · month · year)
+  - [x] 3.2 Remove the `TICK` HUD slot; show full date only
+  - [x] 3.3 Update `expiringOffers` / `endingActive` thresholds to month-aware copy
+  - [x] 3.4 Update TopBar tests + snapshots
 - [ ] **Phase 4 — Contracts UI**
   - [ ] 4.1 MarketList: "X tick(s) left" → "X months Y days left" (or "expires today")
   - [ ] 4.2 ActiveList: replace "Expires next tick!" with month/day phrasing; show term as "X months" and elapsed as "Y months Z days"

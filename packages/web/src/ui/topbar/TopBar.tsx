@@ -15,16 +15,9 @@ import { navigate } from "../../router/hashRouter.js";
 import type { Speed } from "../../store/tickDriver.js";
 import { isDesktopRuntime } from "../../platform/desktop.js";
 import { ResetGameModal } from "./ResetGameModal.js";
+import { tickToGameDate, formatGameDate } from "../../store/gameTime.js";
+import { useTickFraction } from "../../store/tickFractionStore.js";
 import styles from "./TopBar.module.css";
-
-const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN",
-                 "JUL","AUG","SEP","OCT","NOV","DEC"] as const;
-
-function tickToDate(tick: number): string {
-  const month = MONTHS[tick % 12]!;
-  const year  = 2025 + Math.floor(tick / 12);
-  return `${month} ${year}`;
-}
 
 function formatMoney(n: number, showSign = false): string {
   const sign = showSign ? (n >= 0 ? "+" : "") : "";
@@ -43,6 +36,7 @@ interface TopBarProps {
 const SPEED_LABELS: Record<Speed, string> = { 0: "⏸", 1: "▶", 2: "▶▶", 3: "▶▶▶" };
 
 export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
+  const fraction        = useTickFraction();
   const dispatch        = useGameDispatch();
   const playerName      = useSelector(selectPlayerName);
   const cash            = useSelector(selectCash);
@@ -51,6 +45,8 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
   const activeContracts = useSelector(selectActiveContracts);
   const market          = useSelector(selectMarket);
   const audioEnabled    = useSelector(selectAudioEnabled);
+
+  const gameDate = tickToGameDate(tick, fraction);
 
   const isDesktop = isDesktopRuntime();
   const breachedCount = activeContracts.filter(c => c.status === "breached").length;
@@ -66,9 +62,9 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
   const banner = breachedCount > 0
     ? { tone: "danger", label: `⚠ ${breachedCount} contract breach${breachedCount > 1 ? "es" : ""}` }
     : contractsEndingSoon > 0
-      ? { tone: "warn", label: `${contractsEndingSoon} contract${contractsEndingSoon > 1 ? "s" : ""} ending soon` }
+      ? { tone: "warn", label: `${contractsEndingSoon} contract${contractsEndingSoon > 1 ? "s" : ""} ending soon — expiring within 1 month` }
       : expiringOffers > 0
-        ? { tone: "info", label: `${expiringOffers} market offer${expiringOffers > 1 ? "s" : ""} expiring soon` }
+        ? { tone: "info", label: `${expiringOffers} market offer${expiringOffers > 1 ? "s" : ""} expiring within 1 month` }
         : null;
 
   return (
@@ -119,12 +115,7 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
 
         <div className={styles.hudBlock}>
           <span className={styles.hudLabel}>DATE</span>
-          <span className={styles.hudValue}>{tickToDate(tick)}</span>
-        </div>
-
-        <div className={styles.hudBlock}>
-          <span className={styles.hudLabel}>TICK</span>
-          <span className={styles.hudValue}>{tick}</span>
+          <span className={styles.hudValue}>{formatGameDate(gameDate)}</span>
         </div>
       </div>
 
