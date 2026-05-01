@@ -67,6 +67,8 @@ If any constraint is exceeded, you won't be able to place the rack. Plan your la
 4. Pay monthly opex — power, cooling, staff, and maintenance.
 5. Profit = revenue − opex. Breaches cost penalties.
 
+Time advances in days and months. Each in-game **month** earns revenue and pays opex. Simulation speeds run from 1× (1 month per 10 s) to 3× (1 month per 2.5 s).
+
 Unused capacity earns nothing, so efficiency matters. Match your rack investments to the contracts you can win.`,
   },
 ];

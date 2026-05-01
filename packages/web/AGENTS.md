@@ -21,3 +21,14 @@
 - Prefer presentational components that take game state as props.
 - All CSS goes through CSS Modules (`.module.css`) or the global theme files in `src/theme/`. No inline styles except dynamic values.
 - The theme playground route `#/__theme` is dev-only — gate it with `import.meta.env.DEV`.
+
+## Time and the tick→calendar mapping
+
+- Internally, `state.tick` is the **number of elapsed months** since January 2025 (`EPOCH_YEAR`). Convention: **1 tick = 1 month**.
+- **Never render `state.tick` directly** in any UI component. Always convert via helpers in `src/store/gameTime.ts`:
+  - `tickToGameDate(tick, fraction?)` — integer tick + optional sub-tick fraction → `GameDate { year, month, day }`
+  - `formatGameDate(d)` — `"15 Mar 2025"` (full date; use in HUD)
+  - `formatGameDateShort(d)` — `"Mar 2025"` (month/year; use in log feed, sparkline)
+  - `monthsAndDaysBetween(...)` / `formatRemaining(months, days)` — for contract expiry labels
+- For **day-level precision** (advancing day display within a month), use `useTickFraction()` from `src/store/tickFractionStore.ts`. This hook subscribes to a per-frame external store updated by the tick driver — only components that call it re-render every animation frame.
+- Code identifiers (`selectTick`, `expiresAtTick`, `startedAtTick`, `tickOpex`, `useTickDriver`, `setTickFraction`, etc.) intentionally retain the word "tick" — this is fine. Only **user-visible strings** must use calendar language.
