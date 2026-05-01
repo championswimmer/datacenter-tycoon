@@ -9,6 +9,7 @@ import type { Action, GameState } from "@datacenter-tycoon/game-logic";
 import type { GameStore } from "./gameStore.js";
 import { useGameState, useDispatch, useGameSelector } from "./useStore.js";
 import type { Speed } from "./tickDriver.js";
+import { setTickFraction } from "./tickFractionStore.js";
 import { startTickDriver } from "./tickDriver.js";
 
 // ── Context ────────────────────────────────────────────────────────────────────
@@ -76,6 +77,7 @@ export function useTickDriver(getSpeed: () => Speed): void {
     const stop = startTickDriver(
       (action) => store.dispatch(action),
       () => getSpeedRef.current(),
+      setTickFraction,
     );
     return stop;
   }, [store]);

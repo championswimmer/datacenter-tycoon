@@ -12,10 +12,10 @@ owner: web
 - [x] **Phase 1 — Game-time mapping primitives (web)**
   - [x] 1.1 Add `gameTime.ts` with tick↔date conversion + formatting helpers
   - [x] 1.2 Unit tests for game-time helpers
-- [ ] **Phase 2 — Sub-tick day precision in the driver**
-  - [ ] 2.1 Extend `tickDriver` to publish a `tickFraction` (0..1) each frame
-  - [ ] 2.2 Add `selectTickFraction` / store-local fraction signal
-  - [ ] 2.3 Tests for fraction publishing and pause/reset behaviour
+- [x] **Phase 2 — Sub-tick day precision in the driver**
+  - [x] 2.1 Extend `tickDriver` to publish a `tickFraction` (0..1) each frame
+  - [x] 2.2 Add `selectTickFraction` / store-local fraction signal
+  - [x] 2.3 Tests for fraction publishing and pause/reset behaviour
 - [ ] **Phase 3 — TopBar HUD**
   - [ ] 3.1 Replace `tickToDate` with `formatGameDate` (day · month · year)
   - [ ] 3.2 Remove the `TICK` HUD slot; show full date only
