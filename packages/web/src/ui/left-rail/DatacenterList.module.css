@@ -1,0 +1,181 @@
+.rail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-1);
+  border-right: 1px solid var(--grid);
+  overflow: hidden;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--grid);
+  flex-shrink: 0;
+}
+
+.headerLabel {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+
+.count {
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  color: var(--neon-cyan);
+}
+
+/* ── List ─────────────────────────────────────────────────── */
+
+.list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.empty {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-3);
+  text-align: center;
+  padding: var(--space-6) var(--space-4);
+}
+
+/* ── DC Card ──────────────────────────────────────────────── */
+
+.dcCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--bg-2);
+  border: 1px solid var(--grid);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--duration-fast), background var(--duration-fast);
+  width: 100%;
+}
+
+.dcCard:hover {
+  background: var(--bg-3);
+  border-color: var(--fg-3);
+}
+
+.dcActive {
+  border-color: var(--neon-cyan) !important;
+  box-shadow: inset 0 0 0 1px rgba(94,240,255,.15), var(--glow-sm-cyan);
+}
+
+.dcTop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dcName {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--fg-0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+/* ── Stat rows ────────────────────────────────────────────── */
+
+.dcStats {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.dcStat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.statKey {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  color: var(--fg-3);
+  text-transform: uppercase;
+}
+
+.statVal {
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--fg-1);
+}
+
+.statAmber { color: var(--neon-amber); }
+.statRed   { color: var(--neon-red);   }
+
+/* ── Power bar ────────────────────────────────────────────── */
+
+.powerBar {
+  height: 2px;
+  background: var(--bg-3);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.powerFill {
+  height: 100%;
+  border-radius: 1px;
+  transition: width var(--duration-slow) var(--ease-out-expo);
+}
+
+.fillCyan  { background: var(--neon-cyan);  }
+.fillAmber { background: var(--neon-amber); }
+.fillRed   { background: var(--neon-red);   }
+
+/* ── New Datacenter button ────────────────────────────────── */
+
+.newDcBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin: var(--space-2);
+  padding: var(--space-3);
+  background: transparent;
+  border: 1px dashed var(--fg-3);
+  border-radius: var(--radius-md);
+  color: var(--fg-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: border-color var(--duration-fast), color var(--duration-fast), box-shadow var(--duration-fast);
+  flex-shrink: 0;
+}
+
+.newDcBtn:hover {
+  border-color: var(--neon-cyan);
+  border-style: solid;
+  color: var(--neon-cyan);
+  box-shadow: var(--glow-sm-cyan);
+}
+
+.newDcPlus {
+  font-size: var(--text-md);
+  line-height: 1;
+  font-weight: 300;
+}

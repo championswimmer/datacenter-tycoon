@@ -1,0 +1,87 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  height: 100%;
+  padding: var(--space-12);
+  text-align: center;
+}
+
+/* ── Abstract art ─────────────────────────────────────────── */
+
+.art {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
+  opacity: 0.3;
+}
+
+.artIcon {
+  font-size: 4rem;
+  color: var(--neon-cyan);
+  position: absolute;
+}
+
+.artGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+}
+
+.artCell {
+  background: var(--grid);
+  border-radius: 2px;
+}
+
+/* ── Text ─────────────────────────────────────────────────── */
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  color: var(--fg-2);
+}
+
+.sub {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--fg-2);
+  max-width: 380px;
+  line-height: var(--leading-base);
+}
+
+/* ── CTA ──────────────────────────────────────────────────── */
+
+.cta {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+  background: transparent;
+  border: 1px solid var(--neon-cyan);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-8);
+  cursor: pointer;
+  transition: box-shadow var(--duration-fast), background var(--duration-fast);
+}
+
+.cta:hover {
+  background: rgba(94, 240, 255, 0.08);
+  box-shadow: var(--glow-cyan);
+}
+
+.hint {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-3);
+}

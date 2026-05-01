@@ -32,10 +32,14 @@ export function startTickDriver(
   getSpeed: () => Speed,
   raf: RafFn = (typeof requestAnimationFrame !== "undefined" ? requestAnimationFrame : (() => 0) as RafFn),
   caf: CafFn = (typeof cancelAnimationFrame !== "undefined" ? cancelAnimationFrame : () => {}),
+  /** Override the starting value of 'last' (milliseconds). Defaults to
+   *  performance.now(). Inject a fixed value in tests to get deterministic
+   *  arithmetic without floating-point variance. */
+  initialTime: number = performance.now(),
 ): () => void {
   const MAX_TICKS_PER_FRAME = 8;
   let handle = 0;
-  let last = performance.now();
+  let last = initialTime;
   let acc = 0;
 
   const loop: FrameRequestCallback = (now: number) => {

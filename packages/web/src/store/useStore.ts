@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useCallback } from "react";
+import { useSyncExternalStore, useCallback, useRef } from "react";
 import type { Action, GameState } from "@datacenter-tycoon/game-logic";
 import type { GameStore } from "./gameStore.js";
 
@@ -27,19 +27,39 @@ export function useDispatch(store: GameStore): (action: Action) => void {
 
 /**
  * Derives data from the current state using `selector`.
- * The component only re-renders when the selector's return value changes
- * (by `Object.is` comparison — pass stable selector functions).
+ *
+ * `useSyncExternalStore` requires that `getSnapshot` returns a STABLE
+ * reference when the underlying store hasn't changed, otherwise React
+ * enters an infinite re-render loop. We satisfy that contract by caching
+ * the result keyed on the `GameState` object reference — game-logic's
+ * reducer always produces a new state object on every dispatch, so stale
+ * values are never served after a real state change.
  *
  * @example
  *   const cash = useGameSelector(store, selectCash);
+ *   const dc   = useGameSelector(store, s => selectDatacenter(s, dcId));
  */
 export function useGameSelector<T>(
   store: GameStore,
   selector: (state: GameState) => T,
 ): T {
-  return useSyncExternalStore(
-    store.subscribe,
-    () => selector(store.getState()),
-    () => selector(store.getState()),
-  );
+  // Keep the latest selector in a ref so getSnapshot (memoized below) always
+  // calls the current selector without needing to be recreated each render.
+  const selectorRef = useRef(selector);
+  selectorRef.current = selector;
+
+  // Cache: { state, value } — recomputed only when the state object changes.
+  const cache = useRef<{ state: GameState; value: T } | null>(null);
+
+  // getSnapshot is stable (recreated only if `store` changes, which never
+  // happens in practice since we use a singleton store).
+  const getSnapshot = useCallback(() => {
+    const state = store.getState();
+    if (!cache.current || cache.current.state !== state) {
+      cache.current = { state, value: selectorRef.current(state) };
+    }
+    return cache.current.value;
+  }, [store]);
+
+  return useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
 }
