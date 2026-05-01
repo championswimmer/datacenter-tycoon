@@ -18,6 +18,7 @@ export function ResetGameModal({ onClose }: ResetGameModalProps) {
 
   const handleConfirm = () => {
     clearSave();
+    window.location.hash = "/";
     window.location.reload();
   };
 
