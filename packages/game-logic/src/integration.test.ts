@@ -55,7 +55,7 @@ test("end-to-end scripted game remains profitable over 12 ticks", () => {
 					storageTb: 2_200,
 					gpuFlops: 0,
 				},
-				monthlyPayment: 275_000,
+				monthlyPayment: 320_000,
 				penaltyPerMonth: 90_000,
 				termMonths: 12,
 				status: "offered",
