@@ -47,4 +47,15 @@ describe("DatacenterList", () => {
     );
     expect(screen.getByTitle("Build a new datacenter")).toBeTruthy();
   });
+
+  it("always renders a contracts button that navigates to contracts", () => {
+    render(
+      <Wrapper>
+        <DatacenterList currentRoute={{ view: "home" }} />
+      </Wrapper>,
+    );
+    const button = screen.getByTitle("Open contracts market");
+    button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(window.location.hash).toBe("#/contracts");
+  });
 });
