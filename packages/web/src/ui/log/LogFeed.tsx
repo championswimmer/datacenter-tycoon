@@ -1,6 +1,7 @@
 import { useSelector } from "../../store/storeContext.js";
 import { selectLedger } from "../../store/selectors.js";
 import type { LedgerEntry, LedgerEntryType } from "@datacenter-tycoon/game-logic";
+import { tickToGameDate, formatGameDateShort } from "../../store/gameTime.js";
 import styles from "./LogFeed.module.css";
 
 const LOG_LIMIT = 50;
@@ -50,7 +51,7 @@ function LogRow({ entry }: { entry: LedgerEntry }) {
       <div className={styles.rowTop}>
         <span className={styles.typePill}>{TYPE_LABEL[entry.type]}</span>
         <span className={styles.amount}>{formatAmount(entry)}</span>
-        <span className={styles.tick}>T{entry.tick}</span>
+        <span className={styles.tick}>{formatGameDateShort(tickToGameDate(entry.tick))}</span>
       </div>
       <div className={styles.reason}>{entry.reason}</div>
     </div>

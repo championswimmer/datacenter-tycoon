@@ -5,9 +5,9 @@ export type Speed = 0 | 1 | 2 | 3;
 /** Milliseconds between ticks at each speed level. 0 = paused (Infinity). */
 export const SPEED_INTERVALS_MS: Record<Speed, number> = {
   0: Infinity, // paused
-  1: 10000,    // 1×  — 1 tick / 10 seconds
-  2: 5000,     // 2×  — 1 tick / 5 seconds
-  3: 2500,     // 3×  — 1 tick / 2.5 seconds
+  1: 10000,    // 1×  — 1 month / 10 seconds
+  2: 5000,     // 2×  — 1 month / 5 seconds
+  3: 2500,     // 3×  — 1 month / 2.5 seconds
 };
 
 export type RafFn = (cb: FrameRequestCallback) => number;
