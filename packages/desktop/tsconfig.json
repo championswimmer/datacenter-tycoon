@@ -3,12 +3,12 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "composite": true
+    "composite": true,
+    "types": ["node"]
   },
   "include": ["src/**/*"],
-  "exclude": ["dist", "node_modules", "**/*.test.ts"],
+  "exclude": ["dist", "release", "node_modules"],
   "references": [
-    { "path": "../game-logic" },
-    { "path": "../web" }
+    { "path": "../game-logic" }
   ]
 }

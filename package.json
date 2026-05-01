@@ -21,6 +21,8 @@
     "dev:web": "npm run dev -w @datacenter-tycoon/web",
     "dev:server": "npm run dev -w @datacenter-tycoon/server",
     "dev:desktop": "npm run dev -w @datacenter-tycoon/desktop",
+    "package:desktop": "npm run package -w @datacenter-tycoon/desktop",
+    "dist:desktop": "npm run dist -w @datacenter-tycoon/desktop",
 
     "test": "npm run test --workspaces --if-present",
     "test:ci": "npm run test:ci --workspaces --if-present",

@@ -10,3 +10,4 @@ out/
 .turbo/
 coverage/
 *.tsbuildinfo
+packages/desktop/release/

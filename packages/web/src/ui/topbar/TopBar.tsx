@@ -13,6 +13,7 @@ import {
 import { LedSegment } from "../../theme/primitives/index.js";
 import { navigate } from "../../router/hashRouter.js";
 import type { Speed } from "../../store/tickDriver.js";
+import { isDesktopRuntime } from "../../platform/desktop.js";
 import { ResetGameModal } from "./ResetGameModal.js";
 import styles from "./TopBar.module.css";
 
@@ -51,6 +52,7 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
   const market          = useSelector(selectMarket);
   const audioEnabled    = useSelector(selectAudioEnabled);
 
+  const isDesktop = isDesktopRuntime();
   const breachedCount = activeContracts.filter(c => c.status === "breached").length;
   const expiringOffers = market.filter(c => c.expiresAtTick - tick <= 1).length;
   const contractsEndingSoon = activeContracts.filter(
@@ -75,6 +77,7 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
       <div className={styles.left}>
         <span className={styles.logo}>DCT</span>
         <span className={styles.company}>{playerName}</span>
+        {isDesktop && <span className={styles.desktopBadge}>DESKTOP</span>}
       </div>
 
       {/* ── Center: financials + date ── */}
