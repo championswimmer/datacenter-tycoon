@@ -1,0 +1,26 @@
+appId: com.datacenter-tycoon.desktop
+productName: Datacenter Tycoon
+electronVersion: 35.1.5
+directories:
+  output: release
+  buildResources: assets
+icon: assets/icon.png
+files:
+  - dist/**/*
+  - package.json
+asar: true
+mac:
+  target:
+    - dmg
+    - zip
+win:
+  target:
+    - nsis
+    - portable
+linux:
+  target:
+    - AppImage
+    - deb
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

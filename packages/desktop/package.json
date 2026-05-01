@@ -1,23 +1,45 @@
 {
   "name": "@datacenter-tycoon/desktop",
   "version": "0.1.0",
-  "description": "Electron desktop app for Datacenter Tycoon (planned).",
+  "description": "Electron desktop app for Datacenter Tycoon.",
+  "author": "Datacenter Tycoon",
   "type": "module",
   "private": true,
+  "main": "dist/main/index.js",
   "scripts": {
-    "build": "echo 'desktop not yet implemented' && exit 0",
-    "dev": "echo 'desktop not yet implemented' && exit 0",
-    "typecheck": "tsc --noEmit",
+    "dev": "concurrently -k -s first -n renderer,tsc,electron \"npm run dev:renderer\" \"npm run dev:watch\" \"npm run dev:electron\"",
+    "dev:renderer": "npm run dev -w @datacenter-tycoon/web -- --host 127.0.0.1 --port 5173",
+    "dev:watch": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "dev:electron": "wait-on tcp:127.0.0.1:5173 dist/main/index.js && cross-env NODE_ENV=development ELECTRON_RENDERER_URL=http://127.0.0.1:5173 electronmon dist/main/index.js",
+    "build": "npm run build:renderer && npm run build:electron && npm run sync:renderer",
+    "build:renderer": "npm run build -w @datacenter-tycoon/web",
+    "build:electron": "tsc -p tsconfig.build.json",
+    "sync:renderer": "tsx ./scripts/sync-renderer.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.build.json",
     "test": "node --test --import tsx $(find src -type f -name '*.test.ts' | sort)",
     "test:ci": "mkdir -p coverage && c8 --report-dir=coverage --reporter=lcov --reporter=text-summary --all --include=src/**/*.ts --exclude='src/**/*.test.ts' node --test --import tsx --test-reporter=junit --test-reporter-destination=coverage/junit.xml $(find src -type f -name '*.test.ts' | sort)",
-    "clean": "rm -rf dist *.tsbuildinfo"
+    "package": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder",
+    "clean": "rm -rf dist release *.tsbuildinfo"
   },
   "dependencies": {
     "@datacenter-tycoon/game-logic": "*",
     "@datacenter-tycoon/web": "*"
   },
+  "electronmon": {
+    "patterns": [
+      "!release/**",
+      "!coverage/**"
+    ]
+  },
   "devDependencies": {
+    "concurrently": "^9.1.2",
+    "cross-env": "^10.0.0",
+    "electron": "35.1.5",
+    "electron-builder": "26.8.1",
+    "electronmon": "^2.0.2",
     "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "wait-on": "^8.0.3"
   }
 }

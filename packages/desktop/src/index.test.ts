@@ -1,6 +1,7 @@
-import { test } from "node:test";
+import test from "node:test";
 import assert from "node:assert/strict";
+import { DESKTOP_PRODUCT_NAME } from "./shared/constants.js";
 
-test("hello world: desktop test runner works", () => {
-	assert.ok(true);
+test("desktop constants are exported", () => {
+  assert.equal(DESKTOP_PRODUCT_NAME, "Datacenter Tycoon");
 });
