@@ -31,10 +31,10 @@ owner: web
   - [x] 5.2 CashSparkline: "last N ticks" → "last N months"
   - [x] 5.3 Speed selector tooltip / aria copy: drop "tick" wording
   - [x] 5.4 Audit remaining `tick` strings in `packages/web/src/ui` (rg) and fix any stragglers
-- [ ] **Phase 6 — First-time help & docs**
-  - [ ] 6.1 Update first-time help screen copy (plan 004) to use months/days
-  - [ ] 6.2 Update web `README.md` and any in-app tooltips that mention ticks
-  - [ ] 6.3 Note the convention "1 tick = 1 month" in `packages/web/AGENTS.md`
+- [x] **Phase 6 — First-time help & docs**
+  - [x] 6.1 Update first-time help screen copy (plan 004) to use months/days
+  - [x] 6.2 Update web `README.md` and any in-app tooltips that mention ticks
+  - [x] 6.3 Note the convention "1 tick = 1 month" in `packages/web/AGENTS.md`
 - [ ] **Phase 7 — Verification**
   - [ ] 7.1 `rg -n "tick" packages/web/src/ui` returns only code identifiers, no user-facing strings
   - [ ] 7.2 `npm run typecheck && npm run test` green across the workspace
