@@ -4,6 +4,8 @@
 
 A tycoon game about building data centers, buying racks, managing capex/opex, and fulfilling compute/memory/storage/GPU contracts.
 
+![](./assets/images/game-banner-001.jpg)
+
 ## Monorepo Structure
 
 This is a TypeScript monorepo using npm workspaces.

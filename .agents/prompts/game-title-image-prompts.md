@@ -1,0 +1,27 @@
+# Game Title Image Prompts for Datacenter Tycoon
+
+These prompts are designed for advanced AI image generation models (such as DALL-E 3, Midjourney v6, Nano Banana Pro, etc.) to generate high-quality game assets. 
+
+## 16:9 Banner Images (For Loading Backgrounds & Game Title Screen)
+
+**Variation 1: The Neon Cyber-Corridor (Focus on High-Tech Atmosphere)**
+> **Prompt:** A stunning 16:9 3D render of a futuristic datacenter interior, perspective shot looking down a seemingly endless corridor of towering, sleek black server racks. The racks are alive with blinking neon blue and vibrant green LED lights, indicating intense compute activity. Thick bundles of glowing fiber optic cables run along an industrial ceiling mesh. The aesthetic is "modern tech tycoon" with energetic, bustling energy, similar to a high-end simulation game like Cities: Skylines but focused indoors. Dramatic volumetric lighting piercing through cooling mists. High resolution, hyperdetailed, Octane Render, Unreal Engine 5 game art style. Dominating the center of the image is the large, bold text "DATACENTER TYCOON" written in a modern, glowing cyan sans-serif typography with subtle metallic silver edging, perfectly integrated into the scene.
+
+**Variation 2: The Isometric Empire (Focus on Tycoon/Management Gameplay)**
+> **Prompt:** A bright, colorful 16:9 isometric 3D view of a sprawling data center complex, highly reminiscent of management simulation games like Planet Zoo or RollerCoaster Tycoon. The scene shows a cross-section of progression: on the left, a humble "garage" server setup, evolving towards the right into a massive, state-of-the-art cloud facility with giant external cooling towers and solar panels. Tiny, stylized workers in hard hats are carrying server blades. The walls are partially transparent glass showing neat, colorful rows of servers inside. Bright daylight, cheerful and inviting lighting, tilt-shift photography effect. Floating in the clear blue sky space at the top center, the text "DATACENTER TYCOON" is rendered in a playful, chunky, 3D extruded font, utilizing vibrant orange and pristine white colors to pop against the background.
+
+**Variation 3: The Industrial Behemoth (Focus on Scale and Construction)**
+> **Prompt:** A cinematic 16:9 low-angle, dramatic shot of a colossal, monolithic server rack being lowered into a massive, cavernous data center warehouse by a heavy-duty robotic yellow crane. The atmosphere is industrial and grand, conveying the feeling of building a massive corporate empire, similar to Transport Fever. Dramatic directional shadows, sparks flying from welding in the background, realistic and gritty lighting. The floor is polished concrete reflecting the glowing amber and red lights of the server hardware. Prominently overlaid in the foreground, sleek and elegant corporate text reading "DATACENTER TYCOON" in a polished chrome and silver typography with subtle glowing blue under-lighting, looking like a premium AAA simulation game title screen.
+
+---
+
+## 1:1 Logo Images (For App Icon, 512x512, Legible at 16x16)
+
+**Variation 1: The Iconic Blade Rack (Minimalist & Sleek)**
+> **Prompt:** A perfect 1:1 square aspect ratio stylized 3D app icon featuring a single, sleek black server rack angled at a 45-degree isometric perspective to show depth. Inside the rack, three distinct server blades are highlighted with intensely glowing neon cyan and emerald green horizontal strips. The design is highly minimalist with clean vector-like lines, ensuring extreme legibility even at 16x16 pixel size. Soft, smooth shading, ambient occlusion, similar to modern high-end iOS game icons. Floating just below the rack, the letters "DT" in a thick, rounded, futuristic white font. Solid deep navy-blue background to make the neon colors pop and provide strong contrast.
+
+**Variation 2: The Tycoon's Coin & Compute (Focus on Business Mechanics)**
+> **Prompt:** A vibrant, flat-design 1:1 square app icon that perfectly merges the concepts of computing and business management. The central graphic is a stylized glowing blue server blade seamlessly intersecting with a shiny, oversized golden coin that has an upward-trending green stock market arrow etched into it. The art style uses thick outlines, bold solid colors (electric blue, bright gold, vibrant green), and no complex noisy textures, making it an incredibly clear and iconic silhouette readable at microscopic sizes. Perfectly centered composition, white background, conveying wealth, strategy, and data management. 
+
+**Variation 3: The Micro-Datacenter Diorama (Playful & Cute)**
+> **Prompt:** A perfectly square 1:1 image featuring an isometric, low-poly 3D render of a "micro-datacenter" acting as the game's logo. It's a tiny, adorable cube-shaped building with a pristine white exterior, featuring tiny glowing blue and pink dots representing server windows, and a spinning, oversized mini cooling fan on the flat roof. The aesthetic is bright, playful, and tactile, using soft pastel colors akin to the UI of cozy simulation games. High-contrast, soft-edged shadows on a transparent or solid light-grey background. The letters "D" and "T" are cleanly integrated and embossed into the front wall of the tiny building in a bold, readable, dark grey sans-serif font.
