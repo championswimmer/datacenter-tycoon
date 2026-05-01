@@ -170,4 +170,5 @@ export interface GameState {
 	contractMarket: Contract[];
 	activeContracts: Contract[];
 	ledger: LedgerEntry[];
+	audioEnabled: boolean;
 }

@@ -6,7 +6,7 @@
     "jsx": "react-jsx",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vitest/globals"],
-    "noEmit": true
+    "composite": true
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "node_modules"],

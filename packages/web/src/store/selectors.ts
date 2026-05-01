@@ -205,3 +205,7 @@ export function selectFreeCapacity(state: GameState): Capacity {
     gpuFlops: Math.max(0, total.gpuFlops - demand.gpuFlops),
   };
 }
+
+export function selectAudioEnabled(state: GameState): boolean {
+  return state.audioEnabled ?? true;
+}

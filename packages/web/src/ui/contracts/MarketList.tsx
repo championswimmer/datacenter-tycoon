@@ -2,9 +2,10 @@ import { useState, useCallback } from "react";
 import type { Capacity, Contract, Datacenter } from "@datacenter-tycoon/game-logic";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import {
-  selectAllDatacenters, selectActiveContracts, selectTick,
+  selectAllDatacenters, selectActiveContracts, selectTick, selectAudioEnabled,
 } from "../../store/selectors.js";
 import { canFulfill, dcFreeCapacity, contractDealScore } from "./contractUtils.js";
+import { playSound } from "../../audio/AudioEngine.js";
 import styles from "./MarketList.module.css";
 
 function fmt(n: number): string {

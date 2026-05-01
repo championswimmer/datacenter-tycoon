@@ -21,6 +21,7 @@ export {
   selectResourceUsage,
   selectMonthlyPnl,
   selectFreeCapacity,
+  selectAudioEnabled,
 } from "./selectors.js";
 export type {
   AggregateCapacity,

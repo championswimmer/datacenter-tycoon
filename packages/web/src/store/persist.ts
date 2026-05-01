@@ -6,6 +6,7 @@ import {
 import type { GameState } from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "./gameStore.js";
 import type { GameStore } from "./gameStore.js";
+import { attachAudioEvents } from "./audioEvents.js";
 
 const SAVE_KEY = "datacenter-tycoon:save-v1";
 
@@ -96,6 +97,14 @@ export function bootstrapStore(key = SAVE_KEY): {
 
   const store = createGameStore(initial);
   const stopAutosave = attachAutosave(store, key);
+  const stopAudioEvents = attachAudioEvents(store);
 
-  return { store, stopAutosave, isFreshStart };
+  return { 
+    store, 
+    stopAutosave: () => {
+      stopAutosave();
+      stopAudioEvents();
+    }, 
+    isFreshStart 
+  };
 }

@@ -30,6 +30,7 @@ export type Action =
 	| { type: "RemoveRack"; dcId: DatacenterId; placementId: RackPlacementId }
 	| { type: "AcceptContract"; contractId: ContractId; dcId: DatacenterId }
 	| { type: "CancelContract"; contractId: ContractId }
+	| { type: "SetAudioEnabled"; enabled: boolean }
 	| { type: "Tick" };
 
 function getDatacenterSpec(specId: DatacenterSpecId): DatacenterSpec {
@@ -183,6 +184,8 @@ export function reduce(state: GameState, action: Action): GameState {
 			return acceptContract(state, action.contractId, action.dcId);
 		case "CancelContract":
 			return cancelContract(state, action.contractId);
+		case "SetAudioEnabled":
+			return { ...state, audioEnabled: action.enabled };
 		case "Tick":
 			return tick(state);
 		default:
