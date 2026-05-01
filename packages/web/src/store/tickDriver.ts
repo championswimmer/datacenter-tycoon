@@ -18,6 +18,10 @@ export type CafFn = (handle: number) => void;
  *
  * @param dispatch  - store.dispatch (only {type:"Tick"} will be emitted)
  * @param getSpeed  - reactive getter; called every frame so speed can change live
+ * @param onFrame   - optional; called every animation frame with the current sub-tick
+ *                    fraction (0..1). Use to drive day-level precision in the HUD
+ *                    without putting the fraction into the Redux store.
+ *                    Called with 0 while paused.
  * @param raf       - injectable requestAnimationFrame (defaults to global, override in tests)
  * @param caf       - injectable cancelAnimationFrame (defaults to global, override in tests)
  * @returns         - stop() function; call it to cancel the driver (e.g. on unmount)
@@ -30,6 +34,7 @@ export type CafFn = (handle: number) => void;
 export function startTickDriver(
   dispatch: (action: Action) => void,
   getSpeed: () => Speed,
+  onFrame?: (fraction: number) => void,
   raf: RafFn = (typeof requestAnimationFrame !== "undefined" ? requestAnimationFrame : (() => 0) as RafFn),
   caf: CafFn = (typeof cancelAnimationFrame !== "undefined" ? cancelAnimationFrame : () => {}),
   /** Override the starting value of 'last' (milliseconds). Defaults to
@@ -62,6 +67,10 @@ export function startTickDriver(
         acc = 0;
       }
     }
+
+    // Emit sub-tick fraction so HUD components can advance the day display.
+    const fraction = stepMs === Infinity ? 0 : Math.min(acc / stepMs, 1);
+    onFrame?.(fraction);
 
     last = now;
     handle = raf(loop);
