@@ -1,5 +1,6 @@
 import net from "node:net";
 
+import { formatHelp, getFlagValue, hasHelpFlag, parseArgv, type CommandDefinition } from "./argv.js";
 import { GamePersistence, loadOrInit } from "./daemon/persist.js";
 import { GameRuntime } from "./daemon/runtime.js";
 import { GameDaemonServer } from "./daemon/server.js";
@@ -7,42 +8,40 @@ import { DaemonLifecycle, waitForExit } from "./daemon/lifecycle.js";
 import { DaemonTransport } from "./daemon/transport.js";
 import { resolvePaths } from "./paths.js";
 
-function getFlagValue(args: string[], flag: string): string | undefined {
-	const inline = args.find((arg) => arg.startsWith(`${flag}=`));
-	if (inline) {
-		return inline.slice(flag.length + 1);
-	}
-
-	const index = args.indexOf(flag);
-	if (index >= 0) {
-		return args[index + 1];
-	}
-
-	return undefined;
+interface CommandContext {
+	parsed: ReturnType<typeof parseArgv>;
 }
 
-function getNumericFlagValue(args: string[], flag: string, fallback: number): number {
-	const value = getFlagValue(args, flag);
+interface CommandHandler extends CommandDefinition {
+	run: (context: CommandContext) => Promise<void>;
+}
+
+function getStringFlag(parsed: ReturnType<typeof parseArgv>, flag: string): string | undefined {
+	const value = getFlagValue(parsed, flag);
+	return typeof value === "string" ? value : undefined;
+}
+
+function getNumericFlag(parsed: ReturnType<typeof parseArgv>, flag: string, fallback: number): number {
+	const value = getStringFlag(parsed, flag);
 	if (!value) {
 		return fallback;
 	}
 
-	const parsed = Number(value);
-	if (!Number.isFinite(parsed)) {
+	const parsedNumber = Number(value);
+	if (!Number.isFinite(parsedNumber)) {
 		throw new Error(`Invalid value for ${flag}: ${value}`);
 	}
 
-	return parsed;
+	return parsedNumber;
 }
 
-async function runDaemon(args: string[]): Promise<void> {
-	const saveOverride = getFlagValue(args, "--save");
-	const socketOverride = getFlagValue(args, "--socket");
-	const seed = getNumericFlagValue(args, "--seed", 1);
-	const idleTimeoutMs = getNumericFlagValue(args, "--idle-timeout", 10 * 60 * 1000);
-	const paths = resolvePaths({ saveOverride, socketOverride });
+async function runDaemon(parsed: ReturnType<typeof parseArgv>): Promise<void> {
+	const paths = resolvePaths({
+		saveOverride: getStringFlag(parsed, "--save"),
+		socketOverride: getStringFlag(parsed, "--socket"),
+	});
 	const persistence = new GamePersistence({ savePath: paths.savePath });
-	const runtime = new GameRuntime({ state: loadOrInit(paths.savePath, seed) });
+	const runtime = new GameRuntime({ state: loadOrInit(paths.savePath, getNumericFlag(parsed, "--seed", 1)) });
 	const transport = new DaemonTransport({ socketPath: paths.socketPath });
 	const server = new GameDaemonServer({
 		transport,
@@ -51,7 +50,7 @@ async function runDaemon(args: string[]): Promise<void> {
 	});
 	const lifecycle = new DaemonLifecycle({
 		pidPath: paths.pidPath,
-		idleTimeoutMs,
+		idleTimeoutMs: getNumericFlag(parsed, "--idle-timeout", 10 * 60 * 1000),
 		transport,
 		runtime,
 		startServer: () => server.start(),
@@ -69,10 +68,11 @@ async function runDaemon(args: string[]): Promise<void> {
 	await waitForExit(lifecycle);
 }
 
-async function runQuit(args: string[]): Promise<void> {
-	const saveOverride = getFlagValue(args, "--save");
-	const socketOverride = getFlagValue(args, "--socket");
-	const { socketPath } = resolvePaths({ saveOverride, socketOverride });
+async function runQuit(parsed: ReturnType<typeof parseArgv>): Promise<void> {
+	const { socketPath } = resolvePaths({
+		saveOverride: getStringFlag(parsed, "--save"),
+		socketOverride: getStringFlag(parsed, "--socket"),
+	});
 
 	await new Promise<void>((resolve, reject) => {
 		const socket = net.createConnection(socketPath);
@@ -102,21 +102,60 @@ async function runQuit(args: string[]): Promise<void> {
 	});
 }
 
+function createNotImplementedHandler(name: string, summary: string): CommandHandler {
+	return {
+		name,
+		summary,
+		run: async () => {
+			throw new Error(`Command not implemented yet: ${name}`);
+		},
+	};
+}
+
+const COMMANDS: CommandHandler[] = [
+	{ name: "daemon", summary: "Run the background game daemon", run: async ({ parsed }) => runDaemon(parsed) },
+	createNotImplementedHandler("status", "Print a game summary"),
+	createNotImplementedHandler("new", "Create a new save"),
+	createNotImplementedHandler("load", "Load a savefile into the daemon state"),
+	createNotImplementedHandler("save", "Force-save the current game"),
+	{ name: "quit", summary: "Flush state and shut down the daemon", run: async ({ parsed }) => runQuit(parsed) },
+	createNotImplementedHandler("ls", "List datacenters, racks, contracts, or catalog data"),
+	createNotImplementedHandler("build-dc", "Build a datacenter"),
+	createNotImplementedHandler("add-rack", "Add a rack to a datacenter"),
+	createNotImplementedHandler("remove-rack", "Remove a rack placement"),
+	createNotImplementedHandler("accept-contract", "Accept a contract"),
+	createNotImplementedHandler("cancel-contract", "Cancel an active contract"),
+	createNotImplementedHandler("tick", "Advance one or more ticks"),
+	createNotImplementedHandler("pause", "Pause the daemon tick loop"),
+	createNotImplementedHandler("resume", "Resume the daemon tick loop"),
+	createNotImplementedHandler("speed", "Set daemon tick speed"),
+];
+
+const COMMAND_MAP = new Map(COMMANDS.map((command) => [command.name, command]));
+
+export async function runCli(args: string[]): Promise<void> {
+	const parsed = parseArgv(args);
+
+	if (parsed.command === "help" || hasHelpFlag(parsed)) {
+		console.log(formatHelp(COMMANDS));
+		return;
+	}
+
+	if (!parsed.command) {
+		console.log("dct");
+		return;
+	}
+
+	const command = COMMAND_MAP.get(parsed.command);
+	if (!command) {
+		throw new Error(`Unknown command: ${parsed.command}. Run 'dct --help' for usage.`);
+	}
+
+	await command.run({ parsed });
+}
+
 async function main(): Promise<void> {
-	const args = process.argv.slice(2);
-	const command = args[0];
-
-	if (command === "daemon") {
-		await runDaemon(args.slice(1));
-		return;
-	}
-
-	if (command === "quit") {
-		await runQuit(args.slice(1));
-		return;
-	}
-
-	console.log("dct");
+	await runCli(process.argv.slice(2));
 }
 
 void main().catch((error) => {
