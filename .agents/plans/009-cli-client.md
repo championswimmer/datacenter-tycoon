@@ -14,13 +14,13 @@ owner: cli
   - [x] 1.2 Wire `dct` bin in `package.json` and add to root workspace
   - [x] 1.3 Define IPC protocol types (`src/protocol/messages.ts`)
   - [x] 1.4 Implement save-path resolver (`src/paths.ts`) using XDG / `%APPDATA%`
-- [ ] **Phase 2 — Daemon (game server) core**
+- [x] **Phase 2 — Daemon (game server) core**
   - [x] 2.1 Implement `GameRuntime` wrapping `GameState` + `reduce` + tick loop
   - [x] 2.2 Implement debounced autosave to JSON via `serialize()`
   - [x] 2.3 Implement Unix-domain-socket JSON-RPC transport (`src/daemon/transport.ts`)
   - [x] 2.4 Implement RPC handlers for all `Action`s + `query`/`subscribe`
   - [x] 2.5 Implement daemon lifecycle: PID/lock file, graceful shutdown, idle exit
-  - [ ] 2.6 Unit tests for runtime, transport, and savefile round-trip
+  - [x] 2.6 Unit tests for runtime, transport, and savefile round-trip
 - [ ] **Phase 3 — Client SDK**
   - [ ] 3.1 Implement `DctClient` connecting over the socket
   - [ ] 3.2 Auto-spawn daemon on first connect (detached child)
