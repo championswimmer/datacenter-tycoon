@@ -17,6 +17,7 @@ It must consume `@datacenter-tycoon/game-logic` rather than reimplementing rules
 - Keep command handlers small and script-friendly.
 - Prefer pure render helpers for TUI output so they are easy to snapshot test.
 - Respect `--json` and machine-readable envelopes for all one-shot commands.
+- TUI state should be derived from daemon snapshots and events, not from duplicate game rules.
 
 ## TUI ADR
 
@@ -33,3 +34,21 @@ Use a **tiny custom ANSI / readline-based TUI helper** instead of adding `ink`.
 - we own input handling and screen rendering
 - keep renderer modular under `src/tui/`
 - if the TUI grows substantially, reevaluate `ink` or another renderer later
+
+## File map
+
+- `src/cli.ts` — CLI entry and dispatch
+- `src/client/` — RPC client and daemon auto-spawn
+- `src/daemon/` — runtime, persistence, socket transport, lifecycle
+- `src/commands/` — one-shot command handlers
+- `src/tui/` — render helpers, tab content, command palette helpers
+
+## Testing guidance
+
+When changing the CLI:
+- add or update command unit tests under `src/commands/*.test.ts`
+- add renderer tests for new TUI views
+- run `npm run test -w @datacenter-tycoon/cli`
+- run `npm run typecheck -w @datacenter-tycoon/cli`
+
+For multi-step work, update `.agents/plans/009-cli-client.md` as progress changes.
