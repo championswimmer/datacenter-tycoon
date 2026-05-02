@@ -12,10 +12,10 @@ updated: 2026-05-02
   - [x] 1.1 Implement `MusicEngine` for retro-style MIDI melodies
   - [x] 1.2 Implement `AmbientEngine` for server usage "hum"
   - [x] 1.3 Add "Music" and "Ambient" start/stop controls to `AudioEngine`
-- [ ] **Phase 2 — Money & Logic SFX**
-  - [ ] 2.1 Add "Revenue" (chime) and "Opex" (thud) sound profiles
-  - [ ] 2.2 Wire money events into `audioEvents.ts` listener
-  - [ ] 2.3 Add "Usage-based" pitch/volume modulation for ambient hum
+- [x] **Phase 2 — Money & Logic SFX**
+  - [x] 2.1 Add "Revenue" (chime) and "Opex" (thud) sound profiles
+  - [x] 2.2 Wire money events into `audioEvents.ts` listener
+  - [x] 2.3 Add "Usage-based" pitch/volume modulation for ambient hum
 - [ ] **Phase 3 — Granular Audio Settings**
   - [ ] 3.1 Update `GameState` and `AudioSettings` types
   - [ ] 3.2 Implement `AudioSettingsModal` UI
