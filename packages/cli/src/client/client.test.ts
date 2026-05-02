@@ -146,6 +146,62 @@ test("DctClient reconnects and performs handshake again on a new socket", async 
 	await once(server, "close");
 });
 
+test("DctClient subscribeState yields an initial snapshot and subsequent deltas", async () => {
+	const socketPath = createSocketPath();
+	const server = net.createServer((socket) => {
+		let buffer = "";
+		socket.on("data", (chunk) => {
+			buffer += chunk.toString();
+			const lines = buffer.split("\n");
+			buffer = lines.pop() ?? "";
+			for (const line of lines) {
+				if (!line.trim()) {
+					continue;
+				}
+				const request = JSON.parse(line) as { id: number; method: string };
+				if (request.method === "hello") {
+					socket.write(`{"jsonrpc":"2.0","id":${request.id},"result":{"daemonVersion":"0.1.0","saveVersion":1,"tick":0}}\n`);
+				} else if (request.method === "query") {
+					socket.write(`{"jsonrpc":"2.0","id":${request.id},"result":{"tick":1,"seed":1,"rngState":1,"player":{"id":"player-1","name":"Player","cash":1234},"datacenters":[],"contractMarket":[],"activeContracts":[],"ledger":[],"audioEnabled":true}}\n`);
+				} else if (request.method === "subscribe") {
+					socket.write(`{"jsonrpc":"2.0","id":${request.id},"result":{"subId":7}}\n`);
+					setTimeout(() => {
+						socket.write('{"jsonrpc":"2.0","method":"event","params":{"subId":7,"event":{"type":"tick","tick":2}}}\n');
+						socket.write('{"jsonrpc":"2.0","method":"event","params":{"subId":7,"event":{"type":"state","tick":2,"paused":false,"speedTps":1,"snapshot":{"tick":2,"seed":1,"rngState":1,"player":{"id":"player-1","name":"Player","cash":1500},"datacenters":[],"contractMarket":[],"activeContracts":[],"ledger":[],"audioEnabled":true}}}}\n');
+					}, 10);
+				} else if (request.method === "unsubscribe") {
+					socket.write(`{"jsonrpc":"2.0","id":${request.id},"result":{"ok":true}}\n`);
+				}
+			}
+		});
+	});
+	server.listen(socketPath);
+	await once(server, "listening");
+
+	const client = new DctClient({ socketPath });
+	await client.connect();
+
+	const snapshots: number[] = [];
+	const deltas: string[] = [];
+	const subscription = await client.subscribeState(
+		(snapshot) => {
+			snapshots.push(snapshot.tick);
+		},
+		(event) => {
+			deltas.push(event.type);
+		},
+	);
+
+	await new Promise((resolve) => setTimeout(resolve, 30));
+	assert.deepEqual(snapshots, [1, 2]);
+	assert.deepEqual(deltas, ["tick", "state"]);
+
+	await subscription.unsubscribe();
+	await client.close();
+	server.close();
+	await once(server, "close");
+});
+
 test("DctClient rejects incompatible daemon major versions during handshake", async () => {
 	const socketPath = createSocketPath();
 	const server = net.createServer((socket) => {
