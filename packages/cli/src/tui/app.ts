@@ -8,6 +8,7 @@ import { renderLayout, type TuiTabId } from "./layout.js";
 import { renderDashboardTab } from "./tabs/dashboard.js";
 import { renderDatacentersTab } from "./tabs/datacenters.js";
 import { renderContractsTab } from "./tabs/contracts.js";
+import { renderCatalogTab } from "./tabs/catalog.js";
 
 function getBodyLines(snapshot: GameState | undefined, activeTab: TuiTabId, selectedDatacenterIndex: number): string[] {
 	if (!snapshot) {
@@ -26,7 +27,7 @@ function getBodyLines(snapshot: GameState | undefined, activeTab: TuiTabId, sele
 		return renderContractsTab(snapshot);
 	}
 
-	return ["Catalog", "", "Catalog tab coming up next..."];
+	return renderCatalogTab();
 }
 
 function renderFrame(
