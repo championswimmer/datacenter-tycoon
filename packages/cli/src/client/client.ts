@@ -1,4 +1,5 @@
 import net from "node:net";
+import type { ChildProcess } from "node:child_process";
 
 import type {
 	Action,
@@ -17,6 +18,7 @@ import type {
 	SubscriptionEventKind,
 	UnsubscribeParams,
 } from "../protocol/messages.js";
+import { autoSpawnDaemon } from "./spawn.js";
 
 interface PendingRequest {
 	resolve: (value: unknown) => void;
@@ -25,11 +27,24 @@ interface PendingRequest {
 
 export interface DctClientOptions {
 	socketPath: string;
+	savePath?: string;
+	noDaemon?: boolean;
+	autoSpawn?: boolean;
+	waitForSocketTimeoutMs?: number;
+	idleTimeoutMs?: number;
+	seed?: number;
 }
 
 export class DctClient {
 	private readonly socketPath: string;
+	private readonly savePath?: string;
+	private readonly noDaemon: boolean;
+	private readonly autoSpawn: boolean;
+	private readonly waitForSocketTimeoutMs?: number;
+	private readonly idleTimeoutMs?: number;
+	private readonly seed?: number;
 	private socket?: net.Socket;
+	private spawnedProcess?: ChildProcess;
 	private nextRequestId = 1;
 	private buffer = "";
 	private readonly pendingRequests = new Map<number, PendingRequest>();
@@ -38,6 +53,12 @@ export class DctClient {
 
 	constructor(options: DctClientOptions) {
 		this.socketPath = options.socketPath;
+		this.savePath = options.savePath;
+		this.noDaemon = options.noDaemon ?? false;
+		this.autoSpawn = options.autoSpawn ?? true;
+		this.waitForSocketTimeoutMs = options.waitForSocketTimeoutMs;
+		this.idleTimeoutMs = options.idleTimeoutMs;
+		this.seed = options.seed;
 	}
 
 	async connect(): Promise<void> {
@@ -45,21 +66,25 @@ export class DctClient {
 			return;
 		}
 
-		await new Promise<void>((resolve, reject) => {
-			const socket = net.createConnection(this.socketPath);
-			const onError = (error: Error) => {
-				socket.destroy();
-				reject(error);
-			};
-			socket.once("error", onError);
-			socket.once("connect", () => {
-				socket.off("error", onError);
-				this.socket = socket;
-				this.connected = true;
-				this.attachSocket(socket);
-				resolve();
+		try {
+			await this.connectSocket();
+		} catch (error) {
+			const maybeError = error as NodeJS.ErrnoException;
+			const isRecoverable = maybeError.code === "ENOENT" || maybeError.code === "ECONNREFUSED";
+			if (!this.autoSpawn || !isRecoverable) {
+				throw error;
+			}
+
+			this.spawnedProcess = await autoSpawnDaemon({
+				socketPath: this.socketPath,
+				savePath: this.savePath,
+				noDaemon: this.noDaemon,
+				waitForSocketTimeoutMs: this.waitForSocketTimeoutMs,
+				idleTimeoutMs: this.idleTimeoutMs,
+				seed: this.seed,
 			});
-		});
+			await this.connectSocket();
+		}
 	}
 
 	async hello(params: HelloParams): Promise<HelloResult> {
@@ -109,6 +134,10 @@ export class DctClient {
 		});
 	}
 
+	getSpawnedProcess(): ChildProcess | undefined {
+		return this.spawnedProcess;
+	}
+
 	private async request(method: "hello" | "dispatch" | "query" | "subscribe" | "unsubscribe" | "control", params: unknown): Promise<unknown> {
 		if (!this.socket || !this.connected) {
 			throw new Error("Client is not connected");
@@ -122,6 +151,24 @@ export class DctClient {
 		});
 		this.socket.write(`${JSON.stringify({ jsonrpc: "2.0", id, method, params })}\n`);
 		return await promise;
+	}
+
+	private async connectSocket(): Promise<void> {
+		await new Promise<void>((resolve, reject) => {
+			const socket = net.createConnection(this.socketPath);
+			const onError = (error: Error) => {
+				socket.destroy();
+				reject(error);
+			};
+			socket.once("error", onError);
+			socket.once("connect", () => {
+				socket.off("error", onError);
+				this.socket = socket;
+				this.connected = true;
+				this.attachSocket(socket);
+				resolve();
+			});
+		});
 	}
 
 	private attachSocket(socket: net.Socket): void {
