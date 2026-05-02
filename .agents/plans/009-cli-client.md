@@ -39,8 +39,8 @@ owner: cli
   - [x] 5.1 Pick & vendor a tiny ANSI/TUI helper (or `ink`); document choice
   - [x] 5.2 Main layout: header (cash/tick/speed) + tab bar + body + status line
   - [x] 5.3 Dashboard tab (KPIs, ledger tail, alerts)
-  - [ ] 5.4 Datacenters tab (list → detail → rack grid)
-  - [ ] 5.5 Contracts tab (market + active, accept/cancel)
+  - [x] 5.4 Datacenters tab (list → detail → rack grid)
+  - [x] 5.5 Contracts tab (market + active, accept/cancel)
   - [ ] 5.6 Catalog tab (DC specs, rack specs)
   - [ ] 5.7 Command palette (`:` to run any one-shot subcommand)
   - [ ] 5.8 Keybindings cheatsheet (`?`)

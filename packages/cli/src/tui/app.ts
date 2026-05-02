@@ -7,6 +7,7 @@ import type { StatusView } from "../protocol/messages.js";
 import { renderLayout, type TuiTabId } from "./layout.js";
 import { renderDashboardTab } from "./tabs/dashboard.js";
 import { renderDatacentersTab } from "./tabs/datacenters.js";
+import { renderContractsTab } from "./tabs/contracts.js";
 
 function getBodyLines(snapshot: GameState | undefined, activeTab: TuiTabId, selectedDatacenterIndex: number): string[] {
 	if (!snapshot) {
@@ -22,7 +23,7 @@ function getBodyLines(snapshot: GameState | undefined, activeTab: TuiTabId, sele
 	}
 
 	if (activeTab === "contracts") {
-		return ["Contracts", "", "Contracts tab coming up next..."];
+		return renderContractsTab(snapshot);
 	}
 
 	return ["Catalog", "", "Catalog tab coming up next..."];
