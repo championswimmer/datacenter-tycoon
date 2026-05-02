@@ -45,6 +45,26 @@ export function stopAmbient() {
 }
 
 /**
+ * Adjusts the hum pitch based on game speed factor.
+ */
+export function setAmbientSpeed(factor: number) {
+  if (!ctx || !oscillator) return;
+  // Base frequency is 55Hz (A1). Scale it by speed factor.
+  // We use a slight log scale or just linear factor. Let's try linear factor for now.
+  const freq = 55 * factor;
+  oscillator.frequency.setTargetAtTime(freq, ctx.currentTime, 0.5);
+}
+
+/**
+ * Handles pausing the ambient hum.
+ */
+export function setAmbientPaused(paused: boolean) {
+  if (!ctx || !masterGain) return;
+  const targetGain = paused ? 0 : 0.05; // Base gain when not paused
+  masterGain.gain.setTargetAtTime(targetGain, ctx.currentTime, 0.2);
+}
+
+/**
  * Modulates the hum based on load (0 to 1).
  */
 export function setAmbientUsage(load: number) {
