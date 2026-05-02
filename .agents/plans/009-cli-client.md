@@ -19,7 +19,7 @@ owner: cli
   - [x] 2.2 Implement debounced autosave to JSON via `serialize()`
   - [x] 2.3 Implement Unix-domain-socket JSON-RPC transport (`src/daemon/transport.ts`)
   - [x] 2.4 Implement RPC handlers for all `Action`s + `query`/`subscribe`
-  - [ ] 2.5 Implement daemon lifecycle: PID/lock file, graceful shutdown, idle exit
+  - [x] 2.5 Implement daemon lifecycle: PID/lock file, graceful shutdown, idle exit
   - [ ] 2.6 Unit tests for runtime, transport, and savefile round-trip
 - [ ] **Phase 3 — Client SDK**
   - [ ] 3.1 Implement `DctClient` connecting over the socket
