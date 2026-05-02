@@ -28,6 +28,7 @@ interface PendingRequest {
 export interface DctClientOptions {
 	socketPath: string;
 	savePath?: string;
+	clientVersion?: string;
 	noDaemon?: boolean;
 	autoSpawn?: boolean;
 	waitForSocketTimeoutMs?: number;
@@ -35,9 +36,26 @@ export interface DctClientOptions {
 	seed?: number;
 }
 
+const CLIENT_VERSION = "0.1.0";
+
+function getMajorVersion(version: string): string {
+	return version.split(".")[0] ?? version;
+}
+
+function assertCompatibleVersions(clientVersion: string, daemonVersion: string): void {
+	if (getMajorVersion(clientVersion) === getMajorVersion(daemonVersion)) {
+		return;
+	}
+
+	throw new Error(
+		`Daemon version ${daemonVersion} is incompatible with client ${clientVersion}. Upgrade @datacenter-tycoon/cli or restart the daemon.`,
+	);
+}
+
 export class DctClient {
 	private readonly socketPath: string;
 	private readonly savePath?: string;
+	private readonly clientVersion: string;
 	private readonly noDaemon: boolean;
 	private readonly autoSpawn: boolean;
 	private readonly waitForSocketTimeoutMs?: number;
@@ -50,10 +68,13 @@ export class DctClient {
 	private readonly pendingRequests = new Map<number, PendingRequest>();
 	private readonly subscriptions = new Map<number, (event: SubscriptionEvent) => void>();
 	private connected = false;
+	private handshakePromise?: Promise<HelloResult>;
+	private helloResult?: HelloResult;
 
 	constructor(options: DctClientOptions) {
 		this.socketPath = options.socketPath;
 		this.savePath = options.savePath;
+		this.clientVersion = options.clientVersion ?? CLIENT_VERSION;
 		this.noDaemon = options.noDaemon ?? false;
 		this.autoSpawn = options.autoSpawn ?? true;
 		this.waitForSocketTimeoutMs = options.waitForSocketTimeoutMs;
@@ -88,14 +109,38 @@ export class DctClient {
 	}
 
 	async hello(params: HelloParams): Promise<HelloResult> {
-		return (await this.request("hello", params)) as HelloResult;
+		const result = (await this.request("hello", params)) as HelloResult;
+		assertCompatibleVersions(params.clientVersion, result.daemonVersion);
+		if (params.clientVersion === this.clientVersion) {
+			this.helloResult = result;
+		}
+		return result;
+	}
+
+	async handshake(): Promise<HelloResult> {
+		if (this.helloResult) {
+			return this.helloResult;
+		}
+		if (!this.handshakePromise) {
+			this.handshakePromise = this.hello({ clientVersion: this.clientVersion }).finally(() => {
+				this.handshakePromise = undefined;
+			});
+		}
+		return await this.handshakePromise;
+	}
+
+	async reconnect(): Promise<void> {
+		await this.close();
+		await this.connect();
 	}
 
 	async dispatch(action: Action): Promise<DispatchResult> {
+		await this.handshake();
 		return (await this.request("dispatch", action)) as DispatchResult;
 	}
 
 	async query(params: QueryParams): Promise<QueryResult> {
+		await this.handshake();
 		return (await this.request("query", params)) as QueryResult;
 	}
 
@@ -103,6 +148,7 @@ export class DctClient {
 		events: SubscriptionEventKind[],
 		onEvent: (event: SubscriptionEvent) => void,
 	): Promise<{ subId: number; unsubscribe: () => Promise<EmptyResult> }> {
+		await this.handshake();
 		const result = (await this.request("subscribe", { events } satisfies SubscribeParams)) as SubscribeResult;
 		this.subscriptions.set(result.subId, onEvent);
 		return {
@@ -115,6 +161,7 @@ export class DctClient {
 	}
 
 	async control(params: ControlParams): Promise<EmptyResult> {
+		await this.handshake();
 		return (await this.request("control", params)) as EmptyResult;
 	}
 
@@ -127,6 +174,8 @@ export class DctClient {
 			const socket = this.socket;
 			this.socket = undefined;
 			this.connected = false;
+			this.helloResult = undefined;
+			this.handshakePromise = undefined;
 			this.rejectPendingRequests(new Error("Socket closed"));
 			socket?.once("close", () => resolve());
 			socket?.end();
@@ -178,6 +227,8 @@ export class DctClient {
 		socket.on("close", () => {
 			this.connected = false;
 			this.socket = undefined;
+			this.helloResult = undefined;
+			this.handshakePromise = undefined;
 			this.rejectPendingRequests(new Error("Socket closed"));
 		});
 		socket.on("error", (error) => {

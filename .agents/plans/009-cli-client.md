@@ -24,7 +24,7 @@ owner: cli
 - [ ] **Phase 3 — Client SDK**
   - [x] 3.1 Implement `DctClient` connecting over the socket
   - [x] 3.2 Auto-spawn daemon on first connect (detached child)
-  - [ ] 3.3 Reconnect / handshake / version negotiation
+  - [x] 3.3 Reconnect / handshake / version negotiation
   - [ ] 3.4 Snapshot + delta subscription helpers
 - [ ] **Phase 4 — One-shot CLI subcommands**
   - [ ] 4.1 Argument parser scaffolding (no heavy deps; small custom parser)
