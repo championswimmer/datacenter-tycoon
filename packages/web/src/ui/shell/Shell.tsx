@@ -64,6 +64,7 @@ export function Shell({ isFreshStart = false }: ShellProps) {
         {/* ── Main viewport ── */}
         <main className={styles.viewport}>
           <MainContent
+            key={route.view === "dc" ? `dc-${route.dcId}` : route.view}
             route={route}
             datacenters={datacenters}
             onNewDatacenter={openNewDcModal}
