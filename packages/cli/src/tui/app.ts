@@ -6,6 +6,7 @@ import { resolvePaths } from "../paths.js";
 import type { StatusView } from "../protocol/messages.js";
 import { renderLayout, type TuiTabId } from "./layout.js";
 import { autocompletePaletteInput, splitCommandLine } from "./palette.js";
+import { selectSaveTui } from "./selector.js";
 import { renderCatalogTab } from "./tabs/catalog.js";
 import { renderContractsTab } from "./tabs/contracts.js";
 import { renderDashboardTab } from "./tabs/dashboard.js";
@@ -77,6 +78,8 @@ async function executePaletteCommand(input: string): Promise<string> {
 }
 
 export async function runTui(): Promise<void> {
+	const selectedGameId = await selectSaveTui();
+
 	const stdin = process.stdin;
 	const stdout = process.stdout;
 	const wasRaw = stdin.isRaw;
@@ -95,7 +98,7 @@ export async function runTui(): Promise<void> {
 		return;
 	}
 
-	const paths = resolvePaths();
+	const paths = resolvePaths({ gameId: selectedGameId });
 	const client = new DctClient({ socketPath: paths.socketPath, savePath: paths.savePath });
 	let snapshot: GameState | undefined;
 	let status: StatusView | undefined;
