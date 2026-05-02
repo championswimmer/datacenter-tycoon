@@ -150,7 +150,8 @@ export async function runCli(args: string[]): Promise<void> {
 	}
 
 	if (!parsed.command) {
-		console.log("dct");
+		const { runTui } = await import("./tui/app.js");
+		await runTui();
 		return;
 	}
 

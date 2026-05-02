@@ -34,9 +34,9 @@ owner: cli
   - [x] 4.5 `dct build-dc`, `dct add-rack`, `dct remove-rack`
   - [x] 4.6 `dct accept-contract`, `dct cancel-contract`
   - [x] 4.7 `dct tick [n]`, `dct pause`, `dct resume`, `dct speed <ticks/sec>`
-  - [ ] 4.8 `--json` global flag for machine-readable output
+  - [x] 4.8 `--json` global flag for machine-readable output
 - [ ] **Phase 5 — Interactive TUI**
-  - [ ] 5.1 Pick & vendor a tiny ANSI/TUI helper (or `ink`); document choice
+  - [x] 5.1 Pick & vendor a tiny ANSI/TUI helper (or `ink`); document choice
   - [ ] 5.2 Main layout: header (cash/tick/speed) + tab bar + body + status line
   - [ ] 5.3 Dashboard tab (KPIs, ledger tail, alerts)
   - [ ] 5.4 Datacenters tab (list → detail → rack grid)
