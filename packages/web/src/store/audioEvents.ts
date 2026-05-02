@@ -75,7 +75,16 @@ export function attachAudioEvents(store: GameStore): () => void {
       // SFX (Datacenter events)
       if (settings.sfx) {
         const currActiveIds = new Set(currActive.map((c) => c.id));
+        const prevActiveIds = new Set(prevActive.map((c) => c.id));
 
+        // Detect accepted (newly active)
+        for (const curr of currActive) {
+          if (!prevActiveIds.has(curr.id)) {
+            playSound("contract_accepted", false);
+          }
+        }
+
+        // Detect completed/cancelled (newly inactive)
         for (const prev of prevActive) {
           if (!currActiveIds.has(prev.id)) {
             const updated = state.activeContracts.find((c) => c.id === prev.id);
