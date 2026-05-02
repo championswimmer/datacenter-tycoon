@@ -35,18 +35,18 @@ owner: cli
   - [x] 4.6 `dct accept-contract`, `dct cancel-contract`
   - [x] 4.7 `dct tick [n]`, `dct pause`, `dct resume`, `dct speed <ticks/sec>`
   - [x] 4.8 `--json` global flag for machine-readable output
-- [ ] **Phase 5 — Interactive TUI**
+- [x] **Phase 5 — Interactive TUI**
   - [x] 5.1 Pick & vendor a tiny ANSI/TUI helper (or `ink`); document choice
   - [x] 5.2 Main layout: header (cash/tick/speed) + tab bar + body + status line
   - [x] 5.3 Dashboard tab (KPIs, ledger tail, alerts)
   - [x] 5.4 Datacenters tab (list → detail → rack grid)
   - [x] 5.5 Contracts tab (market + active, accept/cancel)
   - [x] 5.6 Catalog tab (DC specs, rack specs)
-  - [ ] 5.7 Command palette (`:` to run any one-shot subcommand)
-  - [ ] 5.8 Keybindings cheatsheet (`?`)
-  - [ ] 5.9 Live updates via subscription stream
+  - [x] 5.7 Command palette (`:` to run any one-shot subcommand)
+  - [x] 5.8 Keybindings cheatsheet (`?`)
+  - [x] 5.9 Live updates via subscription stream
 - [ ] **Phase 6 — Polish & docs**
-  - [ ] 6.1 Write `packages/cli/README.md` and `packages/cli/AGENTS.md`
+  - [x] 6.1 Write `packages/cli/README.md` and `packages/cli/AGENTS.md`
   - [ ] 6.2 Add `npm run dev:cli` script and update root `AGENTS.md`
   - [ ] 6.3 Integration test: spawn daemon, run subcommands, assert save shape
   - [ ] 6.4 Release notes / CHANGELOG entry
