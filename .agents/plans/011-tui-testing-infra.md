@@ -49,8 +49,23 @@ flowchart TD
 
 Key Decisions:
 - **`@microsoft/tui-test`**: Used for E2E testing. It spins up a real terminal environment, allowing us to test raw mode interactions and ANSI escape sequences.
+- **Cross-Platform Support**: While the library supports Windows, macOS, and Linux, it relies on `node-pty` which contains native C++ components.
 - **Snapshot Testing**: We will capture the raw string output (including ANSI codes) or a "stripped" version (plain text) to verify layout integrity.
 - **Mocking Process**: `process.stdin` and `process.stdout` will be mocked or wrapped to facilitate automated input injection.
+
+## OS Compatibility & Environment Requirements
+
+This infrastructure relies on **native C++ bindings** via `node-pty`.
+
+| OS | Status | Requirements |
+|----|--------|--------------|
+| **macOS** | ✅ Supported | Xcode Command Line Tools. |
+| **Linux** | ✅ Supported | `build-essential` (`gcc`, `g++`, `make`), Python 3. |
+| **Windows**| ✅ Supported | Visual Studio Build Tools (C++), Python 3. |
+
+**CI Note**: In GitHub Actions, ensure `ubuntu-latest` has necessary build tools (usually pre-installed). If prebuilt binaries for `node-pty` fail, the build will attempt to compile from source.
+
+The testing utility should include a check that skips TUI E2E tests or warns if `node-pty` failed to load/compile on an unsupported or misconfigured environment.
 
 ## Phase 1 — Research & Prototyping
 
@@ -74,9 +89,10 @@ Key Decisions:
 ### Step 2.2 — Create TUI Test Utils
 
 - File: `packages/cli/src/tui/test-utils.ts`
+- Implement OS-compatibility guard: Export a `isTuiTestSupported()` helper that checks if `node-pty` can be imported.
 - Implement `renderToMetadata()`: A helper that strips ANSI codes for easy text-based snapshots.
 - Implement `injectKeyPress(stdin, key)`: Helper to simulate `readline` key events.
-- Acceptance: Utils are importable in `.test.ts` files.
+- Acceptance: Utils are importable in `.test.ts` files and skip tests gracefully on missing dependencies.
 
 ## Phase 3 — Unit & Integration Tests
 
