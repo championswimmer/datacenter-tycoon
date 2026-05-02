@@ -1,13 +1,19 @@
 import readline from "node:readline";
 
+import { renderLayout } from "./layout.js";
+
 function renderHelloFrame(): string {
 	return [
 		"\u001B[2J\u001B[H\u001B[?1049h",
-		"Datacenter Tycoon",
-		"",
-		"Loading terminal UI...",
-		"",
-		"Press q to quit.",
+		renderLayout({
+			tick: 0,
+			cash: 0,
+			speedTps: 0,
+			paused: true,
+			activeTab: "dashboard",
+			bodyLines: ["Loading terminal UI...", "", "Press q to quit."],
+			statusLine: "q quit · ? help · : commands",
+		}),
 	].join("\n");
 }
 
@@ -17,7 +23,17 @@ export async function runTui(): Promise<void> {
 	const wasRaw = stdin.isRaw;
 
 	if (!stdin.isTTY || !stdout.isTTY) {
-		stdout.write(["Datacenter Tycoon", "", "Loading terminal UI...", "", "Press q to quit."].join("\n"));
+		stdout.write(
+			renderLayout({
+				tick: 0,
+				cash: 0,
+				speedTps: 0,
+				paused: true,
+				activeTab: "dashboard",
+				bodyLines: ["Loading terminal UI...", "", "Press q to quit."],
+				statusLine: "q quit · ? help · : commands",
+			}),
+		);
 		return;
 	}
 
