@@ -5,6 +5,7 @@ import {
   selectAudioSettings,
   selectResourceUsage,
   selectCapacity,
+  selectTotalServers,
 } from "./selectors.js";
 
 export function attachAudioEvents(store: GameStore): () => void {
@@ -39,13 +40,14 @@ export function attachAudioEvents(store: GameStore): () => void {
           ambientStarted = true;
         }
         
-        // Modulate ambient hum based on usage
+        // Modulate ambient hum based on usage and scale
         const usage = selectResourceUsage(state);
         const capacity = selectCapacity(state);
+        const servers = selectTotalServers(state);
         const load = capacity.total.vCpu > 0 
           ? Math.min(1, usage.total.powerKw / (capacity.total.vCpu * 0.5))
           : 0;
-        ambient.setUsage(load);
+        ambient.setUsage(load, servers);
 
         // Modulate by speed and pause
         ambient.setSpeed(state.game.speed);
