@@ -15,6 +15,7 @@ datacenter-tycoon/
 ├── packages/
 │   ├── game-logic/   # Core game logic (pure TS, framework-agnostic) — START HERE for rules/sim
 │   ├── web/          # Web frontend
+│   ├── cli/          # Local daemon + one-shot commands + interactive terminal UI
 │   ├── desktop/      # Electron app (planned, not yet implemented)
 │   └── server/       # Scoring, leaderboard, multiplayer backend
 ├── .agents/
@@ -36,6 +37,7 @@ npm run build              # build all packages
 npm run typecheck          # tsc --noEmit across workspaces
 npm run test               # run tests across workspaces
 npm run dev                # dev mode where applicable
+npm run dev:cli            # run the CLI package in watch/dev mode
 ```
 
 ## Code Style & Guidelines
