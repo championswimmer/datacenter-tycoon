@@ -209,3 +209,13 @@ export function selectFreeCapacity(state: GameState): Capacity {
 export function selectAudioEnabled(state: GameState): boolean {
   return state.audioEnabled ?? true;
 }
+
+export function selectAudioSettings(state: GameState): import("@datacenter-tycoon/game-logic").AudioSettings {
+  return state.audioSettings ?? {
+    master: state.audioEnabled ?? true,
+    music: true,
+    sfx: true,
+    money: true,
+    ambient: true,
+  };
+}

@@ -1,7 +1,7 @@
 ---
 name: Generative Retro Music & Expanded Audio
 description: Add generative background music, ambient server sounds, and granular audio settings for a richer retro-tycoon experience.
-status: created
+status: completed
 created: 2026-05-02
 updated: 2026-05-02
 ---
@@ -16,10 +16,10 @@ updated: 2026-05-02
   - [x] 2.1 Add "Revenue" (chime) and "Opex" (thud) sound profiles
   - [x] 2.2 Wire money events into `audioEvents.ts` listener
   - [x] 2.3 Add "Usage-based" pitch/volume modulation for ambient hum
-- [ ] **Phase 3 — Granular Audio Settings**
-  - [ ] 3.1 Update `GameState` and `AudioSettings` types
-  - [ ] 3.2 Implement `AudioSettingsModal` UI
-  - [ ] 3.3 Wire modal into `TopBar` and replace simple mute toggle
+- [x] **Phase 3 — Granular Audio Settings**
+  - [x] 3.1 Update `GameState` and `AudioSettings` types
+  - [x] 3.2 Implement `AudioSettingsModal` UI
+  - [x] 3.3 Wire modal into `TopBar` and replace simple mute toggle
 
 ## Overview
 

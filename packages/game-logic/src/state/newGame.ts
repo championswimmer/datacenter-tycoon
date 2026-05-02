@@ -38,7 +38,15 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 		activeContracts: [],
 		ledger: [],
 		audioEnabled: true,
-	};
+		audioSettings: {
+			master: true,
+			music: true,
+			sfx: true,
+			money: true,
+			ambient: true,
+		},
+		};
+		}
 
 	return refreshContractMarket(initialState);
 }
