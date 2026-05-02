@@ -42,7 +42,7 @@ export const ambient = {
     if (context) AmbientEngine.startAmbient(context);
   },
   stop: () => AmbientEngine.stopAmbient(),
-  setUsage: (load: number) => AmbientEngine.setAmbientUsage(load),
+  setUsage: (load: number, scale?: number) => AmbientEngine.setAmbientUsage(load, scale),
   setSpeed: (factor: number) => AmbientEngine.setAmbientSpeed(factor),
   setPaused: (paused: boolean) => AmbientEngine.setAmbientPaused(paused),
 };

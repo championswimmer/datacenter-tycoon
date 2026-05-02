@@ -65,18 +65,22 @@ export function setAmbientPaused(paused: boolean) {
 }
 
 /**
- * Modulates the hum based on load (0 to 1).
+ * Modulates the hum based on load (0 to 1) and infrastructure scale.
  */
-export function setAmbientUsage(load: number) {
+export function setAmbientUsage(load: number, scale: number = 0) {
   if (!ctx || !filter || !masterGain) return;
 
   const cappedLoad = Math.max(0, Math.min(1, load));
 
-  // Increase filter cutoff with load (200Hz to 2000Hz)
-  const cutoff = 200 + cappedLoad * 1800;
+  // Increase filter cutoff with load (200Hz to 2000Hz) 
+  // and scale (+10Hz per server, capped at 1000Hz extra)
+  const scaleEffect = Math.min(1000, scale * 10);
+  const cutoff = 200 + cappedLoad * 1800 + scaleEffect;
   filter.frequency.setTargetAtTime(cutoff, ctx.currentTime, 0.2);
 
-  // Slightly increase volume with load
-  const volume = 0.05 + cappedLoad * 0.05;
+  // Slightly increase volume with load and scale
+  // Base volume 0.05, +0.005 per server (capped at 0.1 extra)
+  const volumeScale = Math.min(0.1, scale * 0.005);
+  const volume = 0.05 + cappedLoad * 0.05 + volumeScale;
   masterGain.gain.setTargetAtTime(volume, ctx.currentTime, 0.5);
 }

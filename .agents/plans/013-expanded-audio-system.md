@@ -11,9 +11,9 @@ updated: 2026-05-02
 - [x] **Phase 1 — Ambient Engine Enhancements**
   - [x] 1.1 Update `AmbientEngine.ts` to support frequency modulation and pausing.
   - [x] 1.2 Update `attachAudioEvents.ts` to pass game speed and pause state.
-- [ ] **Phase 2 — Dynamic Infrastructure Hum**
+- [x] **Phase 2 — Dynamic Infrastructure Hum**
   - [x] 2.1 Identify/Implement "active infrastructure" metric in selectors.
-  - [ ] 2.2 Update `attachAudioEvents.ts` to use infrastructure scale for ambient modulation.
+  - [x] 2.2 Update `attachAudioEvents.ts` to use infrastructure scale for ambient modulation.
 - [ ] **Phase 3 — Contract Acceptance SFX**
   - [ ] 3.1 Implement "kaching" (register ring) generative sound in `AudioEngine.ts`.
   - [ ] 3.2 Trigger "kaching" sound on contract acceptance in `attachAudioEvents.ts`.
