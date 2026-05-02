@@ -71,6 +71,10 @@ export function formatJsonResult(data: unknown): string {
 	return JSON.stringify({ ok: true, data }, null, 2);
 }
 
+export function formatJsonError(message: string, code = 1): string {
+	return JSON.stringify({ ok: false, error: { code, message } }, null, 2);
+}
+
 export function writeCommandResult(parsed: ParsedArgv, text: string, data?: unknown): void {
 	if (hasBooleanFlag(parsed, "--json")) {
 		console.log(formatJsonResult(data ?? text));

@@ -6,6 +6,7 @@ import { runLoadCommand, runNewCommand, runQuitCommand, runSaveCommand } from ".
 import { runLsCommand } from "./commands/ls.js";
 import { runAddRackCommand, runBuildDatacenterCommand, runRemoveRackCommand } from "./commands/build-dc.js";
 import { runAcceptContractCommand, runCancelContractCommand } from "./commands/contracts.js";
+import { formatJsonError } from "./commands/common.js";
 import { runPauseCommand, runResumeCommand, runSpeedCommand } from "./commands/control.js";
 import { runTickCommand } from "./commands/tick.js";
 import { GamePersistence, loadOrInit } from "./daemon/persist.js";
@@ -166,6 +167,12 @@ async function main(): Promise<void> {
 }
 
 void main().catch((error) => {
-	console.error(error instanceof Error ? error.message : String(error));
+	const message = error instanceof Error ? error.message : String(error);
+	const parsed = parseArgv(process.argv.slice(2));
+	if (parsed.flags["--json"] === true) {
+		console.error(formatJsonError(message));
+	} else {
+		console.error(message);
+	}
 	process.exit(1);
 });
