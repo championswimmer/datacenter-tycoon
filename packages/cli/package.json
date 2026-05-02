@@ -13,7 +13,7 @@
     "start": "node dist/cli.js",
     "typecheck": "tsc --noEmit",
     "test": "node --test --import tsx $(find src -type f -name '*.test.ts' | sort)",
-    "test:ci": "mkdir -p coverage && c8 --report-dir=coverage --reporter=lcov --reporter=text-summary --all --include=src/**/*.ts --exclude='src/**/*.test.ts' node --test --import tsx --test-reporter=junit --test-reporter-destination=coverage/junit.xml $(find src -type f -name '*.test.ts' | sort)",
+    "test:ci": "mkdir -p coverage && c8 --report-dir=coverage --reporter=lcov --reporter=text-summary --all --include='src/**/*.ts' --exclude='src/**/*.test.ts' node --test --import tsx --test-reporter=junit --test-reporter-destination=coverage/junit.xml $(find src -type f -name '*.test.ts' | sort)",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
