@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { clearSave } from "../../store/persist.js";
+import { clearSave, getCurrentGameId } from "../../store/persist.js";
 import styles from "./ResetGameModal.module.css";
 
 interface ResetGameModalProps {
@@ -17,7 +17,10 @@ export function ResetGameModal({ onClose }: ResetGameModalProps) {
   }, [onClose]);
 
   const handleConfirm = () => {
-    clearSave();
+    const gameId = getCurrentGameId();
+    if (gameId) {
+      clearSave(gameId);
+    }
     window.location.hash = "/";
     window.location.reload();
   };
