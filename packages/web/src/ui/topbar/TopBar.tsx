@@ -9,12 +9,14 @@ import {
   selectActiveContracts,
   selectMarket,
   selectAudioEnabled,
+  selectAudioSettings,
 } from "../../store/selectors.js";
 import { LedSegment } from "../../theme/primitives/index.js";
 import { navigate } from "../../router/hashRouter.js";
 import type { Speed } from "../../store/tickDriver.js";
 import { isDesktopRuntime } from "../../platform/desktop.js";
 import { ResetGameModal } from "./ResetGameModal.js";
+import { AudioSettingsModal } from "../settings/AudioSettingsModal.js";
 import { tickToGameDate, formatGameDate } from "../../store/gameTime.js";
 import { useTickFraction } from "../../store/tickFractionStore.js";
 import styles from "./TopBar.module.css";
@@ -44,7 +46,7 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
   const pnl             = useSelector(selectMonthlyPnl);
   const activeContracts = useSelector(selectActiveContracts);
   const market          = useSelector(selectMarket);
-  const audioEnabled    = useSelector(selectAudioEnabled);
+  const audioSettings   = useSelector(selectAudioSettings);
 
   const gameDate = tickToGameDate(tick, fraction);
 
@@ -57,6 +59,7 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
   const cashLow = cash < 100_000;
 
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showAudioModal, setShowAudioModal] = useState(false);
   const openContracts = () => navigate({ view: "contracts" });
 
   const banner = breachedCount > 0
@@ -136,11 +139,11 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
 
         <button
           className={styles.helpBtn}
-          onClick={() => dispatch({ type: "SetAudioEnabled", enabled: !audioEnabled })}
-          title={audioEnabled ? "Mute sounds" : "Unmute sounds"}
-          aria-label={audioEnabled ? "Mute sounds" : "Unmute sounds"}
+          onClick={() => setShowAudioModal(true)}
+          title="Audio Settings"
+          aria-label="Audio Settings"
         >
-          {audioEnabled ? "🔊" : "🔇"}
+          {audioSettings.master ? "🔊" : "🔇"}
         </button>
 
         <button
@@ -186,6 +189,10 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
 
       {showResetModal && (
         <ResetGameModal onClose={() => setShowResetModal(false)} />
+      )}
+
+      {showAudioModal && (
+        <AudioSettingsModal onClose={() => setShowAudioModal(false)} />
       )}
     </header>
   );

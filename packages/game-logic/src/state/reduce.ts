@@ -31,6 +31,7 @@ export type Action =
 	| { type: "AcceptContract"; contractId: ContractId; dcId: DatacenterId }
 	| { type: "CancelContract"; contractId: ContractId }
 	| { type: "SetAudioEnabled"; enabled: boolean }
+	| { type: "UpdateAudioSettings"; settings: Partial<import("../types.js").AudioSettings> }
 	| { type: "Tick" };
 
 function getDatacenterSpec(specId: DatacenterSpecId): DatacenterSpec {
@@ -185,7 +186,17 @@ export function reduce(state: GameState, action: Action): GameState {
 		case "CancelContract":
 			return cancelContract(state, action.contractId);
 		case "SetAudioEnabled":
-			return { ...state, audioEnabled: action.enabled };
+			return {
+				...state,
+				audioEnabled: action.enabled,
+				audioSettings: { ...state.audioSettings, master: action.enabled },
+			};
+		case "UpdateAudioSettings":
+			return {
+				...state,
+				audioSettings: { ...state.audioSettings, ...action.settings },
+				audioEnabled: action.settings.master ?? state.audioSettings.master,
+			};
 		case "Tick":
 			return tick(state);
 		default:

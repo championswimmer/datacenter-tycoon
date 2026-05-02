@@ -162,6 +162,14 @@ export interface RngState {
 	state: number;
 }
 
+export interface AudioSettings {
+	master: boolean;
+	music: boolean;
+	sfx: boolean; // Datacenter events
+	money: boolean; // Revenue/Opex
+	ambient: boolean; // Server hum
+}
+
 export interface GameState {
 	gameId: GameId;
 	tick: Tick;
@@ -173,4 +181,5 @@ export interface GameState {
 	activeContracts: Contract[];
 	ledger: LedgerEntry[];
 	audioEnabled: boolean;
+	audioSettings: AudioSettings;
 }
