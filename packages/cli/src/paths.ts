@@ -3,6 +3,7 @@ import path from "node:path";
 
 export interface ResolvePathsOptions {
   saveOverride?: string;
+  gameId?: string;
   socketOverride?: string;
 }
 
@@ -15,6 +16,7 @@ interface ResolvePathsPlatformOptions extends ResolvePathsOptions {
 
 export interface ResolvedPaths {
   savePath: string;
+  dataDir: string;
   socketPath: string;
   pidPath: string;
   logPath: string;
@@ -76,10 +78,12 @@ function resolveLogDir(
 }
 
 export function resolvePathsForPlatform(options: ResolvePathsPlatformOptions): ResolvedPaths {
-  const { platform, env, homeDir, tempDir, saveOverride, socketOverride } = options;
+  const { platform, env, homeDir, tempDir, saveOverride, gameId, socketOverride } = options;
   const pathApi = getPathApi(platform);
 
-  const savePath = saveOverride ?? pathApi.join(resolveDataDir(platform, env, homeDir), "dct", "save.json");
+  const dataDir = pathApi.join(resolveDataDir(platform, env, homeDir), "dct");
+  const saveFileName = gameId ? `${gameId}.json` : "save.json";
+  const savePath = saveOverride ?? pathApi.join(dataDir, saveFileName);
 
   const socketPath =
     socketOverride ??
@@ -92,6 +96,7 @@ export function resolvePathsForPlatform(options: ResolvePathsPlatformOptions): R
 
   return {
     savePath,
+    dataDir,
     socketPath,
     pidPath,
     logPath,
