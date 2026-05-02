@@ -26,6 +26,10 @@ function createFakeClient(log: string[], snapshotTick = 0): CommandClient {
 		connect: async () => {
 			log.push("connect");
 		},
+		dispatch: async () => {
+			log.push("dispatch");
+			return { tick: snapshotTick };
+		},
 		query: async (params) => {
 			log.push(`query:${params.kind}`);
 			return params.kind === "snapshot" ? { tick: snapshotTick } : { tick: snapshotTick };

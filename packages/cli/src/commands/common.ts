@@ -1,7 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import type { GameState } from "@datacenter-tycoon/game-logic";
+import crypto from "node:crypto";
+
+import type { Action, GameState } from "@datacenter-tycoon/game-logic";
 
 import type { QueryParams } from "../protocol/messages.js";
 
@@ -11,6 +13,7 @@ import { resolvePaths } from "../paths.js";
 
 export interface CommandClient {
 	connect(): Promise<void>;
+	dispatch(action: Action): Promise<unknown>;
 	query(params: QueryParams): Promise<unknown>;
 	control(params: { op: "save-now" } | { op: "shutdown" } | { op: "pause" } | { op: "resume" } | { op: "set-speed"; ticksPerSecond: number }): Promise<{ ok: true }>;
 	close(): Promise<void>;
@@ -77,6 +80,18 @@ export function writeCommandResult(parsed: ParsedArgv, text: string, data?: unkn
 	if (!hasBooleanFlag(parsed, "--quiet")) {
 		console.log(text);
 	}
+}
+
+export function parseInteger(value: string, label: string): number {
+	const parsed = Number.parseInt(value, 10);
+	if (!Number.isInteger(parsed)) {
+		throw new Error(`Invalid ${label}: ${value}`);
+	}
+	return parsed;
+}
+
+export function createShortId(prefix: string): string {
+	return `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
 export function requirePositional(parsed: ParsedArgv, index: number, usage: string): string {

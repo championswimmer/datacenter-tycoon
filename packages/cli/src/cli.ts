@@ -4,6 +4,7 @@ import { formatHelp, getFlagValue, hasHelpFlag, parseArgv, type CommandDefinitio
 import { runStatusCommand } from "./commands/status.js";
 import { runLoadCommand, runNewCommand, runQuitCommand, runSaveCommand } from "./commands/new-load.js";
 import { runLsCommand } from "./commands/ls.js";
+import { runAddRackCommand, runBuildDatacenterCommand, runRemoveRackCommand } from "./commands/build-dc.js";
 import { GamePersistence, loadOrInit } from "./daemon/persist.js";
 import { GameRuntime } from "./daemon/runtime.js";
 import { GameDaemonServer } from "./daemon/server.js";
@@ -123,9 +124,9 @@ const COMMANDS: CommandHandler[] = [
 	{ name: "save", summary: "Force-save the current game", run: async ({ parsed }) => runSaveCommand(parsed) },
 	{ name: "quit", summary: "Flush state and shut down the daemon", run: async ({ parsed }) => runQuitCommand(parsed) },
 	{ name: "ls", summary: "List datacenters, racks, contracts, or catalog data", run: async ({ parsed }) => runLsCommand(parsed) },
-	createNotImplementedHandler("build-dc", "Build a datacenter"),
-	createNotImplementedHandler("add-rack", "Add a rack to a datacenter"),
-	createNotImplementedHandler("remove-rack", "Remove a rack placement"),
+	{ name: "build-dc", summary: "Build a datacenter", run: async ({ parsed }) => runBuildDatacenterCommand(parsed) },
+	{ name: "add-rack", summary: "Add a rack to a datacenter", run: async ({ parsed }) => runAddRackCommand(parsed) },
+	{ name: "remove-rack", summary: "Remove a rack placement", run: async ({ parsed }) => runRemoveRackCommand(parsed) },
 	createNotImplementedHandler("accept-contract", "Accept a contract"),
 	createNotImplementedHandler("cancel-contract", "Cancel an active contract"),
 	createNotImplementedHandler("tick", "Advance one or more ticks"),

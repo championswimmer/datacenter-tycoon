@@ -41,6 +41,7 @@ test("runLsCommand prints list output for datacenters", async () => {
 		connect: async () => {
 			calls.push("connect");
 		},
+		dispatch: async () => ({ tick: 0 }),
 		query: async () => {
 			calls.push("query");
 			return datacenterList;
@@ -69,6 +70,7 @@ test("runLsCommand prints JSON when requested", async () => {
 	};
 	const fakeClient: CommandClient = {
 		connect: async () => undefined,
+		dispatch: async () => ({ tick: 0 }),
 		query: async () => datacenterList,
 		control: async () => ({ ok: true }),
 		close: async () => undefined,
