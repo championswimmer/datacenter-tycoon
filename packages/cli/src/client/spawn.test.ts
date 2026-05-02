@@ -50,7 +50,7 @@ test("DctClient auto-spawns a daemon when none is running", async () => {
 		assert.ok(spawnedPid);
 		assert.doesNotThrow(() => process.kill(spawnedPid!, 0));
 
-		const hello = await client.hello({ clientVersion: "test" });
+		const hello = await client.hello({ clientVersion: "0.1.0" });
 		assert.equal(hello.tick, 0);
 
 		await client.control({ op: "save-now" });
