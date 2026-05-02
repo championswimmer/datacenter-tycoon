@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { newGame, reduce } from "@datacenter-tycoon/game-logic";
+import { DATACENTER_CATALOG, newGame, reduce } from "@datacenter-tycoon/game-logic";
 import {
+  getSaveKey,
   loadSave,
   writeSave,
   clearSave,
@@ -49,7 +50,7 @@ describe("loadSave", () => {
 
   it("returns null and logs a warning on corrupt JSON", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const key = "corrupt-save";
+    const key = getSaveKey("corrupt-save");
     localStorage.setItem(key, "not-valid-json{{{");
     expect(loadSave(key)).toBeNull();
     expect(warnSpy).toHaveBeenCalledOnce();
@@ -58,7 +59,7 @@ describe("loadSave", () => {
 
   it("returns null and logs a warning when envelope is missing saveVersion", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const key = "missing-version";
+    const key = getSaveKey("missing-version");
     localStorage.setItem(key, JSON.stringify({ state: {} }));
     expect(loadSave(key)).toBeNull();
     expect(warnSpy).toHaveBeenCalledOnce();
@@ -123,7 +124,7 @@ describe("attachAutosave", () => {
     const store = createGameStore(state);
     attachAutosave(store);
     // Trigger something non-tick
-    store.dispatch({ type: "BuildDatacenter", specId: "small" as any, dcId: "dc1" as any });
+    store.dispatch({ type: "BuildDatacenter", specId: DATACENTER_CATALOG.garage!.id, dcId: "dc1" as any });
     expect(loadSave(state.gameId)).not.toBeNull();
   });
 
@@ -136,13 +137,6 @@ describe("attachAutosave", () => {
     // First N-1 ticks should NOT trigger a save
     for (let i = 0; i < AUTOSAVE_EVERY_TICKS - 1; i++) {
       store.dispatch({ type: "Tick" });
-    }
-    // We expect 1 call from initial setup if any, or 0. 
-    // Let's check calls after initial setup.
-    setItemSpy.mockClear();
-
-    for (let i = 0; i < AUTOSAVE_EVERY_TICKS - 1; i++) {
-        store.dispatch({ type: "Tick" });
     }
     expect(setItemSpy).not.toHaveBeenCalled();
 
