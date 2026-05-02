@@ -36,16 +36,12 @@ export function selectAllDatacenters(state: GameState): Datacenter[] {
 
 /** Total number of racks across all datacenters. */
 export function selectTotalRacks(state: GameState): number {
-  return state.datacenters.reduce((acc, dc) => acc + dc.racks.length, 0);
+  return state.datacenters.reduce((acc, dc) => acc + dc.placements.length, 0);
 }
 
-/** Total number of servers across all racks and datacenters. */
+/** Total number of servers (racks) across all datacenters. */
 export function selectTotalServers(state: GameState): number {
-  return state.datacenters.reduce(
-    (acc, dc) =>
-      acc + dc.racks.reduce((rAcc, rack) => rAcc + rack.servers.length, 0),
-    0,
-  );
+  return selectTotalRacks(state);
 }
 
 export function selectDatacenter(

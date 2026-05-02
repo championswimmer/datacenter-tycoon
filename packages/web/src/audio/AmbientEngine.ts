@@ -31,11 +31,28 @@ function init(audioCtx: AudioContext) {
   }
 }
 
-export function startAmbient(audioCtx: AudioContext) {
-  init(audioCtx);
+let currentLoad = 0;
+let currentScale = 0;
+let isPaused = false;
+
+function updateVolume() {
   if (!ctx || !masterGain) return;
 
-  masterGain.gain.setTargetAtTime(0.05, ctx.currentTime, 1.0);
+  if (isPaused || currentScale === 0) {
+    masterGain.gain.setTargetAtTime(0, ctx.currentTime, 0.2);
+    return;
+  }
+
+  // Slightly increase volume with load and scale
+  // Base volume 0.05, +0.005 per server (capped at 0.1 extra)
+  const volumeScale = Math.min(0.1, currentScale * 0.005);
+  const volume = 0.05 + currentLoad * 0.05 + volumeScale;
+  masterGain.gain.setTargetAtTime(volume, ctx.currentTime, 0.5);
+}
+
+export function startAmbient(audioCtx: AudioContext) {
+  init(audioCtx);
+  updateVolume();
 }
 
 export function stopAmbient() {
@@ -49,8 +66,6 @@ export function stopAmbient() {
  */
 export function setAmbientSpeed(factor: number) {
   if (!ctx || !oscillator) return;
-  // Base frequency is 55Hz (A1). Scale it by speed factor.
-  // We use a slight log scale or just linear factor. Let's try linear factor for now.
   const freq = 55 * factor;
   oscillator.frequency.setTargetAtTime(freq, ctx.currentTime, 0.5);
 }
@@ -59,28 +74,24 @@ export function setAmbientSpeed(factor: number) {
  * Handles pausing the ambient hum.
  */
 export function setAmbientPaused(paused: boolean) {
-  if (!ctx || !masterGain) return;
-  const targetGain = paused ? 0 : 0.05; // Base gain when not paused
-  masterGain.gain.setTargetAtTime(targetGain, ctx.currentTime, 0.2);
+  isPaused = paused;
+  updateVolume();
 }
 
 /**
  * Modulates the hum based on load (0 to 1) and infrastructure scale.
  */
 export function setAmbientUsage(load: number, scale: number = 0) {
-  if (!ctx || !filter || !masterGain) return;
+  currentLoad = Math.max(0, Math.min(1, load));
+  currentScale = scale;
 
-  const cappedLoad = Math.max(0, Math.min(1, load));
+  if (!ctx || !filter) return;
 
   // Increase filter cutoff with load (200Hz to 2000Hz) 
   // and scale (+10Hz per server, capped at 1000Hz extra)
-  const scaleEffect = Math.min(1000, scale * 10);
-  const cutoff = 200 + cappedLoad * 1800 + scaleEffect;
+  const scaleEffect = Math.min(1000, currentScale * 10);
+  const cutoff = 200 + currentLoad * 1800 + scaleEffect;
   filter.frequency.setTargetAtTime(cutoff, ctx.currentTime, 0.2);
 
-  // Slightly increase volume with load and scale
-  // Base volume 0.05, +0.005 per server (capped at 0.1 extra)
-  const volumeScale = Math.min(0.1, scale * 0.005);
-  const volume = 0.05 + cappedLoad * 0.05 + volumeScale;
-  masterGain.gain.setTargetAtTime(volume, ctx.currentTime, 0.5);
+  updateVolume();
 }
