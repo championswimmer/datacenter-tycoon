@@ -172,6 +172,10 @@ export interface AudioSettings {
 
 export interface GameState {
 	gameId: GameId;
+	game: {
+		speed: number;
+		paused: boolean;
+	};
 	tick: Tick;
 	seed: number;
 	rngState: number;

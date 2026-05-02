@@ -25,6 +25,10 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 
 	const initialState: GameState = {
 		gameId: crypto.randomUUID() as GameId,
+		game: {
+			speed: 1,
+			paused: false,
+		},
 		tick: INITIAL_TICK,
 		seed: effectiveSeed,
 		rngState: effectiveSeed,

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { useSelector, useTickDriver } from "../../store/storeContext.js";
+import { useSelector, useTickDriver, useGameDispatch } from "../../store/storeContext.js";
 import { selectAllDatacenters } from "../../store/selectors.js";
 import { useRoute, navigateToDc } from "../../router/hashRouter.js";
 import type { Speed } from "../../store/tickDriver.js";
@@ -19,9 +19,14 @@ interface ShellProps {
 }
 
 export function Shell({ isFreshStart = false }: ShellProps) {
-  const [speed, setSpeed]               = useState<Speed>(1);
+  const dispatch = useGameDispatch();
+  const speed = useSelector(s => s.game.speed as Speed);
   const [showNewDcModal, setShowNewDcModal] = useState(false);
   const [showTutorial, setShowTutorial]   = useState(false);
+
+  const setSpeed = useCallback((newSpeed: Speed) => {
+    dispatch({ type: "SetSpeed", speed: newSpeed });
+  }, [dispatch]);
 
   const getSpeed = useCallback(() => speed, [speed]);
   useTickDriver(getSpeed);
