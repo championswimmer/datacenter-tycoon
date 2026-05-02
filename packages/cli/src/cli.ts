@@ -6,6 +6,8 @@ import { runLoadCommand, runNewCommand, runQuitCommand, runSaveCommand } from ".
 import { runLsCommand } from "./commands/ls.js";
 import { runAddRackCommand, runBuildDatacenterCommand, runRemoveRackCommand } from "./commands/build-dc.js";
 import { runAcceptContractCommand, runCancelContractCommand } from "./commands/contracts.js";
+import { runPauseCommand, runResumeCommand, runSpeedCommand } from "./commands/control.js";
+import { runTickCommand } from "./commands/tick.js";
 import { GamePersistence, loadOrInit } from "./daemon/persist.js";
 import { GameRuntime } from "./daemon/runtime.js";
 import { GameDaemonServer } from "./daemon/server.js";
@@ -130,10 +132,10 @@ const COMMANDS: CommandHandler[] = [
 	{ name: "remove-rack", summary: "Remove a rack placement", run: async ({ parsed }) => runRemoveRackCommand(parsed) },
 	{ name: "accept-contract", summary: "Accept a contract", run: async ({ parsed }) => runAcceptContractCommand(parsed) },
 	{ name: "cancel-contract", summary: "Cancel an active contract", run: async ({ parsed }) => runCancelContractCommand(parsed) },
-	createNotImplementedHandler("tick", "Advance one or more ticks"),
-	createNotImplementedHandler("pause", "Pause the daemon tick loop"),
-	createNotImplementedHandler("resume", "Resume the daemon tick loop"),
-	createNotImplementedHandler("speed", "Set daemon tick speed"),
+	{ name: "tick", summary: "Advance one or more ticks", run: async ({ parsed }) => runTickCommand(parsed) },
+	{ name: "pause", summary: "Pause the daemon tick loop", run: async ({ parsed }) => runPauseCommand(parsed) },
+	{ name: "resume", summary: "Resume the daemon tick loop", run: async ({ parsed }) => runResumeCommand(parsed) },
+	{ name: "speed", summary: "Set daemon tick speed", run: async ({ parsed }) => runSpeedCommand(parsed) },
 ];
 
 const COMMAND_MAP = new Map(COMMANDS.map((command) => [command.name, command]));
