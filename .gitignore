@@ -11,3 +11,4 @@ out/
 coverage/
 *.tsbuildinfo
 packages/desktop/release/
+.tui-test/

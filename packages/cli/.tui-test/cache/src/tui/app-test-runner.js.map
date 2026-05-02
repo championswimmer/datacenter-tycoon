@@ -1,1 +1,0 @@
-{"version":3,"sources":["/Users/championswimmer/Development/Personal/Node/datacenter-tycoon/packages/cli/src/tui/app-test-runner.ts"],"sourcesContent":["import { runTui } from \"./app.js\";\n\nrunTui().catch(console.error);\n"],"names":["runTui","catch","console","error"],"mappings":"AAAA,SAASA,MAAM,QAAQ,WAAW;AAElCA,SAASC,KAAK,CAACC,QAAQC,KAAK","file":"app-test-runner.js"}
