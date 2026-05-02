@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, type SetStateAction } from "react";
 import { useSelector, useTickDriver, useGameDispatch } from "../../store/storeContext.js";
 import { selectAllDatacenters } from "../../store/selectors.js";
 import { useRoute, navigateToDc } from "../../router/hashRouter.js";
@@ -24,9 +24,10 @@ export function Shell({ isFreshStart = false }: ShellProps) {
   const [showNewDcModal, setShowNewDcModal] = useState(false);
   const [showTutorial, setShowTutorial]   = useState(false);
 
-  const setSpeed = useCallback((newSpeed: Speed) => {
+  const setSpeed = useCallback((value: SetStateAction<Speed>) => {
+    const newSpeed = typeof value === "function" ? value(speed) : value;
     dispatch({ type: "SetSpeed", speed: newSpeed });
-  }, [dispatch]);
+  }, [dispatch, speed]);
 
   const getSpeed = useCallback(() => speed, [speed]);
   useTickDriver(getSpeed);
