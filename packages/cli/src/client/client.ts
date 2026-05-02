@@ -1,6 +1,8 @@
 import net from "node:net";
 import type { ChildProcess } from "node:child_process";
 
+import type { GameState } from "@datacenter-tycoon/game-logic";
+
 import type {
 	Action,
 	ControlParams,
@@ -158,6 +160,20 @@ export class DctClient {
 				return (await this.request("unsubscribe", { subId: result.subId } satisfies UnsubscribeParams)) as EmptyResult;
 			},
 		};
+	}
+
+	async subscribeState(
+		onSnapshot: (snapshot: GameState) => void,
+		onDelta: (event: SubscriptionEvent) => void,
+	): Promise<{ subId: number; unsubscribe: () => Promise<EmptyResult> }> {
+		const snapshot = (await this.query({ kind: "snapshot" })) as GameState;
+		onSnapshot(snapshot);
+		return await this.subscribe(["state", "tick", "ledger"], (event) => {
+			if (event.type === "state") {
+				onSnapshot(event.snapshot);
+			}
+			onDelta(event);
+		});
 	}
 
 	async control(params: ControlParams): Promise<EmptyResult> {

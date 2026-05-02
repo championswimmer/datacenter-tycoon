@@ -21,11 +21,11 @@ owner: cli
   - [x] 2.4 Implement RPC handlers for all `Action`s + `query`/`subscribe`
   - [x] 2.5 Implement daemon lifecycle: PID/lock file, graceful shutdown, idle exit
   - [x] 2.6 Unit tests for runtime, transport, and savefile round-trip
-- [ ] **Phase 3 — Client SDK**
+- [x] **Phase 3 — Client SDK**
   - [x] 3.1 Implement `DctClient` connecting over the socket
   - [x] 3.2 Auto-spawn daemon on first connect (detached child)
   - [x] 3.3 Reconnect / handshake / version negotiation
-  - [ ] 3.4 Snapshot + delta subscription helpers
+  - [x] 3.4 Snapshot + delta subscription helpers
 - [ ] **Phase 4 — One-shot CLI subcommands**
   - [ ] 4.1 Argument parser scaffolding (no heavy deps; small custom parser)
   - [ ] 4.2 `dct status` — prints summary (cash, tick, dcs, contracts)
