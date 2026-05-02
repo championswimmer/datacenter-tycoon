@@ -20,6 +20,8 @@ import {
   selectResourceUsage,
   selectMonthlyPnl,
   selectFreeCapacity,
+  selectTotalRacks,
+  selectTotalServers,
 } from "./selectors.js";
 import { nextDcId, nextRackPlacementId } from "./ids.js";
 
@@ -234,6 +236,26 @@ describe("selectMonthlyPnl", () => {
     const pnl = selectMonthlyPnl(state);
     expect(pnl.opex).toBeGreaterThan(0);
     expect(pnl.net).toBeLessThan(0);
+  });
+});
+
+describe("selectTotalRacks", () => {
+  it("returns 0 on fresh game", () => {
+    expect(selectTotalRacks(freshState())).toBe(0);
+  });
+
+  it("returns 1 after placing a rack", () => {
+    expect(selectTotalRacks(stateWithDcAndRack())).toBe(1);
+  });
+});
+
+describe("selectTotalServers", () => {
+  it("returns 0 on fresh game", () => {
+    expect(selectTotalServers(freshState())).toBe(0);
+  });
+
+  it("returns 1 after placing a rack", () => {
+    expect(selectTotalServers(stateWithDcAndRack())).toBe(1);
   });
 });
 

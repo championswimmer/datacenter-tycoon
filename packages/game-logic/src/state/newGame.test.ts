@@ -8,7 +8,14 @@ test("newGame creates a deterministic initial state with a primed contract marke
 	const first = newGame(42);
 	const second = newGame(42);
 
-	assert.deepEqual(first, second);
+	// gameId is random, so we compare everything else
+	const { gameId: id1, ...firstRest } = first;
+	const { gameId: id2, ...secondRest } = second;
+
+	assert.deepEqual(firstRest, secondRest);
+	assert.ok(id1);
+	assert.ok(id2);
+	assert.notEqual(id1, id2); // Should be unique
 	assert.equal(first.seed, 42);
 	assert.equal(first.rngState !== first.seed, true);
 	assert.equal(first.tick, 0);
