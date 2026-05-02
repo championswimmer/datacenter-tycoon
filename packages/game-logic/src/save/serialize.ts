@@ -1,4 +1,4 @@
-import type { GameState } from "../types.js";
+import type { GameId, GameState } from "../types.js";
 
 export const SAVE_VERSION = 1;
 
@@ -16,6 +16,13 @@ function isSaveEnvelope(value: unknown): value is SaveEnvelope {
 }
 
 export function migrate(envelope: SaveEnvelope): SaveEnvelope {
+	const state = envelope.state as any;
+
+	// Ensure gameId exists for all save versions
+	if (!state.gameId) {
+		state.gameId = crypto.randomUUID() as GameId;
+	}
+
 	if (envelope.saveVersion === SAVE_VERSION) {
 		return envelope;
 	}
