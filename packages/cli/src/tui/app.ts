@@ -1,20 +1,22 @@
 import readline from "node:readline";
 
+import { DctClient } from "../client/client.js";
+import { resolvePaths } from "../paths.js";
+import type { GameState, Tick } from "@datacenter-tycoon/game-logic";
+import type { StatusView } from "../protocol/messages.js";
 import { renderLayout } from "./layout.js";
+import { renderDashboardTab } from "./tabs/dashboard.js";
 
-function renderHelloFrame(): string {
-	return [
-		"\u001B[2J\u001B[H\u001B[?1049h",
-		renderLayout({
-			tick: 0,
-			cash: 0,
-			speedTps: 0,
-			paused: true,
-			activeTab: "dashboard",
-			bodyLines: ["Loading terminal UI...", "", "Press q to quit."],
-			statusLine: "q quit · ? help · : commands",
-		}),
-	].join("\n");
+function renderFrame(snapshot: GameState | undefined, status: StatusView | undefined): string {
+	return renderLayout({
+		tick: status?.tick ?? snapshot?.tick ?? 0,
+		cash: status?.cash ?? snapshot?.player.cash ?? 0,
+		speedTps: status?.speedTps ?? 0,
+		paused: status?.paused ?? true,
+		activeTab: "dashboard",
+		bodyLines: snapshot ? renderDashboardTab(snapshot) : ["Loading terminal UI...", "", "Press q to quit."],
+		statusLine: "q quit · 1 dashboard · 2 dcs · 3 contracts · 4 catalog",
+	});
 }
 
 export async function runTui(): Promise<void> {
@@ -23,24 +25,37 @@ export async function runTui(): Promise<void> {
 	const wasRaw = stdin.isRaw;
 
 	if (!stdin.isTTY || !stdout.isTTY) {
-		stdout.write(
-			renderLayout({
-				tick: 0,
-				cash: 0,
-				speedTps: 0,
-				paused: true,
-				activeTab: "dashboard",
-				bodyLines: ["Loading terminal UI...", "", "Press q to quit."],
-				statusLine: "q quit · ? help · : commands",
-			}),
-		);
+		stdout.write(renderFrame(undefined, undefined));
 		return;
+	}
+
+	const paths = resolvePaths();
+	const client = new DctClient({ socketPath: paths.socketPath, savePath: paths.savePath });
+	let snapshot: GameState | undefined;
+	let status: StatusView | undefined;
+	try {
+		await client.connect();
+		status = (await client.query({ kind: "status" })) as StatusView;
+		snapshot = (await client.query({ kind: "snapshot" })) as GameState;
+	} catch {
+		// render loading shell even if connect fails for now
 	}
 
 	readline.emitKeypressEvents(stdin);
 	stdin.setRawMode(true);
 	stdin.resume();
-	stdout.write(renderHelloFrame());
+	stdout.write(`\u001B[2J\u001B[H\u001B[?1049h\n${renderFrame(snapshot, status)}`);
+
+	const subscription = snapshot
+		? await client.subscribeState(
+				(nextSnapshot) => {
+					snapshot = nextSnapshot;
+				},
+				() => {
+					stdout.write(`\u001B[2J\u001B[H\u001B[?1049h\n${renderFrame(snapshot, status)}`);
+				},
+			)
+		: undefined;
 
 	await new Promise<void>((resolve) => {
 		const cleanup = () => {
@@ -64,6 +79,8 @@ export async function runTui(): Promise<void> {
 		stdin.on("data", onData);
 	});
 
+	await subscription?.unsubscribe().catch(() => undefined);
+	await client.close().catch(() => undefined);
 	stdout.write("\u001B[?1049l\u001B[2J\u001B[H");
 	stdin.setRawMode(Boolean(wasRaw));
 	stdin.pause();
