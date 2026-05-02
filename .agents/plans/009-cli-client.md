@@ -23,7 +23,7 @@ owner: cli
   - [x] 2.6 Unit tests for runtime, transport, and savefile round-trip
 - [ ] **Phase 3 — Client SDK**
   - [x] 3.1 Implement `DctClient` connecting over the socket
-  - [ ] 3.2 Auto-spawn daemon on first connect (detached child)
+  - [x] 3.2 Auto-spawn daemon on first connect (detached child)
   - [ ] 3.3 Reconnect / handshake / version negotiation
   - [ ] 3.4 Snapshot + delta subscription helpers
 - [ ] **Phase 4 — One-shot CLI subcommands**
