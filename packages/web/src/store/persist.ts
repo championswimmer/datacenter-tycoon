@@ -103,6 +103,20 @@ export function clearSave(gameId: string): void {
   localStorage.setItem(SAVE_INDEX_KEY, JSON.stringify(index));
 }
 
+/** Wipe all game saves and the index from localStorage. */
+export function clearAllSaves(): void {
+  try {
+    const index = getSaveIndex();
+    for (const info of index) {
+      localStorage.removeItem(getSaveKey(info.gameId));
+    }
+    localStorage.removeItem(SAVE_INDEX_KEY);
+    localStorage.removeItem("datacenter-tycoon:save-v1"); // Legacy key
+  } catch (err) {
+    console.warn("[persist] Failed to clear all saves:", err);
+  }
+}
+
 // ── Autosave subscription ──────────────────────────────────────────────────────
 
 /**

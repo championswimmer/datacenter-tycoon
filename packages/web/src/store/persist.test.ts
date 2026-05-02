@@ -4,6 +4,7 @@ import {
   loadSave,
   writeSave,
   clearSave,
+  clearAllSaves,
   attachAutosave,
   bootstrapStore,
   AUTOSAVE_EVERY_TICKS,
@@ -93,6 +94,24 @@ describe("clearSave", () => {
     writeSave(state);
     clearSave(state.gameId);
     expect(loadSave(state.gameId)).toBeNull();
+  });
+});
+
+describe("clearAllSaves", () => {
+  it("wipes all saves and the index", () => {
+    const s1 = newGame(1);
+    const s2 = newGame(2);
+    writeSave(s1);
+    writeSave(s2);
+    
+    expect(loadSave(s1.gameId)).not.toBeNull();
+    expect(loadSave(s2.gameId)).not.toBeNull();
+    
+    clearAllSaves();
+    
+    expect(loadSave(s1.gameId)).toBeNull();
+    expect(loadSave(s2.gameId)).toBeNull();
+    expect(localStorage.getItem("datacenter-tycoon:save-index")).toBeNull();
   });
 });
 

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { clearSave, getCurrentGameId } from "../../store/persist.js";
+import { clearAllSaves } from "../../store/persist.js";
+import { resetTutorialSeen } from "../../store/tutorialPersist.js";
 import styles from "./ResetGameModal.module.css";
 
 interface ResetGameModalProps {
@@ -17,11 +18,12 @@ export function ResetGameModal({ onClose }: ResetGameModalProps) {
   }, [onClose]);
 
   const handleConfirm = () => {
-    const gameId = getCurrentGameId();
-    if (gameId) {
-      clearSave(gameId);
-    }
-    window.location.hash = "/";
+    clearAllSaves();
+    resetTutorialSeen();
+    
+    // Redirect to home path and reload to start fresh
+    // Using origin + pathname ensures we drop any existing hash completely
+    window.location.href = window.location.origin + window.location.pathname + "#/";
     window.location.reload();
   };
 
