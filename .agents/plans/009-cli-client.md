@@ -41,7 +41,7 @@ owner: cli
   - [x] 5.3 Dashboard tab (KPIs, ledger tail, alerts)
   - [x] 5.4 Datacenters tab (list → detail → rack grid)
   - [x] 5.5 Contracts tab (market + active, accept/cancel)
-  - [ ] 5.6 Catalog tab (DC specs, rack specs)
+  - [x] 5.6 Catalog tab (DC specs, rack specs)
   - [ ] 5.7 Command palette (`:` to run any one-shot subcommand)
   - [ ] 5.8 Keybindings cheatsheet (`?`)
   - [ ] 5.9 Live updates via subscription stream
