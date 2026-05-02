@@ -1,7 +1,7 @@
 ---
 name: TUI Testing Infrastructure
 description: Implement robust TUI testing with virtual terminals, automated interactions, and snapshot testing.
-status: created
+status: completed
 created: 2026-05-02
 updated: 2026-05-02
 owner: cli
@@ -9,19 +9,19 @@ owner: cli
 
 ## Progress
 
-- [ ] **Phase 1 — Research & Prototyping**
-  - [ ] 1.1 Prototype `@microsoft/tui-test` integration for E2E
-  - [ ] 1.2 Evaluate `ink-testing-library` style pure-render tests for layout units
-- [ ] **Phase 2 — Infrastructure Setup**
-  - [ ] 2.1 Add `@microsoft/tui-test` and `node-pty` to devDependencies
-  - [ ] 2.2 Create `packages/cli/src/tui/test-utils.ts` for TUI-specific helpers
-  - [ ] 2.3 Set up Vitest snapshot configuration for terminal output
-- [ ] **Phase 3 — Unit & Integration Tests**
-  - [ ] 3.1 Convert existing `layout.test.ts` to use new snapshot helpers
-  - [ ] 3.2 Add interactive tests for the command palette
-- [ ] **Phase 4 — E2E TUI Tests**
-  - [ ] 4.1 Implement full-flow test: Start daemon -> Open TUI -> Navigate tabs -> Quit
-  - [ ] 4.2 Add TUI snapshot tests for different terminal sizes (responsive design)
+- [x] **Phase 1 — Research & Prototyping**
+  - [x] 1.1 Prototype `@microsoft/tui-test` integration for E2E
+  - [x] 1.2 Evaluate `ink-testing-library` style pure-render tests for layout units
+- [x] **Phase 2 — Infrastructure Setup**
+  - [x] 2.1 Add `@microsoft/tui-test` and `node-pty` to devDependencies
+  - [x] 2.2 Create `packages/cli/src/tui/test-utils.ts` for TUI-specific helpers
+  - [x] 2.3 Set up Vitest snapshot configuration for terminal output
+- [x] **Phase 3 — Unit & Integration Tests**
+  - [x] 3.1 Convert existing `layout.test.ts` to use new snapshot helpers
+  - [x] 3.2 Add interactive tests for the command palette
+- [x] **Phase 4 — E2E TUI Tests**
+  - [x] 4.1 Implement full-flow test: Start daemon -> Open TUI -> Navigate tabs -> Quit
+  - [x] 4.2 Add TUI snapshot tests for different terminal sizes (responsive design)
 
 ## Overview
 

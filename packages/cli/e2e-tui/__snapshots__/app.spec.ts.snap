@@ -1,0 +1,62 @@
+// TUI Test Snapshot v1
+
+exports[`TUI responsive design (snapshots) | 1`] = String.raw`
+╭────────────────────────────────────────────────────────────╮
+│Datacenters: 0                                                                  │
+│                                                                                │
+│Active contracts: 0                                                             │
+│                                                                                │
+│Market contracts: 6                                                             │
+│                                                                                │
+│                                                                                │
+│                                                            │
+│Alerts: none                                                │
+│                                                            │
+│                                                            │
+│                                                            │
+│Ledger tail:                                                │
+│                                                            │
+│  No ledger entries yet.                                    │
+│                                                            │
+│------------------------------------------------------------│
+│------------------                                          │
+│q quit · 1 dashboard · 2 dcs · 3 contracts · 4 catalog · : c│
+│ommands                                                     │
+╰────────────────────────────────────────────────────────────╯
+`;
+
+exports[`TUI responsive design (snapshots) | 1 1`] = String.raw`
+╭────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                    │
+│Datacenter Tycoon  tick 40638  cash $2,500,000  speed 1x                                            │
+│[1 Dashboard]   2 DCs    3 Contracts    4 Catalog                                                   │
+│------------------------------------------------------------------------------                      │
+│Dashboard                                                                                           │
+│                                                                                                    │
+│Cash: $2,500,000                                                                                    │
+│Datacenters: 0                                                                                      │
+│Active contracts: 0                                                                                 │
+│Market contracts: 6                                                                                 │
+│                                                                                                    │
+│Alerts: none                                                                                        │
+│                                                                                                    │
+│Ledger tail:                                                                                        │
+│  No ledger entries yet.                                                                            │
+│------------------------------------------------------------------------------                      │
+│q quit · 1 dashboard · 2 dcs · 3 contracts · 4 catalog · : commands                                 │
+│                                                                                                    │
+│                                                                                                    │
+│                                                                                                    │
+│                                                                                                    │
+│                                                                                                    │
+│                                                                                                    │
+│                                                                                                    │
+│                                                                                                    │
+│                                                                                                    │
+│                                                                                                    │
+│                                                                                                    │
+│                                                                                                    │
+│                                                                                                    │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────╯
+`;
+

@@ -164,17 +164,23 @@ export async function runCli(args: string[]): Promise<void> {
 	await command.run({ parsed });
 }
 
-async function main(): Promise<void> {
-	await runCli(process.argv.slice(2));
+export async function main(): Promise<void> {
+	try {
+		await runCli(process.argv.slice(2));
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		const parsed = parseArgv(process.argv.slice(2));
+		if (parsed.flags["--json"] === true) {
+			console.error(formatJsonError(message));
+		} else {
+			console.error(message);
+		}
+		process.exit(1);
+	}
 }
 
-void main().catch((error) => {
-	const message = error instanceof Error ? error.message : String(error);
-	const parsed = parseArgv(process.argv.slice(2));
-	if (parsed.flags["--json"] === true) {
-		console.error(formatJsonError(message));
-	} else {
-		console.error(message);
-	}
-	process.exit(1);
-});
+import { fileURLToPath } from "node:url";
+if (import.meta.url.startsWith("file:") && process.argv[1] === fileURLToPath(import.meta.url)) {
+	void main();
+}
+

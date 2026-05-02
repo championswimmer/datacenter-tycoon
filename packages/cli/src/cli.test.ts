@@ -9,7 +9,7 @@ test("runCli rejects unknown commands with a help hint", async () => {
 });
 
 test("dct --help prints the command list", async () => {
-	const child = spawn(process.execPath, ["--import", "tsx", "src/cli.ts", "--help"], {
+	const child = spawn(process.execPath, ["--import", "tsx", "bin/dct.js", "--help"], {
 		cwd: process.cwd(),
 		stdio: ["ignore", "pipe", "pipe"],
 	});
