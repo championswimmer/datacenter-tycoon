@@ -11,6 +11,7 @@ export type RackSpecId = Brand<string, "RackSpecId">;
 export type RackPlacementId = Brand<string, "RackPlacementId">;
 export type ContractId = Brand<string, "ContractId">;
 export type LedgerEntryId = Brand<string, "LedgerEntryId">;
+export type GameId = Brand<string, "GameId">;
 
 export type RackKind = "compute" | "memory" | "storage" | "gpu";
 export type RackTier = 1 | 2 | 3;
@@ -162,6 +163,7 @@ export interface RngState {
 }
 
 export interface GameState {
+	gameId: GameId;
 	tick: Tick;
 	seed: number;
 	rngState: number;
