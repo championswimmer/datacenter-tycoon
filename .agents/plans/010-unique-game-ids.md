@@ -1,24 +1,24 @@
 ---
 name: Unique Game IDs and Multiple Save Slots
 description: Assign a UUID to every game and support multiple save slots in the CLI/TUI via <id>.json files.
-status: created
+status: completed
 created: 2026-05-02
 updated: 2026-05-02
 ---
 
 ## Progress
 
-- [ ] **Phase 1 — Core Game ID**
-  - [ ] 1.1 Add `gameId` to `GameState` and `GameId` branded type
-  - [ ] 1.2 Update `newGame` to generate a UUID
-  - [ ] 1.3 Update `migrate` to assign a UUID to existing version 0/1 saves
-- [ ] **Phase 2 — CLI Multi-Save Support**
-  - [ ] 2.1 Update CLI path resolution to handle `<id>.json`
-  - [ ] 2.2 Add `dct list-saves` command
-  - [ ] 2.3 Implement save selector when starting `dct` (TUI) if no active session
-- [ ] **Phase 3 — Web Support**
-  - [ ] 3.1 Update web persistence to use `gameId` as part of the localStorage key
-  - [ ] 3.2 Implement simple save selector/manager in the web UI
+- [x] **Phase 1 — Core Game ID**
+  - [x] 1.1 Add `gameId` to `GameState` and `GameId` branded type
+  - [x] 1.2 Update `newGame` to generate a UUID
+  - [x] 1.3 Update `migrate` to assign a UUID to existing version 0/1 saves
+- [x] **Phase 2 — CLI Multi-Save Support**
+  - [x] 2.1 Update CLI path resolution to handle `<id>.json`
+  - [x] 2.2 Add `dct list-saves` command
+  - [x] 2.3 Implement save selector when starting `dct` (TUI) if no active session
+- [x] **Phase 3 — Web Support**
+  - [x] 3.1 Update web persistence to use `gameId` as part of the localStorage key
+  - [x] 3.2 Implement simple save selector/manager in the web UI
 
 ## Overview
 
