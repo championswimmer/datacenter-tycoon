@@ -8,9 +8,9 @@ updated: 2026-05-02
 
 ## Progress
 
-- [ ] **Phase 1 — Ambient Engine Enhancements**
+- [x] **Phase 1 — Ambient Engine Enhancements**
   - [x] 1.1 Update `AmbientEngine.ts` to support frequency modulation and pausing.
-  - [ ] 1.2 Update `attachAudioEvents.ts` to pass game speed and pause state.
+  - [x] 1.2 Update `attachAudioEvents.ts` to pass game speed and pause state.
 - [ ] **Phase 2 — Dynamic Infrastructure Hum**
   - [ ] 2.1 Identify/Implement "active infrastructure" metric in selectors.
   - [ ] 2.2 Update `attachAudioEvents.ts` to use infrastructure scale for ambient modulation.
