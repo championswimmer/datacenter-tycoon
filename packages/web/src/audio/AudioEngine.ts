@@ -43,6 +43,8 @@ export const ambient = {
   },
   stop: () => AmbientEngine.stopAmbient(),
   setUsage: (load: number) => AmbientEngine.setAmbientUsage(load),
+  setSpeed: (factor: number) => AmbientEngine.setAmbientSpeed(factor),
+  setPaused: (paused: boolean) => AmbientEngine.setAmbientPaused(paused),
 };
 
 export function playSound(type: SoundType, isMuted: boolean = false) {

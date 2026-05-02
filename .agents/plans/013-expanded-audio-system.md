@@ -1,7 +1,7 @@
 ---
 name: Expanded Audio System
 description: Enhance ambient hum dynamics and add contract acceptance generative SFX.
-status: created
+status: started
 created: 2026-05-02
 updated: 2026-05-02
 ---
@@ -9,7 +9,7 @@ updated: 2026-05-02
 ## Progress
 
 - [ ] **Phase 1 — Ambient Engine Enhancements**
-  - [ ] 1.1 Update `AmbientEngine.ts` to support frequency modulation and pausing.
+  - [x] 1.1 Update `AmbientEngine.ts` to support frequency modulation and pausing.
   - [ ] 1.2 Update `attachAudioEvents.ts` to pass game speed and pause state.
 - [ ] **Phase 2 — Dynamic Infrastructure Hum**
   - [ ] 2.1 Identify/Implement "active infrastructure" metric in selectors.
