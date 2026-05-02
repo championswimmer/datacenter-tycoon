@@ -23,6 +23,7 @@ export type CommandClientFactory = (options: DctClientOptions) => CommandClient;
 
 export interface CommandPaths {
 	savePath: string;
+	dataDir: string;
 	socketPath: string;
 	pidPath: string;
 	logPath: string;
@@ -54,6 +55,7 @@ export function getNumberFlag(parsed: ParsedArgv, flag: string, fallback: number
 export function resolveCommandPaths(parsed: ParsedArgv): CommandPaths {
 	return resolvePaths({
 		saveOverride: getStringFlag(parsed, "--save"),
+		gameId: getStringFlag(parsed, "--game-id") ?? getStringFlag(parsed, "--id"),
 		socketOverride: getStringFlag(parsed, "--socket"),
 	});
 }

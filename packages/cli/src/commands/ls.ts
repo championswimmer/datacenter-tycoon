@@ -1,173 +1,50 @@
-import type { DatacenterSpec, RackSpec } from "@datacenter-tycoon/game-logic";
-
-import { DctClient } from "../client/client.js";
+import fs from "node:fs";
+import path from "node:path";
+import { deserialize } from "@datacenter-tycoon/game-logic";
 import type { ParsedArgv } from "../argv.js";
-import type {
-	CatalogResult,
-	DatacenterListItem,
-	ListResult,
-	QueryParams,
-	QueryResult,
-	RackListItem,
-} from "../protocol/messages.js";
-import {
-	formatJsonResult,
-	requirePositional,
-	withClient,
-	writeCommandResult,
-	type CommandClient,
-	type CommandClientFactory,
-} from "./common.js";
+import { resolveCommandPaths, writeCommandResult } from "./common.js";
 
-function formatTable(headers: string[], rows: string[][]): string {
-	const widths = headers.map((header, index) => {
-		const cellWidths = rows.map((row) => row[index]?.length ?? 0);
-		return Math.max(header.length, ...cellWidths);
-	});
+export async function runLsCommand(parsed: ParsedArgv): Promise<void> {
+  const subCommand = parsed.positionals[0];
 
-	const formatRow = (row: string[]) => row.map((cell, index) => cell.padEnd(widths[index] ?? cell.length)).join("  ");
-	return [formatRow(headers), formatRow(widths.map((width) => "-".repeat(width))), ...rows.map(formatRow)].join("\n");
+  if (subCommand === "saves") {
+    await listSaves(parsed);
+  } else {
+    throw new Error("Usage: dct ls saves");
+  }
 }
 
-function isRackListItem(item: RackListItem | RackSpec): item is RackListItem {
-	return "placementId" in item;
-}
+async function listSaves(parsed: ParsedArgv): Promise<void> {
+  const paths = resolveCommandPaths(parsed);
+  const dataDir = paths.dataDir;
 
-function isDatacenterListItem(item: DatacenterListItem | DatacenterSpec): item is DatacenterListItem {
-	return "datacenter" in item;
-}
+  if (!fs.existsSync(dataDir)) {
+    writeCommandResult(parsed, "No saves found (data directory does not exist).", { saves: [] });
+    return;
+  }
 
-function formatRackRows(items: RackListItem[] | RackSpec[]): string {
-	if (items.every(isRackListItem)) {
-		return formatTable(
-			["placement", "dc", "row", "position", "spec", "kind", "installed"],
-			items.map((item) => [
-				item.placementId,
-				item.dcId,
-				String(item.row),
-				String(item.position),
-				item.spec.id,
-				item.spec.kind,
-				String(item.installedAtTick),
-			]),
-		);
-	}
+  const files = fs.readdirSync(dataDir).filter(f => f.endsWith(".json"));
+  const saves = [];
 
-	return formatTable(
-		["id", "name", "kind", "tier", "vcpu", "ram", "storage", "gpu", "capex"],
-		items.map((item) => [
-			item.id,
-			item.name,
-			item.kind,
-			String(item.tier),
-			String(item.vCpu),
-			String(item.ramGb),
-			String(item.storageTb),
-			String(item.gpuFlops),
-			String(item.capexCost),
-		]),
-	);
-}
+  for (const file of files) {
+    try {
+      const content = fs.readFileSync(path.join(dataDir, file), "utf8");
+      const state = deserialize(content);
+      saves.push({
+        file,
+        gameId: state.gameId,
+        tick: state.tick,
+        cash: state.player.cash,
+        playerName: state.player.name,
+      });
+    } catch (e) {
+      // Skip invalid saves
+    }
+  }
 
-function formatDatacenterRows(items: DatacenterListItem[] | DatacenterSpec[]): string {
-	if (items.every(isDatacenterListItem)) {
-		return formatTable(
-			["id", "name", "slots", "power", "cooling", "bandwidth", "vcpu", "ram", "storage", "gpu"],
-			items.map((item) => [
-				item.datacenter.id,
-				item.datacenter.name,
-				`${item.slotsUsed}/${item.totalSlots}`,
-				`${item.powerKw}/${item.powerCapacityKw}kW`,
-				`${item.heatOutputBtuPerHr}/${item.coolingCapacityBtuPerHr} BTU/h`,
-				`${item.bandwidthGbps}/${item.bandwidthCapacityGbps} Gbps`,
-				String(item.capacity.vCpu),
-				String(item.capacity.ramGb),
-				String(item.capacity.storageTb),
-				String(item.capacity.gpuFlops),
-			]),
-		);
-	}
+  const table = saves.map(s => {
+    return `${s.file.padEnd(40)} | Tick: ${String(s.tick).padStart(6)} | Cash: $${String(s.cash).padStart(10)} | ${s.playerName}`;
+  }).join("\n");
 
-	return formatTable(
-		["id", "name", "rows", "positions", "power", "cooling", "bandwidth", "capex"],
-		items.map((item) => [
-			item.id,
-			item.name,
-			String(item.rows),
-			String(item.positionsPerRow),
-			String(item.powerCapacityKw),
-			String(item.coolingCapacityBtuPerHr),
-			String(item.bandwidthGbps),
-			String(item.capexCost),
-		]),
-	);
-}
-
-export function formatListResult(result: ListResult | CatalogResult): string {
-	if (result.kind === "market-contracts" || result.kind === "active-contracts") {
-		return formatTable(
-			["id", "name", "payment", "penalty", "term", "dc", "status"],
-			result.items.map((item) => [
-				item.id,
-				item.name,
-				String(item.monthlyPayment),
-				String(item.penaltyPerMonth),
-				String(item.termMonths),
-				item.assignedDcId ?? "-",
-				item.status,
-			]),
-		);
-	}
-
-	if (result.kind === "racks") {
-		return formatRackRows(result.items);
-	}
-
-	return formatDatacenterRows(result.items);
-}
-
-function getListQuery(parsed: ParsedArgv): QueryParams {
-	const target = requirePositional(parsed, 0, "dct ls <dc|racks|market|active|catalog> [...args]");
-	if (target === "dc") {
-		return { kind: "list", target: "datacenters" };
-	}
-	if (target === "racks") {
-		return { kind: "list", target: "racks", dcId: requirePositional(parsed, 1, "dct ls racks <dcId>") };
-	}
-	if (target === "market") {
-		return { kind: "list", target: "market-contracts" };
-	}
-	if (target === "active") {
-		return { kind: "list", target: "active-contracts" };
-	}
-	if (target === "catalog") {
-		const catalogTarget = requirePositional(parsed, 1, "dct ls catalog <dc|rack>");
-		if (catalogTarget === "dc") {
-			return { kind: "catalog", target: "datacenters" };
-		}
-		if (catalogTarget === "rack") {
-			return { kind: "catalog", target: "racks" };
-		}
-	}
-
-	throw new Error(`Unsupported ls target: ${target}`);
-}
-
-export async function runLsCommand(
-	parsed: ParsedArgv,
-	clientFactory: CommandClientFactory = (options) => new DctClient(options),
-): Promise<void> {
-	const query = getListQuery(parsed);
-	const result = (await withClient(
-		parsed,
-		async (client: CommandClient) => await client.query(query),
-		clientFactory,
-	)) as QueryResult;
-
-	if (parsed.flags["--json"] === true) {
-		console.log(formatJsonResult(result));
-		return;
-	}
-
-	writeCommandResult(parsed, formatListResult(result as ListResult | CatalogResult));
+  writeCommandResult(parsed, saves.length > 0 ? `Available Saves:\n${table}` : "No valid saves found.", { saves });
 }

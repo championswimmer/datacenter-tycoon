@@ -46,6 +46,7 @@ function getNumericFlag(parsed: ReturnType<typeof parseArgv>, flag: string, fall
 async function runDaemon(parsed: ReturnType<typeof parseArgv>): Promise<void> {
 	const paths = resolvePaths({
 		saveOverride: getStringFlag(parsed, "--save"),
+		gameId: getStringFlag(parsed, "--game-id") ?? getStringFlag(parsed, "--id"),
 		socketOverride: getStringFlag(parsed, "--socket"),
 	});
 	const persistence = new GamePersistence({ savePath: paths.savePath });
