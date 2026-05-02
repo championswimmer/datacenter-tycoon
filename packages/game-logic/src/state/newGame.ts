@@ -1,6 +1,6 @@
 import { refreshContractMarket } from "../contracts/market.js";
 import { STARTING_CASH } from "../economy/constants.js";
-import type { GameState, Money, PlayerId, Tick } from "../types.js";
+import type { GameId, GameState, Money, PlayerId, Tick } from "../types.js";
 
 export interface NewGameOptions {
 	seed?: number;
@@ -24,6 +24,7 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 	}
 
 	const initialState: GameState = {
+		gameId: crypto.randomUUID() as GameId,
 		tick: INITIAL_TICK,
 		seed: effectiveSeed,
 		rngState: effectiveSeed,
