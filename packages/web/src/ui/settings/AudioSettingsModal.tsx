@@ -1,5 +1,5 @@
 import React from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useGameDispatch, useSelector } from "../../store/storeContext.js";
 import { selectAudioSettings } from "../../store/selectors.js";
 import styles from "./AudioSettingsModal.module.css";
 
@@ -8,7 +8,7 @@ interface AudioSettingsModalProps {
 }
 
 export function AudioSettingsModal({ onClose }: AudioSettingsModalProps) {
-  const dispatch = useDispatch();
+  const dispatch = useGameDispatch();
   const settings = useSelector(selectAudioSettings);
 
   const toggle = (key: keyof typeof settings) => {
