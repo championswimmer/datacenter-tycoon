@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 
 try {
-  await import("../dist/cli.js");
+  const cli = await import("../dist/cli.js");
+  if (cli.main) {
+    await cli.main();
+  }
 } catch (error) {
   if (
     error &&

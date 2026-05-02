@@ -7,7 +7,7 @@ function delay(ms: number): Promise<void> {
 }
 
 test("dct with no args lazy-loads the TUI and exits on q", async () => {
-	const child = spawn(process.execPath, ["--import", "tsx", "src/cli.ts"], {
+	const child = spawn(process.execPath, ["--import", "tsx", "bin/dct.js"], {
 		cwd: process.cwd(),
 		stdio: ["pipe", "pipe", "pipe"],
 	});

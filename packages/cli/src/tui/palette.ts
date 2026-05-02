@@ -60,7 +60,8 @@ export function autocompletePaletteInput(input: string): string {
 
 	const matches = TUI_COMMANDS.filter((command) => command.startsWith(trimmed));
 	if (matches.length === 1) {
-		return `${matches[0]} `;
+		const prefix = input.slice(0, input.length - trimmed.length);
+		return `${prefix}${matches[0]} `;
 	}
 	return input;
 }
