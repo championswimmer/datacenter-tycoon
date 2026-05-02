@@ -1,6 +1,7 @@
 import net from "node:net";
 
 import { formatHelp, getFlagValue, hasHelpFlag, parseArgv, type CommandDefinition } from "./argv.js";
+import { runStatusCommand } from "./commands/status.js";
 import { GamePersistence, loadOrInit } from "./daemon/persist.js";
 import { GameRuntime } from "./daemon/runtime.js";
 import { GameDaemonServer } from "./daemon/server.js";
@@ -114,7 +115,7 @@ function createNotImplementedHandler(name: string, summary: string): CommandHand
 
 const COMMANDS: CommandHandler[] = [
 	{ name: "daemon", summary: "Run the background game daemon", run: async ({ parsed }) => runDaemon(parsed) },
-	createNotImplementedHandler("status", "Print a game summary"),
+	{ name: "status", summary: "Print a game summary", run: async ({ parsed }) => runStatusCommand(parsed) },
 	createNotImplementedHandler("new", "Create a new save"),
 	createNotImplementedHandler("load", "Load a savefile into the daemon state"),
 	createNotImplementedHandler("save", "Force-save the current game"),
