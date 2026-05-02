@@ -1,21 +1,47 @@
+import type { GameState } from "@datacenter-tycoon/game-logic";
 import readline from "node:readline";
 
 import { DctClient } from "../client/client.js";
 import { resolvePaths } from "../paths.js";
-import type { GameState, Tick } from "@datacenter-tycoon/game-logic";
 import type { StatusView } from "../protocol/messages.js";
-import { renderLayout } from "./layout.js";
+import { renderLayout, type TuiTabId } from "./layout.js";
 import { renderDashboardTab } from "./tabs/dashboard.js";
+import { renderDatacentersTab } from "./tabs/datacenters.js";
 
-function renderFrame(snapshot: GameState | undefined, status: StatusView | undefined): string {
+function getBodyLines(snapshot: GameState | undefined, activeTab: TuiTabId, selectedDatacenterIndex: number): string[] {
+	if (!snapshot) {
+		return ["Loading terminal UI...", "", "Press q to quit."];
+	}
+
+	if (activeTab === "dashboard") {
+		return renderDashboardTab(snapshot);
+	}
+
+	if (activeTab === "datacenters") {
+		return renderDatacentersTab(snapshot, selectedDatacenterIndex);
+	}
+
+	if (activeTab === "contracts") {
+		return ["Contracts", "", "Contracts tab coming up next..."];
+	}
+
+	return ["Catalog", "", "Catalog tab coming up next..."];
+}
+
+function renderFrame(
+	snapshot: GameState | undefined,
+	status: StatusView | undefined,
+	activeTab: TuiTabId,
+	selectedDatacenterIndex: number,
+): string {
 	return renderLayout({
 		tick: status?.tick ?? snapshot?.tick ?? 0,
 		cash: status?.cash ?? snapshot?.player.cash ?? 0,
 		speedTps: status?.speedTps ?? 0,
 		paused: status?.paused ?? true,
-		activeTab: "dashboard",
-		bodyLines: snapshot ? renderDashboardTab(snapshot) : ["Loading terminal UI...", "", "Press q to quit."],
-		statusLine: "q quit · 1 dashboard · 2 dcs · 3 contracts · 4 catalog",
+		activeTab,
+		bodyLines: getBodyLines(snapshot, activeTab, selectedDatacenterIndex),
+		statusLine: "q quit · 1 dashboard · 2 dcs · 3 contracts · 4 catalog · ↑↓ select",
 	});
 }
 
@@ -23,9 +49,11 @@ export async function runTui(): Promise<void> {
 	const stdin = process.stdin;
 	const stdout = process.stdout;
 	const wasRaw = stdin.isRaw;
+	let activeTab: TuiTabId = "dashboard";
+	let selectedDatacenterIndex = 0;
 
 	if (!stdin.isTTY || !stdout.isTTY) {
-		stdout.write(renderFrame(undefined, undefined));
+		stdout.write(renderFrame(undefined, undefined, activeTab, selectedDatacenterIndex));
 		return;
 	}
 
@@ -38,13 +66,17 @@ export async function runTui(): Promise<void> {
 		status = (await client.query({ kind: "status" })) as StatusView;
 		snapshot = (await client.query({ kind: "snapshot" })) as GameState;
 	} catch {
-		// render loading shell even if connect fails for now
+		// Render loading shell even if connect fails for now.
 	}
+
+	const render = () => {
+		stdout.write(`\u001B[2J\u001B[H\u001B[?1049h\n${renderFrame(snapshot, status, activeTab, selectedDatacenterIndex)}`);
+	};
 
 	readline.emitKeypressEvents(stdin);
 	stdin.setRawMode(true);
 	stdin.resume();
-	stdout.write(`\u001B[2J\u001B[H\u001B[?1049h\n${renderFrame(snapshot, status)}`);
+	render();
 
 	const subscription = snapshot
 		? await client.subscribeState(
@@ -52,7 +84,7 @@ export async function runTui(): Promise<void> {
 					snapshot = nextSnapshot;
 				},
 				() => {
-					stdout.write(`\u001B[2J\u001B[H\u001B[?1049h\n${renderFrame(snapshot, status)}`);
+					render();
 				},
 			)
 		: undefined;
@@ -66,7 +98,19 @@ export async function runTui(): Promise<void> {
 			if (key.name === "q" || (key.ctrl && key.name === "c")) {
 				cleanup();
 				resolve();
+				return;
 			}
+			if (key.name === "1") activeTab = "dashboard";
+			if (key.name === "2") activeTab = "datacenters";
+			if (key.name === "3") activeTab = "contracts";
+			if (key.name === "4") activeTab = "catalog";
+			if (activeTab === "datacenters" && key.name === "up") {
+				selectedDatacenterIndex = Math.max(0, selectedDatacenterIndex - 1);
+			}
+			if (activeTab === "datacenters" && key.name === "down") {
+				selectedDatacenterIndex = Math.min((snapshot?.datacenters.length ?? 1) - 1, selectedDatacenterIndex + 1);
+			}
+			render();
 		};
 		const onData = (chunk: Buffer | string) => {
 			const value = chunk.toString();
