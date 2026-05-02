@@ -26,7 +26,7 @@ function initContext() {
   return ctx;
 }
 
-export type SoundType = "success" | "error" | "click" | "revenue" | "opex";
+export type SoundType = "success" | "error" | "click" | "revenue" | "opex" | "contract_accepted";
 
 export const music = {
   start: () => {
@@ -124,6 +124,33 @@ export function playSound(type: SoundType, isMuted: boolean = false) {
 
       osc.start(now);
       osc.stop(now + 0.3);
+    } else if (type === "contract_accepted") {
+      // "Kaching" / Register ring
+      // High-pitched "ding"
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(2000, now);
+      osc.frequency.exponentialRampToValueAtTime(1000, now + 0.5);
+
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.4, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+
+      // Second harmonic for metallic "ting"
+      const osc2 = context.createOscillator();
+      const gain2 = context.createGain();
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(2500, now);
+      osc2.frequency.exponentialRampToValueAtTime(1250, now + 0.4);
+      gain2.gain.setValueAtTime(0, now);
+      gain2.gain.linearRampToValueAtTime(0.2, now + 0.01);
+      gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+      osc2.connect(gain2);
+      gain2.connect(context.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.5);
+      osc2.start(now);
+      osc2.stop(now + 0.4);
     }
   } catch (err) {
     // Fail softly if audio API is blocked by browser policy/runtime.
