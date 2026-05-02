@@ -3,6 +3,7 @@ import net from "node:net";
 import { formatHelp, getFlagValue, hasHelpFlag, parseArgv, type CommandDefinition } from "./argv.js";
 import { runStatusCommand } from "./commands/status.js";
 import { runLoadCommand, runNewCommand, runQuitCommand, runSaveCommand } from "./commands/new-load.js";
+import { runLsCommand } from "./commands/ls.js";
 import { GamePersistence, loadOrInit } from "./daemon/persist.js";
 import { GameRuntime } from "./daemon/runtime.js";
 import { GameDaemonServer } from "./daemon/server.js";
@@ -121,7 +122,7 @@ const COMMANDS: CommandHandler[] = [
 	{ name: "load", summary: "Load a savefile into the daemon state", run: async ({ parsed }) => runLoadCommand(parsed) },
 	{ name: "save", summary: "Force-save the current game", run: async ({ parsed }) => runSaveCommand(parsed) },
 	{ name: "quit", summary: "Flush state and shut down the daemon", run: async ({ parsed }) => runQuitCommand(parsed) },
-	createNotImplementedHandler("ls", "List datacenters, racks, contracts, or catalog data"),
+	{ name: "ls", summary: "List datacenters, racks, contracts, or catalog data", run: async ({ parsed }) => runLsCommand(parsed) },
 	createNotImplementedHandler("build-dc", "Build a datacenter"),
 	createNotImplementedHandler("add-rack", "Add a rack to a datacenter"),
 	createNotImplementedHandler("remove-rack", "Remove a rack placement"),

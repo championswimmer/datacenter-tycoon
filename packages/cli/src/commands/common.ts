@@ -3,13 +3,15 @@ import path from "node:path";
 
 import type { GameState } from "@datacenter-tycoon/game-logic";
 
+import type { QueryParams } from "../protocol/messages.js";
+
 import type { ParsedArgv } from "../argv.js";
 import { DctClient, type DctClientOptions } from "../client/client.js";
 import { resolvePaths } from "../paths.js";
 
 export interface CommandClient {
 	connect(): Promise<void>;
-	query(params: { kind: "status" } | { kind: "snapshot" }): Promise<unknown>;
+	query(params: QueryParams): Promise<unknown>;
 	control(params: { op: "save-now" } | { op: "shutdown" } | { op: "pause" } | { op: "resume" } | { op: "set-speed"; ticksPerSecond: number }): Promise<{ ok: true }>;
 	close(): Promise<void>;
 }
