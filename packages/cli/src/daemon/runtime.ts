@@ -43,6 +43,7 @@ interface GameRuntimeEventMap {
 	state: [event: StateEvent];
 	tick: [event: TickEvent];
 	ledger: [event: LedgerEvent];
+	status: [status: RuntimeStatus];
 }
 
 const DEFAULT_SPEED_TPS = 1;
@@ -241,20 +242,20 @@ export class GameRuntime extends EventEmitter<GameRuntimeEventMap> {
 			this.speedTps = 0;
 			this.paused = true;
 			this.syncTimer();
-			return this.getRuntimeStatus();
+			return this.emitStatus();
 		}
 
 		this.speedTps = ticksPerSecond;
 		this.lastActiveSpeedTps = ticksPerSecond;
 		this.paused = false;
 		this.syncTimer();
-		return this.getRuntimeStatus();
+		return this.emitStatus();
 	}
 
 	pause(): RuntimeStatus {
 		this.paused = true;
 		this.syncTimer();
-		return this.getRuntimeStatus();
+		return this.emitStatus();
 	}
 
 	resume(): RuntimeStatus {
@@ -263,7 +264,7 @@ export class GameRuntime extends EventEmitter<GameRuntimeEventMap> {
 		}
 		this.paused = false;
 		this.syncTimer();
-		return this.getRuntimeStatus();
+		return this.emitStatus();
 	}
 
 	tickNow(count = 1): GameState {
@@ -296,6 +297,12 @@ export class GameRuntime extends EventEmitter<GameRuntimeEventMap> {
 
 	static getVersion(): string {
 		return VERSION;
+	}
+
+	private emitStatus(): RuntimeStatus {
+		const status = this.getRuntimeStatus();
+		this.emit("status", status);
+		return status;
 	}
 
 	private syncTimer(): void {

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import net from "node:net";
+import path from "node:path";
 import { EventEmitter, once } from "node:events";
 
 import type { RpcRequest, RpcServerMessage } from "../protocol/messages.js";
@@ -59,8 +60,11 @@ export class DaemonTransport extends EventEmitter<DaemonTransportEventMap> {
 	}
 
 	async start(): Promise<void> {
-		if (process.platform !== "win32" && fs.existsSync(this.socketPath)) {
-			fs.rmSync(this.socketPath, { force: true });
+		if (process.platform !== "win32") {
+			fs.mkdirSync(path.dirname(this.socketPath), { recursive: true });
+			if (fs.existsSync(this.socketPath)) {
+				fs.rmSync(this.socketPath, { force: true });
+			}
 		}
 
 		this.server.listen(this.socketPath);
