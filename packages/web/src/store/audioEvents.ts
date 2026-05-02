@@ -46,6 +46,10 @@ export function attachAudioEvents(store: GameStore): () => void {
           ? Math.min(1, usage.total.powerKw / (capacity.total.vCpu * 0.5))
           : 0;
         ambient.setUsage(load);
+
+        // Modulate by speed and pause
+        ambient.setSpeed(state.game.speed);
+        ambient.setPaused(state.game.paused);
       } else {
         if (ambientStarted) {
           ambient.stop();
