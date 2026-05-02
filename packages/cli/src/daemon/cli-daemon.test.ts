@@ -59,6 +59,11 @@ test("cli daemon starts and cli quit shuts it down", async () => {
 	assert.equal(quitExitCode, 0);
 
 	const daemonExitCode = await new Promise<number>((resolve, reject) => {
+		if (child.exitCode !== null) {
+			resolve(child.exitCode);
+			return;
+		}
+
 		const timeout = setTimeout(() => {
 			child.kill("SIGKILL");
 			reject(new Error("Daemon did not exit in time"));
