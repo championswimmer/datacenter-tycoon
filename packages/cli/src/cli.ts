@@ -5,6 +5,7 @@ import { runStatusCommand } from "./commands/status.js";
 import { runLoadCommand, runNewCommand, runQuitCommand, runSaveCommand } from "./commands/new-load.js";
 import { runLsCommand } from "./commands/ls.js";
 import { runAddRackCommand, runBuildDatacenterCommand, runRemoveRackCommand } from "./commands/build-dc.js";
+import { runAcceptContractCommand, runCancelContractCommand } from "./commands/contracts.js";
 import { GamePersistence, loadOrInit } from "./daemon/persist.js";
 import { GameRuntime } from "./daemon/runtime.js";
 import { GameDaemonServer } from "./daemon/server.js";
@@ -127,8 +128,8 @@ const COMMANDS: CommandHandler[] = [
 	{ name: "build-dc", summary: "Build a datacenter", run: async ({ parsed }) => runBuildDatacenterCommand(parsed) },
 	{ name: "add-rack", summary: "Add a rack to a datacenter", run: async ({ parsed }) => runAddRackCommand(parsed) },
 	{ name: "remove-rack", summary: "Remove a rack placement", run: async ({ parsed }) => runRemoveRackCommand(parsed) },
-	createNotImplementedHandler("accept-contract", "Accept a contract"),
-	createNotImplementedHandler("cancel-contract", "Cancel an active contract"),
+	{ name: "accept-contract", summary: "Accept a contract", run: async ({ parsed }) => runAcceptContractCommand(parsed) },
+	{ name: "cancel-contract", summary: "Cancel an active contract", run: async ({ parsed }) => runCancelContractCommand(parsed) },
 	createNotImplementedHandler("tick", "Advance one or more ticks"),
 	createNotImplementedHandler("pause", "Pause the daemon tick loop"),
 	createNotImplementedHandler("resume", "Resume the daemon tick loop"),
