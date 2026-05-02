@@ -23,6 +23,14 @@ export function migrate(envelope: SaveEnvelope): SaveEnvelope {
 		state.gameId = crypto.randomUUID() as GameId;
 	}
 
+	// Ensure game metadata exists
+	if (!state.game) {
+		state.game = {
+			speed: 1,
+			paused: false,
+		};
+	}
+
 	if (envelope.saveVersion === SAVE_VERSION) {
 		return envelope;
 	}
