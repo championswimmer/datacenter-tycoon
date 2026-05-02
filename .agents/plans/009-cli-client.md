@@ -27,7 +27,7 @@ owner: cli
   - [x] 3.3 Reconnect / handshake / version negotiation
   - [x] 3.4 Snapshot + delta subscription helpers
 - [ ] **Phase 4 — One-shot CLI subcommands**
-  - [ ] 4.1 Argument parser scaffolding (no heavy deps; small custom parser)
+  - [x] 4.1 Argument parser scaffolding (no heavy deps; small custom parser)
   - [ ] 4.2 `dct status` — prints summary (cash, tick, dcs, contracts)
   - [ ] 4.3 `dct new`, `dct load`, `dct save`, `dct quit`
   - [ ] 4.4 `dct ls dc|racks|contracts|market` listing commands
