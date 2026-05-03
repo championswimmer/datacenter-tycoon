@@ -1,6 +1,6 @@
 import { refreshContractMarket } from "../contracts/market.js";
 import { tickOpex, tickRevenue } from "../economy/opex.js";
-import type { Contract, GameState, LedgerEntry, LedgerEntryType, Money, Tick } from "../types.js";
+import type { Contract, DatacenterId, GameState, LedgerEntry, LedgerEntryType, Money, OpexTickResult, Tick } from "../types.js";
 
 function roundMoney(value: number): Money {
 	return Math.round(value * 100) / 100;
@@ -39,12 +39,47 @@ function finalizeContract(contract: Contract, tick: Tick): Contract {
 	};
 }
 
+function getRegionForDatacenter(state: GameState, dcId: string) {
+	const datacenter = state.datacenters.find((dc) => dc.id === dcId);
+	if (!datacenter) return undefined;
+	return state.map.regions.find((r) => r.id === datacenter.regionId);
+}
+
 export function tick(state: GameState): GameState {
 	const nextTick = (state.tick + 1) as Tick;
-	const totalOpex = roundMoney(
-		state.datacenters.reduce((total, datacenter) => total + tickOpex(datacenter).total, 0),
-	);
+
+	// Calculate base opex per datacenter
+	const perDcOpex = new Map<DatacenterId, OpexTickResult>();
+	let baseOpexTotal = 0;
+	for (const datacenter of state.datacenters) {
+		const region = getRegionForDatacenter(state, datacenter.id);
+		if (!region) {
+			throw new Error(`Region not found for datacenter: ${datacenter.regionId}`);
+		}
+		const opex = tickOpex(datacenter, region);
+		perDcOpex.set(datacenter.id, opex);
+		baseOpexTotal += opex.total;
+	}
+
 	const revenueResult = tickRevenue(state);
+
+	// Calculate tax per datacenter
+	let totalTax = 0;
+	for (const datacenter of state.datacenters) {
+		const region = getRegionForDatacenter(state, datacenter.id);
+		if (!region) continue;
+
+		const opex = perDcOpex.get(datacenter.id)!;
+		const dcRevenue = revenueResult.perDcRevenue[datacenter.id] ?? 0;
+		const profit = Math.max(0, dcRevenue - opex.total);
+		const tax = roundMoney(profit * region.taxRate);
+		totalTax += tax;
+
+		// Mutate the breakdown to include tax for this tick
+		(opex.breakdown as { tax: Money }).tax = tax;
+	}
+
+	const totalOpex = roundMoney(baseOpexTotal + totalTax);
 
 	const autoCancelledContracts = revenueResult.updatedContracts.map((contract): Contract => {
 		if (contract.status === "breached" && state.activeContracts.some(

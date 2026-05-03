@@ -28,6 +28,7 @@ const STATUS_LABEL: Record<ContractStatus, string> = {
 export function ActiveList() {
   const contracts   = useSelector(selectActiveContracts);
   const datacenters = useSelector(selectAllDatacenters);
+  const regions     = useSelector(s => s.map.regions);
   const tick        = useSelector(selectTick);
   const dispatch    = useGameDispatch();
   const fraction    = useTickFraction();
@@ -70,11 +71,12 @@ export function ActiveList() {
         const canCancel = c.status === "active" || c.status === "breached";
 
         const dc = datacenters.find(d => d.id === c.assignedDcId);
+        const region = dc ? regions.find(r => r.id === dc.regionId) : undefined;
         const contractsOnDc = contracts.filter(
           x => x.assignedDcId === dc?.id && x.status === "active",
         );
-        const attributedOpex = dc
-          ? tickOpex(dc).total / Math.max(contractsOnDc.length, 1)
+        const attributedOpex = dc && region
+          ? tickOpex(dc, region).total / Math.max(contractsOnDc.length, 1)
           : 0;
         const margin = c.monthlyPayment - attributedOpex;
 

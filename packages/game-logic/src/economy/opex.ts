@@ -9,13 +9,12 @@ import type {
 	GameState,
 	Money,
 	OpexTickResult,
+	Region,
 	RevenueTickResult,
 } from "../types.js";
 import {
 	BANDWIDTH_USD_PER_GBPS_MONTH,
 	COOLING_OVERHEAD_RATIO,
-	DEFAULT_STAFF_WAGE,
-	ELECTRICITY_USD_PER_KWH,
 	HOURS_PER_MONTH,
 } from "./constants.js";
 
@@ -61,7 +60,7 @@ function getAssignedDemand(activeContracts: Contract[], datacenterId: Datacenter
 	}, EMPTY_CAPACITY);
 }
 
-export function tickOpex(datacenter: Datacenter): OpexTickResult {
+export function tickOpex(datacenter: Datacenter, region: Region): OpexTickResult {
 	const usage = datacenterUsage(datacenter);
 	const maintenance = datacenter.placements.reduce((total, placement) => {
 		const spec = RACK_CATALOG[placement.specId];
@@ -72,17 +71,18 @@ export function tickOpex(datacenter: Datacenter): OpexTickResult {
 		return total + spec.monthlyMaintenance;
 	}, 0);
 
-	const rawPowerCost = usage.powerKw * HOURS_PER_MONTH * ELECTRICITY_USD_PER_KWH;
+	const rawPowerCost = usage.powerKw * HOURS_PER_MONTH * region.powerCostPerKwh;
 	const power = roundMoney(rawPowerCost);
 	const cooling = roundMoney(rawPowerCost * COOLING_OVERHEAD_RATIO);
 	const bandwidth = roundMoney(datacenter.spec.bandwidthGbps * BANDWIDTH_USD_PER_GBPS_MONTH);
-	const staff = roundMoney(datacenter.spec.staffCount * DEFAULT_STAFF_WAGE);
+	const staff = roundMoney(datacenter.spec.staffCount * region.staffWage);
 	const breakdown = {
 		power,
 		cooling,
 		bandwidth,
 		staff,
 		maintenance: roundMoney(maintenance),
+		tax: 0 as Money,
 	};
 
 	return {
@@ -100,6 +100,7 @@ export function tickOpex(datacenter: Datacenter): OpexTickResult {
 export function tickRevenue(state: GameState): RevenueTickResult {
 	const datacentersById = new Map(state.datacenters.map((datacenter) => [datacenter.id, datacenter]));
 	let revenue = 0;
+	const perDcRevenue: Record<DatacenterId, Money> = {};
 
 	const updatedContracts = state.activeContracts.map((contract): Contract => {
 		if ((contract.status !== "active" && contract.status !== "breached") || !contract.assignedDcId) {
@@ -109,6 +110,7 @@ export function tickRevenue(state: GameState): RevenueTickResult {
 		const datacenter = datacentersById.get(contract.assignedDcId);
 		if (!datacenter) {
 			revenue -= contract.penaltyPerMonth;
+			perDcRevenue[contract.assignedDcId] = (perDcRevenue[contract.assignedDcId] ?? 0) - contract.penaltyPerMonth;
 			return {
 				...contract,
 				status: "breached",
@@ -119,6 +121,7 @@ export function tickRevenue(state: GameState): RevenueTickResult {
 		const datacenterSupply = datacenterCapacity(datacenter);
 		if (!canCoverRequirements(datacenterSupply, datacenterDemand)) {
 			revenue -= contract.penaltyPerMonth;
+			perDcRevenue[datacenter.id] = (perDcRevenue[datacenter.id] ?? 0) - contract.penaltyPerMonth;
 			return {
 				...contract,
 				status: "breached",
@@ -126,6 +129,7 @@ export function tickRevenue(state: GameState): RevenueTickResult {
 		}
 
 		revenue += contract.monthlyPayment;
+		perDcRevenue[datacenter.id] = (perDcRevenue[datacenter.id] ?? 0) + contract.monthlyPayment;
 		return {
 			...contract,
 			status: "active",
@@ -134,6 +138,7 @@ export function tickRevenue(state: GameState): RevenueTickResult {
 
 	return {
 		revenue: roundMoney(revenue),
+		perDcRevenue,
 		updatedContracts,
 	};
 }

@@ -46,6 +46,7 @@ function makeDatacenter(id: string, placements: RackPlacement[] = []): Datacente
 		spec: DATACENTER_CATALOG.garage,
 		placements,
 		builtAtTick: tick(0),
+		regionId: DEFAULT_REGION_ID,
 	};
 }
 

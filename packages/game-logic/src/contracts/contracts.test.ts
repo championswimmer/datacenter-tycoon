@@ -13,6 +13,7 @@ import {
 } from "../contracts/index.js";
 import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
 import { createRng } from "../sim/rng.js";
+import { DEFAULT_REGION_ID } from "../types.js";
 import type {
 	Contract,
 	ContractId,
@@ -58,6 +59,7 @@ function makeDatacenter(
 		spec: DATACENTER_CATALOG.warehouse,
 		placements,
 		builtAtTick: tick(0),
+		regionId: DEFAULT_REGION_ID,
 	};
 }
 
@@ -97,6 +99,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
 		contractMarket: [],
 		activeContracts: [],
 		ledger: [],
+		map: { regions: [] },
 		...overrides,
 	};
 }

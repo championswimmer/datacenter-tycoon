@@ -22,6 +22,7 @@ const SEGMENTS: Array<{
   { key: "cooling",     label: "COOLING",     color: "#60a5fa" },
   { key: "bandwidth",   label: "BANDWIDTH",   color: "#c084fc" },
   { key: "maintenance", label: "MAINT",       color: "#9bff5a" },
+  { key: "tax",         label: "TAX",         color: "#ff5a5a" },
 ];
 
 export function OpexCard({ total, breakdown }: OpexCardProps) {

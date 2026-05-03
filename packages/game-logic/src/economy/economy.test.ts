@@ -14,6 +14,7 @@ import type {
 	PlayerId,
 	RackPlacement,
 	RackPlacementId,
+	Region,
 	Tick,
 } from "../types.js";
 
@@ -22,6 +23,18 @@ const datacenterId = (value: string): DatacenterId => value as DatacenterId;
 const playerId = (value: string): PlayerId => value as PlayerId;
 const rackPlacementId = (value: string): RackPlacementId => value as RackPlacementId;
 const tick = (value: number): Tick => value as Tick;
+
+const TEST_REGION: Region = {
+	id: DEFAULT_REGION_ID,
+	name: "Test Region",
+	powerCostPerKwh: 0.12,
+	staffWage: 6_000,
+	taxRate: 0.1,
+	totalPowerAvailable: 10_000,
+	totalStaffAvailable: 1_000,
+	powerUsed: 0,
+	staffUsed: 0,
+};
 
 function placement(id: string, specId: keyof typeof RACK_CATALOG, row: number, position: number): RackPlacement {
 	const spec = RACK_CATALOG[specId];
@@ -90,6 +103,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
 		contractMarket: [],
 		activeContracts: [],
 		ledger: [],
+		map: { regions: [TEST_REGION] },
 		...overrides,
 	};
 }
@@ -127,7 +141,7 @@ test("applyCapex throws when funds are insufficient", () => {
 test("tickOpex charges staff and reserved bandwidth even for an empty datacenter", () => {
 	const datacenter = makeDatacenter("garage-1", DATACENTER_CATALOG.garage);
 
-	assert.deepEqual(tickOpex(datacenter), {
+	assert.deepEqual(tickOpex(datacenter, TEST_REGION), {
 		total: 18_800,
 		breakdown: {
 			power: 0,
@@ -135,6 +149,7 @@ test("tickOpex charges staff and reserved bandwidth even for an empty datacenter
 			bandwidth: 6_800,
 			staff: 12_000,
 			maintenance: 0,
+			tax: 0,
 		},
 	});
 });
@@ -145,7 +160,7 @@ test("tickOpex includes power, cooling, staff, bandwidth, and rack maintenance",
 		placement("rack-2", "M1", 0, 1),
 	]);
 
-	assert.deepEqual(tickOpex(datacenter), {
+	assert.deepEqual(tickOpex(datacenter, TEST_REGION), {
 		total: 85079.9,
 		breakdown: {
 			power: 946.08,
@@ -153,6 +168,7 @@ test("tickOpex includes power, cooling, staff, bandwidth, and rack maintenance",
 			bandwidth: 34_000,
 			staff: 48_000,
 			maintenance: 1_850,
+			tax: 0,
 		},
 	});
 });
@@ -185,6 +201,7 @@ test("tickRevenue pays fulfilled contracts and recovers previously breached cont
 
 	assert.deepEqual(tickRevenue(state), {
 		revenue: 22_000,
+		perDcRevenue: { [datacenter.id]: 22_000 },
 		updatedContracts: [
 			{
 				...state.activeContracts[0],
@@ -229,6 +246,7 @@ test("tickRevenue breaches all overcommitted contracts on the same datacenter", 
 
 	const result = tickRevenue(state);
 	assert.equal(result.revenue, -12_000);
+	assert.deepEqual(result.perDcRevenue, { [datacenter.id]: -12_000 });
 	assert.deepEqual(
 		result.updatedContracts.map((contract) => contract.status),
 		["breached", "breached", "breached"],

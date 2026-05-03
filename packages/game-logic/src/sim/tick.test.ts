@@ -6,6 +6,7 @@ import { RACK_CATALOG } from "../catalog/racks.js";
 import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
 import { tickOpex } from "../economy/opex.js";
 import { tick } from "./tick.js";
+import { DEFAULT_REGION_ID } from "../types.js";
 import type {
 	Contract,
 	ContractId,
@@ -15,6 +16,7 @@ import type {
 	PlayerId,
 	RackPlacement,
 	RackPlacementId,
+	Region,
 	Tick,
 } from "../types.js";
 
@@ -23,6 +25,18 @@ const datacenterId = (value: string): DatacenterId => value as DatacenterId;
 const playerId = (value: string): PlayerId => value as PlayerId;
 const rackPlacementId = (value: string): RackPlacementId => value as RackPlacementId;
 const tickValue = (value: number): Tick => value as Tick;
+
+const TEST_REGION: Region = {
+	id: DEFAULT_REGION_ID,
+	name: "Test Region",
+	powerCostPerKwh: 0.12,
+	staffWage: 6_000,
+	taxRate: 0.1,
+	totalPowerAvailable: 10_000,
+	totalStaffAvailable: 1_000,
+	powerUsed: 0,
+	staffUsed: 0,
+};
 
 function placement(id: string, specId: keyof typeof RACK_CATALOG, row: number, position: number): RackPlacement {
 	const spec = RACK_CATALOG[specId];
@@ -51,6 +65,7 @@ function makeDatacenter(
 		spec: DATACENTER_CATALOG.warehouse,
 		placements,
 		builtAtTick: tickValue(0),
+		regionId: DEFAULT_REGION_ID,
 	};
 }
 
@@ -92,6 +107,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
 		contractMarket: [],
 		activeContracts: [],
 		ledger: [],
+		map: { regions: [TEST_REGION] },
 		...overrides,
 	};
 }
@@ -103,7 +119,7 @@ test("tick advances time, applies opex and revenue, and refreshes the contract m
 		datacenters: [datacenter],
 		activeContracts: [contract],
 	});
-	const opex = tickOpex(datacenter).total;
+	const opex = tickOpex(datacenter, TEST_REGION).total;
 
 	const nextState = tick(state);
 
@@ -135,7 +151,7 @@ test("tick cancels breached contracts when their term ends and records penalties
 		datacenters: [weakDatacenter],
 		activeContracts: [expiringContract],
 	});
-	const opex = tickOpex(weakDatacenter).total;
+	const opex = tickOpex(weakDatacenter, TEST_REGION).total;
 
 	const nextState = tick(state);
 
@@ -184,7 +200,7 @@ test("tick auto-cancels a previously breached contract after one penalty tick", 
 		datacenters: [weakDatacenter],
 		activeContracts: [breachedContract],
 	});
-	const opex = tickOpex(weakDatacenter).total;
+	const opex = tickOpex(weakDatacenter, TEST_REGION).total;
 
 	const nextState = tick(state);
 

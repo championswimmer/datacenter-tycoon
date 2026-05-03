@@ -20,12 +20,12 @@ owner: game-logic, web
   - [x] 2.2 Implement deterministic `generateMap(seed)` in `sim/mapgen.ts`
   - [x] 2.3 Add region resource-pool tracking helpers (`regionPowerUsed`, `regionStaffUsed`, `canBuildInRegion`)
   - [x] 2.4 Unit tests for map generation determinism and region invariants
-- [ ] **Phase 3 — Economy Refactoring**
-  - [ ] 3.1 Replace global `ELECTRICITY_USD_PER_KWH` with per-region lookup in `tickOpex`
-  - [ ] 3.2 Refactor staff opex from `datacenter.spec.monthlyStaffCost` to `staffCount * region.staffWage`
-  - [ ] 3.3 Add monthly tax calculation per datacenter (tax rate × datacenter profit)
-  - [ ] 3.4 Update `OpexBreakdown` to include `tax` line item
-  - [ ] 3.5 Update economy tests and constants
+- [x] **Phase 3 — Economy Refactoring**
+  - [x] 3.1 Replace global `ELECTRICITY_USD_PER_KWH` with per-region lookup in `tickOpex`
+  - [x] 3.2 Refactor staff opex from `datacenter.spec.monthlyStaffCost` to `staffCount * region.staffWage`
+  - [x] 3.3 Add monthly tax calculation per datacenter (tax rate × datacenter profit)
+  - [x] 3.4 Update `OpexBreakdown` to include `tax` line item
+  - [x] 3.5 Update economy tests and constants
 - [ ] **Phase 4 — State, Reducer & Save Integration**
   - [ ] 4.1 Update `newGame()` to generate and attach a `MapState`
   - [ ] 4.2 Update `reduce.ts` `BuildDatacenter` to validate region power/staff availability
