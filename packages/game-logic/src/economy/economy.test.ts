@@ -4,7 +4,6 @@ import test from "node:test";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { applyCapex, tickOpex, tickRevenue } from "../index.js";
-import { DEFAULT_REGION_ID } from "../types.js";
 import type {
 	Contract,
 	ContractId,
@@ -25,7 +24,7 @@ const rackPlacementId = (value: string): RackPlacementId => value as RackPlaceme
 const tick = (value: number): Tick => value as Tick;
 
 const TEST_REGION: Region = {
-	id: DEFAULT_REGION_ID,
+	id: "iowa" as import("../types.js").RegionId,
 	name: "Test Region",
 	powerCostPerKwh: 0.12,
 	staffWage: 6_000,
@@ -59,7 +58,7 @@ function makeDatacenter(
 		spec,
 		placements,
 		builtAtTick: tick(0),
-		regionId: DEFAULT_REGION_ID,
+		regionId: "iowa" as import("../types.js").RegionId,
 	};
 }
 

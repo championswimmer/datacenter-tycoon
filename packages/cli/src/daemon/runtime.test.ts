@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { DATACENTER_CATALOG, RACK_CATALOG, newGame, reduce, type DatacenterId, type RackPlacementId , DEFAULT_REGION_ID } from "@datacenter-tycoon/game-logic";
+import { DATACENTER_CATALOG, RACK_CATALOG, newGame, reduce, type DatacenterId, type RackPlacementId } from "@datacenter-tycoon/game-logic";
 
 import { GameRuntime, type IntervalScheduler } from "./runtime.js";
 
@@ -42,11 +42,12 @@ class FakeScheduler implements IntervalScheduler {
 
 function buildState() {
 	let state = newGame(42, { startingCash: 3_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
 	state = reduce(state, {
 		type: "BuildDatacenter",
 		specId: DATACENTER_CATALOG.garage.id,
 		dcId: datacenterId("dc-1"),
-		regionId: DEFAULT_REGION_ID,
+		regionId: firstRegionId,
 	});
 	state = reduce(state, {
 		type: "PlaceRack",

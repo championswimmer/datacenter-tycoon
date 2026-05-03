@@ -1,5 +1,5 @@
-import type { DatacenterId, DatacenterSpecId, RackPlacementId, RackSpecId } from "@datacenter-tycoon/game-logic";
-import { DEFAULT_REGION_ID } from "@datacenter-tycoon/game-logic";
+import type { DatacenterId, DatacenterSpecId, RackPlacementId, RackSpecId, RegionId } from "@datacenter-tycoon/game-logic";
+import { REGION_CATALOG } from "@datacenter-tycoon/game-logic";
 import { DctClient } from "../client/client.js";
 import type { ParsedArgv } from "../argv.js";
 import {
@@ -15,27 +15,31 @@ const datacenterId = (value: string): DatacenterId => value as DatacenterId;
 const datacenterSpecId = (value: string): DatacenterSpecId => value as DatacenterSpecId;
 const rackPlacementId = (value: string): RackPlacementId => value as RackPlacementId;
 const rackSpecId = (value: string): RackSpecId => value as RackSpecId;
+const regionId = (value: string): RegionId => value as RegionId;
 
 function getOptionalStringFlag(parsed: ParsedArgv, flag: string): string | undefined {
 	const value = parsed.flags[flag];
 	return typeof value === "string" ? value : undefined;
 }
 
+const FIRST_REGION_ID = Object.values(REGION_CATALOG)[0]!.id;
+
 export async function runBuildDatacenterCommand(
 	parsed: ParsedArgv,
 	clientFactory: CommandClientFactory = (options) => new DctClient(options),
 ): Promise<void> {
-	const specId = requirePositional(parsed, 0, "dct build-dc <specId> [--id <dcId>]");
+	const specId = requirePositional(parsed, 0, "dct build-dc <specId> [--id <dcId>] [--region <regionId>]");
 	const dcId = getOptionalStringFlag(parsed, "--id") ?? createShortId("dc");
+	const region = getOptionalStringFlag(parsed, "--region") ?? FIRST_REGION_ID;
 	await withClient(
 		parsed,
 		async (client) => {
-			await client.dispatch({ type: "BuildDatacenter", specId: datacenterSpecId(specId), dcId: datacenterId(dcId), regionId: DEFAULT_REGION_ID });
+			await client.dispatch({ type: "BuildDatacenter", specId: datacenterSpecId(specId), dcId: datacenterId(dcId), regionId: regionId(region) });
 		},
 		clientFactory,
 	);
 
-	writeCommandResult(parsed, `Built datacenter ${dcId}`, { dcId, specId });
+	writeCommandResult(parsed, `Built datacenter ${dcId}`, { dcId, specId, region });
 }
 
 export async function runAddRackCommand(

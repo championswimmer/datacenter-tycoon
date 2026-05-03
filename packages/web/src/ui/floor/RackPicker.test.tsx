@@ -4,7 +4,6 @@ import {
   newGame,
   reduce,
   DATACENTER_CATALOG,
-  DEFAULT_REGION_ID,
 } from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "../../store/gameStore.js";
 import { StoreProvider } from "../../store/storeContext.js";
@@ -37,12 +36,14 @@ function Wrapper({
 }
 
 function stateWithGarage() {
+  const base = newGame(42);
   const dcId  = nextDcId();
-  const state = reduce(newGame(42), {
+  const firstRegionId = base.map.regions[0]!.id;
+  const state = reduce(base, {
     type: "BuildDatacenter",
     specId: DATACENTER_CATALOG["garage"]!.id,
     dcId,
-    regionId: DEFAULT_REGION_ID,
+    regionId: firstRegionId,
   });
   return state;
 }

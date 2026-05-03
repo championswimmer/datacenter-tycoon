@@ -6,7 +6,6 @@ import {
 	RACK_CATALOG,
 	newGame,
 	reduce,
-	DEFAULT_REGION_ID,
 	type ContractId,
 	type DatacenterId,
 	type RackPlacementId,
@@ -20,12 +19,14 @@ test("end-to-end scripted game remains profitable over 12 ticks", () => {
 	let state = newGame(42);
 	const initialCash = state.player.cash;
 	const warehouseId = datacenterId("dc-warehouse-1");
+	// Use Iowa — cheap power and staff, low tax — to ensure profitability
+	const regionId = "iowa" as import("./types.js").RegionId;
 
 	state = reduce(state, {
 		type: "BuildDatacenter",
 		specId: DATACENTER_CATALOG.warehouse.id,
 		dcId: warehouseId,
-		regionId: DEFAULT_REGION_ID,
+		regionId,
 	});
 
 	const placements = [

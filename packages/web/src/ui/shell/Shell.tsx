@@ -9,7 +9,6 @@ import { DatacenterList } from "../left-rail/DatacenterList.js";
 import { DatacenterView } from "../dc-view/DatacenterView.js";
 import { EmptyState } from "../dc-view/EmptyState.js";
 import { LogFeed } from "../log/LogFeed.js";
-import { NewDatacenterModal } from "../onboarding/NewDatacenterModal.js";
 import { ContractsPage } from "../contracts/ContractsPage.js";
 import { TutorialModal } from "../help/TutorialModal.js";
 import { MapView } from "../map/MapView.js";
@@ -22,8 +21,7 @@ interface ShellProps {
 export function Shell({ isFreshStart = false }: ShellProps) {
   const dispatch = useGameDispatch();
   const speed = useSelector(s => s.game.speed as Speed);
-  const [showNewDcModal, setShowNewDcModal] = useState(false);
-  const [showTutorial, setShowTutorial]   = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   const setSpeed = useCallback((value: SetStateAction<Speed>) => {
     const newSpeed = typeof value === "function" ? value(speed) : value;
@@ -50,8 +48,6 @@ export function Shell({ isFreshStart = false }: ShellProps) {
     }
   }, [isFreshStart]);
 
-  const openNewDcModal  = useCallback(() => setShowNewDcModal(true),  []);
-  const closeNewDcModal = useCallback(() => setShowNewDcModal(false), []);
   const openTutorial    = useCallback(() => setShowTutorial(true),   []);
   const closeTutorial   = useCallback(() => setShowTutorial(false),  []);
   const openMap         = useCallback(() => navigateToMap(),         []);
@@ -75,7 +71,7 @@ export function Shell({ isFreshStart = false }: ShellProps) {
             key={route.view === "dc" ? `dc-${route.dcId}` : route.view}
             route={route}
             datacenters={datacenters}
-            onNewDatacenter={datacenters.length === 0 ? openMap : openNewDcModal}
+            onNewDatacenter={openMap}
           />
         </main>
 
@@ -86,9 +82,6 @@ export function Shell({ isFreshStart = false }: ShellProps) {
       </div>
 
       {/* ── Modals (rendered above the grid so they overlay everything) ── */}
-      {showNewDcModal && (
-        <NewDatacenterModal onClose={closeNewDcModal} />
-      )}
       {showTutorial && (
         <TutorialModal onClose={closeTutorial} />
       )}
