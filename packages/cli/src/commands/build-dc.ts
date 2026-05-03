@@ -1,4 +1,5 @@
 import type { DatacenterId, DatacenterSpecId, RackPlacementId, RackSpecId } from "@datacenter-tycoon/game-logic";
+import { DEFAULT_REGION_ID } from "@datacenter-tycoon/game-logic";
 import { DctClient } from "../client/client.js";
 import type { ParsedArgv } from "../argv.js";
 import {
@@ -29,7 +30,7 @@ export async function runBuildDatacenterCommand(
 	await withClient(
 		parsed,
 		async (client) => {
-			await client.dispatch({ type: "BuildDatacenter", specId: datacenterSpecId(specId), dcId: datacenterId(dcId) });
+			await client.dispatch({ type: "BuildDatacenter", specId: datacenterSpecId(specId), dcId: datacenterId(dcId), regionId: DEFAULT_REGION_ID });
 		},
 		clientFactory,
 	);

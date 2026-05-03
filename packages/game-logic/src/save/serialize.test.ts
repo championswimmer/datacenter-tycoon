@@ -4,6 +4,7 @@ import test from "node:test";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import type { ContractId, DatacenterId, RackPlacementId } from "../types.js";
+import { DEFAULT_REGION_ID } from "../types.js";
 import { serialize, deserialize, migrate, SAVE_VERSION } from "./serialize.js";
 import { newGame } from "../state/newGame.js";
 import { reduce } from "../state/reduce.js";
@@ -27,6 +28,7 @@ test("serialize and deserialize round-trip a non-trivial game state", () => {
 		type: "BuildDatacenter",
 		specId: DATACENTER_CATALOG.garage.id,
 		dcId: datacenterId("dc-1"),
+		regionId: DEFAULT_REGION_ID,
 	});
 	state = reduce(state, {
 		type: "PlaceRack",

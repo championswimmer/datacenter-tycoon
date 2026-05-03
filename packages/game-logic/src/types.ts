@@ -12,6 +12,9 @@ export type RackPlacementId = Brand<string, "RackPlacementId">;
 export type ContractId = Brand<string, "ContractId">;
 export type LedgerEntryId = Brand<string, "LedgerEntryId">;
 export type GameId = Brand<string, "GameId">;
+export type RegionId = Brand<string, "RegionId">;
+
+export const DEFAULT_REGION_ID = "global" as RegionId;
 
 export type RackKind = "compute" | "memory" | "storage" | "gpu";
 export type RackTier = 1 | 2 | 3;
@@ -74,7 +77,7 @@ export interface DatacenterSpec {
 	coolingType: CoolingType;
 	bandwidthGbps: number;
 	capexCost: Money;
-	monthlyStaffCost: Money;
+	staffCount: number;
 }
 
 export interface Datacenter {
@@ -83,6 +86,7 @@ export interface Datacenter {
 	spec: DatacenterSpec;
 	placements: RackPlacement[];
 	builtAtTick: Tick;
+	regionId: RegionId;
 }
 
 export interface ContractRequirements extends Capacity {}
@@ -170,6 +174,22 @@ export interface AudioSettings {
 	ambient: boolean; // Server hum
 }
 
+export interface Region {
+	id: RegionId;
+	name: string;
+	powerCostPerKwh: number;
+	staffWage: Money;
+	taxRate: number;
+	totalPowerAvailable: number;
+	totalStaffAvailable: number;
+	powerUsed: number;
+	staffUsed: number;
+}
+
+export interface MapState {
+	regions: Region[];
+}
+
 export interface GameState {
 	gameId: GameId;
 	game: {
@@ -186,4 +206,5 @@ export interface GameState {
 	ledger: LedgerEntry[];
 	audioEnabled: boolean;
 	audioSettings: AudioSettings;
+	map: MapState;
 }

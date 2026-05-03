@@ -15,10 +15,11 @@ import type {
 	RackPlacementId,
 	RackSpec,
 	RackSpecId,
+	RegionId,
 } from "../types.js";
 
 export type Action =
-	| { type: "BuildDatacenter"; specId: DatacenterSpecId; dcId: DatacenterId }
+	| { type: "BuildDatacenter"; specId: DatacenterSpecId; dcId: DatacenterId; regionId: RegionId }
 	| {
 			type: "PlaceRack";
 			dcId: DatacenterId;
@@ -88,7 +89,7 @@ function assertUniquePlacementId(state: GameState, placementId: RackPlacementId)
 	}
 }
 
-function buildDatacenter(state: GameState, specId: DatacenterSpecId, dcId: DatacenterId): GameState {
+function buildDatacenter(state: GameState, specId: DatacenterSpecId, dcId: DatacenterId, regionId: RegionId): GameState {
 	assertUniqueDatacenterId(state, dcId);
 	const spec = getDatacenterSpec(specId);
 	const sameSpecCount = state.datacenters.filter((datacenter) => datacenter.spec.id === spec.id).length;
@@ -98,6 +99,7 @@ function buildDatacenter(state: GameState, specId: DatacenterSpecId, dcId: Datac
 		spec,
 		placements: [],
 		builtAtTick: state.tick,
+		regionId,
 	};
 
 	const debitedState = applyCapex(state, spec.capexCost, `Build datacenter: ${spec.name}`);
@@ -178,7 +180,7 @@ function assertNever(value: never): never {
 export function reduce(state: GameState, action: Action): GameState {
 	switch (action.type) {
 		case "BuildDatacenter":
-			return buildDatacenter(state, action.specId, action.dcId);
+			return buildDatacenter(state, action.specId, action.dcId, action.regionId);
 		case "PlaceRack":
 			return placeRack(state, action.dcId, action.specId, action.row, action.position, action.placementId);
 		case "RemoveRack":

@@ -5,6 +5,7 @@ import {
   reduce,
   DATACENTER_CATALOG,
   RACK_CATALOG,
+  DEFAULT_REGION_ID,
 } from "@datacenter-tycoon/game-logic";
 import type { Contract, GameState } from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "../../store/gameStore.js";
@@ -19,6 +20,7 @@ function buildActiveState(): GameState {
     type: "BuildDatacenter",
     specId: DATACENTER_CATALOG.garage!.id,
     dcId,
+    regionId: DEFAULT_REGION_ID,
   });
   state = reduce(state, {
     type: "PlaceRack",

@@ -6,7 +6,7 @@ import path from "node:path";
 import test from "node:test";
 import { setTimeout as sleep } from "node:timers/promises";
 
-import { DATACENTER_CATALOG, newGame } from "@datacenter-tycoon/game-logic";
+import { DATACENTER_CATALOG, newGame , DEFAULT_REGION_ID } from "@datacenter-tycoon/game-logic";
 
 import { loadOrInit, GamePersistence } from "./persist.js";
 import { GameRuntime } from "./runtime.js";
@@ -79,6 +79,7 @@ test("daemon server persists autosaved state after RPC dispatch", async () => {
 			type: "BuildDatacenter",
 			specId: DATACENTER_CATALOG.garage.id,
 			dcId: "dc-1",
+		regionId: DEFAULT_REGION_ID,
 		},
 	})) as { result: { tick: number } };
 	assert.equal(dispatchResponse.result.tick, 0);

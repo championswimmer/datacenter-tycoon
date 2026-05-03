@@ -1,7 +1,7 @@
 ---
 name: Regional Map & Location-Aware Economy
 description: Add a procedurally-generated world map with regions/states where datacenters can be built, each with unique power costs, staffing costs, taxes, and finite resource pools.
-status: created
+status: started
 created: 2026-05-03
 updated: 2026-05-03
 owner: game-logic, web
@@ -9,12 +9,12 @@ owner: game-logic, web
 
 ## Progress
 
-- [ ] **Phase 1 — Game-Logic Type Abstractions**
-  - [ ] 1.1 Add `RegionId`, `StateId` branded IDs and `Region` interface to `types.ts`
-  - [ ] 1.2 Add `MapState` interface and embed into `GameState`
-  - [ ] 1.3 Abstract `DatacenterSpec` staff from flat cost to `staffCount` headcount
-  - [ ] 1.4 Add `regionId` to `Datacenter` and update `BuildDatacenter` action
-  - [ ] 1.5 Export new types from `src/index.ts`
+- [x] **Phase 1 — Game-Logic Type Abstractions**
+  - [x] 1.1 Add `RegionId`, `StateId` branded IDs and `Region` interface to `types.ts`
+  - [x] 1.2 Add `MapState` interface and embed into `GameState`
+  - [x] 1.3 Abstract `DatacenterSpec` staff from flat cost to `staffCount` headcount
+  - [x] 1.4 Add `regionId` to `Datacenter` and update `BuildDatacenter` action
+  - [x] 1.5 Export new types from `src/index.ts`
 - [ ] **Phase 2 — Regional Catalog & Map Generation**
   - [ ] 2.1 Create `catalog/regions.ts` with state definitions (power cost, wage, tax rate, total power, total staff)
   - [ ] 2.2 Implement deterministic `generateMap(seed)` in `sim/mapgen.ts`

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { newGame, reduce, DATACENTER_CATALOG } from "@datacenter-tycoon/game-logic";
+import { newGame, reduce, DATACENTER_CATALOG , DEFAULT_REGION_ID } from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "../../store/gameStore.js";
 import { StoreProvider } from "../../store/storeContext.js";
 import { DatacenterList } from "./DatacenterList.js";
@@ -30,6 +30,7 @@ describe("DatacenterList", () => {
       type: "BuildDatacenter",
       specId: DATACENTER_CATALOG["garage"]!.id,
       dcId,
+    regionId: DEFAULT_REGION_ID,
     });
     render(
       <Wrapper state={state}>
