@@ -66,11 +66,32 @@ test("serialize and deserialize round-trip a non-trivial game state", () => {
 	assert.deepEqual(restored, state);
 });
 
-test("migrate is a no-op for version 1 envelopes", () => {
+test("migrate is a no-op for version 2 envelopes", () => {
 	const state = newGame(7);
 	const envelope = { saveVersion: SAVE_VERSION, state };
 
 	assert.deepEqual(migrate(envelope), envelope);
+});
+
+test("migrate v1 to v2 adds default map and regionId to datacenters", () => {
+	const state = newGame(7);
+	// Simulate a v1 save by removing map and regionId
+	const v1State = {
+		...state,
+		map: undefined,
+		datacenters: state.datacenters.map((dc) => {
+			const { regionId, ...rest } = dc as any;
+			return rest;
+		}),
+	};
+	const migrated = migrate({ saveVersion: 1, state: v1State as any });
+	assert.equal(migrated.saveVersion, 2);
+	assert.ok(migrated.state.map);
+	assert.ok(migrated.state.map.regions.length > 0);
+	assert.ok(migrated.state.map.regions.some((r) => r.id === DEFAULT_REGION_ID));
+	for (const dc of migrated.state.datacenters) {
+		assert.equal(dc.regionId, DEFAULT_REGION_ID);
+	}
 });
 
 test("migrate throws on unknown save versions", () => {

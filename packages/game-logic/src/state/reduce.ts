@@ -3,6 +3,7 @@ import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { applyCapex } from "../economy/capex.js";
 import { canPlaceRack } from "../entities/datacenter.js";
+import { canBuildInRegion } from "../entities/region.js";
 import { tick } from "../sim/tick.js";
 import type {
 	ContractId,
@@ -92,6 +93,14 @@ function assertUniquePlacementId(state: GameState, placementId: RackPlacementId)
 function buildDatacenter(state: GameState, specId: DatacenterSpecId, dcId: DatacenterId, regionId: RegionId): GameState {
 	assertUniqueDatacenterId(state, dcId);
 	const spec = getDatacenterSpec(specId);
+	const region = state.map.regions.find((r) => r.id === regionId);
+	if (!region) {
+		throw new Error(`Unknown region: ${regionId}`);
+	}
+	if (!canBuildInRegion(region, spec, state.datacenters)) {
+		throw new Error(`Insufficient power or staff in region: ${regionId}`);
+	}
+
 	const sameSpecCount = state.datacenters.filter((datacenter) => datacenter.spec.id === spec.id).length;
 	const namedDatacenter: Datacenter = {
 		id: dcId,
@@ -102,10 +111,21 @@ function buildDatacenter(state: GameState, specId: DatacenterSpecId, dcId: Datac
 		regionId,
 	};
 
+	const updatedRegions = state.map.regions.map((r) =>
+		r.id === regionId
+			? {
+					...r,
+					powerUsed: r.powerUsed + spec.powerCapacityKw,
+					staffUsed: r.staffUsed + spec.staffCount,
+				}
+			: r,
+	);
+
 	const debitedState = applyCapex(state, spec.capexCost, `Build datacenter: ${spec.name}`);
 	return {
 		...debitedState,
 		datacenters: [...debitedState.datacenters, namedDatacenter],
+		map: { ...debitedState.map, regions: updatedRegions },
 	};
 }
 
