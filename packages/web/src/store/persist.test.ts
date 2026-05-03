@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { newGame, reduce } from "@datacenter-tycoon/game-logic";
+import { DATACENTER_CATALOG, newGame, reduce } from "@datacenter-tycoon/game-logic";
 import {
   loadSave,
   writeSave,
@@ -126,7 +126,7 @@ describe("attachAutosave", () => {
     const store = createGameStore(state);
     attachAutosave(store);
     // Trigger something non-tick
-    store.dispatch({ type: "BuildDatacenter", specId: "garage" as any, dcId: "dc1" as any });
+    store.dispatch({ type: "BuildDatacenter", specId: DATACENTER_CATALOG.garage!.id, dcId: "dc1" as any });
     expect(loadSave(state.gameId)).not.toBeNull();
   });
 
@@ -143,9 +143,6 @@ describe("attachAutosave", () => {
     for (let i = 0; i < AUTOSAVE_EVERY_TICKS - 1; i++) {
       store.dispatch({ type: "Tick" });
     }
-    
-    // Check it didn't save for ANY of those ticks
-    // setItem is called twice per writeSave (save data + index)
     expect(setItemSpy).not.toHaveBeenCalled();
 
     // The Nth tick triggers a save
