@@ -15,11 +15,11 @@ owner: game-logic, web
   - [x] 1.3 Abstract `DatacenterSpec` staff from flat cost to `staffCount` headcount
   - [x] 1.4 Add `regionId` to `Datacenter` and update `BuildDatacenter` action
   - [x] 1.5 Export new types from `src/index.ts`
-- [ ] **Phase 2 — Regional Catalog & Map Generation**
-  - [ ] 2.1 Create `catalog/regions.ts` with state definitions (power cost, wage, tax rate, total power, total staff)
-  - [ ] 2.2 Implement deterministic `generateMap(seed)` in `sim/mapgen.ts`
-  - [ ] 2.3 Add region resource-pool tracking helpers (`regionPowerUsed`, `regionStaffUsed`, `canBuildInRegion`)
-  - [ ] 2.4 Unit tests for map generation determinism and region invariants
+- [x] **Phase 2 — Regional Catalog & Map Generation**
+  - [x] 2.1 Create `catalog/regions.ts` with state definitions (power cost, wage, tax rate, total power, total staff)
+  - [x] 2.2 Implement deterministic `generateMap(seed)` in `sim/mapgen.ts`
+  - [x] 2.3 Add region resource-pool tracking helpers (`regionPowerUsed`, `regionStaffUsed`, `canBuildInRegion`)
+  - [x] 2.4 Unit tests for map generation determinism and region invariants
 - [ ] **Phase 3 — Economy Refactoring**
   - [ ] 3.1 Replace global `ELECTRICITY_USD_PER_KWH` with per-region lookup in `tickOpex`
   - [ ] 3.2 Refactor staff opex from `datacenter.spec.monthlyStaffCost` to `staffCount * region.staffWage`
