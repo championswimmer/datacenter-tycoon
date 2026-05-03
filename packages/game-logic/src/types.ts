@@ -149,6 +149,7 @@ export interface OpexBreakdown {
 	bandwidth: Money;
 	staff: Money;
 	maintenance: Money;
+	tax: Money;
 }
 
 export interface OpexTickResult {
@@ -158,6 +159,7 @@ export interface OpexTickResult {
 
 export interface RevenueTickResult {
 	revenue: Money;
+	perDcRevenue: Record<DatacenterId, Money>;
 	updatedContracts: Contract[];
 }
 

@@ -1,5 +1,6 @@
 import { refreshContractMarket } from "../contracts/market.js";
 import { STARTING_CASH } from "../economy/constants.js";
+import { generateMap } from "../sim/mapgen.js";
 import type { GameId, GameState, Money, PlayerId, Tick } from "../types.js";
 
 export interface NewGameOptions {
@@ -49,9 +50,7 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 			money: true,
 			ambient: true,
 		},
-		map: {
-			regions: [],
-		},
+		map: generateMap(effectiveSeed),
 	};
 
 	return refreshContractMarket(initialState);

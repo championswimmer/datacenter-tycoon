@@ -112,10 +112,17 @@ export interface AggregateOpex {
  * Uses `tickOpex` from game-logic — never recomputes economy here.
  */
 export function selectOpexBreakdown(state: GameState): AggregateOpex {
-  const perDc = state.datacenters.map((dc) => ({
-    dcId: dc.id,
-    result: tickOpex(dc),
-  }));
+  const perDc = state.datacenters.map((dc) => {
+    const region = state.map.regions.find((r) => r.id === dc.regionId);
+    // Fallback to a default region if not found (should not happen in normal gameplay)
+    if (!region) {
+      throw new Error(`Region not found for datacenter: ${dc.regionId}`);
+    }
+    return {
+      dcId: dc.id,
+      result: tickOpex(dc, region),
+    };
+  });
 
   const total = Math.round(
     perDc.reduce((sum, { result }) => sum + result.total, 0) * 100,

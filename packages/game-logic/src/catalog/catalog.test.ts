@@ -7,7 +7,6 @@ import {
 	BALANCE_VERSION,
 	BANDWIDTH_USD_PER_GBPS_MONTH,
 	COOLING_OVERHEAD_RATIO,
-	ELECTRICITY_USD_PER_KWH,
 	HOURS_PER_MONTH,
 	MARKET_REFRESH_SIZE,
 	STARTING_CASH,
@@ -142,7 +141,6 @@ test("datacenter catalog exposes three starter blueprints with sane capacities",
 
 test("economy constants are positive and within expected ranges", () => {
 	assert.equal(BALANCE_VERSION, 1);
-	assert.ok(ELECTRICITY_USD_PER_KWH > 0);
 	assert.equal(HOURS_PER_MONTH, 730);
 	assert.ok(BANDWIDTH_USD_PER_GBPS_MONTH > 0);
 	assert.ok(COOLING_OVERHEAD_RATIO > 0 && COOLING_OVERHEAD_RATIO < 1);
