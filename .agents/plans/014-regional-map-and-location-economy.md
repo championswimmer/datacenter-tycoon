@@ -32,12 +32,12 @@ owner: game-logic, web
   - [x] 4.3 Update `reduce.ts` to track `region.powerUsed` and `region.staffUsed` on build
   - [x] 4.4 Update `serialize.ts` save version and add migration stub for old saves
   - [x] 4.5 Update integration and reducer tests
-- [ ] **Phase 5 — Frontend Map Screen**
-  - [ ] 5.1 Add `map` route to hash router and shell navigation
-  - [ ] 5.2 Create `MapView` component with procedural SVG/Canvas region visualization
-  - [ ] 5.3 Create `RegionPanel` showing dynamics (power cost, wage, tax, availability)
-  - [ ] 5.4 Wire `NewDatacenterModal` to require a selected region from the map
-  - [ ] 5.5 Update `DatacenterList` and `DatacenterView` to show region name
+- [x] **Phase 5 — Frontend Map Screen**
+  - [x] 5.1 Add `map` route to hash router and shell navigation
+  - [x] 5.2 Create `MapView` component with procedural SVG/Canvas region visualization
+  - [x] 5.3 Create `RegionPanel` showing dynamics (power cost, wage, tax, availability)
+  - [x] 5.4 Wire `NewDatacenterModal` to require a selected region from the map
+  - [x] 5.5 Update `DatacenterList` and `DatacenterView` to show region name
 - [ ] **Phase 6 — Testing & Polish**
   - [ ] 6.1 End-to-end test: build DC on map → verify regional opex/tax in ledger
   - [ ] 6.2 Verify old save migration path (no regions → default region fallback)

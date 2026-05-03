@@ -1,5 +1,5 @@
 import { useSelector } from "../../store/storeContext.js";
-import { selectAllDatacenters, selectResourceUsage } from "../../store/selectors.js";
+import { selectAllDatacenters, selectResourceUsage, selectRegions } from "../../store/selectors.js";
 import { LedSegment } from "../../theme/primitives/index.js";
 import { navigateToDc, navigate } from "../../router/hashRouter.js";
 import type { Route } from "../../router/hashRouter.js";
@@ -7,17 +7,20 @@ import styles from "./DatacenterList.module.css";
 
 interface DatacenterListProps {
   currentRoute: Route;
-  /** Called when "New Datacenter" is clicked — Phase 5 will wire the modal */
+  /** Called when "New Datacenter" is clicked */
   onNewDatacenter?: () => void;
 }
 
 export function DatacenterList({ currentRoute, onNewDatacenter }: DatacenterListProps) {
   const datacenters  = useSelector(selectAllDatacenters);
   const usageAggreg  = useSelector(selectResourceUsage);
+  const regions      = useSelector(selectRegions);
 
   const selectedDcId = currentRoute.view === "dc" ? currentRoute.dcId : null;
 
   const openContracts = () => navigate({ view: "contracts" });
+
+  const regionMap = new Map(regions.map(r => [r.id, r]));
 
   return (
     <div className={styles.rail}>
@@ -49,6 +52,7 @@ export function DatacenterList({ currentRoute, onNewDatacenter }: DatacenterList
           const slotsTotal = dc.spec.rows * dc.spec.positionsPerRow;
           const slotsUsed  = usage?.slotsUsed ?? 0;
           const isActive   = dc.id === selectedDcId;
+          const region     = regionMap.get(dc.regionId);
 
           const ledColor = powerPct > 0.9 ? "red" : powerPct > 0.7 ? "amber" : "lime";
 
@@ -63,6 +67,10 @@ export function DatacenterList({ currentRoute, onNewDatacenter }: DatacenterList
                 <LedSegment color={ledColor} size={8} />
                 <span className={styles.dcName}>{dc.name}</span>
               </div>
+
+              {region && (
+                <div className={styles.dcRegion}>{region.name}</div>
+              )}
 
               <div className={styles.dcStats}>
                 <span className={styles.dcStat}>

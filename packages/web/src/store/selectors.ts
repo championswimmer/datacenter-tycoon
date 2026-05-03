@@ -223,6 +223,21 @@ export function selectFreeCapacity(state: GameState): Capacity {
   };
 }
 
+export function selectRegions(state: GameState): import("@datacenter-tycoon/game-logic").Region[] {
+  return state.map.regions;
+}
+
+export function selectRegionById(
+  state: GameState,
+  regionId: string,
+): import("@datacenter-tycoon/game-logic").Region | undefined {
+  return state.map.regions.find((r) => r.id === regionId);
+}
+
+export function selectDatacentersByRegionId(state: GameState, regionId: string): Datacenter[] {
+  return state.datacenters.filter((dc) => dc.regionId === regionId);
+}
+
 export function selectAudioEnabled(state: GameState): boolean {
   return state.audioEnabled ?? true;
 }

@@ -1,0 +1,181 @@
+.mapView {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-0);
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--grid);
+  flex-shrink: 0;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: var(--neon-cyan);
+  text-shadow: var(--glow-cyan);
+}
+
+.subtitle {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--fg-2);
+}
+
+/* ── Region Grid ────────────────────────────────────────────── */
+
+.regionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ── Region Card ────────────────────────────────────────────── */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--bg-1);
+  border: 1px solid var(--grid);
+  border-radius: var(--radius-md);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast),
+    background var(--duration-fast),
+    box-shadow var(--duration-fast);
+  width: 100%;
+}
+
+.card:hover {
+  background: var(--bg-2);
+  border-color: var(--fg-3);
+}
+
+.cardSelected {
+  border-color: var(--neon-cyan) !important;
+  background: rgba(94, 240, 255, 0.05) !important;
+  box-shadow: inset 0 0 0 1px rgba(94, 240, 255, 0.2), var(--glow-sm-cyan);
+}
+
+/* ── Card Header ────────────────────────────────────────────── */
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.costIndicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cost-lime  { background: var(--neon-lime);  box-shadow: 0 0 4px var(--neon-lime); }
+.cost-cyan  { background: var(--neon-cyan);  box-shadow: 0 0 4px var(--neon-cyan); }
+.cost-amber { background: var(--neon-amber); box-shadow: 0 0 4px var(--neon-amber); }
+.cost-red   { background: var(--neon-red);   box-shadow: 0 0 4px var(--neon-red); }
+
+.cardName {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-0);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dcBadge {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 6px;
+  border-radius: 2px;
+  background: rgba(94, 240, 255, 0.1);
+  color: var(--neon-cyan);
+  border: 1px solid rgba(94, 240, 255, 0.25);
+  flex-shrink: 0;
+}
+
+/* ── Card Stats ─────────────────────────────────────────────── */
+
+.cardStats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.statLabel {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.statValue {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-1);
+}
+
+/* ── Bars ───────────────────────────────────────────────────── */
+
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--grid);
+}
+
+.barRow {
+  display: grid;
+  grid-template-columns: 32px 1fr 28px;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.barLabel {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  color: var(--fg-3);
+  text-transform: uppercase;
+}
+
+.barPct {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--fg-2);
+  text-align: right;
+}

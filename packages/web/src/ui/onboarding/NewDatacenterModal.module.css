@@ -76,6 +76,16 @@
   font-weight: 700;
 }
 
+.regionTag {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--neon-amber);
+  padding: 2px 8px;
+  border: 1px solid rgba(255, 177, 60, 0.3);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 177, 60, 0.08);
+}
+
 .closeBtn {
   font-family: var(--font-mono);
   font-size: var(--text-md);
@@ -145,6 +155,12 @@
 .cardUnaffordable {
   opacity: 0.55;
   cursor: default;
+}
+
+.cardDisabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
 }
 
 /* ── Card header ──────────────────────────────────────────── */
@@ -270,6 +286,12 @@
 }
 
 /* ── Footer ───────────────────────────────────────────────── */
+
+.regionFull {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--neon-amber);
+}
 
 .footer {
   display: flex;

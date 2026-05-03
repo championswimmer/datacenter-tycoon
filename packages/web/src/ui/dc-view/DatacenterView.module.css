@@ -37,6 +37,18 @@
   letter-spacing: 0.08em;
 }
 
+.dcRegion {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--neon-amber);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 177, 60, 0.25);
+  border-radius: 2px;
+  background: rgba(255, 177, 60, 0.08);
+}
+
 .resourceStrip {
   margin-top: var(--space-2);
 }
