@@ -7,6 +7,7 @@ export type Route =
   | { view: "dc"; dcId: string; tab: DcTab }
   | { view: "contracts" }
   | { view: "log" }
+  | { view: "map" }
   | { view: "theme-playground" }; // dev-only
 
 export type DcTab = "floor" | "power" | "contracts";
@@ -25,6 +26,7 @@ export function parseRoute(hash: string): Route {
   if (seg0 === "__theme") return { view: "theme-playground" };
   if (seg0 === "contracts") return { view: "contracts" };
   if (seg0 === "log") return { view: "log" };
+  if (seg0 === "map") return { view: "map" };
 
   if (seg0 === "dc" && seg1) {
     const tab = seg2 === "power" ? "power" : seg2 === "contracts" ? "contracts" : "floor";
@@ -42,6 +44,7 @@ export function routeToHash(route: Route): string {
     case "dc":                return `#/dc/${route.dcId}/${route.tab}`;
     case "contracts":         return "#/contracts";
     case "log":               return "#/log";
+    case "map":               return "#/map";
     case "theme-playground":  return "#/__theme";
   }
 }
@@ -54,6 +57,10 @@ export function navigate(route: Route): void {
 
 export function navigateToDc(dcId: string, tab: DcTab = "floor"): void {
   navigate({ view: "dc", dcId, tab });
+}
+
+export function navigateToMap(): void {
+  navigate({ view: "map" });
 }
 
 // ── React hook ─────────────────────────────────────────────────────────────────

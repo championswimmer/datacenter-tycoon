@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
-import { DATACENTER_CATALOG, DEFAULT_REGION_ID } from "@datacenter-tycoon/game-logic";
-import type { DatacenterSpec } from "@datacenter-tycoon/game-logic";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { DATACENTER_CATALOG, DEFAULT_REGION_ID, canBuildInRegion } from "@datacenter-tycoon/game-logic";
+import type { DatacenterSpec, RegionId } from "@datacenter-tycoon/game-logic";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
-import { selectCash } from "../../store/selectors.js";
+import { selectCash, selectAllDatacenters, selectRegionById } from "../../store/selectors.js";
 import { nextDcId } from "../../store/ids.js";
 import { navigateToDc } from "../../router/hashRouter.js";
 import { InsufficientFunds } from "./InsufficientFunds.js";
@@ -10,6 +10,7 @@ import styles from "./NewDatacenterModal.module.css";
 
 interface NewDatacenterModalProps {
   onClose: () => void;
+  regionId?: RegionId;
 }
 
 // ── Catalog helpers ────────────────────────────────────────────────────────────
@@ -39,17 +40,26 @@ function formatBtu(n: number): string {
 
 // ── Modal ──────────────────────────────────────────────────────────────────────
 
-export function NewDatacenterModal({ onClose }: NewDatacenterModalProps) {
-  const cash     = useSelector(selectCash);
+export function NewDatacenterModal({ onClose, regionId }: NewDatacenterModalProps) {
+  const cash = useSelector(selectCash);
   const dispatch = useGameDispatch();
+  const datacenters = useSelector(selectAllDatacenters);
+  const region = useSelector((s) => selectRegionById(s, regionId ?? DEFAULT_REGION_ID));
 
-  // Default to first affordable spec, else first spec.
+  // Filter catalog by regional availability if a region is specified
+  const availableSpecs = useMemo(() => {
+    if (!regionId || !region) return CATALOG_ENTRIES;
+    return CATALOG_ENTRIES.filter((spec) => canBuildInRegion(region, spec, datacenters));
+  }, [regionId, region, datacenters]);
+
+  // Default to first affordable available spec, else first available spec.
   const defaultSpec =
-    CATALOG_ENTRIES.find(s => cash >= s.capexCost) ?? CATALOG_ENTRIES[0]!;
+    availableSpecs.find((s) => cash >= s.capexCost) ?? availableSpecs[0] ?? CATALOG_ENTRIES[0]!;
   const [selectedId, setSelectedId] = useState<string>(defaultSpec.id);
 
-  const selectedSpec = CATALOG_ENTRIES.find(s => s.id === selectedId)!;
-  const canAfford    = cash >= selectedSpec.capexCost;
+  const selectedSpec = CATALOG_ENTRIES.find((s) => s.id === selectedId)!;
+  const canAfford = cash >= selectedSpec.capexCost;
+  const canBuild = !regionId || !region || canBuildInRegion(region, selectedSpec, datacenters);
 
   // ESC closes
   useEffect(() => {
@@ -59,12 +69,12 @@ export function NewDatacenterModal({ onClose }: NewDatacenterModalProps) {
   }, [onClose]);
 
   const handleBuild = useCallback(() => {
-    if (!canAfford) return;
+    if (!canAfford || !canBuild) return;
     const dcId = nextDcId();
-    dispatch({ type: "BuildDatacenter", specId: selectedSpec.id, dcId, regionId: DEFAULT_REGION_ID });
+    dispatch({ type: "BuildDatacenter", specId: selectedSpec.id, dcId, regionId: regionId ?? DEFAULT_REGION_ID });
     navigateToDc(dcId);
     onClose();
-  }, [canAfford, dispatch, selectedSpec.id, onClose]);
+  }, [canAfford, canBuild, dispatch, selectedSpec.id, regionId, onClose]);
 
   return (
     /* Backdrop */
@@ -87,6 +97,11 @@ export function NewDatacenterModal({ onClose }: NewDatacenterModalProps) {
             <span className={styles.budget}>
               Budget: <strong className={styles.budgetAmt}>{formatMoney(cash)}</strong>
             </span>
+            {region && (
+              <span className={styles.regionTag}>
+                {region.name}
+              </span>
+            )}
           </div>
           <button
             className={styles.closeBtn}
@@ -97,15 +112,19 @@ export function NewDatacenterModal({ onClose }: NewDatacenterModalProps) {
 
         {/* ── Catalog cards ── */}
         <div className={styles.catalog}>
-          {CATALOG_ENTRIES.map(spec => (
-            <DcCard
-              key={spec.id}
-              spec={spec}
-              cash={cash}
-              selected={spec.id === selectedId}
-              onSelect={() => setSelectedId(spec.id)}
-            />
-          ))}
+          {CATALOG_ENTRIES.map(spec => {
+            const isAvailable = !regionId || !region || canBuildInRegion(region, spec, datacenters);
+            return (
+              <DcCard
+                key={spec.id}
+                spec={spec}
+                cash={cash}
+                selected={spec.id === selectedId}
+                onSelect={() => setSelectedId(spec.id)}
+                disabled={!isAvailable}
+              />
+            );
+          })}
         </div>
 
         {/* ── Footer ── */}
@@ -116,6 +135,9 @@ export function NewDatacenterModal({ onClose }: NewDatacenterModalProps) {
               size="md"
             />
           )}
+          {!canBuild && canAfford && (
+            <span className={styles.regionFull}>Region at capacity — cannot build this size</span>
+          )}
           <div className={styles.footerBtns}>
             <button className={styles.cancelBtn} onClick={onClose}>
               CANCEL
@@ -123,8 +145,8 @@ export function NewDatacenterModal({ onClose }: NewDatacenterModalProps) {
             <button
               className={styles.buildBtn}
               onClick={handleBuild}
-              disabled={!canAfford}
-              title={!canAfford ? `Need ${formatMoney(selectedSpec.capexCost - cash)} more` : undefined}
+              disabled={!canAfford || !canBuild}
+              title={!canAfford ? `Need ${formatMoney(selectedSpec.capexCost - cash)} more` : !canBuild ? "Region capacity exceeded" : undefined}
             >
               BUILD — {formatMoney(selectedSpec.capexCost)}
             </button>
@@ -142,6 +164,7 @@ interface DcCardProps {
   cash:     number;
   selected: boolean;
   onSelect: () => void;
+  disabled?: boolean;
 }
 
 const DC_ICONS: Record<string, string> = {
@@ -150,7 +173,7 @@ const DC_ICONS: Record<string, string> = {
   hyperscale: "🌐",
 };
 
-function DcCard({ spec, cash, selected, onSelect }: DcCardProps) {
+function DcCard({ spec, cash, selected, onSelect, disabled = false }: DcCardProps) {
   const affordable = cash >= spec.capexCost;
   const shortfall  = spec.capexCost - cash;
   const totalSlots = spec.rows * spec.positionsPerRow;
@@ -161,10 +184,12 @@ function DcCard({ spec, cash, selected, onSelect }: DcCardProps) {
         styles.card,
         selected    ? styles.cardSelected    : "",
         !affordable ? styles.cardUnaffordable : "",
+        disabled    ? styles.cardDisabled    : "",
       ].filter(Boolean).join(" ")}
       onClick={onSelect}
       aria-pressed={selected}
-      aria-disabled={!affordable}
+      aria-disabled={!affordable || disabled}
+      disabled={disabled}
     >
       {/* ── Card header ── */}
       <div className={styles.cardHeader}>

@@ -1,5 +1,5 @@
 import { useSelector } from "../../store/storeContext.js";
-import { selectDatacenter, selectResourceUsage, selectActiveContracts } from "../../store/selectors.js";
+import { selectDatacenter, selectResourceUsage, selectActiveContracts, selectRegionById } from "../../store/selectors.js";
 import { navigate, type DcTab } from "../../router/hashRouter.js";
 import type { DatacenterId, Datacenter } from "@datacenter-tycoon/game-logic";
 import { FloorView }    from "../floor/FloorView.js";
@@ -24,6 +24,7 @@ const EMPTY_USAGE = { powerKw: 0, heatOutputBtuPerHr: 0, bandwidthGbps: 0, slots
 export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
   const dc       = useSelector(s => selectDatacenter(s, dcId as DatacenterId));
   const usageAgg = useSelector(selectResourceUsage);
+  const region   = useSelector(s => dc ? selectRegionById(s, dc.regionId) : undefined);
 
   if (!dc) {
     return (
@@ -46,6 +47,9 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
         <div className={styles.dcTitleRow}>
           <h2 className={styles.dcName}>{dc.name}</h2>
           <span className={styles.dcSpec}>{dc.spec.name}</span>
+          {region && (
+            <span className={styles.dcRegion}>{region.name}</span>
+          )}
         </div>
         {/* Compact resource utilisation strip */}
         <div className={styles.resourceStrip}>

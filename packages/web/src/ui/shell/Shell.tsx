@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, type SetStateAction } from "react";
 import { useSelector, useTickDriver, useGameDispatch } from "../../store/storeContext.js";
 import { selectAllDatacenters } from "../../store/selectors.js";
-import { useRoute, navigateToDc } from "../../router/hashRouter.js";
+import { useRoute, navigateToDc, navigateToMap } from "../../router/hashRouter.js";
 import type { Speed } from "../../store/tickDriver.js";
 import { hasSeenTutorial } from "../../store/tutorialPersist.js";
 import { TopBar } from "../topbar/TopBar.js";
@@ -12,6 +12,7 @@ import { LogFeed } from "../log/LogFeed.js";
 import { NewDatacenterModal } from "../onboarding/NewDatacenterModal.js";
 import { ContractsPage } from "../contracts/ContractsPage.js";
 import { TutorialModal } from "../help/TutorialModal.js";
+import { MapView } from "../map/MapView.js";
 import styles from "./Shell.module.css";
 
 interface ShellProps {
@@ -53,6 +54,7 @@ export function Shell({ isFreshStart = false }: ShellProps) {
   const closeNewDcModal = useCallback(() => setShowNewDcModal(false), []);
   const openTutorial    = useCallback(() => setShowTutorial(true),   []);
   const closeTutorial   = useCallback(() => setShowTutorial(false),  []);
+  const openMap         = useCallback(() => navigateToMap(),         []);
 
   return (
     <div className={styles.shell}>
@@ -63,7 +65,7 @@ export function Shell({ isFreshStart = false }: ShellProps) {
         <nav className={styles.leftRail} aria-label="Datacenter navigation">
           <DatacenterList
             currentRoute={route}
-            onNewDatacenter={openNewDcModal}
+            onNewDatacenter={openMap}
           />
         </nav>
 
@@ -73,7 +75,7 @@ export function Shell({ isFreshStart = false }: ShellProps) {
             key={route.view === "dc" ? `dc-${route.dcId}` : route.view}
             route={route}
             datacenters={datacenters}
-            onNewDatacenter={openNewDcModal}
+            onNewDatacenter={datacenters.length === 0 ? openMap : openNewDcModal}
           />
         </main>
 
@@ -109,6 +111,9 @@ function MainContent({ route, datacenters, onNewDatacenter }: MainContentProps) 
 
     case "contracts":
       return <ContractsPage />;
+
+    case "map":
+      return <MapView />;
 
     case "log":
       return <GlobalPlaceholder icon="📜" title="Full Event Log" phase="Phase 9" />;
