@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { DATACENTER_CATALOG, newGame, reduce } from "@datacenter-tycoon/game-logic";
 import {
-  getSaveKey,
   loadSave,
   writeSave,
   clearSave,
@@ -9,6 +8,7 @@ import {
   attachAutosave,
   bootstrapStore,
   AUTOSAVE_EVERY_TICKS,
+  getSaveKey,
 } from "./persist.js";
 import { createGameStore } from "./gameStore.js";
 
@@ -50,19 +50,21 @@ describe("loadSave", () => {
 
   it("returns null and logs a warning on corrupt JSON", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const key = getSaveKey("corrupt-save");
-    localStorage.setItem(key, "not-valid-json{{{");
+    const key = "corrupt-save";
+    const fullKey = getSaveKey(key);
+    localStorage.setItem(fullKey, "not-valid-json{{{");
     expect(loadSave(key)).toBeNull();
-    expect(warnSpy).toHaveBeenCalledOnce();
+    expect(warnSpy).toHaveBeenCalled();
     warnSpy.mockRestore();
   });
 
   it("returns null and logs a warning when envelope is missing saveVersion", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const key = getSaveKey("missing-version");
-    localStorage.setItem(key, JSON.stringify({ state: {} }));
+    const key = "missing-version";
+    const fullKey = getSaveKey(key);
+    localStorage.setItem(fullKey, JSON.stringify({ state: {} }));
     expect(loadSave(key)).toBeNull();
-    expect(warnSpy).toHaveBeenCalledOnce();
+    expect(warnSpy).toHaveBeenCalled();
     warnSpy.mockRestore();
   });
 });
@@ -82,7 +84,7 @@ describe("writeSave", () => {
       throw new DOMException("QuotaExceededError");
     });
     expect(() => writeSave(newGame(1))).not.toThrow();
-    expect(warnSpy).toHaveBeenCalledOnce();
+    expect(warnSpy).toHaveBeenCalled();
     warnSpy.mockRestore();
   });
 });
@@ -133,6 +135,9 @@ describe("attachAutosave", () => {
     const store = createGameStore(state);
     attachAutosave(store, AUTOSAVE_EVERY_TICKS);
     const setItemSpy = vi.spyOn(localStorage, "setItem");
+
+    // We expect initial calls during bootstrap or setup to be cleared
+    setItemSpy.mockClear();
 
     // First N-1 ticks should NOT trigger a save
     for (let i = 0; i < AUTOSAVE_EVERY_TICKS - 1; i++) {

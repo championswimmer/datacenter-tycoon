@@ -1,3 +1,6 @@
+import * as MusicEngine from "./MusicEngine.js";
+import * as AmbientEngine from "./AmbientEngine.js";
+
 let ctx: AudioContext | null = null;
 
 function getAudioContextCtor():
@@ -23,7 +26,26 @@ function initContext() {
   return ctx;
 }
 
-export type SoundType = "success" | "error" | "click";
+export type SoundType = "success" | "error" | "click" | "revenue" | "opex" | "contract_accepted";
+
+export const music = {
+  start: () => {
+    const context = initContext();
+    if (context) MusicEngine.startMusic(context);
+  },
+  stop: () => MusicEngine.stopMusic(),
+};
+
+export const ambient = {
+  start: () => {
+    const context = initContext();
+    if (context) AmbientEngine.startAmbient(context);
+  },
+  stop: () => AmbientEngine.stopAmbient(),
+  setUsage: (load: number, scale?: number) => AmbientEngine.setAmbientUsage(load, scale),
+  setSpeed: (factor: number) => AmbientEngine.setAmbientSpeed(factor),
+  setPaused: (paused: boolean) => AmbientEngine.setAmbientPaused(paused),
+};
 
 export function playSound(type: SoundType, isMuted: boolean = false) {
   if (isMuted) return;
@@ -78,6 +100,57 @@ export function playSound(type: SoundType, isMuted: boolean = false) {
 
       osc.start(now);
       osc.stop(now + 0.1);
+    } else if (type === "revenue") {
+      // High-pitched "coin" chime
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(1760, now + 0.05);
+
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.3, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+
+      osc.start(now);
+      osc.stop(now + 0.2);
+    } else if (type === "opex") {
+      // Low-pitched "spending" thud
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(100, now);
+      osc.frequency.linearRampToValueAtTime(50, now + 0.1);
+
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.5, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+      osc.start(now);
+      osc.stop(now + 0.3);
+    } else if (type === "contract_accepted") {
+      // "Kaching" / Register ring
+      // High-pitched "ding"
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(2000, now);
+      osc.frequency.exponentialRampToValueAtTime(1000, now + 0.5);
+
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.4, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+
+      // Second harmonic for metallic "ting"
+      const osc2 = context.createOscillator();
+      const gain2 = context.createGain();
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(2500, now);
+      osc2.frequency.exponentialRampToValueAtTime(1250, now + 0.4);
+      gain2.gain.setValueAtTime(0, now);
+      gain2.gain.linearRampToValueAtTime(0.2, now + 0.01);
+      gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+      osc2.connect(gain2);
+      gain2.connect(context.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.5);
+      osc2.start(now);
+      osc2.stop(now + 0.4);
     }
   } catch (err) {
     // Fail softly if audio API is blocked by browser policy/runtime.

@@ -34,6 +34,16 @@ export function selectAllDatacenters(state: GameState): Datacenter[] {
   return state.datacenters;
 }
 
+/** Total number of racks across all datacenters. */
+export function selectTotalRacks(state: GameState): number {
+  return state.datacenters.reduce((acc, dc) => acc + dc.placements.length, 0);
+}
+
+/** Total number of servers (racks) across all datacenters. */
+export function selectTotalServers(state: GameState): number {
+  return selectTotalRacks(state);
+}
+
 export function selectDatacenter(
   state: GameState,
   id: DatacenterId,
@@ -208,4 +218,14 @@ export function selectFreeCapacity(state: GameState): Capacity {
 
 export function selectAudioEnabled(state: GameState): boolean {
   return state.audioEnabled ?? true;
+}
+
+export function selectAudioSettings(state: GameState): import("@datacenter-tycoon/game-logic").AudioSettings {
+  return state.audioSettings ?? {
+    master: state.audioEnabled ?? true,
+    music: true,
+    sfx: true,
+    money: true,
+    ambient: true,
+  };
 }
