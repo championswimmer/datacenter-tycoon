@@ -26,12 +26,12 @@ owner: game-logic, web
   - [x] 3.3 Add monthly tax calculation per datacenter (tax rate × datacenter profit)
   - [x] 3.4 Update `OpexBreakdown` to include `tax` line item
   - [x] 3.5 Update economy tests and constants
-- [ ] **Phase 4 — State, Reducer & Save Integration**
-  - [ ] 4.1 Update `newGame()` to generate and attach a `MapState`
-  - [ ] 4.2 Update `reduce.ts` `BuildDatacenter` to validate region power/staff availability
-  - [ ] 4.3 Update `reduce.ts` to track `region.powerUsed` and `region.staffUsed` on build
-  - [ ] 4.4 Update `serialize.ts` save version and add migration stub for old saves
-  - [ ] 4.5 Update integration and reducer tests
+- [x] **Phase 4 — State, Reducer & Save Integration**
+  - [x] 4.1 Update `newGame()` to generate and attach a `MapState`
+  - [x] 4.2 Update `reduce.ts` `BuildDatacenter` to validate region power/staff availability
+  - [x] 4.3 Update `reduce.ts` to track `region.powerUsed` and `region.staffUsed` on build
+  - [x] 4.4 Update `serialize.ts` save version and add migration stub for old saves
+  - [x] 4.5 Update integration and reducer tests
 - [ ] **Phase 5 — Frontend Map Screen**
   - [ ] 5.1 Add `map` route to hash router and shell navigation
   - [ ] 5.2 Create `MapView` component with procedural SVG/Canvas region visualization
