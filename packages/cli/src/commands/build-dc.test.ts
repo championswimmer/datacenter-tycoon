@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { parseArgv } from "../argv.js";
 import type { Action } from "@datacenter-tycoon/game-logic";
-import { DEFAULT_REGION_ID } from "@datacenter-tycoon/game-logic";
+import { REGION_CATALOG } from "@datacenter-tycoon/game-logic";
 import type { CommandClient } from "./common.js";
 import { runAddRackCommand, runBuildDatacenterCommand, runRemoveRackCommand } from "./build-dc.js";
 
@@ -20,11 +20,13 @@ function createFakeClient(actions: Action[]): CommandClient {
 	};
 }
 
+const FIRST_REGION_ID = Object.values(REGION_CATALOG)[0]!.id;
+
 test("runBuildDatacenterCommand dispatches BuildDatacenter and honors --id", async () => {
 	const actions: Action[] = [];
 	await runBuildDatacenterCommand(parseArgv(["build-dc", "garage", "--id", "dc-custom", "--quiet"]), () => createFakeClient(actions));
 
-	assert.deepEqual(actions, [{ type: "BuildDatacenter", specId: "garage", dcId: "dc-custom", regionId: DEFAULT_REGION_ID }]);
+	assert.deepEqual(actions, [{ type: "BuildDatacenter", specId: "garage", dcId: "dc-custom", regionId: FIRST_REGION_ID }]);
 });
 
 test("runAddRackCommand dispatches PlaceRack with numeric coordinates", async () => {

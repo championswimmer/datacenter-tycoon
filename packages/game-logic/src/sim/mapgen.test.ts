@@ -6,6 +6,8 @@ import { generateMap } from "./mapgen.js";
 test("generateMap returns a non-empty list of regions", () => {
 	const map = generateMap(42);
 	assert.ok(map.regions.length > 0);
+	// Should contain all catalog regions (no synthetic global region)
+	assert.ok(map.regions.length >= 10);
 });
 
 test("generateMap is deterministic for the same seed", () => {

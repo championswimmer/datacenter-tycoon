@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { DATACENTER_CATALOG, DEFAULT_REGION_ID, canBuildInRegion } from "@datacenter-tycoon/game-logic";
+import { DATACENTER_CATALOG, canBuildInRegion } from "@datacenter-tycoon/game-logic";
 import type { DatacenterSpec, RegionId } from "@datacenter-tycoon/game-logic";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import { selectCash, selectAllDatacenters, selectRegionById } from "../../store/selectors.js";
@@ -10,7 +10,7 @@ import styles from "./NewDatacenterModal.module.css";
 
 interface NewDatacenterModalProps {
   onClose: () => void;
-  regionId?: RegionId;
+  regionId: RegionId;
 }
 
 // ── Catalog helpers ────────────────────────────────────────────────────────────
@@ -44,13 +44,13 @@ export function NewDatacenterModal({ onClose, regionId }: NewDatacenterModalProp
   const cash = useSelector(selectCash);
   const dispatch = useGameDispatch();
   const datacenters = useSelector(selectAllDatacenters);
-  const region = useSelector((s) => selectRegionById(s, regionId ?? DEFAULT_REGION_ID));
+  const region = useSelector((s) => selectRegionById(s, regionId));
 
-  // Filter catalog by regional availability if a region is specified
+  // Filter catalog by regional availability
   const availableSpecs = useMemo(() => {
-    if (!regionId || !region) return CATALOG_ENTRIES;
+    if (!region) return CATALOG_ENTRIES;
     return CATALOG_ENTRIES.filter((spec) => canBuildInRegion(region, spec, datacenters));
-  }, [regionId, region, datacenters]);
+  }, [region, datacenters]);
 
   // Default to first affordable available spec, else first available spec.
   const defaultSpec =
@@ -59,7 +59,7 @@ export function NewDatacenterModal({ onClose, regionId }: NewDatacenterModalProp
 
   const selectedSpec = CATALOG_ENTRIES.find((s) => s.id === selectedId)!;
   const canAfford = cash >= selectedSpec.capexCost;
-  const canBuild = !regionId || !region || canBuildInRegion(region, selectedSpec, datacenters);
+  const canBuild = !region || canBuildInRegion(region, selectedSpec, datacenters);
 
   // ESC closes
   useEffect(() => {
@@ -71,7 +71,7 @@ export function NewDatacenterModal({ onClose, regionId }: NewDatacenterModalProp
   const handleBuild = useCallback(() => {
     if (!canAfford || !canBuild) return;
     const dcId = nextDcId();
-    dispatch({ type: "BuildDatacenter", specId: selectedSpec.id, dcId, regionId: regionId ?? DEFAULT_REGION_ID });
+    dispatch({ type: "BuildDatacenter", specId: selectedSpec.id, dcId, regionId });
     navigateToDc(dcId);
     onClose();
   }, [canAfford, canBuild, dispatch, selectedSpec.id, regionId, onClose]);
@@ -113,7 +113,7 @@ export function NewDatacenterModal({ onClose, regionId }: NewDatacenterModalProp
         {/* ── Catalog cards ── */}
         <div className={styles.catalog}>
           {CATALOG_ENTRIES.map(spec => {
-            const isAvailable = !regionId || !region || canBuildInRegion(region, spec, datacenters);
+            const isAvailable = !region || canBuildInRegion(region, spec, datacenters);
             return (
               <DcCard
                 key={spec.id}

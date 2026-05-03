@@ -5,7 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import { setTimeout as sleep } from "node:timers/promises";
 
-import { DATACENTER_CATALOG, RACK_CATALOG, reduce, type DatacenterId, type RackPlacementId , DEFAULT_REGION_ID } from "@datacenter-tycoon/game-logic";
+import { DATACENTER_CATALOG, RACK_CATALOG, reduce, type DatacenterId, type RackPlacementId } from "@datacenter-tycoon/game-logic";
 
 import { GamePersistence, loadOrInit } from "./persist.js";
 
@@ -19,11 +19,12 @@ function createTempSavePath(): string {
 
 function createState(seed: number) {
 	let state = loadOrInit("/path/that/does/not/exist.json", seed);
+	const firstRegionId = state.map.regions[0]!.id;
 	state = reduce(state, {
 		type: "BuildDatacenter",
 		specId: DATACENTER_CATALOG.garage.id,
 		dcId: datacenterId("dc-1"),
-		regionId: DEFAULT_REGION_ID,
+		regionId: firstRegionId,
 	});
 	state = reduce(state, {
 		type: "PlaceRack",

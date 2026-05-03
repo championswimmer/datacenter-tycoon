@@ -4,7 +4,6 @@ import test from "node:test";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import type { ContractId, DatacenterId, RackPlacementId } from "../types.js";
-import { DEFAULT_REGION_ID } from "../types.js";
 import { serialize, deserialize, migrate, SAVE_VERSION } from "./serialize.js";
 import { newGame } from "../state/newGame.js";
 import { reduce } from "../state/reduce.js";
@@ -24,11 +23,12 @@ test("serialize wraps state in a versioned envelope", () => {
 
 test("serialize and deserialize round-trip a non-trivial game state", () => {
 	let state = newGame(42, { startingCash: 3_000_000, playerName: "Alex" });
+	const firstRegionId = state.map.regions[0]!.id;
 	state = reduce(state, {
 		type: "BuildDatacenter",
 		specId: DATACENTER_CATALOG.garage.id,
 		dcId: datacenterId("dc-1"),
-		regionId: DEFAULT_REGION_ID,
+		regionId: firstRegionId,
 	});
 	state = reduce(state, {
 		type: "PlaceRack",
@@ -73,8 +73,9 @@ test("migrate is a no-op for version 2 envelopes", () => {
 	assert.deepEqual(migrate(envelope), envelope);
 });
 
-test("migrate v1 to v2 adds default map and regionId to datacenters", () => {
+test("migrate v1 to v2 generates real map and assigns first region to legacy datacenters", () => {
 	const state = newGame(7);
+	const firstRegionId = state.map.regions[0]!.id;
 	// Simulate a v1 save by removing map and regionId
 	const v1State = {
 		...state,
@@ -88,9 +89,10 @@ test("migrate v1 to v2 adds default map and regionId to datacenters", () => {
 	assert.equal(migrated.saveVersion, 2);
 	assert.ok(migrated.state.map);
 	assert.ok(migrated.state.map.regions.length > 0);
-	assert.ok(migrated.state.map.regions.some((r) => r.id === DEFAULT_REGION_ID));
+	// Should NOT contain the old synthetic "global" region
+	assert.ok(!migrated.state.map.regions.some((r) => r.id === "global"));
 	for (const dc of migrated.state.datacenters) {
-		assert.equal(dc.regionId, DEFAULT_REGION_ID);
+		assert.equal(dc.regionId, firstRegionId);
 	}
 });
 

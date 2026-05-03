@@ -14,8 +14,6 @@ export type LedgerEntryId = Brand<string, "LedgerEntryId">;
 export type GameId = Brand<string, "GameId">;
 export type RegionId = Brand<string, "RegionId">;
 
-export const DEFAULT_REGION_ID = "global" as RegionId;
-
 export type RackKind = "compute" | "memory" | "storage" | "gpu";
 export type RackTier = 1 | 2 | 3;
 export type CoolingType = "air" | "liquid";

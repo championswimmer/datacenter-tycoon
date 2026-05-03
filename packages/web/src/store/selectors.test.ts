@@ -4,7 +4,6 @@ import {
   reduce,
   DATACENTER_CATALOG,
   RACK_CATALOG,
-  DEFAULT_REGION_ID,
 } from "@datacenter-tycoon/game-logic";
 import type { GameState } from "@datacenter-tycoon/game-logic";
 import {
@@ -35,22 +34,24 @@ function freshState(): GameState {
 function stateWithOneDc(): GameState {
   const state = freshState();
   const dcId = nextDcId();
+  const firstRegionId = state.map.regions[0]!.id;
   return reduce(state, {
     type: "BuildDatacenter",
     specId: DATACENTER_CATALOG["garage"]!.id,
     dcId,
-    regionId: DEFAULT_REGION_ID,
+    regionId: firstRegionId,
   });
 }
 
 function stateWithDcAndRack(): GameState {
   let state = freshState();
   const dcId = nextDcId();
+  const firstRegionId = state.map.regions[0]!.id;
   state = reduce(state, {
     type: "BuildDatacenter",
     specId: DATACENTER_CATALOG["garage"]!.id,
     dcId,
-    regionId: DEFAULT_REGION_ID,
+    regionId: firstRegionId,
   });
   state = reduce(state, {
     type: "PlaceRack",
@@ -147,11 +148,12 @@ describe("selectLedger", () => {
     for (let i = 0; i < 3; i++) state = reduce(state, { type: "Tick" });
     // Now build DC and place racks to generate real ledger entries
     const dcId = nextDcId();
+    const firstRegionId = state.map.regions[0]!.id;
     state = reduce(state, {
       type: "BuildDatacenter",
       specId: DATACENTER_CATALOG["garage"]!.id,
       dcId,
-    regionId: DEFAULT_REGION_ID,
+      regionId: firstRegionId,
     });
     for (let i = 0; i < 3; i++) state = reduce(state, { type: "Tick" });
     const all = selectLedger(state);

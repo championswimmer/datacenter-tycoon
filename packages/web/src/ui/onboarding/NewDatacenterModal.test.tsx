@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { newGame } from "@datacenter-tycoon/game-logic";
+import type { RegionId } from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "../../store/gameStore.js";
 import { StoreProvider } from "../../store/storeContext.js";
 import { NewDatacenterModal } from "./NewDatacenterModal.js";
@@ -8,14 +9,16 @@ import { NewDatacenterModal } from "./NewDatacenterModal.js";
 function Wrapper({
   state = newGame(42),
   onClose = () => {},
+  regionId = state.map.regions[0]!.id as RegionId,
 }: {
   state?: ReturnType<typeof newGame>;
   onClose?: () => void;
+  regionId?: RegionId;
 }) {
   const store = createGameStore(state);
   return (
     <StoreProvider store={store}>
-      <NewDatacenterModal onClose={onClose} />
+      <NewDatacenterModal onClose={onClose} regionId={regionId} />
     </StoreProvider>
   );
 }
@@ -96,9 +99,10 @@ describe("NewDatacenterModal", () => {
     // Use a store we can inspect
     const state = newGame(42);
     const store = createGameStore(state);
+    const firstRegionId = state.map.regions[0]!.id as RegionId;
     render(
       <StoreProvider store={store}>
-        <NewDatacenterModal onClose={onClose} />
+        <NewDatacenterModal onClose={onClose} regionId={firstRegionId} />
       </StoreProvider>,
     );
     // Garage is selected by default (affordable, cheapest)

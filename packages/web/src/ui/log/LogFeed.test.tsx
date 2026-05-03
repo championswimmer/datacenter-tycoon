@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { newGame, reduce , DEFAULT_REGION_ID } from "@datacenter-tycoon/game-logic";
+import { newGame, reduce } from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "../../store/gameStore.js";
 import { StoreProvider } from "../../store/storeContext.js";
 import { LogFeed } from "./LogFeed.js";
@@ -19,11 +19,12 @@ describe("LogFeed", () => {
   it("shows a CAPEX entry after building a datacenter", async () => {
     const { DATACENTER_CATALOG } = await import("@datacenter-tycoon/game-logic");
     const { nextDcId } = await import("../../store/ids.js");
-    const state = reduce(newGame(42), {
+    const base = newGame(42);
+    const state = reduce(base, {
       type: "BuildDatacenter",
       specId: DATACENTER_CATALOG["garage"]!.id,
       dcId: nextDcId(),
-		regionId: DEFAULT_REGION_ID,
+      regionId: base.map.regions[0]!.id,
     });
     render(<Wrapper state={state} />);
     expect(screen.getByText("CAPEX")).toBeTruthy();

@@ -16,7 +16,6 @@ import type {
 	RackSpecId,
 	Tick,
 } from "../types.js";
-import { DEFAULT_REGION_ID } from "../types.js";
 import { newGame } from "./newGame.js";
 import { reduce } from "./reduce.js";
 
@@ -46,7 +45,7 @@ function makeDatacenter(id: string, placements: RackPlacement[] = []): Datacente
 		spec: DATACENTER_CATALOG.garage,
 		placements,
 		builtAtTick: tick(0),
-		regionId: DEFAULT_REGION_ID,
+		regionId: "silicon_valley" as import("../types.js").RegionId,
 	};
 }
 
@@ -75,12 +74,13 @@ function makeContract(id: string, dcId: DatacenterId): Contract {
 
 test("reduce handles BuildDatacenter and validates spec ids", () => {
 	const state = newGame(42, { startingCash: 3_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
 
 	const nextState = reduce(state, {
 		type: "BuildDatacenter",
 		specId: DATACENTER_CATALOG.garage.id,
 		dcId: datacenterId("dc-1"),
-		regionId: DEFAULT_REGION_ID,
+		regionId: firstRegionId,
 	});
 
 	assert.equal(nextState.datacenters.length, 1);
@@ -93,18 +93,20 @@ test("reduce handles BuildDatacenter and validates spec ids", () => {
 				type: "BuildDatacenter",
 				specId: datacenterSpecId("missing"),
 				dcId: datacenterId("dc-x"),
-		regionId: DEFAULT_REGION_ID,
+				regionId: firstRegionId,
 			}),
 		{ message: /Unknown datacenter spec/ },
 	);
 });
 
 test("reduce handles PlaceRack and rejects invalid placement attempts", () => {
-	const builtState = reduce(newGame(42, { startingCash: 3_000_000 }), {
+	const state = newGame(42, { startingCash: 3_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const builtState = reduce(state, {
 		type: "BuildDatacenter",
 		specId: DATACENTER_CATALOG.garage.id,
 		dcId: datacenterId("dc-1"),
-		regionId: DEFAULT_REGION_ID,
+		regionId: firstRegionId,
 	});
 
 	const nextState = reduce(builtState, {

@@ -5,7 +5,6 @@ import {
   reduce,
   DATACENTER_CATALOG,
   RACK_CATALOG,
-  DEFAULT_REGION_ID,
 } from "@datacenter-tycoon/game-logic";
 import type { Contract, GameState } from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "../../store/gameStore.js";
@@ -16,11 +15,12 @@ import { ActiveList } from "./ActiveList.js";
 function buildActiveState(): GameState {
   let state = newGame(42, { playerName: "Acme Corp" });
   const dcId = nextDcId();
+  const firstRegionId = state.map.regions[0]!.id;
   state = reduce(state, {
     type: "BuildDatacenter",
     specId: DATACENTER_CATALOG.garage!.id,
     dcId,
-    regionId: DEFAULT_REGION_ID,
+    regionId: firstRegionId,
   });
   state = reduce(state, {
     type: "PlaceRack",
