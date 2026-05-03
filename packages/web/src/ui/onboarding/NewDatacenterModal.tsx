@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { DATACENTER_CATALOG } from "@datacenter-tycoon/game-logic";
+import { DATACENTER_CATALOG, DEFAULT_REGION_ID } from "@datacenter-tycoon/game-logic";
 import type { DatacenterSpec } from "@datacenter-tycoon/game-logic";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import { selectCash } from "../../store/selectors.js";
@@ -61,7 +61,7 @@ export function NewDatacenterModal({ onClose }: NewDatacenterModalProps) {
   const handleBuild = useCallback(() => {
     if (!canAfford) return;
     const dcId = nextDcId();
-    dispatch({ type: "BuildDatacenter", specId: selectedSpec.id, dcId });
+    dispatch({ type: "BuildDatacenter", specId: selectedSpec.id, dcId, regionId: DEFAULT_REGION_ID });
     navigateToDc(dcId);
     onClose();
   }, [canAfford, dispatch, selectedSpec.id, onClose]);
@@ -187,7 +187,7 @@ function DcCard({ spec, cash, selected, onSelect }: DcCardProps) {
         <SpecRow label="COOLING"   value={formatBtu(spec.coolingCapacityBtuPerHr)}
                                    badge={spec.coolingType.toUpperCase()} badgeKind={spec.coolingType} />
         <SpecRow label="BANDWIDTH" value={`${spec.bandwidthGbps.toLocaleString()} Gbps`} />
-        <SpecRow label="STAFF/MO"  value={formatMoney(spec.monthlyStaffCost)} dim />
+        <SpecRow label="STAFF"     value={`${spec.staffCount.toLocaleString()} employees`} dim />
       </dl>
 
       {/* ── Price + affordability ── */}

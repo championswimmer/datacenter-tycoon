@@ -49,6 +49,9 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 			money: true,
 			ambient: true,
 		},
+		map: {
+			regions: [],
+		},
 	};
 
 	return refreshContractMarket(initialState);

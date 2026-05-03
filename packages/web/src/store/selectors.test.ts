@@ -4,6 +4,7 @@ import {
   reduce,
   DATACENTER_CATALOG,
   RACK_CATALOG,
+  DEFAULT_REGION_ID,
 } from "@datacenter-tycoon/game-logic";
 import type { GameState } from "@datacenter-tycoon/game-logic";
 import {
@@ -38,6 +39,7 @@ function stateWithOneDc(): GameState {
     type: "BuildDatacenter",
     specId: DATACENTER_CATALOG["garage"]!.id,
     dcId,
+    regionId: DEFAULT_REGION_ID,
   });
 }
 
@@ -48,6 +50,7 @@ function stateWithDcAndRack(): GameState {
     type: "BuildDatacenter",
     specId: DATACENTER_CATALOG["garage"]!.id,
     dcId,
+    regionId: DEFAULT_REGION_ID,
   });
   state = reduce(state, {
     type: "PlaceRack",
@@ -148,6 +151,7 @@ describe("selectLedger", () => {
       type: "BuildDatacenter",
       specId: DATACENTER_CATALOG["garage"]!.id,
       dcId,
+    regionId: DEFAULT_REGION_ID,
     });
     for (let i = 0; i < 3; i++) state = reduce(state, { type: "Tick" });
     const all = selectLedger(state);

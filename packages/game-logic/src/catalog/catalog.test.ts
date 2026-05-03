@@ -132,7 +132,7 @@ test("datacenter catalog exposes three starter blueprints with sane capacities",
 		assert.ok(datacenter.coolingCapacityBtuPerHr > 0);
 		assert.ok(datacenter.bandwidthGbps > 0);
 		assert.ok(datacenter.capexCost > 0);
-		assert.ok(datacenter.monthlyStaffCost > 0);
+		assert.ok(datacenter.staffCount > 0);
 	}
 
 	assert.equal(DATACENTER_CATALOG.garage.coolingType, "air");

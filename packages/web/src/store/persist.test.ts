@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { newGame, reduce } from "@datacenter-tycoon/game-logic";
+import { newGame, reduce , DEFAULT_REGION_ID } from "@datacenter-tycoon/game-logic";
 import {
   loadSave,
   writeSave,
@@ -126,7 +126,7 @@ describe("attachAutosave", () => {
     const store = createGameStore(state);
     attachAutosave(store);
     // Trigger something non-tick
-    store.dispatch({ type: "BuildDatacenter", specId: "garage" as any, dcId: "dc1" as any });
+    store.dispatch({ type: "BuildDatacenter", specId: "garage" as any, dcId: "dc1" as any, regionId: DEFAULT_REGION_ID });
     expect(loadSave(state.gameId)).not.toBeNull();
   });
 

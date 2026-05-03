@@ -5,7 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import { setTimeout as sleep } from "node:timers/promises";
 
-import { DATACENTER_CATALOG, RACK_CATALOG, reduce, type DatacenterId, type RackPlacementId } from "@datacenter-tycoon/game-logic";
+import { DATACENTER_CATALOG, RACK_CATALOG, reduce, type DatacenterId, type RackPlacementId , DEFAULT_REGION_ID } from "@datacenter-tycoon/game-logic";
 
 import { GamePersistence, loadOrInit } from "./persist.js";
 
@@ -23,6 +23,7 @@ function createState(seed: number) {
 		type: "BuildDatacenter",
 		specId: DATACENTER_CATALOG.garage.id,
 		dcId: datacenterId("dc-1"),
+		regionId: DEFAULT_REGION_ID,
 	});
 	state = reduce(state, {
 		type: "PlaceRack",

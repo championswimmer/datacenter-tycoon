@@ -14,6 +14,7 @@ import type {
 import {
 	BANDWIDTH_USD_PER_GBPS_MONTH,
 	COOLING_OVERHEAD_RATIO,
+	DEFAULT_STAFF_WAGE,
 	ELECTRICITY_USD_PER_KWH,
 	HOURS_PER_MONTH,
 } from "./constants.js";
@@ -75,7 +76,7 @@ export function tickOpex(datacenter: Datacenter): OpexTickResult {
 	const power = roundMoney(rawPowerCost);
 	const cooling = roundMoney(rawPowerCost * COOLING_OVERHEAD_RATIO);
 	const bandwidth = roundMoney(datacenter.spec.bandwidthGbps * BANDWIDTH_USD_PER_GBPS_MONTH);
-	const staff = roundMoney(datacenter.spec.monthlyStaffCost);
+	const staff = roundMoney(datacenter.spec.staffCount * DEFAULT_STAFF_WAGE);
 	const breakdown = {
 		power,
 		cooling,

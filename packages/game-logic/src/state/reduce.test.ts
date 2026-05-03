@@ -16,6 +16,7 @@ import type {
 	RackSpecId,
 	Tick,
 } from "../types.js";
+import { DEFAULT_REGION_ID } from "../types.js";
 import { newGame } from "./newGame.js";
 import { reduce } from "./reduce.js";
 
@@ -78,6 +79,7 @@ test("reduce handles BuildDatacenter and validates spec ids", () => {
 		type: "BuildDatacenter",
 		specId: DATACENTER_CATALOG.garage.id,
 		dcId: datacenterId("dc-1"),
+		regionId: DEFAULT_REGION_ID,
 	});
 
 	assert.equal(nextState.datacenters.length, 1);
@@ -90,6 +92,7 @@ test("reduce handles BuildDatacenter and validates spec ids", () => {
 				type: "BuildDatacenter",
 				specId: datacenterSpecId("missing"),
 				dcId: datacenterId("dc-x"),
+		regionId: DEFAULT_REGION_ID,
 			}),
 		{ message: /Unknown datacenter spec/ },
 	);
@@ -100,6 +103,7 @@ test("reduce handles PlaceRack and rejects invalid placement attempts", () => {
 		type: "BuildDatacenter",
 		specId: DATACENTER_CATALOG.garage.id,
 		dcId: datacenterId("dc-1"),
+		regionId: DEFAULT_REGION_ID,
 	});
 
 	const nextState = reduce(builtState, {

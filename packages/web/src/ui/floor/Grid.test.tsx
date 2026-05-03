@@ -5,6 +5,7 @@ import {
   reduce,
   DATACENTER_CATALOG,
   RACK_CATALOG,
+  DEFAULT_REGION_ID,
 } from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "../../store/gameStore.js";
 import { StoreProvider } from "../../store/storeContext.js";
@@ -18,6 +19,7 @@ function buildState() {
     type: "BuildDatacenter",
     specId: DATACENTER_CATALOG["garage"]!.id, // 2 rows × 4 positions
     dcId,
+    regionId: DEFAULT_REGION_ID,
   });
   return { state, dcId };
 }

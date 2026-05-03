@@ -13,7 +13,7 @@ export const DATACENTER_CATALOG: Record<string, DatacenterSpec> = {
 		coolingType: "air",
 		bandwidthGbps: 80,
 		capexCost: 250_000,
-		monthlyStaffCost: 12_000,
+		staffCount: 2,
 	},
 	warehouse: {
 		id: datacenterSpecId("warehouse"),
@@ -25,7 +25,7 @@ export const DATACENTER_CATALOG: Record<string, DatacenterSpec> = {
 		coolingType: "air",
 		bandwidthGbps: 400,
 		capexCost: 1_400_000,
-		monthlyStaffCost: 55_000,
+		staffCount: 8,
 	},
 	hyperscale: {
 		id: datacenterSpecId("hyperscale"),
@@ -37,6 +37,6 @@ export const DATACENTER_CATALOG: Record<string, DatacenterSpec> = {
 		coolingType: "liquid",
 		bandwidthGbps: 5_000,
 		capexCost: 18_000_000,
-		monthlyStaffCost: 350_000,
+		staffCount: 45,
 	},
 };

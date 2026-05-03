@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { DATACENTER_CATALOG, RACK_CATALOG, newGame, reduce, type DatacenterId, type RackPlacementId } from "@datacenter-tycoon/game-logic";
+import { DATACENTER_CATALOG, RACK_CATALOG, newGame, reduce, type DatacenterId, type RackPlacementId , DEFAULT_REGION_ID } from "@datacenter-tycoon/game-logic";
 
 import { GameRuntime, type IntervalScheduler } from "./runtime.js";
 
@@ -46,6 +46,7 @@ function buildState() {
 		type: "BuildDatacenter",
 		specId: DATACENTER_CATALOG.garage.id,
 		dcId: datacenterId("dc-1"),
+		regionId: DEFAULT_REGION_ID,
 	});
 	state = reduce(state, {
 		type: "PlaceRack",

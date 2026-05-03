@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { newGame, reduce } from "@datacenter-tycoon/game-logic";
+import { newGame, reduce , DEFAULT_REGION_ID } from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "../../store/gameStore.js";
 import { StoreProvider } from "../../store/storeContext.js";
 import { LogFeed } from "./LogFeed.js";
@@ -23,6 +23,7 @@ describe("LogFeed", () => {
       type: "BuildDatacenter",
       specId: DATACENTER_CATALOG["garage"]!.id,
       dcId: nextDcId(),
+		regionId: DEFAULT_REGION_ID,
     });
     render(<Wrapper state={state} />);
     expect(screen.getByText("CAPEX")).toBeTruthy();

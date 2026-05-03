@@ -4,6 +4,7 @@ import test from "node:test";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { applyCapex, tickOpex, tickRevenue } from "../index.js";
+import { DEFAULT_REGION_ID } from "../types.js";
 import type {
 	Contract,
 	ContractId,
@@ -45,6 +46,7 @@ function makeDatacenter(
 		spec,
 		placements,
 		builtAtTick: tick(0),
+		regionId: DEFAULT_REGION_ID,
 	};
 }
 
@@ -144,12 +146,12 @@ test("tickOpex includes power, cooling, staff, bandwidth, and rack maintenance",
 	]);
 
 	assert.deepEqual(tickOpex(datacenter), {
-		total: 92079.9,
+		total: 85079.9,
 		breakdown: {
 			power: 946.08,
 			cooling: 283.82,
 			bandwidth: 34_000,
-			staff: 55_000,
+			staff: 48_000,
 			maintenance: 1_850,
 		},
 	});

@@ -6,6 +6,7 @@ import {
 	RACK_CATALOG,
 	newGame,
 	reduce,
+	DEFAULT_REGION_ID,
 	type ContractId,
 	type DatacenterId,
 	type RackPlacementId,
@@ -24,6 +25,7 @@ test("end-to-end scripted game remains profitable over 12 ticks", () => {
 		type: "BuildDatacenter",
 		specId: DATACENTER_CATALOG.warehouse.id,
 		dcId: warehouseId,
+		regionId: DEFAULT_REGION_ID,
 	});
 
 	const placements = [
