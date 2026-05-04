@@ -1,3 +1,4 @@
+import { DEFAULT_MAINTENANCE_STAFF } from "../balance/maintenance.js";
 import { acceptContract } from "../contracts/market.js";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
@@ -109,7 +110,7 @@ function buildDatacenter(state: GameState, specId: DatacenterSpecId, dcId: Datac
 		placements: [],
 		builtAtTick: state.tick,
 		regionId,
-		maintenanceStaff: 0,
+		maintenanceStaff: DEFAULT_MAINTENANCE_STAFF,
 	};
 
 	const updatedRegions = state.map.regions.map((r) =>
