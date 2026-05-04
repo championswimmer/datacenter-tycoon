@@ -12,9 +12,11 @@ import {
   selectPlayerName,
   selectAllDatacenters,
   selectDatacenter,
+  selectDatacenterMaintenanceView,
   selectActiveContracts,
   selectMarket,
   selectLedger,
+  selectMaintenanceViews,
   selectCapacity,
   selectOpexBreakdown,
   selectResourceUsage,
@@ -119,9 +121,65 @@ describe("selectDatacenter", () => {
   });
 });
 
+describe("selectDatacenterMaintenanceView", () => {
+  it("returns undefined for unknown datacenter ids", () => {
+    expect(
+      selectDatacenterMaintenanceView(
+        freshState(),
+        "missing-dc" as ReturnType<typeof nextDcId>,
+      ),
+    ).toBeUndefined();
+  });
+
+  it("returns maintenance staffing and repair summary from game-logic helpers", () => {
+    const baseState = stateWithDcAndRack();
+    const state = {
+      ...baseState,
+      tick: 6,
+      datacenters: baseState.datacenters.map((dc) => ({
+        ...dc,
+        placements: dc.placements.map((placement) => ({
+          ...placement,
+          health: "repairing" as const,
+          repairProgressDays: 30,
+        })),
+      })),
+    };
+    const dc = state.datacenters[0]!;
+
+    expect(selectDatacenterMaintenanceView(state, dc.id)).toEqual({
+      dcId: dc.id,
+      maintenanceStaff: dc.maintenanceStaff,
+      totalRackCount: 1,
+      healthyRackCount: 0,
+      repairingRackCount: 1,
+      averageRackAgeMonths: 6,
+      hasRepairingRacks: true,
+    });
+  });
+});
+
 describe("selectMarket", () => {
   it("returns non-empty market on fresh game (auto-populated)", () => {
     expect(selectMarket(freshState()).length).toBeGreaterThan(0);
+  });
+});
+
+describe("selectMaintenanceViews", () => {
+  it("returns one maintenance summary per datacenter", () => {
+    const state = stateWithOneDc();
+
+    expect(selectMaintenanceViews(state)).toEqual([
+      {
+        dcId: state.datacenters[0]!.id,
+        maintenanceStaff: state.datacenters[0]!.maintenanceStaff,
+        totalRackCount: 0,
+        healthyRackCount: 0,
+        repairingRackCount: 0,
+        averageRackAgeMonths: 0,
+        hasRepairingRacks: false,
+      },
+    ]);
   });
 });
 
