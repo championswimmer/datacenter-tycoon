@@ -109,6 +109,7 @@ function buildDatacenter(state: GameState, specId: DatacenterSpecId, dcId: Datac
 		placements: [],
 		builtAtTick: state.tick,
 		regionId,
+		maintenanceStaff: 0,
 	};
 
 	const updatedRegions = state.map.regions.map((r) =>
@@ -150,6 +151,7 @@ function placeRack(
 		specId: spec.id,
 		kind: spec.kind,
 		installedAtTick: state.tick,
+		health: "healthy",
 		row,
 		position,
 	};

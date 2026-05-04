@@ -42,6 +42,7 @@ function placement(id: string, specId: keyof typeof RACK_CATALOG, row: number, p
 		specId: spec.id,
 		kind: spec.kind,
 		installedAtTick: tick(0),
+		health: "healthy",
 		row,
 		position,
 	};
@@ -59,6 +60,7 @@ function makeDatacenter(
 		placements,
 		builtAtTick: tick(0),
 		regionId: "iowa" as import("../types.js").RegionId,
+		maintenanceStaff: 0,
 	};
 }
 

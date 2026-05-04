@@ -21,6 +21,7 @@ export type ContractStatus = "offered" | "active" | "breached" | "completed" | "
 export type ContractUrgency = "standard" | "rush" | "anchor";
 export type ContractTier = 1 | 2 | 3;
 export type LedgerEntryType = "capex" | "opex" | "revenue" | "penalty" | "adjustment";
+export type RackHealthStatus = "healthy" | "repairing";
 
 export interface Capacity {
 	vCpu: number;
@@ -61,6 +62,9 @@ export interface Rack {
 	specId: RackSpecId;
 	kind: RackKind;
 	installedAtTick: Tick;
+	health: RackHealthStatus;
+	repairProgressDays?: number;
+	lastFailureAtTick?: Tick;
 }
 
 export interface RackPlacement extends Rack, GridPosition {}
@@ -85,6 +89,7 @@ export interface Datacenter {
 	placements: RackPlacement[];
 	builtAtTick: Tick;
 	regionId: RegionId;
+	maintenanceStaff: number;
 }
 
 export interface ContractRequirements extends Capacity {}

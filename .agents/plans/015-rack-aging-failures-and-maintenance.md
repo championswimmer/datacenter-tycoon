@@ -1,7 +1,7 @@
 ---
 name: Rack Aging, Failures & Maintenance Staffing
 description: Add age-based rack failures, automatic repairs, and a maintenance staffing lever that speeds repairs while preserving deterministic monthly simulation.
-status: created
+status: started
 created: 2026-05-04
 updated: 2026-05-04
 owner: game-logic, web
@@ -10,7 +10,7 @@ owner: game-logic, web
 ## Progress
 
 - [ ] **Phase 1 — Data model & balance scaffolding**
-  - [ ] 1.1 Extend rack and datacenter types for health, repair progress, and maintenance staffing
+  - [x] 1.1 Extend rack and datacenter types for health, repair progress, and maintenance staffing
   - [ ] 1.2 Add tunable wear/repair balance constants and document the month↔day conversion
   - [ ] 1.3 Export new types/helpers from the public surface where needed
 - [ ] **Phase 2 — Rack health domain helpers**
@@ -225,15 +225,15 @@ The exact field names can change during implementation, but the persisted state 
 
 ## Phase 5 — Save, UI & verification
 
-**Goal**: make the feature visible, adjustable, and backward-compatible.
+**Goal**: make the feature visible, adjustable, and consistent with destructive save recreation on upgrade.
 
-### Step 5.1 — Bump save version and migrate legacy saves
+### Step 5.1 — Bump save version and invalidate legacy saves
 
 - File: `packages/game-logic/src/save/serialize.ts`
 - Increase `SAVE_VERSION`.
-- Migrate legacy racks to `healthy` with no repair metadata.
-- Migrate existing datacenters to a default `maintenanceStaff` value so old saves remain playable immediately after loading.
-- Acceptance: save round-trip and legacy migration tests pass.
+- Reject or reset pre-feature saves instead of migrating them forward.
+- Document that upgrades recreate saves destructively, so no compatibility shim is required for missing rack-health or maintenance-staff fields.
+- Acceptance: current-version save round-trip tests pass and outdated saves fail in a clear, expected way.
 
 ### Step 5.2 — Show rack age, health, and repair progress in the web UI
 
@@ -258,7 +258,6 @@ The exact field names can change during implementation, but the persisted state 
   - an aged rack failing
   - the same rack repairing over time
   - low vs high maintenance staffing changing recovery time
-  - old save migration retaining playability
 - Update README examples and any relevant design docs to describe rack aging, failure cap, repair timing, and the maintenance staffing lever.
 - Acceptance: `npm run test`, `npm run typecheck`, and relevant web tests all pass.
 
@@ -272,3 +271,5 @@ The exact field names can change during implementation, but the persisted state 
 ## Changelog
 
 - 2026-05-04 — created.
+- 2026-05-04 — completed step 1.1 by extending rack health fields and datacenter maintenance staffing scaffolding.
+- 2026-05-04 — removed legacy-save migration work; upgrades will recreate saves destructively instead.
