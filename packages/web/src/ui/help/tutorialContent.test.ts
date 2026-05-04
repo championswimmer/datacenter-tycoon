@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { TUTORIAL_STEPS } from "./tutorialContent.js";
 
 describe("TUTORIAL_STEPS", () => {
-  it("has exactly 4 steps", () => {
-    expect(TUTORIAL_STEPS).toHaveLength(4);
+  it("has exactly 5 steps", () => {
+    expect(TUTORIAL_STEPS).toHaveLength(5);
   });
 
   it("every step has a non-empty id", () => {
@@ -39,5 +39,14 @@ describe("TUTORIAL_STEPS", () => {
     expect(step1.body).toContain("M1 Memory Rack");
     expect(step1.body).toContain("S1 Storage Rack");
     expect(step1.body).toContain("G1 GPU Rack");
+  });
+
+  it("includes an aging and maintenance step", () => {
+    const maintenanceStep = TUTORIAL_STEPS[4]!;
+    expect(maintenanceStep.id).toBe("maintenance");
+    expect(maintenanceStep.title).toContain("Aging");
+    expect(maintenanceStep.body).toContain("decommission");
+    expect(maintenanceStep.body).toContain("maintenance staffing");
+    expect(maintenanceStep.body).toContain("repair racks faster");
   });
 });

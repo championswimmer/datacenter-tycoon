@@ -71,4 +71,13 @@ Time advances in days and months. Each in-game **month** earns revenue and pays 
 
 Unused capacity earns nothing, so efficiency matters. Match your rack investments to the contracts you can win.`,
   },
+  {
+    id: "maintenance",
+    title: "Aging & Maintenance",
+    body: `Servers wear out as they age. Older racks are more likely to fail and spend time repairing, which means they stop contributing full usable capacity until the work is done.
+
+If a rack is no longer worth keeping, you can decommission it from the floor view to free the slot for a replacement. You can also add more maintenance staffing in a datacenter to repair racks faster.
+
+That extra staffing speeds recovery, but it also increases monthly wage costs — so balance resilience against overhead.`,
+  },
 ];

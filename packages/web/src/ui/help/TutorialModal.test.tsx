@@ -24,14 +24,14 @@ describe("TutorialModal", () => {
   it("renders first step by default", () => {
     renderModal();
     expect(screen.getByText("Types of Racks")).toBeTruthy();
-    expect(screen.getByText("1 / 4")).toBeTruthy();
+    expect(screen.getByText("1 / 5")).toBeTruthy();
   });
 
   it("clicking Next advances to step 2", () => {
     renderModal();
     fireEvent.click(screen.getByRole("button", { name: /Next/i }));
     expect(screen.getByText("Contracts")).toBeTruthy();
-    expect(screen.getByText("2 / 4")).toBeTruthy();
+    expect(screen.getByText("2 / 5")).toBeTruthy();
   });
 
   it("clicking Back returns to step 1", () => {
@@ -39,7 +39,7 @@ describe("TutorialModal", () => {
     fireEvent.click(screen.getByRole("button", { name: /Next/i }));
     fireEvent.click(screen.getByRole("button", { name: /Back/i }));
     expect(screen.getByText("Types of Racks")).toBeTruthy();
-    expect(screen.getByText("1 / 4")).toBeTruthy();
+    expect(screen.getByText("1 / 5")).toBeTruthy();
   });
 
   it("Back is disabled on step 1", () => {
@@ -60,7 +60,8 @@ describe("TutorialModal", () => {
     fireEvent.click(screen.getByRole("button", { name: /Next/i }));
     fireEvent.click(screen.getByRole("button", { name: /Next/i }));
     fireEvent.click(screen.getByRole("button", { name: /Next/i }));
-    expect(screen.getByText("Making Money")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /Next/i }));
+    expect(screen.getByText("Aging & Maintenance")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Finish/i }));
     expect(onClose).toHaveBeenCalledOnce();
   });
@@ -80,9 +81,9 @@ describe("TutorialModal", () => {
 
   it("progress indicator updates", () => {
     renderModal();
-    expect(screen.getByText("1 / 4")).toBeTruthy();
+    expect(screen.getByText("1 / 5")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Next/i }));
-    expect(screen.getByText("2 / 4")).toBeTruthy();
+    expect(screen.getByText("2 / 5")).toBeTruthy();
   });
 
   it("has role=dialog on the panel", () => {
@@ -93,6 +94,6 @@ describe("TutorialModal", () => {
   it("starts from initialStep when provided", () => {
     renderModal({ initialStep: 2 });
     expect(screen.getByText("Datacenter Resources")).toBeTruthy();
-    expect(screen.getByText("3 / 4")).toBeTruthy();
+    expect(screen.getByText("3 / 5")).toBeTruthy();
   });
 });
