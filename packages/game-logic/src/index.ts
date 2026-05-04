@@ -4,6 +4,7 @@
 export const VERSION = "0.1.0";
 
 export * from "./types.js";
+export * from "./balance/index.js";
 export * from "./catalog/index.js";
 export * from "./entities/index.js";
 export * from "./economy/index.js";

@@ -11,6 +11,7 @@ function makePlacement(specId = "C1", row = 0, position = 0): RackPlacement {
     specId: specId as RackPlacement["specId"],
     kind: "compute",
     installedAtTick: 0,
+    health: "healthy",
     row,
     position,
   };

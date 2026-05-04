@@ -74,7 +74,40 @@ Main exports from `src/index.ts`:
 - `DATACENTER_CATALOG`
 - `REGION_CATALOG`
 - `generateMap(seed)` — deterministic world map generator
+- maintenance balance constants such as `RACK_FAILURE_MAX_CHANCE`, `BASE_REPAIR_DAYS`, and `DAYS_PER_TICK`
 - all public domain types from `types.ts`
+
+## Rack health & maintenance scaffolding
+
+Rack and datacenter state now exposes the persisted maintenance fields needed for aging/failure simulation:
+
+```ts
+type RackHealthStatus = "healthy" | "repairing";
+
+interface RackPlacement {
+  id: RackPlacementId;
+  specId: RackSpecId;
+  kind: RackKind;
+  installedAtTick: Tick;
+  health: RackHealthStatus;
+  repairProgressDays?: number;
+  lastFailureAtTick?: Tick;
+  row: number;
+  position: number;
+}
+
+interface Datacenter {
+  id: DatacenterId;
+  name: string;
+  spec: DatacenterSpec;
+  placements: RackPlacement[];
+  builtAtTick: Tick;
+  regionId: RegionId;
+  maintenanceStaff: number;
+}
+```
+
+Repair timing constants are exported so consumers can display or reason about the monthly-tick / daily-repair bridge without duplicating numbers.
 
 ## Action reference
 
