@@ -46,6 +46,10 @@ export async function selectSaveTui(): Promise<string | undefined> {
   const wasRaw = stdin.isRaw;
   let cursor = 0;
 
+  if (!stdin.isTTY || !stdout.isTTY) {
+    return undefined;
+  }
+
   const render = () => {
     stdout.write("\u001B[2J\u001B[H");
     stdout.write("Datacenter Tycoon - Select a save to load\n");

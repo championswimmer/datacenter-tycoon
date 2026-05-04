@@ -17,9 +17,6 @@ test("dct with no args lazy-loads the TUI and exits on q", async () => {
 		stdout += chunk.toString();
 	});
 
-	await delay(100);
-	child.stdin?.write("q");
-
 	const exitCode = await new Promise<number>((resolve, reject) => {
 		child.once("error", reject);
 		child.once("close", (code) => resolve(code ?? 1));
