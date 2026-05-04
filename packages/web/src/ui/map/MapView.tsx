@@ -80,12 +80,27 @@ interface RegionCardProps {
 
 function RegionCard({ region, datacenters, cash, selected, onSelect }: RegionCardProps) {
   const dcCount = datacenters.filter((dc) => dc.regionId === region.id).length;
-  const powerPct = region.totalPowerAvailable > 0
+
+  const powerRemaining = region.totalPowerAvailable - region.powerUsed;
+  const staffRemaining = region.totalStaffAvailable - region.staffUsed;
+
+  const powerRemainingPct = region.totalPowerAvailable > 0
+    ? powerRemaining / region.totalPowerAvailable
+    : 0;
+  const staffRemainingPct = region.totalStaffAvailable > 0
+    ? staffRemaining / region.totalStaffAvailable
+    : 0;
+
+  // Color based on how much is USED (not remaining)
+  const powerUsedPct = region.totalPowerAvailable > 0
     ? region.powerUsed / region.totalPowerAvailable
     : 0;
-  const staffPct = region.totalStaffAvailable > 0
+  const staffUsedPct = region.totalStaffAvailable > 0
     ? region.staffUsed / region.totalStaffAvailable
     : 0;
+
+  const powerColor = powerUsedPct >= 0.9 ? "red" : powerUsedPct >= 0.7 ? "amber" : "cyan";
+  const staffColor = staffUsedPct >= 0.9 ? "red" : staffUsedPct >= 0.7 ? "amber" : "cyan";
 
   // Color-code by power cost: cheap = lime, moderate = cyan, expensive = amber, very expensive = red
   const costColor = getCostColor(region.powerCostPerKwh);
@@ -114,8 +129,22 @@ function RegionCard({ region, datacenters, cash, selected, onSelect }: RegionCar
       </div>
 
       <div className={styles.bars}>
-        <BarRow label="PWR" pct={powerPct} />
-        <BarRow label="STAFF" pct={staffPct} />
+        <BarRow
+          label="PWR"
+          remaining={powerRemaining}
+          total={region.totalPowerAvailable}
+          unit="kW"
+          remainingPct={powerRemainingPct}
+          color={powerColor}
+        />
+        <BarRow
+          label="STAFF"
+          remaining={staffRemaining}
+          total={region.totalStaffAvailable}
+          unit=""
+          remainingPct={staffRemainingPct}
+          color={staffColor}
+        />
       </div>
     </button>
   );
@@ -130,12 +159,28 @@ function StatRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function BarRow({ label, pct }: { label: string; pct: number }) {
+function BarRow({
+  label,
+  remaining,
+  total,
+  unit,
+  remainingPct,
+  color,
+}: {
+  label: string;
+  remaining: number;
+  total: number;
+  unit: string;
+  remainingPct: number;
+  color: "cyan" | "amber" | "lime" | "red";
+}) {
   return (
     <div className={styles.barRow}>
       <span className={styles.barLabel}>{label}</span>
-      <ProgressBar value={pct * 100} max={100} segments={12} color="auto" height={4} />
-      <span className={styles.barPct}>{Math.round(pct * 100)}%</span>
+      <ProgressBar value={remainingPct * 100} max={100} segments={12} color={color} height={4} />
+      <span className={styles.barAbs}>
+        {remaining.toLocaleString()}/{total.toLocaleString()}{unit ? ` ${unit}` : ""}
+      </span>
     </div>
   );
 }

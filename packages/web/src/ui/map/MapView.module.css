@@ -160,7 +160,7 @@
 
 .barRow {
   display: grid;
-  grid-template-columns: 32px 1fr 28px;
+  grid-template-columns: 32px 1fr auto;
   align-items: center;
   gap: var(--space-2);
 }
@@ -173,9 +173,10 @@
   text-transform: uppercase;
 }
 
-.barPct {
+.barAbs {
   font-family: var(--font-mono);
   font-size: 0.58rem;
   color: var(--fg-2);
   text-align: right;
+  white-space: nowrap;
 }
