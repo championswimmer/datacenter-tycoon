@@ -1,6 +1,19 @@
 import { refreshContractMarket } from "../contracts/market.js";
 import { tickOpex, tickRevenue } from "../economy/opex.js";
-import type { Contract, DatacenterId, GameState, LedgerEntry, LedgerEntryType, Money, OpexTickResult, Tick } from "../types.js";
+import { rackAgeMonths, rackFailureChance } from "./maintenance.js";
+import { rngFromState } from "./rng.js";
+import type {
+	Contract,
+	Datacenter,
+	DatacenterId,
+	GameState,
+	LedgerEntry,
+	LedgerEntryType,
+	Money,
+	OpexTickResult,
+	RackPlacement,
+	Tick,
+} from "../types.js";
 
 function roundMoney(value: number): Money {
 	return Math.round(value * 100) / 100;
@@ -45,8 +58,35 @@ function getRegionForDatacenter(state: GameState, dcId: string) {
 	return state.map.regions.find((r) => r.id === datacenter.regionId);
 }
 
+function applyRackFailures(datacenter: Datacenter, currentTick: Tick, rng: ReturnType<typeof rngFromState>): Datacenter {
+	const placements = datacenter.placements.map((placement): RackPlacement => {
+		if (placement.health !== "healthy") {
+			return placement;
+		}
+
+		const failureChance = rackFailureChance(rackAgeMonths(currentTick, placement));
+		if (rng.next() >= failureChance) {
+			return placement;
+		}
+
+		return {
+			...placement,
+			health: "repairing",
+			repairProgressDays: 0,
+			lastFailureAtTick: currentTick,
+		};
+	});
+
+	return {
+		...datacenter,
+		placements,
+	};
+}
+
 export function tick(state: GameState): GameState {
 	const nextTick = (state.tick + 1) as Tick;
+	const rng = rngFromState(state.rngState);
+	const datacentersAfterFailures = state.datacenters.map((datacenter) => applyRackFailures(datacenter, nextTick, rng));
 
 	// Calculate base opex per datacenter
 	const perDcOpex = new Map<DatacenterId, OpexTickResult>();
@@ -127,10 +167,12 @@ export function tick(state: GameState): GameState {
 	const advancedState: GameState = {
 		...state,
 		tick: nextTick,
+		rngState: rng.state(),
 		player: {
 			...state.player,
 			cash: roundMoney(state.player.cash + netCashDelta),
 		},
+		datacenters: datacentersAfterFailures,
 		activeContracts: finalizedContracts,
 		ledger: [...state.ledger, ...ledgerEntries],
 	};
