@@ -18,12 +18,26 @@ export function RegionPanel({ region, datacenters, onClose, onBuild }: RegionPan
   const cash = useSelector(selectCash);
   const regionDcs = datacenters.filter((dc) => dc.regionId === region.id);
 
-  const powerPct = region.totalPowerAvailable > 0
+  const powerRemaining = region.totalPowerAvailable - region.powerUsed;
+  const staffRemaining = region.totalStaffAvailable - region.staffUsed;
+
+  const powerRemainingPct = region.totalPowerAvailable > 0
+    ? powerRemaining / region.totalPowerAvailable
+    : 0;
+  const staffRemainingPct = region.totalStaffAvailable > 0
+    ? staffRemaining / region.totalStaffAvailable
+    : 0;
+
+  // Color based on how much is USED (not remaining)
+  const powerUsedPct = region.totalPowerAvailable > 0
     ? region.powerUsed / region.totalPowerAvailable
     : 0;
-  const staffPct = region.totalStaffAvailable > 0
+  const staffUsedPct = region.totalStaffAvailable > 0
     ? region.staffUsed / region.totalStaffAvailable
     : 0;
+
+  const powerColor = powerUsedPct >= 0.9 ? "red" : powerUsedPct >= 0.7 ? "amber" : "cyan";
+  const staffColor = staffUsedPct >= 0.9 ? "red" : staffUsedPct >= 0.7 ? "amber" : "cyan";
 
   // Check if any datacenter spec can be built in this region
   const canBuildAnything = Object.values(DATACENTER_CATALOG).some((spec) =>
@@ -61,20 +75,20 @@ export function RegionPanel({ region, datacenters, onClose, onBuild }: RegionPan
             <div className={styles.barHeader}>
               <span className={styles.barLabel}>Grid Power</span>
               <span className={styles.barValue}>
-                {region.powerUsed.toLocaleString()} / {region.totalPowerAvailable.toLocaleString()} kW
+                {powerRemaining.toLocaleString()} / {region.totalPowerAvailable.toLocaleString()} kW
               </span>
             </div>
-            <ProgressBar value={powerPct * 100} max={100} segments={20} color="auto" height={6} />
+            <ProgressBar value={powerRemainingPct * 100} max={100} segments={20} color={powerColor} height={6} />
           </div>
 
           <div className={styles.barGroup}>
             <div className={styles.barHeader}>
               <span className={styles.barLabel}>Skilled Staff</span>
               <span className={styles.barValue}>
-                {region.staffUsed.toLocaleString()} / {region.totalStaffAvailable.toLocaleString()}
+                {staffRemaining.toLocaleString()} / {region.totalStaffAvailable.toLocaleString()}
               </span>
             </div>
-            <ProgressBar value={staffPct * 100} max={100} segments={20} color="auto" height={6} />
+            <ProgressBar value={staffRemainingPct * 100} max={100} segments={20} color={staffColor} height={6} />
           </div>
         </div>
 
