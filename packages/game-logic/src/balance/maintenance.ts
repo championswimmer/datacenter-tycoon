@@ -4,7 +4,7 @@ export const RACK_FAILURE_MAX_AGE_MONTHS = 36;
 // Repair progress stays in days even though one simulation tick equals one month,
 // so tick-time maintenance can remain deterministic without converting the whole sim to daily turns.
 export const DAYS_PER_TICK = 30;
-export const BASE_REPAIR_DAYS = DAYS_PER_TICK;
+export const BASE_REPAIR_DAYS = DAYS_PER_TICK * 3;
 
 export const DEFAULT_MAINTENANCE_STAFF = 0;
 
