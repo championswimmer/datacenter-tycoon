@@ -53,6 +53,35 @@
   margin-top: var(--space-2);
 }
 
+.maintenanceStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.maintenanceBadge,
+.maintenanceMeta {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.maintenanceBadge {
+  color: var(--neon-cyan);
+  border: 1px solid rgba(94, 240, 255, 0.25);
+  background: rgba(94, 240, 255, 0.08);
+}
+
+.maintenanceMeta {
+  color: var(--fg-2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
 /* ── Tab bar ──────────────────────────────────────────────── */
 
 .tabBar {

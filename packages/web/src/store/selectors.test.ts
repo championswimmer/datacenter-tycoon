@@ -13,6 +13,7 @@ import {
   selectAllDatacenters,
   selectDatacenter,
   selectDatacenterMaintenanceView,
+  selectDatacenterRackMaintenanceViews,
   selectActiveContracts,
   selectMarket,
   selectLedger,
@@ -156,6 +157,38 @@ describe("selectDatacenterMaintenanceView", () => {
       averageRackAgeMonths: 6,
       hasRepairingRacks: true,
     });
+  });
+});
+
+describe("selectDatacenterRackMaintenanceViews", () => {
+  it("returns per-rack age and repair progress data", () => {
+    const baseState = stateWithDcAndRack();
+    const dc = baseState.datacenters[0]!;
+    const state = {
+      ...baseState,
+      tick: 6,
+      datacenters: [
+        {
+          ...dc,
+          placements: dc.placements.map((placement) => ({
+            ...placement,
+            health: "repairing" as const,
+            repairProgressDays: 30,
+          })),
+        },
+      ],
+    };
+
+    expect(selectDatacenterRackMaintenanceViews(state, dc.id)).toEqual([
+      {
+        placementId: dc.placements[0]!.id,
+        ageMonths: 6,
+        status: "repairing",
+        repairProgressDays: 30,
+        repairCompletionPercent: 33,
+        repairEtaTicks: 2,
+      },
+    ]);
   });
 });
 

@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { RACK_CATALOG } from "@datacenter-tycoon/game-logic";
 import type { RackPlacement } from "@datacenter-tycoon/game-logic";
+import type { RackMaintenanceView } from "../../store/selectors.js";
 import { RackTile } from "./RackTile.js";
 import { nextRackPlacementId } from "../../store/ids.js";
 
@@ -17,15 +18,28 @@ function makePlacement(specId = "C1", row = 0, position = 0): RackPlacement {
   };
 }
 
+function makeMaintenanceView(overrides: Partial<RackMaintenanceView> = {}): RackMaintenanceView {
+  return {
+    placementId: nextRackPlacementId(),
+    ageMonths: 6,
+    status: "healthy",
+    repairProgressDays: 0,
+    repairCompletionPercent: 0,
+    repairEtaTicks: 0,
+    ...overrides,
+  };
+}
+
 describe("RackTile", () => {
   it("renders the spec ID badge", () => {
     const spec = RACK_CATALOG["C1"]!;
     render(
-      <RackTile
-        placement={makePlacement("C1")}
-        spec={spec}
-        hasActiveContract={false}
-        hasFault={false}
+        <RackTile
+          placement={makePlacement("C1")}
+          maintenanceView={makeMaintenanceView()}
+          spec={spec}
+          hasActiveContract={false}
+          hasFault={false}
         onDecommission={vi.fn()}
       />,
     );
@@ -35,11 +49,12 @@ describe("RackTile", () => {
   it("renders the kind badge CPU for compute racks", () => {
     const spec = RACK_CATALOG["C1"]!;
     render(
-      <RackTile
-        placement={makePlacement("C1")}
-        spec={spec}
-        hasActiveContract={false}
-        hasFault={false}
+        <RackTile
+          placement={makePlacement("C1")}
+          maintenanceView={makeMaintenanceView()}
+          spec={spec}
+          hasActiveContract={false}
+          hasFault={false}
         onDecommission={vi.fn()}
       />,
     );
@@ -50,11 +65,12 @@ describe("RackTile", () => {
     const spec = RACK_CATALOG["M1"]!;
     const placement = { ...makePlacement("M1"), kind: "memory" as const };
     render(
-      <RackTile
-        placement={placement}
-        spec={spec}
-        hasActiveContract={false}
-        hasFault={false}
+        <RackTile
+          placement={placement}
+          maintenanceView={makeMaintenanceView()}
+          spec={spec}
+          hasActiveContract={false}
+          hasFault={false}
         onDecommission={vi.fn()}
       />,
     );
@@ -64,11 +80,12 @@ describe("RackTile", () => {
   it("shows confirm UI when decommission button is clicked", () => {
     const spec = RACK_CATALOG["C1"]!;
     render(
-      <RackTile
-        placement={makePlacement("C1")}
-        spec={spec}
-        hasActiveContract={false}
-        hasFault={false}
+        <RackTile
+          placement={makePlacement("C1")}
+          maintenanceView={makeMaintenanceView()}
+          spec={spec}
+          hasActiveContract={false}
+          hasFault={false}
         onDecommission={vi.fn()}
       />,
     );
@@ -83,11 +100,12 @@ describe("RackTile", () => {
     const spec = RACK_CATALOG["C1"]!;
     const placement = makePlacement("C1");
     render(
-      <RackTile
-        placement={placement}
-        spec={spec}
-        hasActiveContract={false}
-        hasFault={false}
+        <RackTile
+          placement={placement}
+          maintenanceView={makeMaintenanceView()}
+          spec={spec}
+          hasActiveContract={false}
+          hasFault={false}
         onDecommission={onDecommission}
       />,
     );
@@ -99,11 +117,12 @@ describe("RackTile", () => {
   it("cancels confirm when NO is clicked", () => {
     const spec = RACK_CATALOG["C1"]!;
     render(
-      <RackTile
-        placement={makePlacement("C1")}
-        spec={spec}
-        hasActiveContract={false}
-        hasFault={false}
+        <RackTile
+          placement={makePlacement("C1")}
+          maintenanceView={makeMaintenanceView()}
+          spec={spec}
+          hasActiveContract={false}
+          hasFault={false}
         onDecommission={vi.fn()}
       />,
     );
@@ -111,5 +130,44 @@ describe("RackTile", () => {
     fireEvent.click(screen.getByText("NO"));
     // Confirm UI should be gone; tile renders CPU badge again
     expect(screen.getByText("CPU")).toBeTruthy();
+  });
+
+  it("renders rack age and healthy status text", () => {
+    const spec = RACK_CATALOG["C1"]!;
+    render(
+      <RackTile
+        placement={makePlacement("C1")}
+        maintenanceView={makeMaintenanceView({ ageMonths: 9, status: "healthy" })}
+        spec={spec}
+        hasActiveContract={false}
+        hasFault={false}
+        onDecommission={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("HEALTHY")).toBeTruthy();
+    expect(screen.getByText("AGE 9 MO")).toBeTruthy();
+  });
+
+  it("renders repair progress and eta for repairing racks", () => {
+    const spec = RACK_CATALOG["C1"]!;
+    render(
+      <RackTile
+        placement={{ ...makePlacement("C1"), health: "repairing", repairProgressDays: 45 }}
+        maintenanceView={makeMaintenanceView({
+          status: "repairing",
+          repairProgressDays: 45,
+          repairCompletionPercent: 50,
+          repairEtaTicks: 2,
+        })}
+        spec={spec}
+        hasActiveContract={false}
+        hasFault={true}
+        onDecommission={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("REPAIRING")).toBeTruthy();
+    expect(screen.getByText("50% • ETA 2 mo")).toBeTruthy();
   });
 });

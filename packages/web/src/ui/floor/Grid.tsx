@@ -4,11 +4,13 @@ import type {
   RackPlacement,
   RackPlacementId,
 } from "@datacenter-tycoon/game-logic";
+import type { RackMaintenanceView } from "../../store/selectors.js";
 import { Slot } from "./Slot.js";
 import styles from "./Grid.module.css";
 
 export interface GridProps {
   datacenter:        Datacenter;
+  rackMaintenanceByPlacementId: Map<RackPlacementId, RackMaintenanceView>;
   hasActiveContract: boolean;
   hasFault:          boolean;
   onSlotClick:       (row: number, position: number) => void;
@@ -17,6 +19,7 @@ export interface GridProps {
 
 export function Grid({
   datacenter,
+  rackMaintenanceByPlacementId,
   hasActiveContract,
   hasFault,
   onSlotClick,
@@ -60,6 +63,9 @@ export function Grid({
             {Array.from({ length: positionsPerRow }, (_, p) => {
               const placement = placementMap.get(`${r},${p}`);
               const spec      = placement ? RACK_CATALOG[placement.specId] : undefined;
+              const maintenanceView = placement
+                ? rackMaintenanceByPlacementId.get(placement.id)
+                : undefined;
               return (
                 <Slot
                   key={p}
@@ -67,6 +73,7 @@ export function Grid({
                   position={p}
                   placement={placement}
                   spec={spec}
+                  maintenanceView={maintenanceView}
                   hasActiveContract={hasActiveContract}
                   hasFault={hasFault}
                   onOpenPicker={onSlotClick}

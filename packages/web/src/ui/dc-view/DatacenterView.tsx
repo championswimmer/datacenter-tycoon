@@ -1,7 +1,13 @@
 import { useSelector } from "../../store/storeContext.js";
-import { selectDatacenter, selectResourceUsage, selectActiveContracts, selectRegionById } from "../../store/selectors.js";
+import {
+  selectActiveContracts,
+  selectDatacenter,
+  selectDatacenterMaintenanceView,
+  selectRegionById,
+  selectResourceUsage,
+} from "../../store/selectors.js";
 import { navigate, type DcTab } from "../../router/hashRouter.js";
-import type { DatacenterId, Datacenter } from "@datacenter-tycoon/game-logic";
+import type { DatacenterId } from "@datacenter-tycoon/game-logic";
 import { FloorView }    from "../floor/FloorView.js";
 import { PowerView }    from "../stats/PowerView.js";
 import { ResourceBars } from "../stats/ResourceBars.js";
@@ -23,6 +29,7 @@ const EMPTY_USAGE = { powerKw: 0, heatOutputBtuPerHr: 0, bandwidthGbps: 0, slots
 
 export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
   const dc       = useSelector(s => selectDatacenter(s, dcId as DatacenterId));
+  const maintenance = useSelector(s => selectDatacenterMaintenanceView(s, dcId as DatacenterId));
   const usageAgg = useSelector(selectResourceUsage);
   const region   = useSelector(s => dc ? selectRegionById(s, dc.regionId) : undefined);
 
@@ -39,7 +46,6 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
   }
 
   const usage = usageAgg.perDc.find(u => u.dcId === dc.id)?.usage ?? EMPTY_USAGE;
-
   return (
     <div className={styles.view}>
       {/* ── DC header ── */}
@@ -55,6 +61,15 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
         <div className={styles.resourceStrip}>
           <ResourceBars datacenter={dc} usage={usage} mode="compact" />
         </div>
+        {maintenance && (
+          <div className={styles.maintenanceStrip}>
+            <span className={styles.maintenanceBadge}>MAINT {maintenance.maintenanceStaff}</span>
+            <span className={styles.maintenanceMeta}>AVG AGE {maintenance.averageRackAgeMonths.toFixed(1)} MO</span>
+            <span className={styles.maintenanceMeta}>
+              {maintenance.repairingRackCount} REPAIRING / {maintenance.totalRackCount} TOTAL
+            </span>
+          </div>
+        )}
       </div>
 
       {/* ── Tabs ── */}
