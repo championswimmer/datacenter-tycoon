@@ -28,7 +28,7 @@ owner: game-logic, web
 - [ ] **Phase 5 — Save, UI & verification**
   - [x] 5.1 Bump save version and invalidate legacy saves instead of migrating them
   - [x] 5.2 Show rack age, health, and repair progress in the web datacenter/floor views
-  - [ ] 5.3 Add a maintenance staffing control to the web UI with repair-speed feedback
+  - [x] 5.3 Add a maintenance staffing control to the web UI with repair-speed feedback
   - [ ] 5.4 Add reducer/tick/integration tests and update package docs
 
 ## Overview
@@ -286,3 +286,4 @@ The exact field names can change during implementation, but the persisted state 
 - 2026-05-04 — completed step 4.3 by pinning the build-time maintenance-staff default in reducer tests and exposing web selectors that compose `game-logic` maintenance summaries for UI consumption.
 - 2026-05-04 — completed step 5.1 by bumping the save format to v3, rejecting outdated saves with a clear recreation error, and removing the old migration-path tests/docs.
 - 2026-05-04 — completed step 5.2 by surfacing selector-backed rack age/status/progress data in the floor tiles and datacenter header, with web tests covering healthy and repairing render states.
+- 2026-05-04 — completed step 5.3 by adding a DatacenterView maintenance stepper that dispatches `SetMaintenanceStaff`, shows wage/repair-speed feedback, and disables increases when regional labor is exhausted.
