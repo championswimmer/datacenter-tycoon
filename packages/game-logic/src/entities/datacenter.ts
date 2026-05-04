@@ -147,3 +147,31 @@ export function canPlaceRack(
 
 	return { ok: true };
 }
+
+export type CanMoveRackResult =
+	| { ok: true }
+	| { ok: false; reason: string };
+
+export function canMoveRack(
+	sourceDc: Datacenter,
+	targetDc: Datacenter,
+	placement: RackPlacement,
+	targetPosition: GridPosition,
+): CanMoveRackResult {
+	if (sourceDc.id === targetDc.id) {
+		return { ok: false, reason: "Cannot move rack to the same datacenter" };
+	}
+
+	const placementExists = sourceDc.placements.some((p) => p.id === placement.id);
+	if (!placementExists) {
+		return { ok: false, reason: "Rack placement not found in source datacenter" };
+	}
+
+	const spec = getRackSpec(placement);
+	const placeResult = canPlaceRack(targetDc, spec, targetPosition);
+	if (!placeResult.ok) {
+		return { ok: false, reason: `Cannot place rack: ${placeResult.reason}` };
+	}
+
+	return { ok: true };
+}
