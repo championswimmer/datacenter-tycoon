@@ -22,7 +22,7 @@ owner: game-logic, web
   - [x] 3.2 Advance repairs each tick and restore racks when repair progress completes
   - [x] 3.3 Ensure contract evaluation sees rack downtime in the same tick
 - [ ] **Phase 4 — Staffing lever, reducer & economy wiring**
-  - [ ] 4.1 Add `SetMaintenanceStaff` action and reducer validation against regional staff limits
+  - [x] 4.1 Add `SetMaintenanceStaff` action and reducer validation against regional staff limits
   - [ ] 4.2 Charge staffing opex and regional staff usage from baseline staff + maintenance staff
   - [ ] 4.3 Seed default maintenance staffing on build and expose selectors for UI summaries
 - [ ] **Phase 5 — Save, UI & verification**
@@ -281,3 +281,4 @@ The exact field names can change during implementation, but the persisted state 
 - 2026-05-04 — completed step 3.1 by integrating deterministic rack-failure rolls into `tick()` and updating the smoke test to cover a stable early-game scenario instead of a no-failure long run.
 - 2026-05-04 — completed step 3.2 by advancing rack repairs during `tick()` and proving that higher maintenance staffing restores identical failures in fewer months.
 - 2026-05-04 — completed step 3.3 by reordering `tick()` so failures and repairs affect same-month contract fulfillment, with coverage for both same-tick breaches and same-tick recoveries.
+- 2026-05-04 — completed step 4.1 by adding a `SetMaintenanceStaff` reducer action with integer validation, clamp behavior, regional labor-cap checks, and reducer coverage for increase/decrease/clamp/rejection paths.

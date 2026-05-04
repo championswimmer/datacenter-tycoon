@@ -1,4 +1,4 @@
-import { DEFAULT_MAINTENANCE_STAFF } from "../balance/maintenance.js";
+import { DEFAULT_MAINTENANCE_STAFF, MAX_MAINTENANCE_STAFF } from "../balance/maintenance.js";
 import { acceptContract } from "../contracts/market.js";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
@@ -33,6 +33,7 @@ export type Action =
 	| { type: "RemoveRack"; dcId: DatacenterId; placementId: RackPlacementId }
 	| { type: "AcceptContract"; contractId: ContractId; dcId: DatacenterId }
 	| { type: "CancelContract"; contractId: ContractId }
+	| { type: "SetMaintenanceStaff"; dcId: DatacenterId; maintenanceStaff: number }
 	| { type: "SetAudioEnabled"; enabled: boolean }
 	| { type: "UpdateAudioSettings"; settings: Partial<import("../types.js").AudioSettings> }
 	| { type: "SetSpeed"; speed: number }
@@ -196,6 +197,55 @@ function cancelContract(state: GameState, contractId: ContractId): GameState {
 	};
 }
 
+function clampMaintenanceStaff(maintenanceStaff: number): number {
+	return Math.max(0, Math.min(MAX_MAINTENANCE_STAFF, maintenanceStaff));
+}
+
+function setMaintenanceStaff(state: GameState, dcId: DatacenterId, maintenanceStaff: number): GameState {
+	if (!Number.isFinite(maintenanceStaff) || !Number.isInteger(maintenanceStaff)) {
+		throw new Error(`Invalid maintenance staff: ${maintenanceStaff}`);
+	}
+
+	const datacenter = getDatacenter(state, dcId);
+	const nextMaintenanceStaff = clampMaintenanceStaff(maintenanceStaff);
+	const delta = nextMaintenanceStaff - datacenter.maintenanceStaff;
+	if (delta === 0) {
+		return replaceDatacenter(state, {
+			...datacenter,
+			maintenanceStaff: nextMaintenanceStaff,
+		});
+	}
+
+	const region = state.map.regions.find((candidate) => candidate.id === datacenter.regionId);
+	if (!region) {
+		throw new Error(`Unknown region: ${datacenter.regionId}`);
+	}
+
+	if (delta > 0 && region.staffUsed + delta > region.totalStaffAvailable) {
+		throw new Error(`Insufficient staff available in region: ${region.id}`);
+	}
+
+	const updatedRegions = state.map.regions.map((candidate) =>
+		candidate.id === region.id
+			? {
+					...candidate,
+					staffUsed: candidate.staffUsed + delta,
+				}
+			: candidate,
+	);
+
+	return {
+		...replaceDatacenter(state, {
+			...datacenter,
+			maintenanceStaff: nextMaintenanceStaff,
+		}),
+		map: {
+			...state.map,
+			regions: updatedRegions,
+		},
+	};
+}
+
 function assertNever(value: never): never {
 	throw new Error(`Unhandled action: ${JSON.stringify(value)}`);
 }
@@ -212,6 +262,8 @@ export function reduce(state: GameState, action: Action): GameState {
 			return acceptContract(state, action.contractId, action.dcId);
 		case "CancelContract":
 			return cancelContract(state, action.contractId);
+		case "SetMaintenanceStaff":
+			return setMaintenanceStaff(state, action.dcId, action.maintenanceStaff);
 		case "SetAudioEnabled":
 			return {
 				...state,

@@ -7,6 +7,7 @@ export const DAYS_PER_TICK = 30;
 export const BASE_REPAIR_DAYS = DAYS_PER_TICK * 3;
 
 export const DEFAULT_MAINTENANCE_STAFF = 0;
+export const MAX_MAINTENANCE_STAFF = 8;
 
 export const BASE_REPAIR_SPEED_MULTIPLIER = 1;
 export const REPAIR_SPEED_BONUS_PER_MAINTENANCE_STAFF = 0.25;

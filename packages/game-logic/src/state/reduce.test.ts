@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
+import { MAX_MAINTENANCE_STAFF } from "../balance/maintenance.js";
 import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
 import { tick as tickState } from "../sim/tick.js";
 import type {
@@ -223,6 +224,97 @@ test("reduce handles CancelContract and rejects missing active contracts", () =>
 				contractId: contractId("missing-contract"),
 			}),
 		{ message: /Unknown active contract/ },
+	);
+});
+
+test("reduce handles SetMaintenanceStaff increases and decreases regional staff usage", () => {
+	const state = newGame(42, { startingCash: 3_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const builtState = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-1"),
+		regionId: firstRegionId,
+	});
+
+	const increasedState = reduce(builtState, {
+		type: "SetMaintenanceStaff",
+		dcId: datacenterId("dc-1"),
+		maintenanceStaff: 3,
+	});
+	const decreasedState = reduce(increasedState, {
+		type: "SetMaintenanceStaff",
+		dcId: datacenterId("dc-1"),
+		maintenanceStaff: 1,
+	});
+
+	assert.equal(increasedState.datacenters[0]?.maintenanceStaff, 3);
+	assert.equal(
+		increasedState.map.regions.find((region) => region.id === firstRegionId)?.staffUsed,
+		builtState.map.regions.find((region) => region.id === firstRegionId)!.staffUsed + 3,
+	);
+	assert.equal(decreasedState.datacenters[0]?.maintenanceStaff, 1);
+	assert.equal(
+		decreasedState.map.regions.find((region) => region.id === firstRegionId)?.staffUsed,
+		builtState.map.regions.find((region) => region.id === firstRegionId)!.staffUsed + 1,
+	);
+});
+
+test("reduce handles SetMaintenanceStaff clamps out-of-range values", () => {
+	const state = newGame(42, { startingCash: 3_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const builtState = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-1"),
+		regionId: firstRegionId,
+	});
+
+	const highClampedState = reduce(builtState, {
+		type: "SetMaintenanceStaff",
+		dcId: datacenterId("dc-1"),
+		maintenanceStaff: MAX_MAINTENANCE_STAFF + 5,
+	});
+	const lowClampedState = reduce(highClampedState, {
+		type: "SetMaintenanceStaff",
+		dcId: datacenterId("dc-1"),
+		maintenanceStaff: -5,
+	});
+
+	assert.equal(highClampedState.datacenters[0]?.maintenanceStaff, MAX_MAINTENANCE_STAFF);
+	assert.equal(lowClampedState.datacenters[0]?.maintenanceStaff, 0);
+});
+
+test("reduce handles SetMaintenanceStaff rejects changes that exceed regional staff limits", () => {
+	const builtState = reduce(newGame(42, { startingCash: 3_000_000 }), {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-1"),
+		regionId: "silicon_valley" as import("../types.js").RegionId,
+	});
+	const constrainedState = {
+		...builtState,
+		map: {
+			...builtState.map,
+			regions: builtState.map.regions.map((region) =>
+				region.id === ("silicon_valley" as import("../types.js").RegionId)
+					? {
+							...region,
+							totalStaffAvailable: region.staffUsed + 1,
+						}
+					: region,
+			),
+		},
+	};
+
+	assert.throws(
+		() =>
+			reduce(constrainedState, {
+				type: "SetMaintenanceStaff",
+				dcId: datacenterId("dc-1"),
+				maintenanceStaff: 2,
+			}),
+		{ message: /Insufficient staff available in region/ },
 	);
 });
 
