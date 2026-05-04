@@ -7,7 +7,9 @@ import type {
 	GridPosition,
 	RackPlacement,
 	RackSpec,
+	Tick,
 } from "../types.js";
+import { rackAgeMonths } from "../sim/maintenance.js";
 import { rackCapacity } from "./rack.js";
 
 const EMPTY_CAPACITY: Capacity = {
@@ -61,6 +63,20 @@ export function datacenterUsage(datacenter: Datacenter): DatacenterResourceUsage
 }
 
 export function datacenterCapacity(datacenter: Datacenter): Capacity {
+	return datacenter.placements
+		.filter((placement) => placement.health === "healthy")
+		.reduce<Capacity>((capacity, placement) => {
+			const placementCapacity = rackCapacity(getRackSpec(placement));
+			return {
+				vCpu: capacity.vCpu + placementCapacity.vCpu,
+				ramGb: capacity.ramGb + placementCapacity.ramGb,
+				storageTb: capacity.storageTb + placementCapacity.storageTb,
+				gpuFlops: capacity.gpuFlops + placementCapacity.gpuFlops,
+			};
+		}, EMPTY_CAPACITY);
+}
+
+export function datacenterInstalledCapacity(datacenter: Datacenter): Capacity {
 	return datacenter.placements.reduce<Capacity>((capacity, placement) => {
 		const placementCapacity = rackCapacity(getRackSpec(placement));
 		return {
@@ -70,6 +86,32 @@ export function datacenterCapacity(datacenter: Datacenter): Capacity {
 			gpuFlops: capacity.gpuFlops + placementCapacity.gpuFlops,
 		};
 	}, EMPTY_CAPACITY);
+}
+
+export interface DatacenterMaintenanceSummary {
+	totalRackCount: number;
+	healthyRackCount: number;
+	repairingRackCount: number;
+	averageRackAgeMonths: number;
+}
+
+export function datacenterMaintenanceSummary(
+	datacenter: Datacenter,
+	currentTick: Tick,
+): DatacenterMaintenanceSummary {
+	const totalRackCount = datacenter.placements.length;
+	const repairingRackCount = datacenter.placements.filter((placement) => placement.health === "repairing").length;
+	const healthyRackCount = totalRackCount - repairingRackCount;
+	const averageRackAgeMonths = totalRackCount === 0
+		? 0
+		: datacenter.placements.reduce((sum, placement) => sum + rackAgeMonths(currentTick, placement), 0) / totalRackCount;
+
+	return {
+		totalRackCount,
+		healthyRackCount,
+		repairingRackCount,
+		averageRackAgeMonths,
+	};
 }
 
 export function canPlaceRack(
