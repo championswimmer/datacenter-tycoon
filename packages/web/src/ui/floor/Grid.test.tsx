@@ -8,6 +8,7 @@ import {
 } from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "../../store/gameStore.js";
 import { StoreProvider } from "../../store/storeContext.js";
+import type { RackMaintenanceView } from "../../store/selectors.js";
 import { Grid } from "./Grid.js";
 import { nextDcId, nextRackPlacementId } from "../../store/ids.js";
 
@@ -24,6 +25,24 @@ function buildState() {
   return { state, dcId };
 }
 
+function maintenanceMapFor(
+  placements: Array<{ id: RackMaintenanceView["placementId"] }>,
+): Map<RackMaintenanceView["placementId"], RackMaintenanceView> {
+  return new Map(
+    placements.map((placement) => [
+      placement.id,
+      {
+        placementId: placement.id,
+        ageMonths: 0,
+        status: "healthy",
+        repairProgressDays: 0,
+        repairCompletionPercent: 0,
+        repairEtaTicks: 0,
+      },
+    ]),
+  );
+}
+
 describe("Grid", () => {
   it("renders correct number of empty slots for a garage DC (2×4=8)", () => {
     const { state, dcId } = buildState();
@@ -31,6 +50,7 @@ describe("Grid", () => {
     render(
       <Grid
         datacenter={dc}
+        rackMaintenanceByPlacementId={maintenanceMapFor(dc.placements)}
         hasActiveContract={false}
         hasFault={false}
         onSlotClick={vi.fn()}
@@ -48,6 +68,7 @@ describe("Grid", () => {
     render(
       <Grid
         datacenter={dc}
+        rackMaintenanceByPlacementId={maintenanceMapFor(dc.placements)}
         hasActiveContract={false}
         hasFault={false}
         onSlotClick={vi.fn()}
@@ -64,6 +85,7 @@ describe("Grid", () => {
     render(
       <Grid
         datacenter={dc}
+        rackMaintenanceByPlacementId={maintenanceMapFor(dc.placements)}
         hasActiveContract={false}
         hasFault={false}
         onSlotClick={vi.fn()}
@@ -81,6 +103,7 @@ describe("Grid", () => {
     render(
       <Grid
         datacenter={dc}
+        rackMaintenanceByPlacementId={maintenanceMapFor(dc.placements)}
         hasActiveContract={false}
         hasFault={false}
         onSlotClick={handler}
@@ -107,6 +130,7 @@ describe("Grid", () => {
     render(
       <Grid
         datacenter={dc}
+        rackMaintenanceByPlacementId={maintenanceMapFor(dc.placements)}
         hasActiveContract={false}
         hasFault={false}
         onSlotClick={vi.fn()}

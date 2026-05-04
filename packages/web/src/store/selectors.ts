@@ -1,7 +1,10 @@
 import {
+  BASE_REPAIR_DAYS,
   datacenterMaintenanceSummary,
   datacenterCapacity,
   datacenterUsage,
+  rackAgeMonths,
+  repairProgressPerTick,
   tickOpex,
 } from "@datacenter-tycoon/game-logic";
 import type {
@@ -13,6 +16,8 @@ import type {
   LedgerEntry,
   Money,
   OpexTickResult,
+  RackHealthStatus,
+  RackPlacementId,
   Tick,
   DatacenterResourceUsage,
 } from "@datacenter-tycoon/game-logic";
@@ -87,6 +92,43 @@ export function selectMaintenanceViews(state: GameState): DatacenterMaintenanceV
   return state.datacenters
     .map((dc) => selectDatacenterMaintenanceView(state, dc.id))
     .filter((view): view is DatacenterMaintenanceView => view !== undefined);
+}
+
+export interface RackMaintenanceView {
+  placementId: RackPlacementId;
+  ageMonths: number;
+  status: RackHealthStatus;
+  repairProgressDays: number;
+  repairCompletionPercent: number;
+  repairEtaTicks: number;
+}
+
+export function selectDatacenterRackMaintenanceViews(
+  state: GameState,
+  id: DatacenterId,
+): RackMaintenanceView[] {
+  const datacenter = selectDatacenter(state, id);
+  if (!datacenter) {
+    return [];
+  }
+
+  const repairProgressDaysPerTick = repairProgressPerTick(datacenter.maintenanceStaff);
+
+  return datacenter.placements.map((placement) => {
+    const repairProgressDays = placement.repairProgressDays ?? 0;
+    const remainingRepairDays = Math.max(0, BASE_REPAIR_DAYS - repairProgressDays);
+
+    return {
+      placementId: placement.id,
+      ageMonths: rackAgeMonths(state.tick, placement),
+      status: placement.health,
+      repairProgressDays,
+      repairCompletionPercent: Math.round((Math.min(repairProgressDays, BASE_REPAIR_DAYS) / BASE_REPAIR_DAYS) * 100),
+      repairEtaTicks: placement.health === "repairing"
+        ? Math.ceil(remainingRepairDays / repairProgressDaysPerTick)
+        : 0,
+    };
+  });
 }
 
 /**

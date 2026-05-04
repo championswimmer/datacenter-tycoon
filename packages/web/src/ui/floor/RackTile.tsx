@@ -1,10 +1,12 @@
 import { useState } from "react";
 import type { RackPlacement, RackSpec } from "@datacenter-tycoon/game-logic";
+import type { RackMaintenanceView } from "../../store/selectors.js";
 import { LedSegment } from "../../theme/primitives/index.js";
 import styles from "./RackTile.module.css";
 
 export interface RackTileProps {
   placement:         RackPlacement;
+  maintenanceView:   RackMaintenanceView;
   spec:              RackSpec;
   /** True when at least one active (non-breached) contract is running on this DC. */
   hasActiveContract: boolean;
@@ -25,12 +27,17 @@ const BLADE_COUNT = 6;
 
 export function RackTile({
   placement,
+  maintenanceView,
   spec,
   hasActiveContract,
   hasFault,
   onDecommission,
 }: RackTileProps) {
   const [confirming, setConfirming] = useState(false);
+  const repairStatusLabel = maintenanceView.status === "repairing" ? "REPAIRING" : "HEALTHY";
+  const repairProgressLabel = maintenanceView.status === "repairing"
+    ? `${maintenanceView.repairCompletionPercent}% • ETA ${maintenanceView.repairEtaTicks} mo`
+    : undefined;
 
   if (confirming) {
     return (
@@ -52,8 +59,12 @@ export function RackTile({
 
   return (
     <div
-      className={[styles.tile, styles[`kind-${spec.kind}`]].join(" ")}
-      title={`${spec.name} — Tier ${spec.tier}\nCapex: $${spec.capexCost.toLocaleString()}\nPower: ${spec.powerDrawKw} kW/mo`}
+      className={[
+        styles.tile,
+        styles[`kind-${spec.kind}`],
+        maintenanceView.status === "repairing" ? styles.tileRepairing : "",
+      ].join(" ")}
+      title={`${spec.name} — Tier ${spec.tier}\nAge: ${maintenanceView.ageMonths} mo\nStatus: ${repairStatusLabel}${repairProgressLabel ? `\nRepair: ${repairProgressLabel}` : ""}\nCapex: $${spec.capexCost.toLocaleString()}\nPower: ${spec.powerDrawKw} kW/mo`}
     >
       {/* ── Bezel ── */}
       <div className={styles.bezel}>
@@ -80,6 +91,22 @@ export function RackTile({
         <LedSegment color={hasFault ? "red" : "off"}                  size={5} />
         <span className={styles.kindBadge}>{KIND_LABEL[spec.kind]}</span>
       </div>
+
+      <div className={styles.statusRow}>
+        <span
+          className={[
+            styles.statusBadge,
+            maintenanceView.status === "repairing" ? styles.statusRepairing : styles.statusHealthy,
+          ].join(" ")}
+        >
+          {repairStatusLabel}
+        </span>
+        <span className={styles.ageText}>AGE {maintenanceView.ageMonths} MO</span>
+      </div>
+
+      {repairProgressLabel && (
+        <div className={styles.repairText}>{repairProgressLabel}</div>
+      )}
 
       {/* ── Decommission trigger ── */}
       <button
