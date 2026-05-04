@@ -13,10 +13,10 @@ owner: game-logic, web
   - [x] 1.1 Extend rack and datacenter types for health, repair progress, and maintenance staffing
   - [x] 1.2 Add tunable wear/repair balance constants and document the month↔day conversion
   - [x] 1.3 Export new types/helpers from the public surface where needed
-- [ ] **Phase 2 — Rack health domain helpers**
+- [x] **Phase 2 — Rack health domain helpers**
   - [x] 2.1 Implement pure helpers for rack age, failure chance, and repair throughput
   - [x] 2.2 Make usable capacity health-aware while keeping installed-resource accounting stable
-  - [ ] 2.3 Add unit tests for age curve, caps, and repair-speed scaling
+  - [x] 2.3 Add unit tests for age curve, caps, and repair-speed scaling
 - [ ] **Phase 3 — Deterministic simulation integration**
   - [ ] 3.1 Integrate monthly failure rolls into `sim/tick.ts` using seeded RNG
   - [ ] 3.2 Advance repairs each tick and restore racks when repair progress completes
@@ -277,3 +277,4 @@ The exact field names can change during implementation, but the persisted state 
 - 2026-05-04 — completed step 1.3 by exporting maintenance balance constants from the package entrypoint and documenting the new persisted rack/datacenter fields.
 - 2026-05-04 — completed step 2.1 by adding pure rack-aging, failure-chance, repair-speed, and repair-advancement helpers under `sim/maintenance.ts`.
 - 2026-05-04 — completed step 2.2 by making `datacenterCapacity()` health-aware, preserving installed capacity explicitly, and adding maintenance summary helpers for downstream UI use.
+- 2026-05-04 — completed step 2.3 by adding dedicated maintenance-helper tests and increasing base repair duration so staffing changes can produce distinct recovery times.
