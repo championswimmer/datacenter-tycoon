@@ -3,6 +3,7 @@ import { acceptContract } from "../contracts/market.js";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { applyCapex } from "../economy/capex.js";
+import { calculateMoveCost } from "../economy/move.js";
 import { canPlaceRack } from "../entities/datacenter.js";
 import { canBuildInRegion } from "../entities/region.js";
 import { tick } from "../sim/tick.js";
@@ -187,6 +188,52 @@ function removeRack(state: GameState, dcId: DatacenterId, placementId: RackPlace
 	});
 }
 
+function moveRack(
+	state: GameState,
+	dcId: DatacenterId,
+	placementId: RackPlacementId,
+	targetDcId: DatacenterId,
+	row: number,
+	position: number,
+): GameState {
+	const sourceDc = getDatacenter(state, dcId);
+	const placement = sourceDc.placements.find((p) => p.id === placementId);
+	if (!placement) {
+		throw new Error(`Unknown rack placement: ${placementId}`);
+	}
+
+	if (dcId === targetDcId) {
+		throw new Error("Cannot move rack to the same datacenter");
+	}
+
+	const targetDc = getDatacenter(state, targetDcId);
+	const spec = getRackSpec(placement.specId);
+	const placementCheck = canPlaceRack(targetDc, spec, { row, position });
+	if (!placementCheck.ok) {
+		throw new Error(`Cannot place rack: ${placementCheck.reason}`);
+	}
+
+	const cost = calculateMoveCost(spec, sourceDc.regionId, targetDc.regionId);
+	const debitedState = applyCapex(state, cost, `Move rack: ${spec.name} to ${targetDc.name}`);
+
+	const movedPlacement: RackPlacement = {
+		...placement,
+		row,
+		position,
+	};
+
+	const updatedSourceDc = {
+		...sourceDc,
+		placements: sourceDc.placements.filter((p) => p.id !== placementId),
+	};
+	const updatedTargetDc = {
+		...targetDc,
+		placements: [...targetDc.placements, movedPlacement],
+	};
+
+	return replaceDatacenter(replaceDatacenter(debitedState, updatedSourceDc), updatedTargetDc);
+}
+
 function cancelContract(state: GameState, contractId: ContractId): GameState {
 	const contract = state.activeContracts.find((candidate) => candidate.id === contractId);
 	if (!contract) {
@@ -267,7 +314,7 @@ export function reduce(state: GameState, action: Action): GameState {
 		case "RemoveRack":
 			return removeRack(state, action.dcId, action.placementId);
 		case "MoveRack":
-			throw new Error("MoveRack not yet implemented");
+			return moveRack(state, action.dcId, action.placementId, action.targetDcId, action.row, action.position);
 		case "AcceptContract":
 			return acceptContract(state, action.contractId, action.dcId);
 		case "CancelContract":
