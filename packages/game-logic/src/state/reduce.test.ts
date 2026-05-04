@@ -327,3 +327,225 @@ test("reduce handles Tick by delegating to sim.tick", () => {
 
 	assert.deepEqual(reduce(state, { type: "Tick" }), tickState(state));
 });
+
+test("reduce handles MoveRack for same-region move", () => {
+	const state = newGame(42, { startingCash: 3_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const builtState = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-1"),
+		regionId: firstRegionId,
+	});
+	const secondDcState = reduce(builtState, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-2"),
+		regionId: firstRegionId,
+	});
+	const placedState = reduce(secondDcState, {
+		type: "PlaceRack",
+		dcId: datacenterId("dc-1"),
+		specId: RACK_CATALOG.C1.id,
+		row: 0,
+		position: 0,
+		placementId: rackPlacementId("rack-1"),
+	});
+
+	const nextState = reduce(placedState, {
+		type: "MoveRack",
+		dcId: datacenterId("dc-1"),
+		placementId: rackPlacementId("rack-1"),
+		targetDcId: datacenterId("dc-2"),
+		row: 0,
+		position: 0,
+	});
+
+	assert.equal(nextState.datacenters[0]?.placements.length, 0);
+	assert.equal(nextState.datacenters[1]?.placements.length, 1);
+	assert.equal(nextState.datacenters[1]?.placements[0]?.specId, RACK_CATALOG.C1.id);
+	assert.equal(nextState.datacenters[1]?.placements[0]?.row, 0);
+	assert.equal(nextState.datacenters[1]?.placements[0]?.position, 0);
+	assert.equal(nextState.ledger.at(-1)?.type, "capex");
+	assert.ok(nextState.ledger.at(-1)?.reason.includes("Move rack"));
+});
+
+test("reduce handles MoveRack for cross-region move", () => {
+	const state = newGame(42, { startingCash: 3_000_000 });
+	const region1 = state.map.regions[0]!.id;
+	const region2 = state.map.regions[1]?.id ?? region1;
+	const builtState = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-1"),
+		regionId: region1,
+	});
+	const secondDcState = reduce(builtState, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-2"),
+		regionId: region2,
+	});
+	const placedState = reduce(secondDcState, {
+		type: "PlaceRack",
+		dcId: datacenterId("dc-1"),
+		specId: RACK_CATALOG.C1.id,
+		row: 0,
+		position: 0,
+		placementId: rackPlacementId("rack-1"),
+	});
+
+	const nextState = reduce(placedState, {
+		type: "MoveRack",
+		dcId: datacenterId("dc-1"),
+		placementId: rackPlacementId("rack-1"),
+		targetDcId: datacenterId("dc-2"),
+		row: 0,
+		position: 0,
+	});
+
+	assert.equal(nextState.datacenters[0]?.placements.length, 0);
+	assert.equal(nextState.datacenters[1]?.placements.length, 1);
+});
+
+test("reduce handles MoveRack rejects insufficient funds", () => {
+	const state = newGame(42, { startingCash: 3_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const builtState = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-1"),
+		regionId: firstRegionId,
+	});
+	const secondDcState = reduce(builtState, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-2"),
+		regionId: firstRegionId,
+	});
+	const placedState = reduce(secondDcState, {
+		type: "PlaceRack",
+		dcId: datacenterId("dc-1"),
+		specId: RACK_CATALOG.C1.id,
+		row: 0,
+		position: 0,
+		placementId: rackPlacementId("rack-1"),
+	});
+	const brokeState = {
+		...placedState,
+		player: { ...placedState.player, cash: 0 },
+	};
+
+	assert.throws(
+		() =>
+			reduce(brokeState, {
+				type: "MoveRack",
+				dcId: datacenterId("dc-1"),
+				placementId: rackPlacementId("rack-1"),
+				targetDcId: datacenterId("dc-2"),
+				row: 0,
+				position: 0,
+			}),
+		{ message: /Insufficient funds/ },
+	);
+});
+
+test("reduce handles MoveRack rejects invalid target slot", () => {
+	const state = newGame(42, { startingCash: 3_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const builtState = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-1"),
+		regionId: firstRegionId,
+	});
+	const secondDcState = reduce(builtState, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-2"),
+		regionId: firstRegionId,
+	});
+	const placedState = reduce(secondDcState, {
+		type: "PlaceRack",
+		dcId: datacenterId("dc-1"),
+		specId: RACK_CATALOG.C1.id,
+		row: 0,
+		position: 0,
+		placementId: rackPlacementId("rack-1"),
+	});
+
+	assert.throws(
+		() =>
+			reduce(placedState, {
+				type: "MoveRack",
+				dcId: datacenterId("dc-1"),
+				placementId: rackPlacementId("rack-1"),
+				targetDcId: datacenterId("dc-2"),
+				row: 99,
+				position: 99,
+			}),
+		{ message: /Cannot place rack: out_of_bounds/ },
+	);
+});
+
+test("reduce handles MoveRack rejects missing placement", () => {
+	const state = newGame(42, { startingCash: 3_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const builtState = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-1"),
+		regionId: firstRegionId,
+	});
+	const secondDcState = reduce(builtState, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-2"),
+		regionId: firstRegionId,
+	});
+
+	assert.throws(
+		() =>
+			reduce(secondDcState, {
+				type: "MoveRack",
+				dcId: datacenterId("dc-1"),
+				placementId: rackPlacementId("missing-rack"),
+				targetDcId: datacenterId("dc-2"),
+				row: 0,
+				position: 0,
+			}),
+		{ message: /Unknown rack placement/ },
+	);
+});
+
+test("reduce handles MoveRack rejects same datacenter", () => {
+	const state = newGame(42, { startingCash: 3_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const builtState = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-1"),
+		regionId: firstRegionId,
+	});
+	const placedState = reduce(builtState, {
+		type: "PlaceRack",
+		dcId: datacenterId("dc-1"),
+		specId: RACK_CATALOG.C1.id,
+		row: 0,
+		position: 0,
+		placementId: rackPlacementId("rack-1"),
+	});
+
+	assert.throws(
+		() =>
+			reduce(placedState, {
+				type: "MoveRack",
+				dcId: datacenterId("dc-1"),
+				placementId: rackPlacementId("rack-1"),
+				targetDcId: datacenterId("dc-1"),
+				row: 0,
+				position: 1,
+			}),
+		{ message: /Cannot move rack to the same datacenter/ },
+	);
+});
