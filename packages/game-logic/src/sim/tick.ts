@@ -89,12 +89,18 @@ export function tick(state: GameState): GameState {
 	const datacentersAfterMaintenance = state.datacenters.map((datacenter) =>
 		processRackMaintenance(datacenter, nextTick, rng),
 	);
+	const maintenanceState: GameState = {
+		...state,
+		tick: nextTick,
+		rngState: rng.state(),
+		datacenters: datacentersAfterMaintenance,
+	};
 
 	// Calculate base opex per datacenter
 	const perDcOpex = new Map<DatacenterId, OpexTickResult>();
 	let baseOpexTotal = 0;
-	for (const datacenter of state.datacenters) {
-		const region = getRegionForDatacenter(state, datacenter.id);
+	for (const datacenter of maintenanceState.datacenters) {
+		const region = getRegionForDatacenter(maintenanceState, datacenter.id);
 		if (!region) {
 			throw new Error(`Region not found for datacenter: ${datacenter.regionId}`);
 		}
@@ -103,12 +109,12 @@ export function tick(state: GameState): GameState {
 		baseOpexTotal += opex.total;
 	}
 
-	const revenueResult = tickRevenue(state);
+	const revenueResult = tickRevenue(maintenanceState);
 
 	// Calculate tax per datacenter
 	let totalTax = 0;
-	for (const datacenter of state.datacenters) {
-		const region = getRegionForDatacenter(state, datacenter.id);
+	for (const datacenter of maintenanceState.datacenters) {
+		const region = getRegionForDatacenter(maintenanceState, datacenter.id);
 		if (!region) continue;
 
 		const opex = perDcOpex.get(datacenter.id)!;
@@ -167,14 +173,11 @@ export function tick(state: GameState): GameState {
 	}
 
 	const advancedState: GameState = {
-		...state,
-		tick: nextTick,
-		rngState: rng.state(),
+		...maintenanceState,
 		player: {
-			...state.player,
+			...maintenanceState.player,
 			cash: roundMoney(state.player.cash + netCashDelta),
 		},
-		datacenters: datacentersAfterMaintenance,
 		activeContracts: finalizedContracts,
 		ledger: [...state.ledger, ...ledgerEntries],
 	};
