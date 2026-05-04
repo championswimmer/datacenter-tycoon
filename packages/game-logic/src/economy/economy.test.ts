@@ -174,6 +174,25 @@ test("tickOpex includes power, cooling, staff, bandwidth, and rack maintenance",
 	});
 });
 
+test("tickOpex charges additional wages for maintenance staffing", () => {
+	const datacenter = {
+		...makeDatacenter("garage-1", DATACENTER_CATALOG.garage),
+		maintenanceStaff: 3,
+	};
+
+	assert.deepEqual(tickOpex(datacenter, TEST_REGION), {
+		total: 36_800,
+		breakdown: {
+			power: 0,
+			cooling: 0,
+			bandwidth: 6_800,
+			staff: 30_000,
+			maintenance: 0,
+			tax: 0,
+		},
+	});
+});
+
 test("tickRevenue pays fulfilled contracts and recovers previously breached contracts", () => {
 	const datacenter = makeDatacenter("warehouse-1", DATACENTER_CATALOG.warehouse, [
 		placement("rack-1", "C2", 0, 0),

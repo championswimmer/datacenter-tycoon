@@ -75,7 +75,7 @@ export function tickOpex(datacenter: Datacenter, region: Region): OpexTickResult
 	const power = roundMoney(rawPowerCost);
 	const cooling = roundMoney(rawPowerCost * COOLING_OVERHEAD_RATIO);
 	const bandwidth = roundMoney(datacenter.spec.bandwidthGbps * BANDWIDTH_USD_PER_GBPS_MONTH);
-	const staff = roundMoney(datacenter.spec.staffCount * region.staffWage);
+	const staff = roundMoney((datacenter.spec.staffCount + datacenter.maintenanceStaff) * region.staffWage);
 	const breakdown = {
 		power,
 		cooling,
