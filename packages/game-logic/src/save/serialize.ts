@@ -17,7 +17,8 @@ function isSaveEnvelope(value: unknown): value is SaveEnvelope {
 }
 
 export function migrate(envelope: SaveEnvelope): SaveEnvelope {
-	const state = envelope.state as any;
+	let current = envelope;
+	const state = current.state as any;
 
 	// Ensure gameId exists for all save versions
 	if (!state.gameId) {
@@ -32,21 +33,21 @@ export function migrate(envelope: SaveEnvelope): SaveEnvelope {
 		};
 	}
 
-	if (envelope.saveVersion === SAVE_VERSION) {
-		return envelope;
+	if (current.saveVersion === SAVE_VERSION) {
+		return current;
 	}
 
-	if (envelope.saveVersion === 0) {
-		const state = envelope.state as GameState;
+	if (current.saveVersion === 0) {
 		for (const contract of [...state.activeContracts, ...state.contractMarket]) {
 			const c = contract as unknown as Record<string, unknown>;
 			if (!("urgency" in c)) c.urgency = "standard";
 			if (!("tier" in c)) c.tier = 1;
 		}
-		return { saveVersion: SAVE_VERSION, state: envelope.state };
+		// Fall through to v1→v2 migration below by updating version
+		current = { saveVersion: 1, state: current.state };
 	}
 
-	if (envelope.saveVersion === 1) {
+	if (current.saveVersion === 1) {
 		// Migrate v1 -> v2: generate a real map and assign legacy datacenters to the first region
 		if (!state.map) {
 			state.map = generateMap(state.seed ?? 42);
@@ -68,10 +69,10 @@ export function migrate(envelope: SaveEnvelope): SaveEnvelope {
 				0,
 			);
 		}
-		return { saveVersion: SAVE_VERSION, state: envelope.state };
+		return { saveVersion: SAVE_VERSION, state: current.state };
 	}
 
-	throw new Error(`Unsupported save version: ${envelope.saveVersion}`);
+	throw new Error(`Unsupported save version: ${current.saveVersion}`);
 }
 
 export function serialize(state: GameState): string {

@@ -1,9 +1,9 @@
 ---
 name: Regional Map & Location-Aware Economy
 description: Add a procedurally-generated world map with regions/states where datacenters can be built, each with unique power costs, staffing costs, taxes, and finite resource pools.
-status: started
+status: completed
 created: 2026-05-03
-updated: 2026-05-03
+updated: 2026-05-04
 owner: game-logic, web
 ---
 
@@ -38,11 +38,11 @@ owner: game-logic, web
   - [x] 5.3 Create `RegionPanel` showing dynamics (power cost, wage, tax, availability)
   - [x] 5.4 Wire `NewDatacenterModal` to require a selected region from the map
   - [x] 5.5 Update `DatacenterList` and `DatacenterView` to show region name
-- [ ] **Phase 6 — Testing & Polish**
-  - [ ] 6.1 End-to-end test: build DC on map → verify regional opex/tax in ledger
-  - [ ] 6.2 Verify old save migration path (no regions → default region fallback)
-  - [ ] 6.3 Update `game-logic/README.md` with new public APIs
-  - [ ] 6.4 Update root `AGENTS.md` domain vocabulary if needed
+- [x] **Phase 6 — Testing & Polish**
+  - [x] 6.1 End-to-end test: build DC on map → verify regional opex/tax in ledger
+  - [x] 6.2 Verify old save migration path (no regions → default region fallback)
+  - [x] 6.3 Update `game-logic/README.md` with new public APIs
+  - [x] 6.4 Update root `AGENTS.md` domain vocabulary if needed
 
 ## Overview
 

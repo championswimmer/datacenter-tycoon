@@ -14,6 +14,7 @@ npm install @datacenter-tycoon/game-logic
 import {
   DATACENTER_CATALOG,
   RACK_CATALOG,
+  REGION_CATALOG,
   newGame,
   reduce,
   serialize,
@@ -21,20 +22,26 @@ import {
   type DatacenterId,
   type GameState,
   type RackPlacementId,
+  type RegionId,
 } from "@datacenter-tycoon/game-logic";
 
 const datacenterId = (value: string): DatacenterId => value as DatacenterId;
 const rackPlacementId = (value: string): RackPlacementId => value as RackPlacementId;
+const regionId = (value: string): RegionId => value as RegionId;
 
 let state: GameState = newGame(42, {
   playerName: "Alex",
 });
+
+// Pick a region — each has unique power costs, wages, and taxes
+const iowa = regionId("iowa");
 
 const actions: Action[] = [
   {
     type: "BuildDatacenter",
     specId: DATACENTER_CATALOG.garage.id,
     dcId: datacenterId("dc-1"),
+    regionId: iowa,
   },
   {
     type: "PlaceRack",
@@ -65,13 +72,15 @@ Main exports from `src/index.ts`:
 - `serialize(state)` / `deserialize(json)`
 - `RACK_CATALOG`
 - `DATACENTER_CATALOG`
+- `REGION_CATALOG`
+- `generateMap(seed)` — deterministic world map generator
 - all public domain types from `types.ts`
 
 ## Action reference
 
 ```ts
 export type Action =
-  | { type: "BuildDatacenter"; specId: DatacenterSpecId; dcId: DatacenterId }
+  | { type: "BuildDatacenter"; specId: DatacenterSpecId; dcId: DatacenterId; regionId: RegionId }
   | {
       type: "PlaceRack";
       dcId: DatacenterId;
@@ -90,6 +99,11 @@ export type Action =
 
 ```ts
 interface GameState {
+  gameId: string;
+  game: {
+    speed: number;
+    paused: boolean;
+  };
   tick: number;
   seed: number;
   rngState: number;
@@ -102,8 +116,40 @@ interface GameState {
   contractMarket: Contract[];
   activeContracts: Contract[];
   ledger: LedgerEntry[];
+  audioEnabled: boolean;
+  audioSettings: AudioSettings;
+  map: MapState;
 }
 ```
+
+## Region & Map
+
+Datacenters are built in specific regions. Each region has its own economy:
+
+```ts
+interface Region {
+  id: RegionId;
+  name: string;
+  powerCostPerKwh: number;
+  staffWage: number;
+  taxRate: number;
+  totalPowerAvailable: number;
+  totalStaffAvailable: number;
+  powerUsed: number;
+  staffUsed: number;
+}
+
+interface MapState {
+  regions: Region[];
+}
+```
+
+- **Power cost** varies by region (e.g., Iowa ~$0.06/kWh, Silicon Valley ~$0.22/kWh).
+- **Staff wage** varies by region, multiplied by the datacenter's `staffCount` to produce monthly staff opex.
+- **Tax rate** is applied to datacenter profit (revenue minus base opex) each tick.
+- **Finite pools**: `totalPowerAvailable` and `totalStaffAvailable` cap how many datacenters can be built in a region.
+
+`generateMap(seed)` creates a deterministic set of regions with minor randomized variations (±10% power cost, ±5% wages) for replayability.
 
 ## Determinism contract
 
@@ -119,7 +165,7 @@ interface GameState {
 
 ```json
 {
-  "saveVersion": 1,
+  "saveVersion": 2,
   "state": {
     "tick": 0,
     "seed": 42,
@@ -132,9 +178,12 @@ interface GameState {
     "datacenters": [],
     "contractMarket": [],
     "activeContracts": [],
-    "ledger": []
+    "ledger": [],
+    "map": {
+      "regions": [...]
+    }
   }
 }
 ```
 
-Use `deserialize(json)` to restore a saved game. Unknown save versions currently throw.
+Use `deserialize(json)` to restore a saved game. Old saves are automatically migrated to the current version.
