@@ -11,7 +11,7 @@ owner: game-logic, web
 
 - [ ] **Phase 1 — Data model & balance scaffolding**
   - [x] 1.1 Extend rack and datacenter types for health, repair progress, and maintenance staffing
-  - [ ] 1.2 Add tunable wear/repair balance constants and document the month↔day conversion
+  - [x] 1.2 Add tunable wear/repair balance constants and document the month↔day conversion
   - [ ] 1.3 Export new types/helpers from the public surface where needed
 - [ ] **Phase 2 — Rack health domain helpers**
   - [ ] 2.1 Implement pure helpers for rack age, failure chance, and repair throughput
@@ -26,7 +26,7 @@ owner: game-logic, web
   - [ ] 4.2 Charge staffing opex and regional staff usage from baseline staff + maintenance staff
   - [ ] 4.3 Seed default maintenance staffing on build and expose selectors for UI summaries
 - [ ] **Phase 5 — Save, UI & verification**
-  - [ ] 5.1 Bump save version and migrate legacy saves to healthy racks with default maintenance staffing
+  - [ ] 5.1 Bump save version and invalidate legacy saves instead of migrating them
   - [ ] 5.2 Show rack age, health, and repair progress in the web datacenter/floor views
   - [ ] 5.3 Add a maintenance staffing control to the web UI with repair-speed feedback
   - [ ] 5.4 Add reducer/tick/integration tests and update package docs
@@ -273,3 +273,4 @@ The exact field names can change during implementation, but the persisted state 
 - 2026-05-04 — created.
 - 2026-05-04 — completed step 1.1 by extending rack health fields and datacenter maintenance staffing scaffolding.
 - 2026-05-04 — removed legacy-save migration work; upgrades will recreate saves destructively instead.
+- 2026-05-04 — completed step 1.2 by centralizing rack-failure and repair timing constants in a maintenance balance module.
