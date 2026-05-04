@@ -1,4 +1,5 @@
-import { useSelector } from "../../store/storeContext.js";
+import { MAX_MAINTENANCE_STAFF, repairProgressPerTick } from "@datacenter-tycoon/game-logic";
+import { useGameDispatch, useSelector } from "../../store/storeContext.js";
 import {
   selectActiveContracts,
   selectDatacenter,
@@ -32,6 +33,7 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
   const maintenance = useSelector(s => selectDatacenterMaintenanceView(s, dcId as DatacenterId));
   const usageAgg = useSelector(selectResourceUsage);
   const region   = useSelector(s => dc ? selectRegionById(s, dc.regionId) : undefined);
+  const dispatch = useGameDispatch();
 
   if (!dc) {
     return (
@@ -46,6 +48,30 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
   }
 
   const usage = usageAgg.perDc.find(u => u.dcId === dc.id)?.usage ?? EMPTY_USAGE;
+  const canDecreaseMaintenance = (maintenance?.maintenanceStaff ?? 0) > 0;
+  const availableRegionalStaff = region ? Math.max(0, region.totalStaffAvailable - region.staffUsed) : 0;
+  const canIncreaseMaintenance = Boolean(
+    maintenance &&
+      region &&
+      maintenance.maintenanceStaff < MAX_MAINTENANCE_STAFF &&
+      availableRegionalStaff > 0,
+  );
+  const maintenanceOpex = region && maintenance
+    ? maintenance.maintenanceStaff * region.staffWage
+    : 0;
+  const repairSpeedDaysPerTick = maintenance
+    ? repairProgressPerTick(maintenance.maintenanceStaff)
+    : 0;
+  const adjustMaintenanceStaff = (delta: number) => {
+    if (!maintenance) {
+      return;
+    }
+    dispatch({
+      type: "SetMaintenanceStaff",
+      dcId: dc.id,
+      maintenanceStaff: maintenance.maintenanceStaff + delta,
+    });
+  };
   return (
     <div className={styles.view}>
       {/* ── DC header ── */}
@@ -68,6 +94,39 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
             <span className={styles.maintenanceMeta}>
               {maintenance.repairingRackCount} REPAIRING / {maintenance.totalRackCount} TOTAL
             </span>
+          </div>
+        )}
+        {maintenance && (
+          <div className={styles.maintenanceControls}>
+            <div className={styles.maintenanceControlRow}>
+              <span className={styles.maintenanceControlLabel}>Maintenance staffing</span>
+              <div className={styles.maintenanceStepper}>
+                <button
+                  className={styles.maintenanceBtn}
+                  onClick={() => adjustMaintenanceStaff(-1)}
+                  disabled={!canDecreaseMaintenance}
+                  aria-label="Decrease maintenance staff"
+                >
+                  −
+                </button>
+                <span className={styles.maintenanceValue}>{maintenance.maintenanceStaff}</span>
+                <button
+                  className={styles.maintenanceBtn}
+                  onClick={() => adjustMaintenanceStaff(1)}
+                  disabled={!canIncreaseMaintenance}
+                  aria-label="Increase maintenance staff"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div className={styles.maintenanceHints}>
+              <span>Extra wages ${maintenanceOpex.toLocaleString()}/mo</span>
+              <span>Repair speed {repairSpeedDaysPerTick.toFixed(0)} days/tick</span>
+              {region && !canIncreaseMaintenance && maintenance.maintenanceStaff < MAX_MAINTENANCE_STAFF && (
+                <span>Regional staff exhausted</span>
+              )}
+            </div>
           </div>
         )}
       </div>
