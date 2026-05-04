@@ -265,3 +265,81 @@ test("higher maintenance staffing restores repairing racks in fewer ticks", () =
 	assert.equal(lowStaffState.datacenters[0]?.placements[0]?.health, "repairing");
 	assert.equal(highStaffState.datacenters[0]?.placements[0]?.health, "healthy");
 });
+
+test("a rack failure can breach an overcommitted contract in the same tick", () => {
+	const datacenter = makeDatacenter("dc-1", [
+		{
+			...placement("rack-1", "C1", 0, 0),
+			installedAtTick: tickValue(0),
+		},
+	]);
+	const contract = makeContract("contract-1", datacenter, {
+		requirements: { vCpu: 64, ramGb: 128, storageTb: 8, gpuFlops: 0 },
+		monthlyPayment: 5_000,
+		penaltyPerMonth: 2_000,
+		termMonths: 12,
+		startedAtTick: tickValue(35),
+	});
+	const state = makeState({
+		tick: tickValue(35),
+		rngState: 99,
+		datacenters: [datacenter],
+		activeContracts: [contract],
+	});
+	const opex = tickOpex(datacenter, TEST_REGION).total;
+
+	const nextState = tick(state);
+
+	assert.equal(nextState.datacenters[0]?.placements[0]?.health, "repairing");
+	assert.equal(nextState.activeContracts[0]?.status, "breached");
+	assert.equal(nextState.player.cash, state.player.cash - opex - contract.penaltyPerMonth);
+	assert.deepEqual(
+		nextState.ledger.map((entry) => ({ type: entry.type, amount: entry.amount })),
+		[
+			{ type: "opex", amount: -opex },
+			{ type: "penalty", amount: -contract.penaltyPerMonth },
+		],
+	);
+});
+
+test("a repaired rack can restore contract revenue in the same tick", () => {
+	const datacenter = {
+		...makeDatacenter("dc-1", [
+			{
+				...placement("rack-1", "C1", 0, 0),
+				health: "repairing" as const,
+				repairProgressDays: 60,
+				lastFailureAtTick: tickValue(1),
+			},
+		]),
+		maintenanceStaff: 4,
+	};
+	const contract = makeContract("contract-1", datacenter, {
+		requirements: { vCpu: 64, ramGb: 128, storageTb: 8, gpuFlops: 0 },
+		monthlyPayment: 5_000,
+		penaltyPerMonth: 2_000,
+	});
+	const repairedOpex = tickOpex(
+		{
+			...datacenter,
+			placements: [
+				{
+					...datacenter.placements[0]!,
+					health: "healthy",
+				},
+			],
+		},
+		TEST_REGION,
+	).total;
+	const state = makeState({
+		tick: tickValue(1),
+		datacenters: [datacenter],
+		activeContracts: [contract],
+	});
+
+	const nextState = tick(state);
+
+	assert.equal(nextState.datacenters[0]?.placements[0]?.health, "healthy");
+	assert.equal(nextState.activeContracts[0]?.status, "active");
+	assert.equal(nextState.player.cash, state.player.cash - repairedOpex + contract.monthlyPayment);
+});
