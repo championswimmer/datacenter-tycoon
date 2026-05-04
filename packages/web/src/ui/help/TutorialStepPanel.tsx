@@ -7,17 +7,21 @@ interface TutorialStepPanelProps {
   totalSteps: number;
 }
 
-const ILLUSTRATION_EMOJI: Record<string, string> = {
+const ILLUSTRATION_EMOJI: Record<NonNullable<TutorialStep["illustration"]>, string> = {
   racks: "🖥",
   contract: "📋",
   resources: "⚡",
   money: "💰",
+  maintenance: "🛠️",
 };
 
 export function TutorialStepPanel({ step, stepNumber, totalSteps }: TutorialStepPanelProps) {
-  const illustrationClass = step.illustration
-    ? `${styles.illustration} ${styles[`illustration-${step.illustration}`]}`
-    : styles.illustration;
+  const illustrationVariantClass = step.illustration
+    ? styles[`illustration-${step.illustration}`]
+    : undefined;
+  const illustrationClass = [styles.illustration, illustrationVariantClass]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div>

@@ -5,7 +5,7 @@ export interface TutorialStep {
   id: string;
   title: string;
   body: string;
-  illustration?: "racks" | "contract" | "resources" | "money";
+  illustration?: "racks" | "contract" | "resources" | "money" | "maintenance";
 }
 
 /** Pick one representative rack per kind from the live catalog so stats stay current. */
@@ -74,6 +74,7 @@ Unused capacity earns nothing, so efficiency matters. Match your rack investment
   {
     id: "maintenance",
     title: "Aging & Maintenance",
+    illustration: "maintenance",
     body: `Servers wear out as they age. Older racks are more likely to fail and spend time repairing, which means they stop contributing full usable capacity until the work is done.
 
 If a rack is no longer worth keeping, you can decommission it from the floor view to free the slot for a replacement. You can also add more maintenance staffing in a datacenter to repair racks faster.

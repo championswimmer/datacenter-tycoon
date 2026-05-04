@@ -137,6 +137,7 @@
 .illustration-contract  { border-color: var(--neon-lime);    box-shadow: inset 0 0 24px rgba(155,255,90,.08); }
 .illustration-resources { border-color: var(--neon-blue);    box-shadow: inset 0 0 24px rgba(96,165,250,.08); }
 .illustration-money     { border-color: var(--neon-amber);   box-shadow: inset 0 0 24px rgba(255,177,60,.08); }
+.illustration-maintenance { border-color: var(--neon-red);    box-shadow: inset 0 0 24px rgba(255,94,94,.08); }
 
 /* ── Progress ─────────────────────────────────────────────── */
 

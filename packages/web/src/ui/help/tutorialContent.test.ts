@@ -45,6 +45,7 @@ describe("TUTORIAL_STEPS", () => {
     const maintenanceStep = TUTORIAL_STEPS[4]!;
     expect(maintenanceStep.id).toBe("maintenance");
     expect(maintenanceStep.title).toContain("Aging");
+    expect(maintenanceStep.illustration).toBe("maintenance");
     expect(maintenanceStep.body).toContain("decommission");
     expect(maintenanceStep.body).toContain("maintenance staffing");
     expect(maintenanceStep.body).toContain("repair racks faster");
