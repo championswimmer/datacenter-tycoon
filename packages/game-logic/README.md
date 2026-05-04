@@ -123,10 +123,22 @@ export type Action =
       placementId: RackPlacementId;
     }
   | { type: "RemoveRack"; dcId: DatacenterId; placementId: RackPlacementId }
+  | { type: "SetMaintenanceStaff"; dcId: DatacenterId; maintenanceStaff: number }
   | { type: "AcceptContract"; contractId: ContractId; dcId: DatacenterId }
   | { type: "CancelContract"; contractId: ContractId }
   | { type: "Tick" };
 ```
+
+## Rack aging, failures, and maintenance
+
+- Rack age is derived from `currentTick - installedAtTick`, so wear stays deterministic and serializable.
+- Failure chance ramps linearly from `0` to `50%` over the first `36` months of rack life.
+- Repairs accumulate in **days** even though the main sim still advances in **monthly** ticks. The default repair target is `90` days, and each tick contributes `repairProgressPerTick(maintenanceStaff)` days.
+- Repairing racks still occupy slots and count toward installed hardware, but they contribute **zero usable contract capacity** until repairs complete.
+- `maintenanceStaff` is extra datacenter headcount on top of the blueprint's baseline staff. More maintenance staff:
+  - speeds up repairs,
+  - increases monthly wage opex,
+  - consumes more of the region's finite labor pool.
 
 ## `GameState` shape
 
@@ -178,7 +190,7 @@ interface MapState {
 ```
 
 - **Power cost** varies by region (e.g., Iowa ~$0.06/kWh, Silicon Valley ~$0.22/kWh).
-- **Staff wage** varies by region, multiplied by the datacenter's `staffCount` to produce monthly staff opex.
+- **Staff wage** varies by region, multiplied by the datacenter's baseline `staffCount + maintenanceStaff` to produce monthly staff opex.
 - **Tax rate** is applied to datacenter profit (revenue minus base opex) each tick.
 - **Finite pools**: `totalPowerAvailable` and `totalStaffAvailable` cap how many datacenters can be built in a region.
 
