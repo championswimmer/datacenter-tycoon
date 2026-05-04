@@ -9,6 +9,7 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 - [`001-initial-game-logic.md`](./001-initial-game-logic.md) — first-draft deterministic core (entities, catalogs, capacity, economy, contracts, tick). _status: created_
 - [`002-web-frontend-mvp.md`](./002-web-frontend-mvp.md) — initial React+Vite web UI with neon control-center theme, rack grid, contracts, and live stats. _status: created_
 - [`015-rack-aging-failures-and-maintenance.md`](./015-rack-aging-failures-and-maintenance.md) — age-based rack failures, automatic repairs, and a maintenance staffing lever. _status: created_
+- [`016-regional-fabric-and-pooled-capacity.md`](./016-regional-fabric-and-pooled-capacity.md) — region-local fabric investment and pooled capacity for contract fulfilment. _status: created_
 
 ## Conventions
 
