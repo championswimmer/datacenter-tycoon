@@ -1,4 +1,5 @@
 import {
+  datacenterMaintenanceSummary,
   datacenterCapacity,
   datacenterUsage,
   tickOpex,
@@ -49,6 +50,43 @@ export function selectDatacenter(
   id: DatacenterId,
 ): Datacenter | undefined {
   return state.datacenters.find((dc) => dc.id === id);
+}
+
+export interface DatacenterMaintenanceView {
+  dcId: DatacenterId;
+  maintenanceStaff: number;
+  totalRackCount: number;
+  healthyRackCount: number;
+  repairingRackCount: number;
+  averageRackAgeMonths: number;
+  hasRepairingRacks: boolean;
+}
+
+export function selectDatacenterMaintenanceView(
+  state: GameState,
+  id: DatacenterId,
+): DatacenterMaintenanceView | undefined {
+  const datacenter = selectDatacenter(state, id);
+  if (!datacenter) {
+    return undefined;
+  }
+
+  const summary = datacenterMaintenanceSummary(datacenter, state.tick);
+  return {
+    dcId: datacenter.id,
+    maintenanceStaff: datacenter.maintenanceStaff,
+    totalRackCount: summary.totalRackCount,
+    healthyRackCount: summary.healthyRackCount,
+    repairingRackCount: summary.repairingRackCount,
+    averageRackAgeMonths: summary.averageRackAgeMonths,
+    hasRepairingRacks: summary.repairingRackCount > 0,
+  };
+}
+
+export function selectMaintenanceViews(state: GameState): DatacenterMaintenanceView[] {
+  return state.datacenters
+    .map((dc) => selectDatacenterMaintenanceView(state, dc.id))
+    .filter((view): view is DatacenterMaintenanceView => view !== undefined);
 }
 
 /**

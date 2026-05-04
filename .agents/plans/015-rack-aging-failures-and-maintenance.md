@@ -21,10 +21,10 @@ owner: game-logic, web
   - [x] 3.1 Integrate monthly failure rolls into `sim/tick.ts` using seeded RNG
   - [x] 3.2 Advance repairs each tick and restore racks when repair progress completes
   - [x] 3.3 Ensure contract evaluation sees rack downtime in the same tick
-- [ ] **Phase 4 — Staffing lever, reducer & economy wiring**
+- [x] **Phase 4 — Staffing lever, reducer & economy wiring**
   - [x] 4.1 Add `SetMaintenanceStaff` action and reducer validation against regional staff limits
   - [x] 4.2 Charge staffing opex and regional staff usage from baseline staff + maintenance staff
-  - [ ] 4.3 Seed default maintenance staffing on build and expose selectors for UI summaries
+  - [x] 4.3 Seed default maintenance staffing on build and expose selectors for UI summaries
 - [ ] **Phase 5 — Save, UI & verification**
   - [ ] 5.1 Bump save version and invalidate legacy saves instead of migrating them
   - [ ] 5.2 Show rack age, health, and repair progress in the web datacenter/floor views
@@ -283,3 +283,4 @@ The exact field names can change during implementation, but the persisted state 
 - 2026-05-04 — completed step 3.3 by reordering `tick()` so failures and repairs affect same-month contract fulfillment, with coverage for both same-tick breaches and same-tick recoveries.
 - 2026-05-04 — completed step 4.1 by adding a `SetMaintenanceStaff` reducer action with integer validation, clamp behavior, regional labor-cap checks, and reducer coverage for increase/decrease/clamp/rejection paths.
 - 2026-05-04 — completed step 4.2 by charging maintenance staffing in monthly staff opex and adding economy coverage for the extra wage load.
+- 2026-05-04 — completed step 4.3 by pinning the build-time maintenance-staff default in reducer tests and exposing web selectors that compose `game-logic` maintenance summaries for UI consumption.

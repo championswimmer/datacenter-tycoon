@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
-import { MAX_MAINTENANCE_STAFF } from "../balance/maintenance.js";
+import { DEFAULT_MAINTENANCE_STAFF, MAX_MAINTENANCE_STAFF } from "../balance/maintenance.js";
 import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
 import { tick as tickState } from "../sim/tick.js";
 import type {
@@ -88,6 +88,7 @@ test("reduce handles BuildDatacenter and validates spec ids", () => {
 
 	assert.equal(nextState.datacenters.length, 1);
 	assert.equal(nextState.datacenters[0]?.spec.id, DATACENTER_CATALOG.garage.id);
+	assert.equal(nextState.datacenters[0]?.maintenanceStaff, DEFAULT_MAINTENANCE_STAFF);
 	assert.equal(nextState.player.cash, state.player.cash - DATACENTER_CATALOG.garage.capexCost);
 	assert.equal(nextState.ledger.at(-1)?.type, "capex");
 	assert.throws(
