@@ -1,7 +1,7 @@
 ---
 name: Rack Aging, Failures & Maintenance Staffing
 description: Add age-based rack failures, automatic repairs, and a maintenance staffing lever that speeds repairs while preserving deterministic monthly simulation.
-status: started
+status: completed
 created: 2026-05-04
 updated: 2026-05-04
 owner: game-logic, web
@@ -25,11 +25,11 @@ owner: game-logic, web
   - [x] 4.1 Add `SetMaintenanceStaff` action and reducer validation against regional staff limits
   - [x] 4.2 Charge staffing opex and regional staff usage from baseline staff + maintenance staff
   - [x] 4.3 Seed default maintenance staffing on build and expose selectors for UI summaries
-- [ ] **Phase 5 — Save, UI & verification**
+- [x] **Phase 5 — Save, UI & verification**
   - [x] 5.1 Bump save version and invalidate legacy saves instead of migrating them
   - [x] 5.2 Show rack age, health, and repair progress in the web datacenter/floor views
   - [x] 5.3 Add a maintenance staffing control to the web UI with repair-speed feedback
-  - [ ] 5.4 Add reducer/tick/integration tests and update package docs
+  - [x] 5.4 Add reducer/tick/integration tests and update package docs
 
 ## Overview
 
@@ -287,3 +287,4 @@ The exact field names can change during implementation, but the persisted state 
 - 2026-05-04 — completed step 5.1 by bumping the save format to v3, rejecting outdated saves with a clear recreation error, and removing the old migration-path tests/docs.
 - 2026-05-04 — completed step 5.2 by surfacing selector-backed rack age/status/progress data in the floor tiles and datacenter header, with web tests covering healthy and repairing render states.
 - 2026-05-04 — completed step 5.3 by adding a DatacenterView maintenance stepper that dispatches `SetMaintenanceStaff`, shows wage/repair-speed feedback, and disables increases when regional labor is exhausted.
+- 2026-05-04 — completed step 5.4 by updating the package docs for the finished maintenance model and closing the plan after full workspace typecheck/test verification.
