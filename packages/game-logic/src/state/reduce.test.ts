@@ -33,6 +33,7 @@ function placement(id: string, specKey: keyof typeof RACK_CATALOG, row: number, 
 		specId: spec.id,
 		kind: spec.kind,
 		installedAtTick: tick(0),
+		health: "healthy",
 		row,
 		position,
 	};
@@ -46,6 +47,7 @@ function makeDatacenter(id: string, placements: RackPlacement[] = []): Datacente
 		placements,
 		builtAtTick: tick(0),
 		regionId: "silicon_valley" as import("../types.js").RegionId,
+		maintenanceStaff: 0,
 	};
 }
 
