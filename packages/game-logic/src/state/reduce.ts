@@ -31,6 +31,14 @@ export type Action =
 			placementId: RackPlacementId;
 	  }
 	| { type: "RemoveRack"; dcId: DatacenterId; placementId: RackPlacementId }
+	| {
+			type: "MoveRack";
+			dcId: DatacenterId;
+			placementId: RackPlacementId;
+			targetDcId: DatacenterId;
+			row: number;
+			position: number;
+	  }
 	| { type: "AcceptContract"; contractId: ContractId; dcId: DatacenterId }
 	| { type: "CancelContract"; contractId: ContractId }
 	| { type: "SetMaintenanceStaff"; dcId: DatacenterId; maintenanceStaff: number }
@@ -258,6 +266,8 @@ export function reduce(state: GameState, action: Action): GameState {
 			return placeRack(state, action.dcId, action.specId, action.row, action.position, action.placementId);
 		case "RemoveRack":
 			return removeRack(state, action.dcId, action.placementId);
+		case "MoveRack":
+			throw new Error("MoveRack not yet implemented");
 		case "AcceptContract":
 			return acceptContract(state, action.contractId, action.dcId);
 		case "CancelContract":
