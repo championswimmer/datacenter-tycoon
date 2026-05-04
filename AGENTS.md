@@ -60,6 +60,8 @@ npm run dev:cli            # run the CLI package in watch/dev mode
 
 - **Datacenter**: A facility containing racks. Has location, power capacity, cooling, floor space.
 - **Rack**: A unit inside a datacenter, holding servers of a given type (compute / memory / storage / gpu).
+- **Region**: A geographic location (state/country) where datacenters can be built. Each region has unique power costs, staff wages, tax rates, and finite power/staff resource pools.
+- **Map**: The procedurally-generated set of regions available in a given game world. Deterministic per seed.
 - **Capex**: One-time capital expenditure (buying hardware, building datacenters).
 - **Opex**: Ongoing operational expenditure (power, cooling, staff, bandwidth).
 - **Contract**: A demand for a quantity of compute / memory / storage / gpu over a time period, paying revenue if fulfilled, penalty if breached.
