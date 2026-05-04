@@ -66,64 +66,26 @@ test("serialize and deserialize round-trip a non-trivial game state", () => {
 	assert.deepEqual(restored, state);
 });
 
-test("migrate is a no-op for version 2 envelopes", () => {
+test("migrate is a no-op for current-version envelopes", () => {
 	const state = newGame(7);
 	const envelope = { saveVersion: SAVE_VERSION, state };
 
 	assert.deepEqual(migrate(envelope), envelope);
 });
 
-test("migrate v0 to v2 generates real map and assigns first region to legacy datacenters", () => {
+test("migrate rejects outdated saves that require destructive recreation", () => {
 	const state = newGame(7);
-	const firstRegionId = state.map.regions[0]!.id;
-	// Simulate a v0 save by removing map, regionId, and setting version to 0
-	const v0State = {
-		...state,
-		map: undefined,
-		datacenters: state.datacenters.map((dc) => {
-			const { regionId, ...rest } = dc as any;
-			return rest;
-		}),
-	};
-	const migrated = migrate({ saveVersion: 0, state: v0State as any });
-	assert.equal(migrated.saveVersion, 2);
-	assert.ok(migrated.state.map);
-	assert.ok(migrated.state.map.regions.length > 0);
-	// Should NOT contain the old synthetic "global" region
-	assert.ok(!migrated.state.map.regions.some((r) => r.id === "global"));
-	for (const dc of migrated.state.datacenters) {
-		assert.equal(dc.regionId, firstRegionId);
-	}
-});
 
-test("migrate v1 to v2 generates real map and assigns first region to legacy datacenters", () => {
-	const state = newGame(7);
-	const firstRegionId = state.map.regions[0]!.id;
-	// Simulate a v1 save by removing map and regionId
-	const v1State = {
-		...state,
-		map: undefined,
-		datacenters: state.datacenters.map((dc) => {
-			const { regionId, ...rest } = dc as any;
-			return rest;
-		}),
-	};
-	const migrated = migrate({ saveVersion: 1, state: v1State as any });
-	assert.equal(migrated.saveVersion, 2);
-	assert.ok(migrated.state.map);
-	assert.ok(migrated.state.map.regions.length > 0);
-	// Should NOT contain the old synthetic "global" region
-	assert.ok(!migrated.state.map.regions.some((r) => r.id === "global"));
-	for (const dc of migrated.state.datacenters) {
-		assert.equal(dc.regionId, firstRegionId);
-	}
+	assert.throws(() => migrate({ saveVersion: SAVE_VERSION - 1, state }), {
+		message: /Outdated save version/,
+	});
 });
 
 test("migrate throws on unknown save versions", () => {
 	const state = newGame(7);
 
 	assert.throws(() => migrate({ saveVersion: 999, state }), {
-		message: /Unsupported save version/,
+		message: /Outdated save version/,
 	});
 });
 
