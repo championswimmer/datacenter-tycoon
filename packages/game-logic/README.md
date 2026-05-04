@@ -198,7 +198,7 @@ interface MapState {
 
 ```json
 {
-  "saveVersion": 2,
+  "saveVersion": 3,
   "state": {
     "tick": 0,
     "seed": 42,
@@ -219,4 +219,4 @@ interface MapState {
 }
 ```
 
-Use `deserialize(json)` to restore a saved game. Old saves are automatically migrated to the current version.
+Use `deserialize(json)` to restore a saved game. Saves from earlier versions are intentionally rejected and must be recreated after incompatible updates.
