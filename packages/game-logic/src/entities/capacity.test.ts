@@ -3,7 +3,14 @@ import test from "node:test";
 
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
-import { canPlaceRack, datacenterCapacity, datacenterUsage, rackCapacity } from "../index.js";
+import {
+	canPlaceRack,
+	datacenterCapacity,
+	datacenterInstalledCapacity,
+	datacenterMaintenanceSummary,
+	datacenterUsage,
+	rackCapacity,
+} from "../index.js";
 import type {
 	Datacenter,
 	DatacenterId,
@@ -104,6 +111,50 @@ test("datacenterCapacity aggregates the placed rack capacity", () => {
 		ramGb: 3_840,
 		storageTb: 68,
 		gpuFlops: 500,
+	});
+});
+
+test("repairing racks reduce usable capacity without changing installed capacity or slot usage", () => {
+	const datacenter = makeDatacenter(DATACENTER_CATALOG.warehouse, [
+		placement("rack-1", "C2", 0, 0),
+		{
+			...placement("rack-2", "G1", 0, 1),
+			health: "repairing",
+			repairProgressDays: 15,
+		},
+	]);
+
+	assert.deepEqual(datacenterCapacity(datacenter), {
+		vCpu: 256,
+		ramGb: 768,
+		storageTb: 24,
+		gpuFlops: 0,
+	});
+	assert.deepEqual(datacenterInstalledCapacity(datacenter), {
+		vCpu: 320,
+		ramGb: 1_792,
+		storageTb: 48,
+		gpuFlops: 500,
+	});
+	assert.equal(datacenterUsage(datacenter).slotsUsed, 2);
+});
+
+test("datacenterMaintenanceSummary reports rack counts and average age", () => {
+	const datacenter = makeDatacenter(DATACENTER_CATALOG.warehouse, [
+		placement("rack-1", "C2", 0, 0),
+		{
+			...placement("rack-2", "M1", 0, 1),
+			installedAtTick: tick(3),
+			health: "repairing",
+			repairProgressDays: 10,
+		},
+	]);
+
+	assert.deepEqual(datacenterMaintenanceSummary(datacenter, tick(9)), {
+		totalRackCount: 2,
+		healthyRackCount: 1,
+		repairingRackCount: 1,
+		averageRackAgeMonths: 7.5,
 	});
 });
 
