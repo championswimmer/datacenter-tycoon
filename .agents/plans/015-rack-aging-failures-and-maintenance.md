@@ -9,10 +9,10 @@ owner: game-logic, web
 
 ## Progress
 
-- [ ] **Phase 1 — Data model & balance scaffolding**
+- [x] **Phase 1 — Data model & balance scaffolding**
   - [x] 1.1 Extend rack and datacenter types for health, repair progress, and maintenance staffing
   - [x] 1.2 Add tunable wear/repair balance constants and document the month↔day conversion
-  - [ ] 1.3 Export new types/helpers from the public surface where needed
+  - [x] 1.3 Export new types/helpers from the public surface where needed
 - [ ] **Phase 2 — Rack health domain helpers**
   - [ ] 2.1 Implement pure helpers for rack age, failure chance, and repair throughput
   - [ ] 2.2 Make usable capacity health-aware while keeping installed-resource accounting stable
@@ -274,3 +274,4 @@ The exact field names can change during implementation, but the persisted state 
 - 2026-05-04 — completed step 1.1 by extending rack health fields and datacenter maintenance staffing scaffolding.
 - 2026-05-04 — removed legacy-save migration work; upgrades will recreate saves destructively instead.
 - 2026-05-04 — completed step 1.2 by centralizing rack-failure and repair timing constants in a maintenance balance module.
+- 2026-05-04 — completed step 1.3 by exporting maintenance balance constants from the package entrypoint and documenting the new persisted rack/datacenter fields.
