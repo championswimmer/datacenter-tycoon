@@ -18,7 +18,7 @@ owner: game-logic, web
   - [x] 2.2 Make usable capacity health-aware while keeping installed-resource accounting stable
   - [x] 2.3 Add unit tests for age curve, caps, and repair-speed scaling
 - [ ] **Phase 3 — Deterministic simulation integration**
-  - [ ] 3.1 Integrate monthly failure rolls into `sim/tick.ts` using seeded RNG
+  - [x] 3.1 Integrate monthly failure rolls into `sim/tick.ts` using seeded RNG
   - [ ] 3.2 Advance repairs each tick and restore racks when repair progress completes
   - [ ] 3.3 Ensure contract evaluation sees rack downtime in the same tick
 - [ ] **Phase 4 — Staffing lever, reducer & economy wiring**
@@ -278,3 +278,4 @@ The exact field names can change during implementation, but the persisted state 
 - 2026-05-04 — completed step 2.1 by adding pure rack-aging, failure-chance, repair-speed, and repair-advancement helpers under `sim/maintenance.ts`.
 - 2026-05-04 — completed step 2.2 by making `datacenterCapacity()` health-aware, preserving installed capacity explicitly, and adding maintenance summary helpers for downstream UI use.
 - 2026-05-04 — completed step 2.3 by adding dedicated maintenance-helper tests and increasing base repair duration so staffing changes can produce distinct recovery times.
+- 2026-05-04 — completed step 3.1 by integrating deterministic rack-failure rolls into `tick()` and updating the smoke test to cover a stable early-game scenario instead of a no-failure long run.

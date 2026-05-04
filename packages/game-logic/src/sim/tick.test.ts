@@ -208,3 +208,25 @@ test("tick auto-cancels a previously breached contract after one penalty tick", 
 	assert.equal(nextState.activeContracts[0]?.status, "cancelled");
 	assert.equal(nextState.player.cash, state.player.cash - opex - breachedContract.penaltyPerMonth);
 });
+
+test("tick rolls deterministic failures for aged healthy racks", () => {
+	const agedDatacenter = makeDatacenter("dc-1", [
+		{
+			...placement("rack-1", "C1", 0, 0),
+			installedAtTick: tickValue(0),
+		},
+	]);
+	const state = makeState({
+		tick: tickValue(35),
+		rngState: 99,
+		datacenters: [agedDatacenter],
+	});
+
+	const nextState = tick(state);
+	const failedRack = nextState.datacenters[0]?.placements[0];
+
+	assert.equal(failedRack?.health, "repairing");
+	assert.equal(failedRack?.repairProgressDays, 0);
+	assert.equal(failedRack?.lastFailureAtTick, 36);
+	assert.notEqual(nextState.rngState, state.rngState);
+});
