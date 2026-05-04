@@ -9,7 +9,7 @@ export function regionPowerUsed(regionId: string, datacenters: Datacenter[]): nu
 export function regionStaffUsed(regionId: string, datacenters: Datacenter[]): number {
 	return datacenters
 		.filter((dc) => dc.regionId === regionId)
-		.reduce((total, dc) => total + dc.spec.staffCount, 0);
+		.reduce((total, dc) => total + dc.spec.staffCount + dc.maintenanceStaff, 0);
 }
 
 export function canBuildInRegion(
