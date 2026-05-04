@@ -1,6 +1,6 @@
 import { refreshContractMarket } from "../contracts/market.js";
 import { tickOpex, tickRevenue } from "../economy/opex.js";
-import { rackAgeMonths, rackFailureChance } from "./maintenance.js";
+import { advanceRackRepair, rackAgeMonths, rackFailureChance } from "./maintenance.js";
 import { rngFromState } from "./rng.js";
 import type {
 	Contract,
@@ -58,10 +58,10 @@ function getRegionForDatacenter(state: GameState, dcId: string) {
 	return state.map.regions.find((r) => r.id === datacenter.regionId);
 }
 
-function applyRackFailures(datacenter: Datacenter, currentTick: Tick, rng: ReturnType<typeof rngFromState>): Datacenter {
+function processRackMaintenance(datacenter: Datacenter, currentTick: Tick, rng: ReturnType<typeof rngFromState>): Datacenter {
 	const placements = datacenter.placements.map((placement): RackPlacement => {
-		if (placement.health !== "healthy") {
-			return placement;
+		if (placement.health === "repairing") {
+			return advanceRackRepair(placement, datacenter.maintenanceStaff);
 		}
 
 		const failureChance = rackFailureChance(rackAgeMonths(currentTick, placement));
@@ -86,7 +86,9 @@ function applyRackFailures(datacenter: Datacenter, currentTick: Tick, rng: Retur
 export function tick(state: GameState): GameState {
 	const nextTick = (state.tick + 1) as Tick;
 	const rng = rngFromState(state.rngState);
-	const datacentersAfterFailures = state.datacenters.map((datacenter) => applyRackFailures(datacenter, nextTick, rng));
+	const datacentersAfterMaintenance = state.datacenters.map((datacenter) =>
+		processRackMaintenance(datacenter, nextTick, rng),
+	);
 
 	// Calculate base opex per datacenter
 	const perDcOpex = new Map<DatacenterId, OpexTickResult>();
@@ -172,7 +174,7 @@ export function tick(state: GameState): GameState {
 			...state.player,
 			cash: roundMoney(state.player.cash + netCashDelta),
 		},
-		datacenters: datacentersAfterFailures,
+		datacenters: datacentersAfterMaintenance,
 		activeContracts: finalizedContracts,
 		ledger: [...state.ledger, ...ledgerEntries],
 	};
