@@ -230,3 +230,38 @@ test("tick rolls deterministic failures for aged healthy racks", () => {
 	assert.equal(failedRack?.lastFailureAtTick, 36);
 	assert.notEqual(nextState.rngState, state.rngState);
 });
+
+test("higher maintenance staffing restores repairing racks in fewer ticks", () => {
+	const repairingRack = {
+		...placement("rack-1", "C1", 0, 0),
+		health: "repairing" as const,
+		repairProgressDays: 0,
+		lastFailureAtTick: tickValue(1),
+	};
+	let lowStaffState = makeState({
+		tick: tickValue(1),
+		datacenters: [
+			{
+				...makeDatacenter("dc-low", [repairingRack]),
+				maintenanceStaff: 0,
+			},
+		],
+	});
+	let highStaffState = makeState({
+		tick: tickValue(1),
+		datacenters: [
+			{
+				...makeDatacenter("dc-high", [repairingRack]),
+				maintenanceStaff: 4,
+			},
+		],
+	});
+
+	lowStaffState = tick(lowStaffState);
+	lowStaffState = tick(lowStaffState);
+	highStaffState = tick(highStaffState);
+	highStaffState = tick(highStaffState);
+
+	assert.equal(lowStaffState.datacenters[0]?.placements[0]?.health, "repairing");
+	assert.equal(highStaffState.datacenters[0]?.placements[0]?.health, "healthy");
+});
