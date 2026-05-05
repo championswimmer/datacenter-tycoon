@@ -20,7 +20,7 @@ owner: web
   - [x] 2.4 Add persistent mobile drawer triggers without crowding the viewport
 - [ ] **Phase 3 — Portrait-first datacenter and rack floor**
   - [x] 3.1 Compress datacenter header content for narrow screens
-  - [ ] 3.2 Make datacenter tabs touch-friendly and horizontally scrollable
+  - [x] 3.2 Make datacenter tabs touch-friendly and horizontally scrollable
   - [ ] 3.3 Add a portrait rack layout mode for the floor grid
   - [ ] 3.4 Keep rack actions discoverable without hover on touch devices
 - [ ] **Phase 4 — Modal and drawer ergonomics**
@@ -406,3 +406,4 @@ Key decisions:
 - 2026-05-05 — step 2.3 completed by giving the event log its own right-drawer animation and safe-area-aware scrolling so long ledger history stays inside the overlay panel.
 - 2026-05-05 — step 2.4 completed by adding persistent phone edge-tab triggers with drawer ARIA wiring and focused interaction tests for opening and dismissing both hidden rails.
 - 2026-05-05 — step 3.1 completed by compressing the datacenter header and compact resource strip so title, region, maintenance, and staffing controls wrap cleanly on narrow portrait screens.
+- 2026-05-05 — step 3.2 completed by making the datacenter tab bar horizontally scrollable and enlarging tab hit areas for phone-sized touch navigation.
