@@ -51,6 +51,7 @@ describe("Shell mobile drawers", () => {
     );
 
     const trigger = screen.getByRole("button", { name: "Toggle datacenters drawer" });
+    trigger.focus();
     expect(trigger.getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByLabelText("Datacenter navigation")).toBeNull();
 
@@ -63,6 +64,7 @@ describe("Shell mobile drawers", () => {
 
     expect(screen.queryByLabelText("Datacenter navigation")).toBeNull();
     expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(trigger);
   });
 
   it("opens the event log drawer from the phone trigger", () => {

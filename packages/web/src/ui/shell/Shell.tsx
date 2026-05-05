@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, type SetStateAction } from "react";
+import { useState, useCallback, useEffect, useRef, type SetStateAction } from "react";
 import { useSelector, useTickDriver, useGameDispatch } from "../../store/storeContext.js";
 import { selectAllDatacenters } from "../../store/selectors.js";
 import { useRoute, navigateToDc, navigateToMap } from "../../router/hashRouter.js";
@@ -27,6 +27,8 @@ export function Shell({ isFreshStart = false }: ShellProps) {
   const [showTutorial, setShowTutorial] = useState(false);
   const [activeMobileDrawer, setActiveMobileDrawer] = useState<MobileDrawer>("none");
   const isPhoneViewport = useIsPhoneViewport();
+  const datacenterTriggerRef = useRef<HTMLButtonElement>(null);
+  const logTriggerRef = useRef<HTMLButtonElement>(null);
 
   const setSpeed = useCallback((value: SetStateAction<Speed>) => {
     const newSpeed = typeof value === "function" ? value(speed) : value;
@@ -38,6 +40,7 @@ export function Shell({ isFreshStart = false }: ShellProps) {
 
   const route       = useRoute();
   const datacenters = useSelector(selectAllDatacenters);
+  const routeKey = route.view === "dc" ? `${route.view}:${route.dcId}:${route.tab}` : route.view;
 
   // Auto-redirect "/" → first DC when one exists
   useEffect(() => {
@@ -53,9 +56,25 @@ export function Shell({ isFreshStart = false }: ShellProps) {
     }
   }, [isFreshStart]);
 
-  useEffect(() => {
+  const focusDrawerTrigger = useCallback((drawer: MobileDrawer) => {
+    if (drawer === "datacenters") {
+      datacenterTriggerRef.current?.focus();
+    }
+    if (drawer === "log") {
+      logTriggerRef.current?.focus();
+    }
+  }, []);
+
+  const closeMobileDrawer = useCallback((drawer: MobileDrawer = activeMobileDrawer) => {
     setActiveMobileDrawer("none");
-  }, [route]);
+    window.requestAnimationFrame(() => focusDrawerTrigger(drawer));
+  }, [activeMobileDrawer, focusDrawerTrigger]);
+
+  useEffect(() => {
+    if (activeMobileDrawer !== "none") {
+      closeMobileDrawer(activeMobileDrawer);
+    }
+  }, [routeKey]);
 
   useEffect(() => {
     if (activeMobileDrawer === "none") {
@@ -64,18 +83,23 @@ export function Shell({ isFreshStart = false }: ShellProps) {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setActiveMobileDrawer("none");
+        closeMobileDrawer();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeMobileDrawer]);
+  }, [activeMobileDrawer, closeMobileDrawer]);
 
-  const closeMobileDrawer = useCallback(() => setActiveMobileDrawer("none"), []);
   const toggleMobileDrawer = useCallback((drawer: Exclude<MobileDrawer, "none">) => {
-    setActiveMobileDrawer(current => current === drawer ? "none" : drawer);
-  }, []);
+    setActiveMobileDrawer(current => {
+      if (current === drawer) {
+        window.requestAnimationFrame(() => focusDrawerTrigger(drawer));
+        return "none";
+      }
+      return drawer;
+    });
+  }, [focusDrawerTrigger]);
   const isDatacenterDrawerOpen = activeMobileDrawer === "datacenters";
   const isLogDrawerOpen = activeMobileDrawer === "log";
 
@@ -139,6 +163,7 @@ export function Shell({ isFreshStart = false }: ShellProps) {
       {isPhoneViewport && (
         <>
           <button
+            ref={datacenterTriggerRef}
             type="button"
             className={[styles.drawerTrigger, styles.drawerTriggerLeft].join(" ")}
             onClick={() => toggleMobileDrawer("datacenters")}
@@ -150,6 +175,7 @@ export function Shell({ isFreshStart = false }: ShellProps) {
           </button>
 
           <button
+            ref={logTriggerRef}
             type="button"
             className={[styles.drawerTrigger, styles.drawerTriggerRight].join(" ")}
             onClick={() => toggleMobileDrawer("log")}
@@ -166,7 +192,7 @@ export function Shell({ isFreshStart = false }: ShellProps) {
         <button
           type="button"
           className={styles.drawerBackdrop}
-          onClick={closeMobileDrawer}
+          onClick={() => closeMobileDrawer()}
           aria-label="Close mobile drawer"
         />
       )}

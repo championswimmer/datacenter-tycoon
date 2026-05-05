@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   RACK_CATALOG,
   canPlaceRack,
@@ -14,6 +14,7 @@ import { selectCash, selectAudioEnabled } from "../../store/selectors.js";
 import { nextRackPlacementId } from "../../store/ids.js";
 import { InsufficientFunds } from "../onboarding/InsufficientFunds.js";
 import { playSound } from "../../audio/AudioEngine.js";
+import { useDialogFocus } from "../dialogFocus.js";
 import styles from "./RackPicker.module.css";
 
 export interface RackPickerProps {
@@ -69,6 +70,8 @@ export function RackPicker({ datacenter, row, position, onClose }: RackPickerPro
 
   const [kindFilter, setKindFilter] = useState<KindFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  useDialogFocus(closeButtonRef);
 
   const visibleSpecs = kindFilter === "all"
     ? ALL_SPECS
@@ -127,7 +130,7 @@ export function RackPicker({ datacenter, row, position, onClose }: RackPickerPro
               Row {rowLabel(row)}, Slot {position + 1}
             </span>
           </div>
-          <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
+          <button ref={closeButtonRef} className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
         </div>
 
         {/* ── Kind filter chips ── */}

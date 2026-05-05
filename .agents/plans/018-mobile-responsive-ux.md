@@ -23,11 +23,11 @@ owner: web
   - [x] 3.2 Make datacenter tabs touch-friendly and horizontally scrollable
   - [x] 3.3 Add a portrait rack layout mode for the floor grid
   - [x] 3.4 Keep rack actions discoverable without hover on touch devices
-- [ ] **Phase 4 — Modal and drawer ergonomics**
+- [x] **Phase 4 — Modal and drawer ergonomics**
   - [x] 4.1 Standardize modal height, inner scrolling, and safe-area padding
   - [x] 4.2 Adapt rack picker to a phone bottom-sheet layout
   - [x] 4.3 Adapt move rack, new datacenter, reset, audio, and tutorial modals
-  - [ ] 4.4 Preserve focus, escape, backdrop, and accessible close behavior
+  - [x] 4.4 Preserve focus, escape, backdrop, and accessible close behavior
 - [ ] **Phase 5 — Cards, buttons, and dense content polish**
   - [ ] 5.1 Enlarge card corner buttons and compact controls for touch
   - [ ] 5.2 Improve contract and map card stacking on phones
@@ -412,3 +412,4 @@ Key decisions:
 - 2026-05-05 — step 4.1 completed by giving modal backdrops safe-area padding, capping panel height with the shared sheet token, and ensuring modal bodies own their scrolling instead of trapping footer actions offscreen.
 - 2026-05-05 — step 4.2 completed by turning the rack picker into a true phone bottom sheet with full-width actions, single-column cards, and horizontally scrollable filter chips.
 - 2026-05-05 — step 4.3 completed by stacking move-rack, new-datacenter, reset, audio, and tutorial modal content into phone-friendly sheets with full-width primary actions and larger close controls.
+- 2026-05-05 — step 4.4 completed by restoring focus to drawer triggers, auto-focusing dialog close controls, and adding missing Escape handling so keyboard users can reliably dismiss every responsive overlay.
