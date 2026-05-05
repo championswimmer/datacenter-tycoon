@@ -18,11 +18,11 @@ owner: web
   - [x] 2.2 Convert the datacenter rail into a pull-out drawer on phones
   - [x] 2.3 Convert the event log rail into a pull-out drawer on phones
   - [x] 2.4 Add persistent mobile drawer triggers without crowding the viewport
-- [ ] **Phase 3 — Portrait-first datacenter and rack floor**
+- [x] **Phase 3 — Portrait-first datacenter and rack floor**
   - [x] 3.1 Compress datacenter header content for narrow screens
   - [x] 3.2 Make datacenter tabs touch-friendly and horizontally scrollable
   - [x] 3.3 Add a portrait rack layout mode for the floor grid
-  - [ ] 3.4 Keep rack actions discoverable without hover on touch devices
+  - [x] 3.4 Keep rack actions discoverable without hover on touch devices
 - [ ] **Phase 4 — Modal and drawer ergonomics**
   - [ ] 4.1 Standardize modal height, inner scrolling, and safe-area padding
   - [ ] 4.2 Adapt rack picker to a phone bottom-sheet layout
@@ -408,3 +408,4 @@ Key decisions:
 - 2026-05-05 — step 3.1 completed by compressing the datacenter header and compact resource strip so title, region, maintenance, and staffing controls wrap cleanly on narrow portrait screens.
 - 2026-05-05 — step 3.2 completed by making the datacenter tab bar horizontally scrollable and enlarging tab hit areas for phone-sized touch navigation.
 - 2026-05-05 — step 3.3 completed by adding a portrait row-grouped floor layout that stacks full-width slot cards on phones while preserving the existing desktop grid.
+- 2026-05-05 — step 3.4 completed by making rack action controls persist on touch breakpoints and reserving bezel space so move and decommission buttons stay visible without covering rack status text.
