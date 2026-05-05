@@ -126,6 +126,7 @@ export function Shell({ isFreshStart = false }: ShellProps) {
               isLogDrawerOpen ? styles.mobileDrawerOpen : "",
             ].join(" ")}
             aria-label="Event log"
+            data-mobile-drawer={isPhoneViewport ? "log" : undefined}
           >
             <LogFeed />
           </aside>

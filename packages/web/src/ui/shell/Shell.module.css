@@ -59,6 +59,7 @@
 .mobileDrawerRight {
   right: 0;
   padding-right: var(--safe-area-right);
+  animation: slideDrawerInRight var(--duration-normal) var(--ease-out-expo);
 }
 
 .mobileDrawerOpen {
@@ -77,6 +78,17 @@
 @keyframes slideDrawerInLeft {
   from {
     transform: translateX(calc(-100% - var(--safe-area-left)));
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDrawerInRight {
+  from {
+    transform: translateX(calc(100% + var(--safe-area-right)));
     opacity: 0;
   }
   to {
