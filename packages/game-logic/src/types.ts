@@ -182,6 +182,9 @@ export interface AudioSettings {
 export interface Region {
 	id: RegionId;
 	name: string;
+	code: string;
+	city: string;
+	coordinates: { x: number; y: number };
 	powerCostPerKwh: number;
 	staffWage: Money;
 	taxRate: number;
