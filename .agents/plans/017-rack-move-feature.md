@@ -9,13 +9,13 @@ owner: game-logic, web, cli
 
 ## Progress
 
-- [ ] **Phase 1 — Game Logic Core**
-  - [ ] 1.1 Add move-cost constants and `calculateMoveCost` pure function
-  - [ ] 1.2 Add `MoveRack` action to `Action` union and reducer switch
-  - [ ] 1.3 Implement `moveRack` reducer with validation and ledger entry
-  - [ ] 1.4 Add `canMoveRack` helper in `entities/datacenter.ts`
-  - [ ] 1.5 Export new helpers from `game-logic/src/index.ts`
-  - [ ] 1.6 Unit tests for `moveRack` reducer and `calculateMoveCost`
+- [x] **Phase 1 — Game Logic Core**
+  - [x] 1.1 Add move-cost constants and `calculateMoveCost` pure function
+  - [x] 1.2 Add `MoveRack` action to `Action` union and reducer switch
+  - [x] 1.3 Implement `moveRack` reducer with validation and ledger entry
+  - [x] 1.4 Add `canMoveRack` helper in `entities/datacenter.ts`
+  - [x] 1.5 Export new helpers from `game-logic/src/index.ts`
+  - [x] 1.6 Unit tests for `moveRack` reducer and `calculateMoveCost`
 - [ ] **Phase 2 — Web UI**
   - [ ] 2.1 Add move button to `RackTile` (beside decommission ×)
   - [ ] 2.2 Create `MoveRackModal` component with DC selector + cost display

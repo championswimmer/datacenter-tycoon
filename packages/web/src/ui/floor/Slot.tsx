@@ -13,6 +13,7 @@ export interface SlotProps {
   hasFault:          boolean;
   onOpenPicker:      (row: number, position: number) => void;
   onDecommission:    (placementId: RackPlacement["id"]) => void;
+  onMove:            (placementId: RackPlacement["id"]) => void;
 }
 
 export function Slot({
@@ -25,6 +26,7 @@ export function Slot({
   hasFault,
   onOpenPicker,
   onDecommission,
+  onMove,
 }: SlotProps) {
   if (placement && spec && maintenanceView) {
     return (
@@ -36,6 +38,7 @@ export function Slot({
           hasActiveContract={hasActiveContract}
           hasFault={hasFault}
           onDecommission={onDecommission}
+          onMove={onMove}
         />
       </div>
     );
