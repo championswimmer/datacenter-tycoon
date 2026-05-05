@@ -1,0 +1,22 @@
+{
+  "name": "Datacenter Tycoon",
+  "short_name": "DCTycoon",
+  "description": "Build datacenters, install compute, memory, storage, and GPU racks, manage power and staff, and fulfill lucrative contracts in Datacenter Tycoon.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#05070b",
+  "theme_color": "#05070b",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
