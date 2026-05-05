@@ -4,6 +4,7 @@ import { selectAllDatacenters } from "../../store/selectors.js";
 import { useRoute, navigateToDc, navigateToMap } from "../../router/hashRouter.js";
 import type { Speed } from "../../store/tickDriver.js";
 import { hasSeenTutorial } from "../../store/tutorialPersist.js";
+import { useIsPhoneViewport } from "../responsive.js";
 import { TopBar } from "../topbar/TopBar.js";
 import { DatacenterList } from "../left-rail/DatacenterList.js";
 import { DatacenterView } from "../dc-view/DatacenterView.js";
@@ -18,10 +19,14 @@ interface ShellProps {
   isFreshStart?: boolean;
 }
 
+type MobileDrawer = "none" | "datacenters" | "log";
+
 export function Shell({ isFreshStart = false }: ShellProps) {
   const dispatch = useGameDispatch();
   const speed = useSelector(s => s.game.speed as Speed);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [activeMobileDrawer, setActiveMobileDrawer] = useState<MobileDrawer>("none");
+  const isPhoneViewport = useIsPhoneViewport();
 
   const setSpeed = useCallback((value: SetStateAction<Speed>) => {
     const newSpeed = typeof value === "function" ? value(speed) : value;
@@ -48,6 +53,29 @@ export function Shell({ isFreshStart = false }: ShellProps) {
     }
   }, [isFreshStart]);
 
+  useEffect(() => {
+    setActiveMobileDrawer("none");
+  }, [route]);
+
+  useEffect(() => {
+    if (activeMobileDrawer === "none") {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setActiveMobileDrawer("none");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeMobileDrawer]);
+
+  const closeMobileDrawer = useCallback(() => setActiveMobileDrawer("none"), []);
+  const isDatacenterDrawerOpen = activeMobileDrawer === "datacenters";
+  const isLogDrawerOpen = activeMobileDrawer === "log";
+
   const openTutorial    = useCallback(() => setShowTutorial(true),   []);
   const closeTutorial   = useCallback(() => setShowTutorial(false),  []);
   const openMap         = useCallback(() => navigateToMap(),         []);
@@ -56,14 +84,25 @@ export function Shell({ isFreshStart = false }: ShellProps) {
     <div className={styles.shell}>
       <TopBar speed={speed} onSpeedChange={setSpeed} onOpenTutorial={openTutorial} />
 
-      <div className={styles.body}>
+      <div className={[styles.body, isPhoneViewport ? styles.bodyPhone : ""].join(" ")}>
         {/* ── Left rail ── */}
-        <nav className={styles.leftRail} aria-label="Datacenter navigation">
-          <DatacenterList
-            currentRoute={route}
-            onNewDatacenter={openMap}
-          />
-        </nav>
+        {(!isPhoneViewport || isDatacenterDrawerOpen) && (
+          <nav
+            id="shell-datacenter-drawer"
+            className={[
+              styles.leftRail,
+              isPhoneViewport ? styles.mobileDrawer : "",
+              isPhoneViewport ? styles.mobileDrawerLeft : "",
+              isDatacenterDrawerOpen ? styles.mobileDrawerOpen : "",
+            ].join(" ")}
+            aria-label="Datacenter navigation"
+          >
+            <DatacenterList
+              currentRoute={route}
+              onNewDatacenter={openMap}
+            />
+          </nav>
+        )}
 
         {/* ── Main viewport ── */}
         <main className={styles.viewport}>
@@ -76,10 +115,30 @@ export function Shell({ isFreshStart = false }: ShellProps) {
         </main>
 
         {/* ── Right rail ── */}
-        <aside className={styles.rightRail} aria-label="Event log">
-          <LogFeed />
-        </aside>
+        {(!isPhoneViewport || isLogDrawerOpen) && (
+          <aside
+            id="shell-log-drawer"
+            className={[
+              styles.rightRail,
+              isPhoneViewport ? styles.mobileDrawer : "",
+              isPhoneViewport ? styles.mobileDrawerRight : "",
+              isLogDrawerOpen ? styles.mobileDrawerOpen : "",
+            ].join(" ")}
+            aria-label="Event log"
+          >
+            <LogFeed />
+          </aside>
+        )}
       </div>
+
+      {isPhoneViewport && activeMobileDrawer !== "none" && (
+        <button
+          type="button"
+          className={styles.drawerBackdrop}
+          onClick={closeMobileDrawer}
+          aria-label="Close mobile drawer"
+        />
+      )}
 
       {/* ── Modals (rendered above the grid so they overlay everything) ── */}
       {showTutorial && (

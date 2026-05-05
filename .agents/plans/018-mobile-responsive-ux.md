@@ -14,7 +14,7 @@ owner: web
   - [x] 1.2 Audit current shell, floor, modal, and card layouts against those rules
   - [x] 1.3 Add regression coverage for phone-sized rendering assumptions
 - [ ] **Phase 2 — Collapsible shell rails and mobile navigation**
-  - [ ] 2.1 Introduce mobile drawer state in `Shell`
+  - [x] 2.1 Introduce mobile drawer state in `Shell`
   - [ ] 2.2 Convert the datacenter rail into a pull-out drawer on phones
   - [ ] 2.3 Convert the event log rail into a pull-out drawer on phones
   - [ ] 2.4 Add persistent mobile drawer triggers without crowding the viewport
@@ -401,3 +401,4 @@ Key decisions:
   - `RackPicker.module.css`, `MoveRackModal.module.css`, `NewDatacenterModal.module.css`, `ResetGameModal.module.css`, `AudioSettingsModal.module.css`, and `TutorialModal.module.css` all use centered desktop modal panels with limited height handling, so Phase 4 should standardize inner scrolling and bottom-sheet behavior.
   - `ContractsPage.module.css`, `MarketList.module.css`, `ActiveList.module.css`, `MapView.module.css`, and `RegionPanel.module.css` still contain fixed-width cards, multi-column grids, and nowrap metadata that need phone stacking and overflow cleanup in Phase 5.
 - 2026-05-05 — step 1.3 completed by adding viewport breakpoint tests so later drawer and floor behavior can depend on shared phone/tablet mode assumptions without brittle CSS assertions.
+- 2026-05-05 — step 2.1 completed by introducing shared phone drawer state in `Shell`, closing mobile drawers on route changes and Escape, and moving phone rails into overlay positioning so they no longer reserve layout width.

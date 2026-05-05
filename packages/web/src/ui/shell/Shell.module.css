@@ -17,6 +17,10 @@
   overflow: hidden;
 }
 
+.bodyPhone {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .leftRail {
   overflow: hidden;
   min-height: 0;
@@ -33,6 +37,38 @@
 .rightRail {
   overflow: hidden;
   min-height: 0;
+}
+
+.mobileDrawer {
+  position: fixed;
+  top: 52px;
+  bottom: 0;
+  width: var(--mobile-drawer-max-width);
+  max-width: var(--mobile-drawer-max-width);
+  z-index: calc(var(--z-overlay) + 1);
+  padding-bottom: var(--safe-area-bottom);
+  box-shadow: var(--shadow-float);
+}
+
+.mobileDrawerLeft {
+  left: 0;
+}
+
+.mobileDrawerRight {
+  right: 0;
+}
+
+.mobileDrawerOpen {
+  overflow: hidden;
+}
+
+.drawerBackdrop {
+  position: fixed;
+  inset: 52px 0 0;
+  z-index: var(--z-overlay);
+  background: rgba(5, 7, 11, 0.6);
+  border: 0;
+  padding: 0;
 }
 
 /* ── Global placeholder (contracts/log stubs) ─────────────── */
