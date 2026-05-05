@@ -1,3 +1,9 @@
+---
+name: play-cli-game
+description: Use when playing or strategizing the Datacenter Tycoon CLI game — building datacenters, adding/removing racks, accepting contracts, advancing time, optimizing cashflow, or querying game state via CLI commands (dct). Triggers include phrases like "play the game", "start a new game", "build a datacenter", "accept a contract", "advance time", "check my status", or "how should I optimize".
+version: 0.1.0
+---
+
 # Skill: Play the Datacenter Tycoon CLI Game
 
 ## Description
