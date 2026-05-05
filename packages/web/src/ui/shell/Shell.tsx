@@ -73,6 +73,9 @@ export function Shell({ isFreshStart = false }: ShellProps) {
   }, [activeMobileDrawer]);
 
   const closeMobileDrawer = useCallback(() => setActiveMobileDrawer("none"), []);
+  const toggleMobileDrawer = useCallback((drawer: Exclude<MobileDrawer, "none">) => {
+    setActiveMobileDrawer(current => current === drawer ? "none" : drawer);
+  }, []);
   const isDatacenterDrawerOpen = activeMobileDrawer === "datacenters";
   const isLogDrawerOpen = activeMobileDrawer === "log";
 
@@ -132,6 +135,32 @@ export function Shell({ isFreshStart = false }: ShellProps) {
           </aside>
         )}
       </div>
+
+      {isPhoneViewport && (
+        <>
+          <button
+            type="button"
+            className={[styles.drawerTrigger, styles.drawerTriggerLeft].join(" ")}
+            onClick={() => toggleMobileDrawer("datacenters")}
+            aria-label="Toggle datacenters drawer"
+            aria-controls="shell-datacenter-drawer"
+            aria-expanded={isDatacenterDrawerOpen}
+          >
+            <span className={styles.drawerTriggerLabel}>DCS</span>
+          </button>
+
+          <button
+            type="button"
+            className={[styles.drawerTrigger, styles.drawerTriggerRight].join(" ")}
+            onClick={() => toggleMobileDrawer("log")}
+            aria-label="Toggle event log drawer"
+            aria-controls="shell-log-drawer"
+            aria-expanded={isLogDrawerOpen}
+          >
+            <span className={styles.drawerTriggerLabel}>LOG</span>
+          </button>
+        </>
+      )}
 
       {isPhoneViewport && activeMobileDrawer !== "none" && (
         <button

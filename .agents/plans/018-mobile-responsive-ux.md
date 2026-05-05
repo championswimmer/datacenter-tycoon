@@ -13,11 +13,11 @@ owner: web
   - [x] 1.1 Define mobile breakpoints, touch-target rules, and viewport constraints
   - [x] 1.2 Audit current shell, floor, modal, and card layouts against those rules
   - [x] 1.3 Add regression coverage for phone-sized rendering assumptions
-- [ ] **Phase 2 — Collapsible shell rails and mobile navigation**
+- [x] **Phase 2 — Collapsible shell rails and mobile navigation**
   - [x] 2.1 Introduce mobile drawer state in `Shell`
   - [x] 2.2 Convert the datacenter rail into a pull-out drawer on phones
   - [x] 2.3 Convert the event log rail into a pull-out drawer on phones
-  - [ ] 2.4 Add persistent mobile drawer triggers without crowding the viewport
+  - [x] 2.4 Add persistent mobile drawer triggers without crowding the viewport
 - [ ] **Phase 3 — Portrait-first datacenter and rack floor**
   - [ ] 3.1 Compress datacenter header content for narrow screens
   - [ ] 3.2 Make datacenter tabs touch-friendly and horizontally scrollable
@@ -404,3 +404,4 @@ Key decisions:
 - 2026-05-05 — step 2.1 completed by introducing shared phone drawer state in `Shell`, closing mobile drawers on route changes and Escape, and moving phone rails into overlay positioning so they no longer reserve layout width.
 - 2026-05-05 — step 2.2 completed by giving the datacenter rail dedicated left-drawer animation, safe-area padding, and internal scrolling so it can behave as a pull-out phone navigation panel.
 - 2026-05-05 — step 2.3 completed by giving the event log its own right-drawer animation and safe-area-aware scrolling so long ledger history stays inside the overlay panel.
+- 2026-05-05 — step 2.4 completed by adding persistent phone edge-tab triggers with drawer ARIA wiring and focused interaction tests for opening and dismissing both hidden rails.
