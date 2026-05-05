@@ -259,3 +259,49 @@
     font-size: 2.5rem;
   }
 }
+
+@media (max-width: 767px) {
+  .backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .panel {
+    max-width: none;
+    width: 100%;
+    max-height: calc(var(--app-viewport-height) - var(--safe-area-top));
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  .header,
+  .content,
+  .footer {
+    padding-left: var(--mobile-shell-gutter);
+    padding-right: var(--mobile-shell-gutter);
+  }
+
+  .header {
+    align-items: flex-start;
+  }
+
+  .headerLeft {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+
+  .footer {
+    align-items: stretch;
+  }
+
+  .footerBtns {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .backBtn,
+  .nextBtn,
+  .closeBtn {
+    min-height: var(--touch-target-min);
+  }
+}

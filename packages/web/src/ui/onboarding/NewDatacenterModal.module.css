@@ -360,3 +360,59 @@
   color: var(--fg-2);
   box-shadow: none;
 }
+
+@media (max-width: 767px) {
+  .backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .panel {
+    max-width: none;
+    width: 100%;
+    max-height: calc(var(--app-viewport-height) - var(--safe-area-top));
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  .header,
+  .catalog,
+  .footer {
+    padding-left: var(--mobile-shell-gutter);
+    padding-right: var(--mobile-shell-gutter);
+  }
+
+  .header {
+    align-items: flex-start;
+  }
+
+  .headerLeft {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+
+  .catalog {
+    grid-template-columns: 1fr;
+  }
+
+  .footer {
+    align-items: stretch;
+  }
+
+  .footerBtns {
+    width: 100%;
+    flex-direction: column-reverse;
+    margin-left: 0;
+  }
+
+  .cancelBtn,
+  .buildBtn,
+  .closeBtn {
+    min-height: var(--touch-target-min);
+  }
+
+  .cancelBtn,
+  .buildBtn {
+    width: 100%;
+  }
+}

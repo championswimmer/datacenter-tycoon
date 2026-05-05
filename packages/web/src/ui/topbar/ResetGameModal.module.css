@@ -157,3 +157,40 @@
 .confirmBtn:hover {
   box-shadow: var(--glow-red);
 }
+
+@media (max-width: 767px) {
+  .backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .panel {
+    max-width: none;
+    width: 100%;
+    max-height: calc(var(--app-viewport-height) - var(--safe-area-top));
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  .header,
+  .content,
+  .footer {
+    padding-left: var(--mobile-shell-gutter);
+    padding-right: var(--mobile-shell-gutter);
+  }
+
+  .footerBtns {
+    width: 100%;
+    flex-direction: column-reverse;
+  }
+
+  .cancelBtn,
+  .confirmBtn,
+  .closeBtn {
+    width: 100%;
+    min-height: var(--touch-target-min);
+  }
+
+  .closeBtn {
+    width: var(--touch-target-min);
+  }
+}
