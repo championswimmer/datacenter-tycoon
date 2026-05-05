@@ -1,9 +1,10 @@
-import { useState, useCallback, useEffect, type SetStateAction } from "react";
+import { useState, useCallback, useEffect, useRef, type SetStateAction } from "react";
 import { useSelector, useTickDriver, useGameDispatch } from "../../store/storeContext.js";
 import { selectAllDatacenters } from "../../store/selectors.js";
 import { useRoute, navigateToDc, navigateToMap } from "../../router/hashRouter.js";
 import type { Speed } from "../../store/tickDriver.js";
 import { hasSeenTutorial } from "../../store/tutorialPersist.js";
+import { useIsPhoneViewport } from "../responsive.js";
 import { TopBar } from "../topbar/TopBar.js";
 import { DatacenterList } from "../left-rail/DatacenterList.js";
 import { DatacenterView } from "../dc-view/DatacenterView.js";
@@ -18,10 +19,17 @@ interface ShellProps {
   isFreshStart?: boolean;
 }
 
+type MobileDrawer = "none" | "datacenters" | "log";
+
 export function Shell({ isFreshStart = false }: ShellProps) {
   const dispatch = useGameDispatch();
   const speed = useSelector(s => s.game.speed as Speed);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [activeMobileDrawer, setActiveMobileDrawer] = useState<MobileDrawer>("none");
+  const isPhoneViewport = useIsPhoneViewport();
+  const datacenterTriggerRef = useRef<HTMLButtonElement>(null);
+  const logTriggerRef = useRef<HTMLButtonElement>(null);
+  const previousRouteKeyRef = useRef<string | null>(null);
 
   const setSpeed = useCallback((value: SetStateAction<Speed>) => {
     const newSpeed = typeof value === "function" ? value(speed) : value;
@@ -33,6 +41,7 @@ export function Shell({ isFreshStart = false }: ShellProps) {
 
   const route       = useRoute();
   const datacenters = useSelector(selectAllDatacenters);
+  const routeKey = route.view === "dc" ? `${route.view}:${route.dcId}:${route.tab}` : route.view;
 
   // Auto-redirect "/" → first DC when one exists
   useEffect(() => {
@@ -48,6 +57,54 @@ export function Shell({ isFreshStart = false }: ShellProps) {
     }
   }, [isFreshStart]);
 
+  const focusDrawerTrigger = useCallback((drawer: MobileDrawer) => {
+    if (drawer === "datacenters") {
+      datacenterTriggerRef.current?.focus();
+    }
+    if (drawer === "log") {
+      logTriggerRef.current?.focus();
+    }
+  }, []);
+
+  const closeMobileDrawer = useCallback((drawer: MobileDrawer) => {
+    setActiveMobileDrawer("none");
+    window.requestAnimationFrame(() => focusDrawerTrigger(drawer));
+  }, [focusDrawerTrigger]);
+
+  useEffect(() => {
+    if (previousRouteKeyRef.current !== null && previousRouteKeyRef.current !== routeKey && activeMobileDrawer !== "none") {
+      closeMobileDrawer(activeMobileDrawer);
+    }
+    previousRouteKeyRef.current = routeKey;
+  }, [routeKey, activeMobileDrawer, closeMobileDrawer]);
+
+  useEffect(() => {
+    if (activeMobileDrawer === "none") {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeMobileDrawer(activeMobileDrawer);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeMobileDrawer, closeMobileDrawer]);
+
+  const toggleMobileDrawer = useCallback((drawer: Exclude<MobileDrawer, "none">) => {
+    setActiveMobileDrawer(current => {
+      if (current === drawer) {
+        window.requestAnimationFrame(() => focusDrawerTrigger(drawer));
+        return "none";
+      }
+      return drawer;
+    });
+  }, [focusDrawerTrigger]);
+  const isDatacenterDrawerOpen = activeMobileDrawer === "datacenters";
+  const isLogDrawerOpen = activeMobileDrawer === "log";
+
   const openTutorial    = useCallback(() => setShowTutorial(true),   []);
   const closeTutorial   = useCallback(() => setShowTutorial(false),  []);
   const openMap         = useCallback(() => navigateToMap(),         []);
@@ -56,14 +113,26 @@ export function Shell({ isFreshStart = false }: ShellProps) {
     <div className={styles.shell}>
       <TopBar speed={speed} onSpeedChange={setSpeed} onOpenTutorial={openTutorial} />
 
-      <div className={styles.body}>
+      <div className={[styles.body, isPhoneViewport ? styles.bodyPhone : ""].join(" ")}>
         {/* ── Left rail ── */}
-        <nav className={styles.leftRail} aria-label="Datacenter navigation">
-          <DatacenterList
-            currentRoute={route}
-            onNewDatacenter={openMap}
-          />
-        </nav>
+        {(!isPhoneViewport || isDatacenterDrawerOpen) && (
+          <nav
+            id="shell-datacenter-drawer"
+            className={[
+              styles.leftRail,
+              isPhoneViewport ? styles.mobileDrawer : "",
+              isPhoneViewport ? styles.mobileDrawerLeft : "",
+              isDatacenterDrawerOpen ? styles.mobileDrawerOpen : "",
+            ].join(" ")}
+            aria-label="Datacenter navigation"
+            data-mobile-drawer={isPhoneViewport ? "datacenters" : undefined}
+          >
+            <DatacenterList
+              currentRoute={route}
+              onNewDatacenter={openMap}
+            />
+          </nav>
+        )}
 
         {/* ── Main viewport ── */}
         <main className={styles.viewport}>
@@ -76,10 +145,59 @@ export function Shell({ isFreshStart = false }: ShellProps) {
         </main>
 
         {/* ── Right rail ── */}
-        <aside className={styles.rightRail} aria-label="Event log">
-          <LogFeed />
-        </aside>
+        {(!isPhoneViewport || isLogDrawerOpen) && (
+          <aside
+            id="shell-log-drawer"
+            className={[
+              styles.rightRail,
+              isPhoneViewport ? styles.mobileDrawer : "",
+              isPhoneViewport ? styles.mobileDrawerRight : "",
+              isLogDrawerOpen ? styles.mobileDrawerOpen : "",
+            ].join(" ")}
+            aria-label="Event log"
+            data-mobile-drawer={isPhoneViewport ? "log" : undefined}
+          >
+            <LogFeed />
+          </aside>
+        )}
       </div>
+
+      {isPhoneViewport && (
+        <>
+          <button
+            ref={datacenterTriggerRef}
+            type="button"
+            className={[styles.drawerTrigger, styles.drawerTriggerLeft].join(" ")}
+            onClick={() => toggleMobileDrawer("datacenters")}
+            aria-label="Toggle datacenters drawer"
+            aria-controls="shell-datacenter-drawer"
+            aria-expanded={isDatacenterDrawerOpen}
+          >
+            <span className={styles.drawerTriggerLabel}>DCS</span>
+          </button>
+
+          <button
+            ref={logTriggerRef}
+            type="button"
+            className={[styles.drawerTrigger, styles.drawerTriggerRight].join(" ")}
+          onClick={() => toggleMobileDrawer("log")}
+            aria-label="Toggle event log drawer"
+            aria-controls="shell-log-drawer"
+            aria-expanded={isLogDrawerOpen}
+          >
+            <span className={styles.drawerTriggerLabel}>LOG</span>
+          </button>
+        </>
+      )}
+
+      {isPhoneViewport && activeMobileDrawer !== "none" && (
+        <button
+          type="button"
+          className={styles.drawerBackdrop}
+          onClick={() => closeMobileDrawer(activeMobileDrawer)}
+          aria-label="Close mobile drawer"
+        />
+      )}
 
       {/* ── Modals (rendered above the grid so they overlay everything) ── */}
       {showTutorial && (

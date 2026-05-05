@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { clearAllSaves } from "../../store/persist.js";
 import { resetTutorialSeen } from "../../store/tutorialPersist.js";
+import { useDialogFocus } from "../dialogFocus.js";
 import styles from "./ResetGameModal.module.css";
 
 interface ResetGameModalProps {
@@ -8,6 +9,9 @@ interface ResetGameModalProps {
 }
 
 export function ResetGameModal({ onClose }: ResetGameModalProps) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  useDialogFocus(closeButtonRef);
+
   // ESC closes
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -45,7 +49,7 @@ export function ResetGameModal({ onClose }: ResetGameModalProps) {
           <h2 id="reset-game-title" className={styles.title}>
             RESET GAME
           </h2>
-          <button className={styles.closeBtn} onClick={onClose} aria-label="Close modal">
+          <button ref={closeButtonRef} className={styles.closeBtn} onClick={onClose} aria-label="Close modal">
             ✕
           </button>
         </div>

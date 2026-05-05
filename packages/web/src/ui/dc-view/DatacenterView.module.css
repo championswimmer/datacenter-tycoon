@@ -152,6 +152,8 @@
   border-bottom: 1px solid var(--grid);
   flex-shrink: 0;
   padding: 0 var(--space-6);
+  overflow-x: auto;
+  scrollbar-gutter: stable both-edges;
 }
 
 .tab {
@@ -169,6 +171,7 @@
   text-transform: uppercase;
   position: relative;
   top: 1px; /* overlap the container border */
+  flex-shrink: 0;
 }
 
 .tab:hover {
@@ -257,4 +260,60 @@
   background: var(--bg-2);
   padding: 2px 8px;
   border-radius: var(--radius-sm);
+}
+
+@media (max-width: 767px) {
+  .tabBar {
+    padding: 0 var(--mobile-shell-gutter);
+    gap: var(--space-1);
+  }
+
+  .tab {
+    min-height: var(--touch-target-min);
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .dcHeader {
+    padding: var(--space-3) var(--mobile-shell-gutter);
+  }
+
+  .dcTitleRow {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+  }
+
+  .dcName {
+    font-size: var(--text-lg);
+  }
+
+  .maintenanceStrip {
+    gap: var(--space-1);
+  }
+
+  .maintenanceControls {
+    margin-top: var(--space-2);
+    padding-top: var(--space-2);
+  }
+
+  .maintenanceControlRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .maintenanceStepper {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .maintenanceBtn {
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+  }
+
+  .maintenanceHints {
+    flex-direction: column;
+    gap: var(--space-1);
+  }
 }

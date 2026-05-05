@@ -365,3 +365,48 @@
 .confirmAcceptBtn:hover { box-shadow: var(--glow-lime); }
 .confirmBackBtn:hover { box-shadow: var(--glow-sm-cyan); }
 .dcCancelBtn:hover { color: var(--fg-0); }
+
+@media (pointer: coarse), (max-width: 767px) {
+  .acceptBtn,
+  .dcBtn,
+  .confirmAcceptBtn,
+  .confirmBackBtn,
+  .dcCancelBtn {
+    min-height: var(--touch-target-min);
+  }
+
+  .acceptBtn,
+  .confirmAcceptBtn,
+  .confirmBackBtn,
+  .dcCancelBtn {
+    padding: var(--space-2) var(--space-4);
+  }
+}
+
+@media (max-width: 767px) {
+  .cardTop {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .financials {
+    text-align: left;
+    width: 100%;
+  }
+
+  .meta {
+    flex-wrap: wrap;
+  }
+
+  .dcList,
+  .confirmActions {
+    flex-direction: column;
+  }
+
+  .dcBtn,
+  .confirmAcceptBtn,
+  .confirmBackBtn,
+  .dcCancelBtn {
+    width: 100%;
+  }
+}

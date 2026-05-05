@@ -5,6 +5,7 @@ import type {
   RackPlacementId,
 } from "@datacenter-tycoon/game-logic";
 import type { RackMaintenanceView } from "../../store/selectors.js";
+import { useIsPhoneViewport } from "../responsive.js";
 import { Slot } from "./Slot.js";
 import styles from "./Grid.module.css";
 
@@ -28,11 +29,61 @@ export function Grid({
   onMove,
 }: GridProps) {
   const { rows, positionsPerRow } = datacenter.spec;
+  const isPhoneViewport = useIsPhoneViewport();
 
   // Build a fast lookup: "row,pos" → placement
   const placementMap = new Map<string, RackPlacement>();
   for (const p of datacenter.placements) {
     placementMap.set(`${p.row},${p.position}`, p);
+  }
+
+  if (isPhoneViewport) {
+    return (
+      <div className={styles.mobileWrapper}>
+        {Array.from({ length: rows }, (_, r) => (
+          <section
+            key={r}
+            className={styles.mobileRowGroup}
+            role="group"
+            aria-labelledby={`mobile-row-${r}`}
+          >
+            <div id={`mobile-row-${r}`} className={styles.mobileRowHeader}>
+              <span className={styles.mobileRowLabel}>ROW {String.fromCharCode(65 + r)}</span>
+              <span className={styles.mobileRowMeta}>{positionsPerRow} slots</span>
+            </div>
+
+            <div className={styles.mobileSlotList}>
+              {Array.from({ length: positionsPerRow }, (_, p) => {
+                const placement = placementMap.get(`${r},${p}`);
+                const spec = placement ? RACK_CATALOG[placement.specId] : undefined;
+                const maintenanceView = placement
+                  ? rackMaintenanceByPlacementId.get(placement.id)
+                  : undefined;
+
+                return (
+                  <div key={p} className={styles.mobileSlotCard}>
+                    <div className={styles.mobileSlotLabel}>Slot {p + 1}</div>
+                    <Slot
+                      row={r}
+                      position={p}
+                      placement={placement}
+                      spec={spec}
+                      maintenanceView={maintenanceView}
+                      hasActiveContract={hasActiveContract}
+                      hasFault={hasFault}
+                      onOpenPicker={onSlotClick}
+                      onDecommission={onDecommission}
+                      onMove={onMove}
+                      layoutMode="phone"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
+    );
   }
 
   return (
@@ -81,6 +132,7 @@ export function Grid({
                   onOpenPicker={onSlotClick}
                   onDecommission={onDecommission}
                   onMove={onMove}
+                  layoutMode="desktop"
                 />
               );
             })}

@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { markTutorialSeen } from "../../store/tutorialPersist.js";
 import { TUTORIAL_STEPS } from "./tutorialContent.js";
 import { TutorialStepPanel } from "./TutorialStepPanel.js";
+import { useDialogFocus } from "../dialogFocus.js";
 import styles from "./TutorialModal.module.css";
 
 interface TutorialModalProps {
@@ -11,6 +12,8 @@ interface TutorialModalProps {
 
 export function TutorialModal({ onClose, initialStep = 0 }: TutorialModalProps) {
   const [stepIndex, setStepIndex] = useState(initialStep);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  useDialogFocus(closeButtonRef);
 
   const totalSteps = TUTORIAL_STEPS.length;
   const currentStep = TUTORIAL_STEPS[stepIndex]!;
@@ -66,6 +69,7 @@ export function TutorialModal({ onClose, initialStep = 0 }: TutorialModalProps) 
             </span>
           </div>
           <button
+            ref={closeButtonRef}
             className={styles.closeBtn}
             onClick={handleClose}
             aria-label="Close tutorial"

@@ -17,6 +17,10 @@
   overflow: hidden;
 }
 
+.bodyPhone {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .leftRail {
   overflow: hidden;
   min-height: 0;
@@ -33,6 +37,115 @@
 .rightRail {
   overflow: hidden;
   min-height: 0;
+}
+
+.mobileDrawer {
+  position: fixed;
+  top: var(--mobile-topbar-height);
+  bottom: 0;
+  width: var(--mobile-drawer-max-width);
+  max-width: var(--mobile-drawer-max-width);
+  z-index: calc(var(--z-overlay) + 1);
+  padding-bottom: var(--safe-area-bottom);
+  box-shadow: var(--shadow-float);
+}
+
+.mobileDrawer::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  z-index: calc(var(--z-overlay) + 2);
+}
+
+.mobileDrawerLeft {
+  left: 0;
+  padding-left: var(--safe-area-left);
+  animation: slideDrawerInLeft var(--duration-normal) var(--ease-out-expo);
+}
+
+.mobileDrawerRight {
+  right: 0;
+  padding-right: var(--safe-area-right);
+  animation: slideDrawerInRight var(--duration-normal) var(--ease-out-expo);
+}
+
+.mobileDrawerOpen {
+  overflow: hidden;
+}
+
+.drawerBackdrop {
+  position: fixed;
+  inset: var(--mobile-topbar-height) 0 0;
+  z-index: var(--z-overlay);
+  background: rgba(5, 7, 11, 0.6);
+  border: 0;
+  padding: 0;
+}
+
+.drawerTrigger {
+  position: fixed;
+  top: calc(var(--mobile-topbar-height) + var(--space-4));
+  z-index: calc(var(--z-overlay) + 2);
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  padding: var(--space-2) var(--space-3);
+  background: rgba(10, 14, 22, 0.92);
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  box-shadow: var(--glow-sm-cyan), var(--shadow-panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drawerTriggerLeft {
+  left: 0;
+  padding-left: max(var(--space-3), var(--safe-area-left));
+  border-left: 0;
+  border-radius: 0 999px 999px 0;
+}
+
+.drawerTriggerRight {
+  right: 0;
+  padding-right: max(var(--space-3), var(--safe-area-right));
+  border-right: 0;
+  border-radius: 999px 0 0 999px;
+}
+
+.drawerTriggerLabel {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+@keyframes slideDrawerInLeft {
+  from {
+    transform: translateX(calc(-100% - var(--safe-area-left)));
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDrawerInRight {
+  from {
+    transform: translateX(calc(100% + var(--safe-area-right)));
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 /* ── Global placeholder (contracts/log stubs) ─────────────── */

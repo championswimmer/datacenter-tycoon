@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   RACK_CATALOG,
   canPlaceRack,
@@ -17,6 +17,7 @@ import {
   selectDatacenter,
   selectRegions,
 } from "../../store/selectors.js";
+import { useDialogFocus } from "../dialogFocus.js";
 import styles from "./MoveRackModal.module.css";
 
 interface MoveRackModalProps {
@@ -107,6 +108,8 @@ export function MoveRackModal({ sourceDcId, placementId, onClose }: MoveRackModa
   const [selectedDcId, setSelectedDcId] = useState<DatacenterId | null>(
     candidates.find((c) => c.availableSlots > 0)?.dc.id ?? null,
   );
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  useDialogFocus(closeButtonRef);
 
   const selectedCandidate = candidates.find((c) => c.dc.id === selectedDcId);
   const selectedDc = selectedCandidate?.dc;
@@ -168,6 +171,7 @@ export function MoveRackModal({ sourceDcId, placementId, onClose }: MoveRackModa
             </span>
           </div>
           <button
+            ref={closeButtonRef}
             className={styles.closeBtn}
             onClick={onClose}
             aria-label="Close modal"

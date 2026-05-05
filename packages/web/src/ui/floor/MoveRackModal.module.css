@@ -9,7 +9,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-6);
+  padding:
+    max(var(--space-3), var(--safe-area-top))
+    max(var(--mobile-shell-gutter), var(--safe-area-right))
+    max(var(--space-3), var(--safe-area-bottom))
+    max(var(--mobile-shell-gutter), var(--safe-area-left));
   animation: fadeIn var(--duration-normal) var(--ease-out-expo);
 }
 
@@ -27,7 +31,7 @@
   box-shadow: var(--glow-cyan), var(--shadow-float);
   width: 100%;
   max-width: 640px;
-  max-height: 90vh;
+  max-height: var(--mobile-bottom-sheet-max-height);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -153,6 +157,8 @@
   padding: var(--space-5) var(--space-6);
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), inset 0 -14px 20px rgba(5,7,11,.35);
 }
 
 @media (max-width: 640px) {
@@ -325,7 +331,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-4) var(--space-6);
+  padding: var(--space-4) var(--space-6) max(var(--space-4), var(--safe-area-bottom));
   border-top: 1px solid var(--grid);
   background: var(--bg-1);
   flex-shrink: 0;
@@ -387,4 +393,61 @@
   border-color: var(--fg-3);
   color: var(--fg-2);
   box-shadow: none;
+}
+
+@media (max-width: 767px) {
+  .backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .panel {
+    max-width: none;
+    width: 100%;
+    max-height: calc(var(--app-viewport-height) - var(--safe-area-top));
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  .header,
+  .sourceInfo,
+  .targetDetail,
+  .footer {
+    padding-left: var(--mobile-shell-gutter);
+    padding-right: var(--mobile-shell-gutter);
+  }
+
+  .header {
+    align-items: flex-start;
+  }
+
+  .headerLeft {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+
+  .candidates {
+    padding: var(--space-4) var(--mobile-shell-gutter);
+  }
+
+  .footer {
+    align-items: stretch;
+  }
+
+  .footerBtns {
+    width: 100%;
+    flex-direction: column-reverse;
+    margin-left: 0;
+  }
+
+  .cancelBtn,
+  .confirmBtn,
+  .closeBtn {
+    min-height: var(--touch-target-min);
+  }
+
+  .cancelBtn,
+  .confirmBtn {
+    width: 100%;
+  }
 }

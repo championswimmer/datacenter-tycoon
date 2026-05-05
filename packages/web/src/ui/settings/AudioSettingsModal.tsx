@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useGameDispatch, useSelector } from "../../store/storeContext.js";
 import { selectAudioSettings } from "../../store/selectors.js";
+import { useDialogFocus } from "../dialogFocus.js";
 import styles from "./AudioSettingsModal.module.css";
 
 interface AudioSettingsModalProps {
@@ -10,6 +11,19 @@ interface AudioSettingsModalProps {
 export function AudioSettingsModal({ onClose }: AudioSettingsModalProps) {
   const dispatch = useGameDispatch();
   const settings = useSelector(selectAudioSettings);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  useDialogFocus(closeButtonRef);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   const toggle = (key: keyof typeof settings) => {
     dispatch({
@@ -29,7 +43,7 @@ export function AudioSettingsModal({ onClose }: AudioSettingsModalProps) {
       >
         <div className={styles.header}>
           <h2 id="audio-settings-title">Audio Settings</h2>
-          <button className={styles.closeBtn} onClick={onClose} aria-label="Close settings">
+          <button ref={closeButtonRef} className={styles.closeBtn} onClick={onClose} aria-label="Close settings">
             &times;
           </button>
         </div>

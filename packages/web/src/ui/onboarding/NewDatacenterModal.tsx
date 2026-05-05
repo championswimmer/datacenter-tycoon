@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { DATACENTER_CATALOG, canBuildInRegion } from "@datacenter-tycoon/game-logic";
 import type { DatacenterSpec, RegionId } from "@datacenter-tycoon/game-logic";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
@@ -6,6 +6,7 @@ import { selectCash, selectAllDatacenters, selectRegionById } from "../../store/
 import { nextDcId } from "../../store/ids.js";
 import { navigateToDc } from "../../router/hashRouter.js";
 import { InsufficientFunds } from "./InsufficientFunds.js";
+import { useDialogFocus } from "../dialogFocus.js";
 import styles from "./NewDatacenterModal.module.css";
 
 interface NewDatacenterModalProps {
@@ -56,6 +57,8 @@ export function NewDatacenterModal({ onClose, regionId }: NewDatacenterModalProp
   const defaultSpec =
     availableSpecs.find((s) => cash >= s.capexCost) ?? availableSpecs[0] ?? CATALOG_ENTRIES[0]!;
   const [selectedId, setSelectedId] = useState<string>(defaultSpec.id);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  useDialogFocus(closeButtonRef);
 
   const selectedSpec = CATALOG_ENTRIES.find((s) => s.id === selectedId)!;
   const canAfford = cash >= selectedSpec.capexCost;
@@ -104,6 +107,7 @@ export function NewDatacenterModal({ onClose, regionId }: NewDatacenterModalProp
             )}
           </div>
           <button
+            ref={closeButtonRef}
             className={styles.closeBtn}
             onClick={onClose}
             aria-label="Close modal"

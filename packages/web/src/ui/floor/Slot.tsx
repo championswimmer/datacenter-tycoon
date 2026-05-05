@@ -14,6 +14,7 @@ export interface SlotProps {
   onOpenPicker:      (row: number, position: number) => void;
   onDecommission:    (placementId: RackPlacement["id"]) => void;
   onMove:            (placementId: RackPlacement["id"]) => void;
+  layoutMode?:       "desktop" | "phone";
 }
 
 export function Slot({
@@ -27,10 +28,11 @@ export function Slot({
   onOpenPicker,
   onDecommission,
   onMove,
+  layoutMode = "desktop",
 }: SlotProps) {
   if (placement && spec && maintenanceView) {
     return (
-      <div className={styles.slot}>
+      <div className={[styles.slot, layoutMode === "phone" ? styles.phone : ""].join(" ")}>
         <RackTile
           placement={placement}
           maintenanceView={maintenanceView}
@@ -39,6 +41,7 @@ export function Slot({
           hasFault={hasFault}
           onDecommission={onDecommission}
           onMove={onMove}
+          layoutMode={layoutMode}
         />
       </div>
     );
@@ -46,7 +49,7 @@ export function Slot({
 
   return (
     <button
-      className={styles.slot}
+      className={[styles.slot, layoutMode === "phone" ? styles.phone : ""].join(" ")}
       onClick={() => onOpenPicker(row, position)}
       onKeyDown={e => { if (e.key === "Enter" || e.key === " ") onOpenPicker(row, position); }}
       title={`Empty slot — Row ${String.fromCharCode(65 + row)}, Position ${position + 1}`}

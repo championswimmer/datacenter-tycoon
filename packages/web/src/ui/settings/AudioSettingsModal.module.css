@@ -9,6 +9,11 @@
   align-items: center;
   justify-content: center;
   z-index: var(--z-modal);
+  padding:
+    max(var(--space-3), var(--safe-area-top))
+    max(var(--mobile-shell-gutter), var(--safe-area-right))
+    max(var(--space-3), var(--safe-area-bottom))
+    max(var(--mobile-shell-gutter), var(--safe-area-left));
 }
 
 .modal {
@@ -18,8 +23,12 @@
   border-radius: 8px;
   width: 90%;
   max-width: 400px;
+  max-height: var(--mobile-bottom-sheet-max-height);
   padding: 1.5rem;
   color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .header {
@@ -44,12 +53,16 @@
   font-size: 1.5rem;
   cursor: pointer;
   padding: 0.5rem;
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
 }
 
 .content {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .settingRow {
@@ -91,6 +104,7 @@
   margin-top: 2rem;
   display: flex;
   justify-content: flex-end;
+  padding-bottom: max(0px, var(--safe-area-bottom));
 }
 
 .doneBtn {
@@ -107,4 +121,39 @@
 
 .doneBtn:hover {
   filter: brightness(1.2);
+}
+
+@media (max-width: 767px) {
+  .overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal {
+    width: 100%;
+    max-width: none;
+    max-height: calc(var(--app-viewport-height) - var(--safe-area-top));
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: var(--space-4) var(--mobile-shell-gutter) max(var(--space-4), var(--safe-area-bottom));
+  }
+
+  .header {
+    margin-bottom: var(--space-4);
+  }
+
+  .settingRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .toggleOn,
+  .toggleOff,
+  .doneBtn {
+    min-height: var(--touch-target-min);
+  }
+
+  .doneBtn {
+    width: 100%;
+  }
 }

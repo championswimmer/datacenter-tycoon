@@ -1,7 +1,7 @@
 ---
 name: Mobile Responsive UX
 description: Make the web game easier to use on phone-sized screens with collapsible rails, drawer panels, portrait-friendly layouts, scroll-safe modals, and larger touch targets.
-status: created
+status: completed
 created: 2026-05-05
 updated: 2026-05-05
 owner: web
@@ -9,35 +9,35 @@ owner: web
 
 ## Progress
 
-- [ ] **Phase 1 — Mobile baseline and shared responsive rules**
-  - [ ] 1.1 Define mobile breakpoints, touch-target rules, and viewport constraints
-  - [ ] 1.2 Audit current shell, floor, modal, and card layouts against those rules
-  - [ ] 1.3 Add regression coverage for phone-sized rendering assumptions
-- [ ] **Phase 2 — Collapsible shell rails and mobile navigation**
-  - [ ] 2.1 Introduce mobile drawer state in `Shell`
-  - [ ] 2.2 Convert the datacenter rail into a pull-out drawer on phones
-  - [ ] 2.3 Convert the event log rail into a pull-out drawer on phones
-  - [ ] 2.4 Add persistent mobile drawer triggers without crowding the viewport
-- [ ] **Phase 3 — Portrait-first datacenter and rack floor**
-  - [ ] 3.1 Compress datacenter header content for narrow screens
-  - [ ] 3.2 Make datacenter tabs touch-friendly and horizontally scrollable
-  - [ ] 3.3 Add a portrait rack layout mode for the floor grid
-  - [ ] 3.4 Keep rack actions discoverable without hover on touch devices
-- [ ] **Phase 4 — Modal and drawer ergonomics**
-  - [ ] 4.1 Standardize modal height, inner scrolling, and safe-area padding
-  - [ ] 4.2 Adapt rack picker to a phone bottom-sheet layout
-  - [ ] 4.3 Adapt move rack, new datacenter, reset, audio, and tutorial modals
-  - [ ] 4.4 Preserve focus, escape, backdrop, and accessible close behavior
-- [ ] **Phase 5 — Cards, buttons, and dense content polish**
-  - [ ] 5.1 Enlarge card corner buttons and compact controls for touch
-  - [ ] 5.2 Improve contract and map card stacking on phones
-  - [ ] 5.3 Reduce horizontal overflow and favor vertical real estate
-  - [ ] 5.4 Add visible affordances for hidden panels and scrollable regions
-- [ ] **Phase 6 — Validation and release readiness**
-  - [ ] 6.1 Run web lint, typecheck, and test commands
-  - [ ] 6.2 Add manual QA checklist for common phone viewport sizes
-  - [ ] 6.3 Verify desktop layout remains unchanged
-  - [ ] 6.4 Update documentation if new responsive conventions emerge
+- [x] **Phase 1 — Mobile baseline and shared responsive rules**
+  - [x] 1.1 Define mobile breakpoints, touch-target rules, and viewport constraints
+  - [x] 1.2 Audit current shell, floor, modal, and card layouts against those rules
+  - [x] 1.3 Add regression coverage for phone-sized rendering assumptions
+- [x] **Phase 2 — Collapsible shell rails and mobile navigation**
+  - [x] 2.1 Introduce mobile drawer state in `Shell`
+  - [x] 2.2 Convert the datacenter rail into a pull-out drawer on phones
+  - [x] 2.3 Convert the event log rail into a pull-out drawer on phones
+  - [x] 2.4 Add persistent mobile drawer triggers without crowding the viewport
+- [x] **Phase 3 — Portrait-first datacenter and rack floor**
+  - [x] 3.1 Compress datacenter header content for narrow screens
+  - [x] 3.2 Make datacenter tabs touch-friendly and horizontally scrollable
+  - [x] 3.3 Add a portrait rack layout mode for the floor grid
+  - [x] 3.4 Keep rack actions discoverable without hover on touch devices
+- [x] **Phase 4 — Modal and drawer ergonomics**
+  - [x] 4.1 Standardize modal height, inner scrolling, and safe-area padding
+  - [x] 4.2 Adapt rack picker to a phone bottom-sheet layout
+  - [x] 4.3 Adapt move rack, new datacenter, reset, audio, and tutorial modals
+  - [x] 4.4 Preserve focus, escape, backdrop, and accessible close behavior
+- [x] **Phase 5 — Cards, buttons, and dense content polish**
+  - [x] 5.1 Enlarge card corner buttons and compact controls for touch
+  - [x] 5.2 Improve contract and map card stacking on phones
+  - [x] 5.3 Reduce horizontal overflow and favor vertical real estate
+  - [x] 5.4 Add visible affordances for hidden panels and scrollable regions
+- [x] **Phase 6 — Validation and release readiness**
+  - [x] 6.1 Run web lint, typecheck, and test commands
+  - [x] 6.2 Add manual QA checklist for common phone viewport sizes
+  - [x] 6.3 Verify desktop layout remains unchanged
+  - [x] 6.4 Update documentation if new responsive conventions emerge
 
 ## Overview
 
@@ -393,3 +393,37 @@ Key decisions:
 ## Changelog
 
 - 2026-05-05 — created.
+- 2026-05-05 — step 1.1 completed by adding shared responsive constants, viewport-height tokens, touch-target guidance, and safe-area tokens for later drawer and sheet work.
+- 2026-05-05 — step 1.2 audit findings:
+  - `Shell.module.css` still uses fixed 200px/240px rails, so phone view needs overlay drawers instead of a three-column grid.
+  - `TopBar.module.css`, `DatacenterView.module.css`, `RackTile.module.css`, and `RegionPanel.module.css` still rely on 28px–32px icon buttons and dense nowrap text that need touch-target and wrap treatment.
+  - `Grid.module.css`, `Slot.module.css`, and `RackTile.module.css` assume desktop row/column density and hover-revealed rack actions, so portrait touch interaction needs a dedicated floor mode.
+  - `RackPicker.module.css`, `MoveRackModal.module.css`, `NewDatacenterModal.module.css`, `ResetGameModal.module.css`, `AudioSettingsModal.module.css`, and `TutorialModal.module.css` all use centered desktop modal panels with limited height handling, so Phase 4 should standardize inner scrolling and bottom-sheet behavior.
+  - `ContractsPage.module.css`, `MarketList.module.css`, `ActiveList.module.css`, `MapView.module.css`, and `RegionPanel.module.css` still contain fixed-width cards, multi-column grids, and nowrap metadata that need phone stacking and overflow cleanup in Phase 5.
+- 2026-05-05 — step 1.3 completed by adding viewport breakpoint tests so later drawer and floor behavior can depend on shared phone/tablet mode assumptions without brittle CSS assertions.
+- 2026-05-05 — step 2.1 completed by introducing shared phone drawer state in `Shell`, closing mobile drawers on route changes and Escape, and moving phone rails into overlay positioning so they no longer reserve layout width.
+- 2026-05-05 — step 2.2 completed by giving the datacenter rail dedicated left-drawer animation, safe-area padding, and internal scrolling so it can behave as a pull-out phone navigation panel.
+- 2026-05-05 — step 2.3 completed by giving the event log its own right-drawer animation and safe-area-aware scrolling so long ledger history stays inside the overlay panel.
+- 2026-05-05 — step 2.4 completed by adding persistent phone edge-tab triggers with drawer ARIA wiring and focused interaction tests for opening and dismissing both hidden rails.
+- 2026-05-05 — step 3.1 completed by compressing the datacenter header and compact resource strip so title, region, maintenance, and staffing controls wrap cleanly on narrow portrait screens.
+- 2026-05-05 — step 3.2 completed by making the datacenter tab bar horizontally scrollable and enlarging tab hit areas for phone-sized touch navigation.
+- 2026-05-05 — step 3.3 completed by adding a portrait row-grouped floor layout that stacks full-width slot cards on phones while preserving the existing desktop grid.
+- 2026-05-05 — step 3.4 completed by making rack action controls persist on touch breakpoints and reserving bezel space so move and decommission buttons stay visible without covering rack status text.
+- 2026-05-05 — step 4.1 completed by giving modal backdrops safe-area padding, capping panel height with the shared sheet token, and ensuring modal bodies own their scrolling instead of trapping footer actions offscreen.
+- 2026-05-05 — step 4.2 completed by turning the rack picker into a true phone bottom sheet with full-width actions, single-column cards, and horizontally scrollable filter chips.
+- 2026-05-05 — step 4.3 completed by stacking move-rack, new-datacenter, reset, audio, and tutorial modal content into phone-friendly sheets with full-width primary actions and larger close controls.
+- 2026-05-05 — step 4.4 completed by restoring focus to drawer triggers, auto-focusing dialog close controls, and adding missing Escape handling so keyboard users can reliably dismiss every responsive overlay.
+- 2026-05-05 — step 5.1 completed by enlarging icon buttons, steppers, contract actions, and map controls to meet the shared touch-target rule on coarse or phone-sized layouts.
+- 2026-05-05 — step 5.2 completed by stacking contract cards, contract filters, map cards, and the region side panel vertically so phone navigation stays one-thumb and scroll-first.
+- 2026-05-05 — step 5.3 completed by teaching the top bar, contract controls, map cards, and region panel metadata to wrap or scroll locally instead of forcing page-level horizontal overflow.
+- 2026-05-05 — step 5.4 completed by adding drawer grab handles and inner scroll shadows so hidden panels and scrollable modal bodies read as interactive surfaces on phones.
+- 2026-05-05 — step 6.1 completed with `npm run typecheck -w @datacenter-tycoon/web`, `npm run test -w @datacenter-tycoon/web`, and `npm run build -w @datacenter-tycoon/web` all passing; `npm run lint -w @datacenter-tycoon/web` still reports that no lint script exists in this workspace.
+- 2026-05-05 — step 6.2 QA checklist prepared for reviewers:
+  - 320 × 568 portrait — verify drawer triggers, portrait floor list, and bottom-sheet actions remain reachable.
+  - 360 × 740 portrait — verify rack picker, move rack, and tutorial modals scroll internally without clipping footer buttons.
+  - 390 × 844 portrait — verify contracts, map, and event log drawers keep one-column scrolling with no body overflow.
+  - 430 × 932 portrait — verify top bar wrapping, speed controls, and hidden drawer affordances remain readable.
+  - Phone landscape — verify the floor, contracts tabs, and map panel still allow horizontal-safe navigation.
+  - Desktop baseline — verify permanent rails, desktop floor grid, hover affordances, and modal widths remain unchanged.
+- 2026-05-05 — step 6.3 completed by adding a desktop shell test that confirms permanent rails still render and that phone-only drawer triggers stay absent at desktop widths.
+- 2026-05-05 — step 6.4 completed by documenting the shared phone/tablet breakpoints, touch-target minimums, safe-area tokens, and drawer/bottom-sheet conventions in `packages/web/AGENTS.md`.

@@ -14,6 +14,10 @@
   animation: rackBoot 0.6s var(--ease-out-expo) both;
 }
 
+.tilePhone {
+  min-height: 120px;
+}
+
 .tileRepairing {
   border-color: rgba(255, 84, 112, 0.7) !important;
   background: rgba(255, 84, 112, 0.1) !important;
@@ -40,6 +44,11 @@
   padding: 2px 4px;
   border-bottom: 1px solid rgba(255,255,255,.06);
   flex-shrink: 0;
+}
+
+.tilePhone .bezel {
+  min-height: 40px;
+  padding: 6px 72px 6px 8px;
 }
 
 .tierPips {
@@ -105,6 +114,10 @@
   flex-shrink: 0;
 }
 
+.tilePhone .ledRow {
+  padding: 4px 8px;
+}
+
 .kindBadge {
   margin-left: auto;
   font-family: var(--font-mono);
@@ -124,6 +137,10 @@
   align-items: center;
   gap: 4px;
   padding: 0 4px 2px;
+}
+
+.tilePhone .statusRow {
+  padding: 0 8px 4px;
 }
 
 .statusBadge {
@@ -162,6 +179,10 @@
   font-size: 0.45rem;
   color: var(--neon-red);
   letter-spacing: 0.06em;
+}
+
+.tilePhone .repairText {
+  padding: 0 8px 6px;
 }
 
 /* ── Move button (reveal on hover) ───────────────────────── */
@@ -252,6 +273,11 @@
   gap: 3px;
 }
 
+.tilePhone .confirmBtns {
+  width: 100%;
+  justify-content: center;
+}
+
 .confirmYes,
 .confirmNo {
   font-family: var(--font-mono);
@@ -276,3 +302,29 @@
   border-color: var(--grid);
 }
 .confirmNo:hover { color: var(--fg-0); }
+
+@media (pointer: coarse), (max-width: 767px) {
+  .moveBtn,
+  .decommBtn {
+    opacity: 1;
+    top: 6px;
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+    border-radius: var(--radius-md);
+  }
+
+  .moveBtn {
+    right: 38px;
+  }
+
+  .decommBtn {
+    right: 6px;
+  }
+
+  .confirmYes,
+  .confirmNo {
+    min-height: var(--touch-target-min);
+    padding: var(--space-2) var(--space-4);
+  }
+}

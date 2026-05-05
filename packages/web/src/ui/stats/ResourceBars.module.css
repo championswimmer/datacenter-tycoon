@@ -75,3 +75,19 @@
 .pctGreen { color: var(--neon-cyan);  }
 .pctAmber { color: var(--neon-amber); }
 .pctRed   { color: var(--neon-red);   }
+
+@media (max-width: 767px) {
+  .compact {
+    gap: var(--space-2);
+  }
+
+  .compactItem {
+    min-width: min(132px, 100%);
+    flex: 1 1 calc(50% - var(--space-2));
+    align-items: flex-start;
+  }
+
+  .compactLabel {
+    white-space: normal;
+  }
+}
