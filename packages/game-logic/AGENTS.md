@@ -35,6 +35,7 @@ src/
 ├── economy/
 │   ├── constants.ts          # balance constants
 │   ├── capex.ts              # capex application + ledger
+│   ├── move.ts               # rack move cost calculation
 │   ├── opex.ts               # opex + revenue evaluation
 │   ├── index.ts
 │   └── economy.test.ts
@@ -80,6 +81,7 @@ These are already implemented and should usually be extended rather than replace
 - contract lifecycle evaluation
 - capex / opex / revenue ledgering
 - rack placement validation via datacenter constraints
+- rack move cost calculation and cross-datacenter relocation (`calculateMoveCost`, `canMoveRack`, `MoveRack` action)
 
 ## Editing Guidelines
 

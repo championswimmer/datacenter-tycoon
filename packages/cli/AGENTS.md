@@ -5,7 +5,7 @@ Guidance for contributors working in `packages/cli`.
 ## Scope
 
 This package provides:
-- one-shot CLI commands (`dct status`, `dct ls`, `dct add-rack`, ...)
+- one-shot CLI commands (`dct status`, `dct ls`, `dct add-rack`, `dct move-rack`, ...)
 - the local daemon transport/client bridge
 - the interactive terminal UI
 
