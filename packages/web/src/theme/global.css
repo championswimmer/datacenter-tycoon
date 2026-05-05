@@ -17,6 +17,7 @@ html {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   scroll-behavior: smooth;
+  min-height: 100%;
 }
 
 body {
@@ -25,9 +26,23 @@ body {
   font-family: var(--font-mono);
   font-size: var(--text-base);
   line-height: var(--leading-base);
-  min-height: 100dvh;
+  min-height: var(--app-viewport-height);
   overflow-x: hidden;
 }
+
+body,
+#root {
+  min-height: var(--app-viewport-height);
+}
+
+/*
+  Responsive conventions shared across the web package:
+  - phone layout: <= 767px
+  - tablet layout: 768px–1023px
+  - minimum touch target: 44px (48px preferred for floating and icon-only controls)
+  - fixed drawers, sheets, and sticky controls must include safe-area padding via
+    `var(--safe-area-*)` tokens so browser chrome and home indicators do not trap content
+*/
 
 /* ── Scanline overlay (opt-in via data-scanlines on <html>) ──────────────── */
 html[data-scanlines] body::after {

@@ -1,7 +1,7 @@
 ---
 name: Mobile Responsive UX
 description: Make the web game easier to use on phone-sized screens with collapsible rails, drawer panels, portrait-friendly layouts, scroll-safe modals, and larger touch targets.
-status: created
+status: started
 created: 2026-05-05
 updated: 2026-05-05
 owner: web
@@ -10,7 +10,7 @@ owner: web
 ## Progress
 
 - [ ] **Phase 1 — Mobile baseline and shared responsive rules**
-  - [ ] 1.1 Define mobile breakpoints, touch-target rules, and viewport constraints
+  - [x] 1.1 Define mobile breakpoints, touch-target rules, and viewport constraints
   - [ ] 1.2 Audit current shell, floor, modal, and card layouts against those rules
   - [ ] 1.3 Add regression coverage for phone-sized rendering assumptions
 - [ ] **Phase 2 — Collapsible shell rails and mobile navigation**
@@ -393,3 +393,4 @@ Key decisions:
 ## Changelog
 
 - 2026-05-05 — created.
+- 2026-05-05 — step 1.1 completed by adding shared responsive constants, viewport-height tokens, touch-target guidance, and safe-area tokens for later drawer and sheet work.
