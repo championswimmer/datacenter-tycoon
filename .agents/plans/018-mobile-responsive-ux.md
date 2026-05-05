@@ -35,7 +35,7 @@ owner: web
   - [x] 5.4 Add visible affordances for hidden panels and scrollable regions
 - [ ] **Phase 6 — Validation and release readiness**
   - [x] 6.1 Run web lint, typecheck, and test commands
-  - [ ] 6.2 Add manual QA checklist for common phone viewport sizes
+  - [x] 6.2 Add manual QA checklist for common phone viewport sizes
   - [ ] 6.3 Verify desktop layout remains unchanged
   - [ ] 6.4 Update documentation if new responsive conventions emerge
 
@@ -418,3 +418,10 @@ Key decisions:
 - 2026-05-05 — step 5.3 completed by teaching the top bar, contract controls, map cards, and region panel metadata to wrap or scroll locally instead of forcing page-level horizontal overflow.
 - 2026-05-05 — step 5.4 completed by adding drawer grab handles and inner scroll shadows so hidden panels and scrollable modal bodies read as interactive surfaces on phones.
 - 2026-05-05 — step 6.1 completed with `npm run typecheck -w @datacenter-tycoon/web`, `npm run test -w @datacenter-tycoon/web`, and `npm run build -w @datacenter-tycoon/web` all passing; `npm run lint -w @datacenter-tycoon/web` still reports that no lint script exists in this workspace.
+- 2026-05-05 — step 6.2 QA checklist prepared for reviewers:
+  - 320 × 568 portrait — verify drawer triggers, portrait floor list, and bottom-sheet actions remain reachable.
+  - 360 × 740 portrait — verify rack picker, move rack, and tutorial modals scroll internally without clipping footer buttons.
+  - 390 × 844 portrait — verify contracts, map, and event log drawers keep one-column scrolling with no body overflow.
+  - 430 × 932 portrait — verify top bar wrapping, speed controls, and hidden drawer affordances remain readable.
+  - Phone landscape — verify the floor, contracts tabs, and map panel still allow horizontal-safe navigation.
+  - Desktop baseline — verify permanent rails, desktop floor grid, hover affordances, and modal widths remain unchanged.
