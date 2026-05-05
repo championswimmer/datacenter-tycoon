@@ -8,15 +8,15 @@ updated: 2026-05-05
 
 ## Progress
 
-- [ ] **Phase 1 — Game Logic & Region Model Update**
+- [x] **Phase 1 — Game Logic & Region Model Update**
   - [x] 1.1 Update `Region` interface in `packages/game-logic/src/types.ts` to include `code: string`, `city: string`, and `coordinates: { x: number; y: number }` (representing X/Y percentages for map overlay).
   - [x] 1.2 Replace `REGION_CATALOG` in `packages/game-logic/src/catalog/regions.ts` with 8 new realistic regions (incorporating precise region IDs, names, cities, codes, and map coordinates).
-  - [ ] 1.3 Update test fixtures across the monorepo (`game-logic`, `web`, `cli`) replacing hardcoded IDs like `iowa` or `silicon_valley` with `us_east` or `us_west`.
+  - [x] 1.3 Update test fixtures across the monorepo (`game-logic`, `web`, `cli`) replacing hardcoded IDs like `iowa` or `silicon_valley` with `us_east` or `us_west`.
 
-- [ ] **Phase 2 — UI: World Map Visualization Component**
-  - [ ] 2.1 Add a lightweight, open-source world map SVG as a component in `packages/web/src/ui/map/WorldMap.tsx`.
-  - [ ] 2.2 Implement the `WorldMap` component to receive a list of regions, mapping them to visually distinct overlay markers based on their absolute X/Y percentages.
-  - [ ] 2.3 Wire up marker interaction so clicking a marker triggers `onSelectRegion(regionId)` and visually highlights the selected node.
+- [x] **Phase 2 — UI: World Map Visualization Component**
+  - [x] 2.1 Add a lightweight, open-source world map SVG as a component in `packages/web/src/ui/map/WorldMap.tsx`.
+  - [x] 2.2 Implement the `WorldMap` component to receive a list of regions, mapping them to visually distinct overlay markers based on their absolute X/Y percentages.
+  - [x] 2.3 Wire up marker interaction so clicking a marker triggers `onSelectRegion(regionId)` and visually highlights the selected node.
 
 - [ ] **Phase 3 — UI: Sortable List & MapView Refactor**
   - [ ] 3.1 Create `packages/web/src/ui/map/RegionTable.tsx` to display regions in a tabular format, showing the 3-digit Code, City, Region Name, Power Cost, Total Power, Total Staff, and Tax Rate. Ensure the columns are sortable.
