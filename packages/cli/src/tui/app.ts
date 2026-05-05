@@ -252,6 +252,11 @@ export async function runTui(): Promise<void> {
 				paletteOpen = true;
 				paletteInput = selectedDc ? `remove-rack ${selectedDc} ` : "remove-rack ";
 			}
+			if (activeTab === "datacenters" && key.name === "m") {
+				const selectedDc = snapshot?.datacenters[selectedDatacenterIndex]?.id ?? "";
+				paletteOpen = true;
+				paletteInput = selectedDc ? `move-rack ${selectedDc} ` : "move-rack ";
+			}
 			if (activeTab === "contracts" && key.name === "a") {
 				paletteOpen = true;
 				paletteInput = "accept-contract ";

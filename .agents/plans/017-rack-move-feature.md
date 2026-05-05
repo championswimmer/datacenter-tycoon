@@ -16,12 +16,12 @@ owner: game-logic, web, cli
   - [x] 1.4 Add `canMoveRack` helper in `entities/datacenter.ts`
   - [x] 1.5 Export new helpers from `game-logic/src/index.ts`
   - [x] 1.6 Unit tests for `moveRack` reducer and `calculateMoveCost`
-- [ ] **Phase 2 — Web UI**
-  - [ ] 2.1 Add move button to `RackTile` (beside decommission ×)
-  - [ ] 2.2 Create `MoveRackModal` component with DC selector + cost display
-  - [ ] 2.3 Wire modal into `FloorView` → `Grid` → `Slot` → `RackTile`
-  - [ ] 2.4 Add CSS modules for move button and modal
-  - [ ] 2.5 Unit tests for `MoveRackModal`
+- [x] **Phase 2 — Web UI**
+  - [x] 2.1 Add move button to `RackTile` (beside decommission ×)
+  - [x] 2.2 Create `MoveRackModal` component with DC selector + cost display
+  - [x] 2.3 Wire modal into `FloorView` → `Grid` → `Slot` → `RackTile`
+  - [x] 2.4 Add CSS modules for move button and modal
+  - [x] 2.5 Unit tests for `MoveRackModal`
 - [ ] **Phase 3 — CLI**
   - [ ] 3.1 Add `move-rack` one-shot command in `cli/src/commands/build-dc.ts`
   - [ ] 3.2 Register command in `cli/src/cli.ts`
