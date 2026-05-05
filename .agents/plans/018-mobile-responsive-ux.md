@@ -1,7 +1,7 @@
 ---
 name: Mobile Responsive UX
 description: Make the web game easier to use on phone-sized screens with collapsible rails, drawer panels, portrait-friendly layouts, scroll-safe modals, and larger touch targets.
-status: started
+status: completed
 created: 2026-05-05
 updated: 2026-05-05
 owner: web
@@ -33,11 +33,11 @@ owner: web
   - [x] 5.2 Improve contract and map card stacking on phones
   - [x] 5.3 Reduce horizontal overflow and favor vertical real estate
   - [x] 5.4 Add visible affordances for hidden panels and scrollable regions
-- [ ] **Phase 6 — Validation and release readiness**
+- [x] **Phase 6 — Validation and release readiness**
   - [x] 6.1 Run web lint, typecheck, and test commands
   - [x] 6.2 Add manual QA checklist for common phone viewport sizes
   - [x] 6.3 Verify desktop layout remains unchanged
-  - [ ] 6.4 Update documentation if new responsive conventions emerge
+  - [x] 6.4 Update documentation if new responsive conventions emerge
 
 ## Overview
 
@@ -426,3 +426,4 @@ Key decisions:
   - Phone landscape — verify the floor, contracts tabs, and map panel still allow horizontal-safe navigation.
   - Desktop baseline — verify permanent rails, desktop floor grid, hover affordances, and modal widths remain unchanged.
 - 2026-05-05 — step 6.3 completed by adding a desktop shell test that confirms permanent rails still render and that phone-only drawer triggers stay absent at desktop widths.
+- 2026-05-05 — step 6.4 completed by documenting the shared phone/tablet breakpoints, touch-target minimums, safe-area tokens, and drawer/bottom-sheet conventions in `packages/web/AGENTS.md`.

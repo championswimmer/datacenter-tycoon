@@ -21,6 +21,10 @@
 - Prefer presentational components that take game state as props.
 - All CSS goes through CSS Modules (`.module.css`) or the global theme files in `src/theme/`. No inline styles except dynamic values.
 - The theme playground route `#/__theme` is dev-only — gate it with `import.meta.env.DEV`.
+- Mobile-first responsive rules live in `src/theme/tokens.css`, `src/theme/global.css`, and `src/ui/responsive.ts`. Keep phone layout changes at `max-width: 767px`, tablet adjustments at `max-width: 1023px`, and preserve desktop behavior above those breakpoints unless a bug is being fixed.
+- Use a minimum 44px touch target for interactive controls on phone/coarse-pointer layouts, with 48px preferred for floating edge tabs, icon-only buttons, and dismiss controls.
+- Phone navigation panels should become overlay drawers or bottom sheets that use `var(--safe-area-*)` padding and `var(--mobile-bottom-sheet-max-height)` / `var(--mobile-drawer-max-width)` instead of fixed desktop widths.
+- Scroll-heavy drawers and modal bodies should own their own scrolling and include visible affordances such as inset shadows or grab handles so phone users can tell when content continues offscreen.
 
 ## Time and the tick→calendar mapping
 
