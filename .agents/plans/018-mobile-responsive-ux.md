@@ -28,11 +28,11 @@ owner: web
   - [x] 4.2 Adapt rack picker to a phone bottom-sheet layout
   - [x] 4.3 Adapt move rack, new datacenter, reset, audio, and tutorial modals
   - [x] 4.4 Preserve focus, escape, backdrop, and accessible close behavior
-- [ ] **Phase 5 — Cards, buttons, and dense content polish**
+- [x] **Phase 5 — Cards, buttons, and dense content polish**
   - [x] 5.1 Enlarge card corner buttons and compact controls for touch
   - [x] 5.2 Improve contract and map card stacking on phones
   - [x] 5.3 Reduce horizontal overflow and favor vertical real estate
-  - [ ] 5.4 Add visible affordances for hidden panels and scrollable regions
+  - [x] 5.4 Add visible affordances for hidden panels and scrollable regions
 - [ ] **Phase 6 — Validation and release readiness**
   - [ ] 6.1 Run web lint, typecheck, and test commands
   - [ ] 6.2 Add manual QA checklist for common phone viewport sizes
@@ -416,3 +416,4 @@ Key decisions:
 - 2026-05-05 — step 5.1 completed by enlarging icon buttons, steppers, contract actions, and map controls to meet the shared touch-target rule on coarse or phone-sized layouts.
 - 2026-05-05 — step 5.2 completed by stacking contract cards, contract filters, map cards, and the region side panel vertically so phone navigation stays one-thumb and scroll-first.
 - 2026-05-05 — step 5.3 completed by teaching the top bar, contract controls, map cards, and region panel metadata to wrap or scroll locally instead of forcing page-level horizontal overflow.
+- 2026-05-05 — step 5.4 completed by adding drawer grab handles and inner scroll shadows so hidden panels and scrollable modal bodies read as interactive surfaces on phones.

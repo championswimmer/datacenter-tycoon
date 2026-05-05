@@ -50,6 +50,19 @@
   box-shadow: var(--shadow-float);
 }
 
+.mobileDrawer::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  z-index: calc(var(--z-overlay) + 2);
+}
+
 .mobileDrawerLeft {
   left: 0;
   padding-left: var(--safe-area-left);
