@@ -164,6 +164,38 @@
   letter-spacing: 0.06em;
 }
 
+/* ── Move button (reveal on hover) ───────────────────────── */
+
+.moveBtn {
+  position: absolute;
+  top: 2px;
+  right: 18px;
+  width: 14px;
+  height: 14px;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--fg-2);
+  background: var(--bg-2);
+  border: 1px solid var(--grid);
+  border-radius: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--duration-fast), color var(--duration-fast);
+  padding: 0;
+}
+
+.tile:hover .moveBtn {
+  opacity: 1;
+}
+
+.moveBtn:hover {
+  color: var(--neon-cyan) !important;
+  border-color: var(--neon-cyan) !important;
+}
+
 /* ── Decommission button (reveal on hover) ────────────────── */
 
 .decommBtn {

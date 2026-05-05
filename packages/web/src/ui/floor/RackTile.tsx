@@ -13,6 +13,7 @@ export interface RackTileProps {
   /** True when at least one contract assigned to this DC is breached. */
   hasFault:          boolean;
   onDecommission:    (placementId: RackPlacement["id"]) => void;
+  onMove:            (placementId: RackPlacement["id"]) => void;
 }
 
 const KIND_LABEL: Record<RackSpec["kind"], string> = {
@@ -32,6 +33,7 @@ export function RackTile({
   hasActiveContract,
   hasFault,
   onDecommission,
+  onMove,
 }: RackTileProps) {
   const [confirming, setConfirming] = useState(false);
   const repairStatusLabel = maintenanceView.status === "repairing" ? "REPAIRING" : "HEALTHY";
@@ -107,6 +109,14 @@ export function RackTile({
       {repairProgressLabel && (
         <div className={styles.repairText}>{repairProgressLabel}</div>
       )}
+
+      {/* ── Move trigger ── */}
+      <button
+        className={styles.moveBtn}
+        onClick={() => onMove(placement.id)}
+        title="Move rack to another datacenter"
+        aria-label={`Move ${spec.name}`}
+      >⇄</button>
 
       {/* ── Decommission trigger ── */}
       <button

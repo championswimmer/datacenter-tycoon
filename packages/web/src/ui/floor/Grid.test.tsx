@@ -6,8 +6,6 @@ import {
   DATACENTER_CATALOG,
   RACK_CATALOG,
 } from "@datacenter-tycoon/game-logic";
-import { createGameStore } from "../../store/gameStore.js";
-import { StoreProvider } from "../../store/storeContext.js";
 import type { RackMaintenanceView } from "../../store/selectors.js";
 import { Grid } from "./Grid.js";
 import { nextDcId, nextRackPlacementId } from "../../store/ids.js";
@@ -55,6 +53,7 @@ describe("Grid", () => {
         hasFault={false}
         onSlotClick={vi.fn()}
         onDecommission={vi.fn()}
+        onMove={vi.fn()}
       />,
     );
     // 2 rows × 4 positions = 8 empty slot buttons
@@ -73,6 +72,7 @@ describe("Grid", () => {
         hasFault={false}
         onSlotClick={vi.fn()}
         onDecommission={vi.fn()}
+        onMove={vi.fn()}
       />,
     );
     expect(screen.getByText("A")).toBeTruthy();
@@ -90,6 +90,7 @@ describe("Grid", () => {
         hasFault={false}
         onSlotClick={vi.fn()}
         onDecommission={vi.fn()}
+        onMove={vi.fn()}
       />,
     );
     expect(screen.getByText("1")).toBeTruthy();
@@ -108,6 +109,7 @@ describe("Grid", () => {
         hasFault={false}
         onSlotClick={handler}
         onDecommission={vi.fn()}
+        onMove={vi.fn()}
       />,
     );
     // Click first empty slot (row 0, position 0)
@@ -135,6 +137,7 @@ describe("Grid", () => {
         hasFault={false}
         onSlotClick={vi.fn()}
         onDecommission={vi.fn()}
+        onMove={vi.fn()}
       />,
     );
     // 1 filled slot → only 7 empty buttons (+ 1 decommission button inside the tile = 8 total)

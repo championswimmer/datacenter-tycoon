@@ -40,7 +40,8 @@ describe("RackTile", () => {
           spec={spec}
           hasActiveContract={false}
           hasFault={false}
-        onDecommission={vi.fn()}
+          onDecommission={vi.fn()}
+          onMove={vi.fn()}
       />,
     );
     expect(screen.getByText("C1")).toBeTruthy();
@@ -55,7 +56,8 @@ describe("RackTile", () => {
           spec={spec}
           hasActiveContract={false}
           hasFault={false}
-        onDecommission={vi.fn()}
+          onDecommission={vi.fn()}
+          onMove={vi.fn()}
       />,
     );
     expect(screen.getByText("CPU")).toBeTruthy();
@@ -71,7 +73,8 @@ describe("RackTile", () => {
           spec={spec}
           hasActiveContract={false}
           hasFault={false}
-        onDecommission={vi.fn()}
+          onDecommission={vi.fn()}
+          onMove={vi.fn()}
       />,
     );
     expect(screen.getByText("MEM")).toBeTruthy();
@@ -86,7 +89,8 @@ describe("RackTile", () => {
           spec={spec}
           hasActiveContract={false}
           hasFault={false}
-        onDecommission={vi.fn()}
+          onDecommission={vi.fn()}
+          onMove={vi.fn()}
       />,
     );
     fireEvent.click(screen.getByLabelText(/Decommission/));
@@ -106,7 +110,8 @@ describe("RackTile", () => {
           spec={spec}
           hasActiveContract={false}
           hasFault={false}
-        onDecommission={onDecommission}
+          onDecommission={onDecommission}
+          onMove={vi.fn()}
       />,
     );
     fireEvent.click(screen.getByLabelText(/Decommission/));
@@ -123,7 +128,8 @@ describe("RackTile", () => {
           spec={spec}
           hasActiveContract={false}
           hasFault={false}
-        onDecommission={vi.fn()}
+          onDecommission={vi.fn()}
+          onMove={vi.fn()}
       />,
     );
     fireEvent.click(screen.getByLabelText(/Decommission/));
@@ -142,6 +148,7 @@ describe("RackTile", () => {
         hasActiveContract={false}
         hasFault={false}
         onDecommission={vi.fn()}
+        onMove={vi.fn()}
       />,
     );
 
@@ -164,10 +171,30 @@ describe("RackTile", () => {
         hasActiveContract={false}
         hasFault={true}
         onDecommission={vi.fn()}
+        onMove={vi.fn()}
       />,
     );
 
     expect(screen.getByText("REPAIRING")).toBeTruthy();
     expect(screen.getByText("50% • ETA 2 mo")).toBeTruthy();
+  });
+
+  it("calls onMove when move button is clicked", () => {
+    const onMove = vi.fn();
+    const spec = RACK_CATALOG["C1"]!;
+    const placement = makePlacement("C1");
+    render(
+      <RackTile
+        placement={placement}
+        maintenanceView={makeMaintenanceView()}
+        spec={spec}
+        hasActiveContract={false}
+        hasFault={false}
+        onDecommission={vi.fn()}
+        onMove={onMove}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText(/Move/));
+    expect(onMove).toHaveBeenCalledWith(placement.id);
   });
 });

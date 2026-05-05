@@ -15,6 +15,7 @@ export interface GridProps {
   hasFault:          boolean;
   onSlotClick:       (row: number, position: number) => void;
   onDecommission:    (placementId: RackPlacementId) => void;
+  onMove:            (placementId: RackPlacementId) => void;
 }
 
 export function Grid({
@@ -24,6 +25,7 @@ export function Grid({
   hasFault,
   onSlotClick,
   onDecommission,
+  onMove,
 }: GridProps) {
   const { rows, positionsPerRow } = datacenter.spec;
 
@@ -78,6 +80,7 @@ export function Grid({
                   hasFault={hasFault}
                   onOpenPicker={onSlotClick}
                   onDecommission={onDecommission}
+                  onMove={onMove}
                 />
               );
             })}

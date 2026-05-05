@@ -8,6 +8,7 @@ import {
 } from "../../store/selectors.js";
 import { Grid } from "./Grid.js";
 import { RackPicker } from "./RackPicker.js";
+import { MoveRackModal } from "./MoveRackModal.js";
 import styles from "./FloorView.module.css";
 
 interface FloorViewProps {
@@ -21,6 +22,7 @@ export function FloorView({ dcId }: FloorViewProps) {
   const dispatch        = useGameDispatch();
 
   const [pickerSlot, setPickerSlot] = useState<GridPosition | null>(null);
+  const [movePlacementId, setMovePlacementId] = useState<RackPlacementId | null>(null);
 
   if (!dc) return null;
 
@@ -33,6 +35,9 @@ export function FloorView({ dcId }: FloorViewProps) {
 
   const handleDecommission = (placementId: RackPlacementId) => {
     dispatch({ type: "RemoveRack", dcId: dc.id, placementId });
+  };
+  const handleMove = (placementId: RackPlacementId) => {
+    setMovePlacementId(placementId);
   };
   const rackMaintenanceByPlacementId = new Map(
     rackMaintenanceViews.map((view) => [view.placementId, view]),
@@ -47,6 +52,7 @@ export function FloorView({ dcId }: FloorViewProps) {
         hasFault={hasFault}
         onSlotClick={(row, position) => setPickerSlot({ row, position })}
         onDecommission={handleDecommission}
+        onMove={handleMove}
       />
 
       {pickerSlot && (
@@ -55,6 +61,14 @@ export function FloorView({ dcId }: FloorViewProps) {
           row={pickerSlot.row}
           position={pickerSlot.position}
           onClose={() => setPickerSlot(null)}
+        />
+      )}
+
+      {movePlacementId && (
+        <MoveRackModal
+          sourceDcId={dcId}
+          placementId={movePlacementId}
+          onClose={() => setMovePlacementId(null)}
         />
       )}
     </div>
