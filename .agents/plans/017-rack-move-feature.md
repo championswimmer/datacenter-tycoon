@@ -1,7 +1,7 @@
 ---
 name: Rack Move Feature
 description: Allow players to move existing racks between datacenters with region-aware moving costs, exposed in web UI and CLI.
-status: created
+status: completed
 created: 2026-05-05
 updated: 2026-05-05
 owner: game-logic, web, cli
@@ -27,11 +27,11 @@ owner: game-logic, web, cli
   - [x] 3.2 Register command in `cli/src/cli.ts`
   - [x] 3.3 Add TUI `m` keybinding in `cli/src/tui/app.ts`
   - [x] 3.4 Unit tests for `move-rack` command
-- [ ] **Phase 4 — Integration & Polish**
-  - [ ] 4.1 Run full test suite (`npm run test`)
-  - [ ] 4.2 Run typecheck (`npm run typecheck`)
-  - [ ] 4.3 Update `packages/game-logic/AGENTS.md` if API surface changed
-  - [ ] 4.4 Update `packages/cli/AGENTS.md` if new commands added
+- [x] **Phase 4 — Integration & Polish**
+  - [x] 4.1 Run full test suite (`npm run test`)
+  - [x] 4.2 Run typecheck (`npm run typecheck`)
+  - [x] 4.3 Update `packages/game-logic/AGENTS.md` if API surface changed
+  - [x] 4.4 Update `packages/cli/AGENTS.md` if new commands added
 
 ## Overview
 
@@ -310,3 +310,7 @@ export type Action =
 ## Changelog
 
 - 2026-05-05 — Created plan.
+- 2026-05-05 — Phase 1 complete: game-logic core (MoveRack action, calculateMoveCost, canMoveRack, tests).
+- 2026-05-05 — Phase 2 complete: web UI (move button on RackTile, MoveRackModal with DC selector and cost display, CSS, tests).
+- 2026-05-05 — Phase 3 complete: CLI (move-rack command, TUI `m` keybinding, tests).
+- 2026-05-05 — Phase 4 complete: full test suite (383 tests passing), typecheck clean, AGENTS.md updated.
