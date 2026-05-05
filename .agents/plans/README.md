@@ -10,6 +10,7 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 - [`002-web-frontend-mvp.md`](./002-web-frontend-mvp.md) — initial React+Vite web UI with neon control-center theme, rack grid, contracts, and live stats. _status: created_
 - [`015-rack-aging-failures-and-maintenance.md`](./015-rack-aging-failures-and-maintenance.md) — age-based rack failures, automatic repairs, and a maintenance staffing lever. _status: created_
 - [`016-regional-fabric-and-pooled-capacity.md`](./016-regional-fabric-and-pooled-capacity.md) — region-local fabric investment and pooled capacity for contract fulfilment. _status: created_
+- [`018-mobile-responsive-ux.md`](./018-mobile-responsive-ux.md) — responsive web UX plan for collapsible mobile panels, portrait rack layouts, scroll-safe modals, and touch-friendly controls. _status: created_
 
 ## Conventions
 
