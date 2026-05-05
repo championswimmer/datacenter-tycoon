@@ -10,6 +10,10 @@
   transition: border-color var(--duration-fast), background var(--duration-fast);
 }
 
+.phone {
+  min-height: 120px;
+}
+
 /* Empty slot — button */
 button.slot {
   background: transparent;

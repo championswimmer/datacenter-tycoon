@@ -55,3 +55,62 @@
   color: var(--fg-3);
   letter-spacing: 0.1em;
 }
+
+.mobileWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--mobile-shell-gutter) var(--space-6);
+  overflow-y: auto;
+  height: 100%;
+}
+
+.mobileRowGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.mobileRowHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.mobileRowLabel {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--neon-cyan);
+  letter-spacing: 0.14em;
+}
+
+.mobileRowMeta {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--fg-2);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.mobileSlotList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.mobileSlotCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.mobileSlotLabel {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--fg-2);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}

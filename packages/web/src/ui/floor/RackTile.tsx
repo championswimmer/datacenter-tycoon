@@ -14,6 +14,7 @@ export interface RackTileProps {
   hasFault:          boolean;
   onDecommission:    (placementId: RackPlacement["id"]) => void;
   onMove:            (placementId: RackPlacement["id"]) => void;
+  layoutMode?:       "desktop" | "phone";
 }
 
 const KIND_LABEL: Record<RackSpec["kind"], string> = {
@@ -34,6 +35,7 @@ export function RackTile({
   hasFault,
   onDecommission,
   onMove,
+  layoutMode = "desktop",
 }: RackTileProps) {
   const [confirming, setConfirming] = useState(false);
   const repairStatusLabel = maintenanceView.status === "repairing" ? "REPAIRING" : "HEALTHY";
@@ -43,7 +45,12 @@ export function RackTile({
 
   if (confirming) {
     return (
-      <div className={[styles.tile, styles[`kind-${spec.kind}`], styles.tileConfirm].join(" ")}>
+      <div className={[
+        styles.tile,
+        layoutMode === "phone" ? styles.tilePhone : "",
+        styles[`kind-${spec.kind}`],
+        styles.tileConfirm,
+      ].join(" ")}>
         <p className={styles.confirmMsg}>Decommission?</p>
         <div className={styles.confirmBtns}>
           <button
@@ -60,12 +67,13 @@ export function RackTile({
   }
 
   return (
-    <div
-      className={[
-        styles.tile,
-        styles[`kind-${spec.kind}`],
-        maintenanceView.status === "repairing" ? styles.tileRepairing : "",
-      ].join(" ")}
+      <div
+        className={[
+          styles.tile,
+          layoutMode === "phone" ? styles.tilePhone : "",
+          styles[`kind-${spec.kind}`],
+          maintenanceView.status === "repairing" ? styles.tileRepairing : "",
+        ].join(" ")}
       title={`${spec.name} — Tier ${spec.tier}\nAge: ${maintenanceView.ageMonths} mo\nStatus: ${repairStatusLabel}${repairProgressLabel ? `\nRepair: ${repairProgressLabel}` : ""}\nCapex: $${spec.capexCost.toLocaleString()}\nPower: ${spec.powerDrawKw} kW/mo`}
     >
       {/* ── Bezel ── */}
