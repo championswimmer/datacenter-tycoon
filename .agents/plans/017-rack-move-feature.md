@@ -22,11 +22,11 @@ owner: game-logic, web, cli
   - [x] 2.3 Wire modal into `FloorView` → `Grid` → `Slot` → `RackTile`
   - [x] 2.4 Add CSS modules for move button and modal
   - [x] 2.5 Unit tests for `MoveRackModal`
-- [ ] **Phase 3 — CLI**
-  - [ ] 3.1 Add `move-rack` one-shot command in `cli/src/commands/build-dc.ts`
-  - [ ] 3.2 Register command in `cli/src/cli.ts`
-  - [ ] 3.3 Add TUI `m` keybinding in `cli/src/tui/app.ts`
-  - [ ] 3.4 Unit tests for `move-rack` command
+- [x] **Phase 3 — CLI**
+  - [x] 3.1 Add `move-rack` one-shot command in `cli/src/commands/build-dc.ts`
+  - [x] 3.2 Register command in `cli/src/cli.ts`
+  - [x] 3.3 Add TUI `m` keybinding in `cli/src/tui/app.ts`
+  - [x] 3.4 Unit tests for `move-rack` command
 - [ ] **Phase 4 — Integration & Polish**
   - [ ] 4.1 Run full test suite (`npm run test`)
   - [ ] 4.2 Run typecheck (`npm run typecheck`)
