@@ -1,0 +1,145 @@
+/* ── Container ─────────────────────────────────────────────── */
+
+.container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  flex-shrink: 0;
+  background: var(--bg-0);
+  border: 1px solid var(--grid);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* ── SVG base ──────────────────────────────────────────────── */
+
+.svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Grid ──────────────────────────────────────────────────── */
+
+.grid line {
+  stroke: var(--grid);
+  stroke-width: 0.5;
+  opacity: 0.4;
+}
+
+/* ── Equator ───────────────────────────────────────────────── */
+
+.equator {
+  stroke: var(--neon-purple);
+  stroke-width: 0.5;
+  opacity: 0.25;
+  stroke-dasharray: 8 4;
+}
+
+/* ── Continents ────────────────────────────────────────────── */
+
+.continents path {
+  fill: var(--bg-2);
+  stroke: var(--fg-3);
+  stroke-width: 0.75;
+  transition: fill var(--duration-normal);
+}
+
+.continents path:hover {
+  fill: var(--bg-3);
+}
+
+/* ── Markers overlay ───────────────────────────────────────── */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+}
+
+/* ── Marker button ─────────────────────────────────────────── */
+
+.marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  z-index: var(--z-raised);
+}
+
+.markerDot {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--neon-cyan);
+  box-shadow:
+    0 0 6px var(--neon-cyan),
+    0 0 14px rgba(94, 240, 255, 0.35);
+  transition:
+    width 0.2s var(--ease-out-expo),
+    height 0.2s var(--ease-out-expo),
+    background 0.2s,
+    box-shadow 0.2s;
+}
+
+.marker:hover .markerDot {
+  width: 14px;
+  height: 14px;
+  box-shadow:
+    0 0 10px var(--neon-cyan),
+    0 0 22px rgba(94, 240, 255, 0.55);
+}
+
+.markerSelected .markerDot {
+  width: 16px;
+  height: 16px;
+  background: var(--neon-lime);
+  box-shadow:
+    0 0 10px var(--neon-lime),
+    0 0 24px rgba(155, 255, 90, 0.55);
+  animation: markerPulse 2s ease-in-out infinite;
+}
+
+@keyframes markerPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 10px var(--neon-lime),
+      0 0 24px rgba(155, 255, 90, 0.55);
+  }
+  50% {
+    box-shadow:
+      0 0 14px var(--neon-lime),
+      0 0 32px rgba(155, 255, 90, 0.75);
+  }
+}
+
+/* ── Marker label (3‑digit code) ───────────────────────────── */
+
+.markerLabel {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--fg-2);
+  text-shadow:
+    0 0 4px var(--bg-0),
+    0 0 8px var(--bg-0);
+  white-space: nowrap;
+  transition: color 0.2s;
+  pointer-events: none;
+}
+
+.marker:hover .markerLabel {
+  color: var(--neon-cyan);
+}
+
+.markerSelected .markerLabel {
+  color: var(--neon-lime);
+}

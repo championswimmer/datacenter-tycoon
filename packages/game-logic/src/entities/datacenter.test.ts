@@ -31,7 +31,7 @@ function makeDatacenter(id: string, placements: RackPlacement[] = []): Datacente
 		spec: DATACENTER_CATALOG.garage,
 		placements,
 		builtAtTick: tick(0),
-		regionId: "silicon_valley" as import("../types.js").RegionId,
+		regionId: "us_west" as import("../types.js").RegionId,
 		maintenanceStaff: 0,
 	};
 }

@@ -26,8 +26,11 @@ const rackPlacementId = (value: string): RackPlacementId => value as RackPlaceme
 const tickValue = (value: number): Tick => value as Tick;
 
 const TEST_REGION: Region = {
-	id: "iowa" as import("../types.js").RegionId,
+	id: "us_east" as import("../types.js").RegionId,
 	name: "Test Region",
+	code: "IAD",
+	city: "Ashburn",
+	coordinates: { x: 26, y: 35 },
 	powerCostPerKwh: 0.12,
 	staffWage: 6_000,
 	taxRate: 0.1,
@@ -65,7 +68,7 @@ function makeDatacenter(
 		spec: DATACENTER_CATALOG.warehouse,
 		placements,
 		builtAtTick: tickValue(0),
-		regionId: "iowa" as import("../types.js").RegionId,
+		regionId: "us_east" as import("../types.js").RegionId,
 		maintenanceStaff: 0,
 	};
 }
