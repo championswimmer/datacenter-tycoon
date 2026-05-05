@@ -30,7 +30,7 @@ owner: web
   - [x] 4.4 Preserve focus, escape, backdrop, and accessible close behavior
 - [ ] **Phase 5 — Cards, buttons, and dense content polish**
   - [x] 5.1 Enlarge card corner buttons and compact controls for touch
-  - [ ] 5.2 Improve contract and map card stacking on phones
+  - [x] 5.2 Improve contract and map card stacking on phones
   - [ ] 5.3 Reduce horizontal overflow and favor vertical real estate
   - [ ] 5.4 Add visible affordances for hidden panels and scrollable regions
 - [ ] **Phase 6 — Validation and release readiness**
@@ -414,3 +414,4 @@ Key decisions:
 - 2026-05-05 — step 4.3 completed by stacking move-rack, new-datacenter, reset, audio, and tutorial modal content into phone-friendly sheets with full-width primary actions and larger close controls.
 - 2026-05-05 — step 4.4 completed by restoring focus to drawer triggers, auto-focusing dialog close controls, and adding missing Escape handling so keyboard users can reliably dismiss every responsive overlay.
 - 2026-05-05 — step 5.1 completed by enlarging icon buttons, steppers, contract actions, and map controls to meet the shared touch-target rule on coarse or phone-sized layouts.
+- 2026-05-05 — step 5.2 completed by stacking contract cards, contract filters, map cards, and the region side panel vertically so phone navigation stays one-thumb and scroll-first.

@@ -252,3 +252,18 @@
     padding-bottom: var(--space-3);
   }
 }
+
+@media (max-width: 767px) {
+  .panel {
+    left: var(--mobile-shell-gutter);
+    right: var(--mobile-shell-gutter);
+    top: auto;
+    bottom: var(--space-4);
+    width: auto;
+    max-height: min(72vh, calc(var(--app-viewport-height) - var(--safe-area-top) - var(--safe-area-bottom) - 32px));
+  }
+
+  .econGrid {
+    grid-template-columns: 1fr;
+  }
+}

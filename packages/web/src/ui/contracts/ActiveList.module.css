@@ -235,3 +235,25 @@
     padding: var(--space-2) var(--space-4);
   }
 }
+
+@media (max-width: 767px) {
+  .cardTop,
+  .progressRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .financials {
+    text-align: left;
+    width: 100%;
+  }
+
+  .progressMeta {
+    white-space: normal;
+  }
+
+  .confirmRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
