@@ -1,7 +1,7 @@
 ---
 name: Map-Based Region Selector
 description: Overhaul the region selection mechanism to feature an interactive world map and a sortable list of 8 realistic top-tier cloud regions with city names and codes.
-status: created
+status: started
 created: 2026-05-05
 updated: 2026-05-05
 ---
@@ -10,7 +10,7 @@ updated: 2026-05-05
 
 - [ ] **Phase 1 — Game Logic & Region Model Update**
   - [x] 1.1 Update `Region` interface in `packages/game-logic/src/types.ts` to include `code: string`, `city: string`, and `coordinates: { x: number; y: number }` (representing X/Y percentages for map overlay).
-  - [ ] 1.2 Replace `REGION_CATALOG` in `packages/game-logic/src/catalog/regions.ts` with 8 new realistic regions (incorporating precise region IDs, names, cities, codes, and map coordinates).
+  - [x] 1.2 Replace `REGION_CATALOG` in `packages/game-logic/src/catalog/regions.ts` with 8 new realistic regions (incorporating precise region IDs, names, cities, codes, and map coordinates).
   - [ ] 1.3 Update test fixtures across the monorepo (`game-logic`, `web`, `cli`) replacing hardcoded IDs like `iowa` or `silicon_valley` with `us_east` or `us_west`.
 
 - [ ] **Phase 2 — UI: World Map Visualization Component**
