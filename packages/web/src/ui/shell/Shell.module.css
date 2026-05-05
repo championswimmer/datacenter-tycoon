@@ -52,10 +52,13 @@
 
 .mobileDrawerLeft {
   left: 0;
+  padding-left: var(--safe-area-left);
+  animation: slideDrawerInLeft var(--duration-normal) var(--ease-out-expo);
 }
 
 .mobileDrawerRight {
   right: 0;
+  padding-right: var(--safe-area-right);
 }
 
 .mobileDrawerOpen {
@@ -69,6 +72,17 @@
   background: rgba(5, 7, 11, 0.6);
   border: 0;
   padding: 0;
+}
+
+@keyframes slideDrawerInLeft {
+  from {
+    transform: translateX(calc(-100% - var(--safe-area-left)));
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 /* ── Global placeholder (contracts/log stubs) ─────────────── */

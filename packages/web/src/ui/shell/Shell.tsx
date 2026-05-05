@@ -96,6 +96,7 @@ export function Shell({ isFreshStart = false }: ShellProps) {
               isDatacenterDrawerOpen ? styles.mobileDrawerOpen : "",
             ].join(" ")}
             aria-label="Datacenter navigation"
+            data-mobile-drawer={isPhoneViewport ? "datacenters" : undefined}
           >
             <DatacenterList
               currentRoute={route}

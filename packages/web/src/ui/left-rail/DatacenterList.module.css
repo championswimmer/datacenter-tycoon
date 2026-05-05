@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-width: 0;
   background: var(--bg-1);
   border-right: 1px solid var(--grid);
   overflow: hidden;
@@ -67,9 +68,11 @@
   flex: 1;
   overflow-y: auto;
   padding: var(--space-2);
+  padding-bottom: max(var(--space-2), var(--safe-area-bottom));
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  scrollbar-gutter: stable;
 }
 
 .empty {
@@ -202,6 +205,7 @@
   cursor: pointer;
   transition: border-color var(--duration-fast), color var(--duration-fast), box-shadow var(--duration-fast);
   flex-shrink: 0;
+  margin-bottom: max(var(--space-2), var(--safe-area-bottom));
 }
 
 .newDcBtn:hover {
