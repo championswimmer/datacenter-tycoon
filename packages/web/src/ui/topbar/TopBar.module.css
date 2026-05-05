@@ -224,3 +224,16 @@
   border-color: var(--neon-cyan) !important;
   box-shadow: var(--glow-sm-cyan);
 }
+
+@media (pointer: coarse), (max-width: 767px) {
+  .helpBtn {
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+    font-size: var(--text-md);
+  }
+
+  .speedBtn {
+    min-height: var(--touch-target-min);
+    padding: var(--space-2) var(--space-3);
+  }
+}

@@ -307,6 +307,11 @@
     justify-content: flex-start;
   }
 
+  .maintenanceBtn {
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+  }
+
   .maintenanceHints {
     flex-direction: column;
     gap: var(--space-1);

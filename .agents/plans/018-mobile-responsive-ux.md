@@ -29,7 +29,7 @@ owner: web
   - [x] 4.3 Adapt move rack, new datacenter, reset, audio, and tutorial modals
   - [x] 4.4 Preserve focus, escape, backdrop, and accessible close behavior
 - [ ] **Phase 5 — Cards, buttons, and dense content polish**
-  - [ ] 5.1 Enlarge card corner buttons and compact controls for touch
+  - [x] 5.1 Enlarge card corner buttons and compact controls for touch
   - [ ] 5.2 Improve contract and map card stacking on phones
   - [ ] 5.3 Reduce horizontal overflow and favor vertical real estate
   - [ ] 5.4 Add visible affordances for hidden panels and scrollable regions
@@ -413,3 +413,4 @@ Key decisions:
 - 2026-05-05 — step 4.2 completed by turning the rack picker into a true phone bottom sheet with full-width actions, single-column cards, and horizontally scrollable filter chips.
 - 2026-05-05 — step 4.3 completed by stacking move-rack, new-datacenter, reset, audio, and tutorial modal content into phone-friendly sheets with full-width primary actions and larger close controls.
 - 2026-05-05 — step 4.4 completed by restoring focus to drawer triggers, auto-focusing dialog close controls, and adding missing Escape handling so keyboard users can reliably dismiss every responsive overlay.
+- 2026-05-05 — step 5.1 completed by enlarging icon buttons, steppers, contract actions, and map controls to meet the shared touch-target rule on coarse or phone-sized layouts.

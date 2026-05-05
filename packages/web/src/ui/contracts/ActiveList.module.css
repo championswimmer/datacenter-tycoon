@@ -226,3 +226,12 @@
 .footerRevenue { color: var(--neon-lime); }
 .footerPenalty { color: var(--neon-red); }
 .footerDivider { color: var(--fg-3); }
+
+@media (pointer: coarse), (max-width: 767px) {
+  .cancelBtn,
+  .confirmYes,
+  .confirmNo {
+    min-height: var(--touch-target-min);
+    padding: var(--space-2) var(--space-4);
+  }
+}

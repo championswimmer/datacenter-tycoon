@@ -365,3 +365,20 @@
 .confirmAcceptBtn:hover { box-shadow: var(--glow-lime); }
 .confirmBackBtn:hover { box-shadow: var(--glow-sm-cyan); }
 .dcCancelBtn:hover { color: var(--fg-0); }
+
+@media (pointer: coarse), (max-width: 767px) {
+  .acceptBtn,
+  .dcBtn,
+  .confirmAcceptBtn,
+  .confirmBackBtn,
+  .dcCancelBtn {
+    min-height: var(--touch-target-min);
+  }
+
+  .acceptBtn,
+  .confirmAcceptBtn,
+  .confirmBackBtn,
+  .dcCancelBtn {
+    padding: var(--space-2) var(--space-4);
+  }
+}

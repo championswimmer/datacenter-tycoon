@@ -235,3 +235,20 @@
   color: var(--fg-2);
   box-shadow: none;
 }
+
+@media (pointer: coarse), (max-width: 767px) {
+  .closeBtn {
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+  }
+
+  .dcItem,
+  .buildBtn {
+    min-height: var(--touch-target-min);
+  }
+
+  .dcItem {
+    padding-top: var(--space-3);
+    padding-bottom: var(--space-3);
+  }
+}
