@@ -11,7 +11,7 @@ owner: web
 
 - [ ] **Phase 1 — Mobile baseline and shared responsive rules**
   - [x] 1.1 Define mobile breakpoints, touch-target rules, and viewport constraints
-  - [ ] 1.2 Audit current shell, floor, modal, and card layouts against those rules
+  - [x] 1.2 Audit current shell, floor, modal, and card layouts against those rules
   - [ ] 1.3 Add regression coverage for phone-sized rendering assumptions
 - [ ] **Phase 2 — Collapsible shell rails and mobile navigation**
   - [ ] 2.1 Introduce mobile drawer state in `Shell`
@@ -394,3 +394,9 @@ Key decisions:
 
 - 2026-05-05 — created.
 - 2026-05-05 — step 1.1 completed by adding shared responsive constants, viewport-height tokens, touch-target guidance, and safe-area tokens for later drawer and sheet work.
+- 2026-05-05 — step 1.2 audit findings:
+  - `Shell.module.css` still uses fixed 200px/240px rails, so phone view needs overlay drawers instead of a three-column grid.
+  - `TopBar.module.css`, `DatacenterView.module.css`, `RackTile.module.css`, and `RegionPanel.module.css` still rely on 28px–32px icon buttons and dense nowrap text that need touch-target and wrap treatment.
+  - `Grid.module.css`, `Slot.module.css`, and `RackTile.module.css` assume desktop row/column density and hover-revealed rack actions, so portrait touch interaction needs a dedicated floor mode.
+  - `RackPicker.module.css`, `MoveRackModal.module.css`, `NewDatacenterModal.module.css`, `ResetGameModal.module.css`, `AudioSettingsModal.module.css`, and `TutorialModal.module.css` all use centered desktop modal panels with limited height handling, so Phase 4 should standardize inner scrolling and bottom-sheet behavior.
+  - `ContractsPage.module.css`, `MarketList.module.css`, `ActiveList.module.css`, `MapView.module.css`, and `RegionPanel.module.css` still contain fixed-width cards, multi-column grids, and nowrap metadata that need phone stacking and overflow cleanup in Phase 5.
