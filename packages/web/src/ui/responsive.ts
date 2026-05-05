@@ -38,6 +38,8 @@ function getSnapshot(): ResponsiveMode {
 }
 
 export function useResponsiveMode(): ResponsiveMode {
+  // SSR has no viewport information, so default to desktop to preserve the
+  // existing non-overlay shell layout until the client hydrates and measures.
   return useSyncExternalStore(subscribe, getSnapshot, () => "desktop");
 }
 
