@@ -34,7 +34,7 @@ owner: web
   - [x] 5.3 Reduce horizontal overflow and favor vertical real estate
   - [x] 5.4 Add visible affordances for hidden panels and scrollable regions
 - [ ] **Phase 6 — Validation and release readiness**
-  - [ ] 6.1 Run web lint, typecheck, and test commands
+  - [x] 6.1 Run web lint, typecheck, and test commands
   - [ ] 6.2 Add manual QA checklist for common phone viewport sizes
   - [ ] 6.3 Verify desktop layout remains unchanged
   - [ ] 6.4 Update documentation if new responsive conventions emerge
@@ -417,3 +417,4 @@ Key decisions:
 - 2026-05-05 — step 5.2 completed by stacking contract cards, contract filters, map cards, and the region side panel vertically so phone navigation stays one-thumb and scroll-first.
 - 2026-05-05 — step 5.3 completed by teaching the top bar, contract controls, map cards, and region panel metadata to wrap or scroll locally instead of forcing page-level horizontal overflow.
 - 2026-05-05 — step 5.4 completed by adding drawer grab handles and inner scroll shadows so hidden panels and scrollable modal bodies read as interactive surfaces on phones.
+- 2026-05-05 — step 6.1 completed with `npm run typecheck -w @datacenter-tycoon/web`, `npm run test -w @datacenter-tycoon/web`, and `npm run build -w @datacenter-tycoon/web` all passing; `npm run lint -w @datacenter-tycoon/web` still reports that no lint script exists in this workspace.
