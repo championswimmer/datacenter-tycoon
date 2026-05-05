@@ -79,7 +79,7 @@ test("daemon server persists autosaved state after RPC dispatch", async () => {
 			type: "BuildDatacenter",
 			specId: DATACENTER_CATALOG.garage.id,
 			dcId: "dc-1",
-			regionId: "silicon_valley",
+			regionId: "us_west",
 		},
 	})) as { result: { tick: number } };
 	assert.equal(dispatchResponse.result.tick, 0);

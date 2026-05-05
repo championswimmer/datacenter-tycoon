@@ -7,7 +7,7 @@ test("generateMap returns a non-empty list of regions", () => {
 	const map = generateMap(42);
 	assert.ok(map.regions.length > 0);
 	// Should contain all catalog regions (no synthetic global region)
-	assert.ok(map.regions.length >= 10);
+	assert.equal(map.regions.length, 8);
 });
 
 test("generateMap is deterministic for the same seed", () => {
@@ -42,8 +42,8 @@ test("generated regions preserve catalog names and ids", () => {
 	const names = map.regions.map((r) => r.name);
 	const ids = map.regions.map((r) => r.id);
 
-	assert.ok(names.includes("Silicon Valley"));
-	assert.ok(names.includes("Iowa"));
-	assert.ok(ids.includes("silicon_valley"));
-	assert.ok(ids.includes("iowa"));
+	assert.ok(names.includes("US West"));
+	assert.ok(names.includes("US East"));
+	assert.ok(ids.includes("us_west"));
+	assert.ok(ids.includes("us_east"));
 });

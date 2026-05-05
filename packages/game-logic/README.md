@@ -34,14 +34,14 @@ let state: GameState = newGame(42, {
 });
 
 // Pick a region — each has unique power costs, wages, and taxes
-const iowa = regionId("iowa");
+const usEast = regionId("us_east");
 
 const actions: Action[] = [
   {
     type: "BuildDatacenter",
     specId: DATACENTER_CATALOG.garage.id,
     dcId: datacenterId("dc-1"),
-    regionId: iowa,
+    regionId: usEast,
   },
   {
     type: "PlaceRack",
@@ -175,6 +175,9 @@ Datacenters are built in specific regions. Each region has its own economy:
 interface Region {
   id: RegionId;
   name: string;
+  code: string;
+  city: string;
+  coordinates: { x: number; y: number };
   powerCostPerKwh: number;
   staffWage: number;
   taxRate: number;
@@ -189,7 +192,7 @@ interface MapState {
 }
 ```
 
-- **Power cost** varies by region (e.g., Iowa ~$0.06/kWh, Silicon Valley ~$0.22/kWh).
+- **Power cost** varies by region (e.g., US East ~$0.07/kWh, US West ~$0.05/kWh).
 - **Staff wage** varies by region, multiplied by the datacenter's baseline `staffCount + maintenanceStaff` to produce monthly staff opex.
 - **Tax rate** is applied to datacenter profit (revenue minus base opex) each tick.
 - **Finite pools**: `totalPowerAvailable` and `totalStaffAvailable` cap how many datacenters can be built in a region.
