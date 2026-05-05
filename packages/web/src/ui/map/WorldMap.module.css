@@ -4,6 +4,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 2 / 1;
+  flex-shrink: 0;
   background: var(--bg-0);
   border: 1px solid var(--grid);
   border-radius: var(--radius-md);
