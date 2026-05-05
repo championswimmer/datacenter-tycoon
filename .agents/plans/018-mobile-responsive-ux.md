@@ -24,7 +24,7 @@ owner: web
   - [x] 3.3 Add a portrait rack layout mode for the floor grid
   - [x] 3.4 Keep rack actions discoverable without hover on touch devices
 - [ ] **Phase 4 — Modal and drawer ergonomics**
-  - [ ] 4.1 Standardize modal height, inner scrolling, and safe-area padding
+  - [x] 4.1 Standardize modal height, inner scrolling, and safe-area padding
   - [ ] 4.2 Adapt rack picker to a phone bottom-sheet layout
   - [ ] 4.3 Adapt move rack, new datacenter, reset, audio, and tutorial modals
   - [ ] 4.4 Preserve focus, escape, backdrop, and accessible close behavior
@@ -409,3 +409,4 @@ Key decisions:
 - 2026-05-05 — step 3.2 completed by making the datacenter tab bar horizontally scrollable and enlarging tab hit areas for phone-sized touch navigation.
 - 2026-05-05 — step 3.3 completed by adding a portrait row-grouped floor layout that stacks full-width slot cards on phones while preserving the existing desktop grid.
 - 2026-05-05 — step 3.4 completed by making rack action controls persist on touch breakpoints and reserving bezel space so move and decommission buttons stay visible without covering rack status text.
+- 2026-05-05 — step 4.1 completed by giving modal backdrops safe-area padding, capping panel height with the shared sheet token, and ensuring modal bodies own their scrolling instead of trapping footer actions offscreen.

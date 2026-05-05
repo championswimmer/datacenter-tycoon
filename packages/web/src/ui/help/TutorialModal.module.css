@@ -9,7 +9,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-6);
+  padding:
+    max(var(--space-3), var(--safe-area-top))
+    max(var(--mobile-shell-gutter), var(--safe-area-right))
+    max(var(--space-3), var(--safe-area-bottom))
+    max(var(--mobile-shell-gutter), var(--safe-area-left));
   animation: fadeIn var(--duration-normal) var(--ease-out-expo);
 }
 
@@ -27,7 +31,7 @@
   box-shadow: var(--glow-cyan), var(--shadow-float);
   width: 100%;
   max-width: 640px;
-  max-height: 90vh;
+  max-height: var(--mobile-bottom-sheet-max-height);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -99,6 +103,7 @@
   padding: var(--space-6);
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
 }
 
 /* ── Step Panel ───────────────────────────────────────────── */
@@ -161,7 +166,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-4) var(--space-6);
+  padding: var(--space-4) var(--space-6) max(var(--space-4), var(--safe-area-bottom));
   border-top: 1px solid var(--grid);
   background: var(--bg-1);
   flex-shrink: 0;
@@ -231,7 +236,11 @@
 
 @media (max-width: 640px) {
   .backdrop {
-    padding: var(--space-4);
+    padding:
+      max(var(--space-2), var(--safe-area-top))
+      max(var(--space-3), var(--safe-area-right))
+      max(var(--space-2), var(--safe-area-bottom))
+      max(var(--space-3), var(--safe-area-left));
   }
 
   .panel {
