@@ -47,7 +47,7 @@ function makeDatacenter(id: string, placements: RackPlacement[] = []): Datacente
 		spec: DATACENTER_CATALOG.garage,
 		placements,
 		builtAtTick: tick(0),
-		regionId: "silicon_valley" as import("../types.js").RegionId,
+		regionId: "us_west" as import("../types.js").RegionId,
 		maintenanceStaff: 0,
 	};
 }
@@ -291,16 +291,16 @@ test("reduce handles SetMaintenanceStaff rejects changes that exceed regional st
 		type: "BuildDatacenter",
 		specId: DATACENTER_CATALOG.garage.id,
 		dcId: datacenterId("dc-1"),
-		regionId: "silicon_valley" as import("../types.js").RegionId,
+		regionId: "us_west" as import("../types.js").RegionId,
 	});
 	const constrainedState = {
 		...builtState,
 		map: {
 			...builtState.map,
 			regions: builtState.map.regions.map((region) =>
-				region.id === ("silicon_valley" as import("../types.js").RegionId)
+				region.id === ("us_west" as import("../types.js").RegionId)
 					? {
-							...region,
+...region,
 							totalStaffAvailable: region.staffUsed + 1,
 						}
 					: region,

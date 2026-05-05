@@ -21,8 +21,8 @@ const regionId = (value: string): RegionId => value as RegionId;
 test("end-to-end scripted game remains profitable over an early 3-tick run", () => {
 	let state = newGame(1);
 	const warehouseId = datacenterId("dc-warehouse-1");
-	// Use Iowa — cheap power and staff, low tax — to keep the short scripted run profitable.
-	const regionId = "iowa" as import("./types.js").RegionId;
+	// Use US East — cheap power and staff, low tax — to keep the short scripted run profitable.
+	const regionId = "us_east" as import("./types.js").RegionId;
 
 	state = reduce(state, {
 		type: "BuildDatacenter",
@@ -94,64 +94,64 @@ test("end-to-end scripted game remains profitable over an early 3-tick run", () 
 
 test("regional opex reflects location economics", () => {
 	let state = newGame(42);
-	const iowaId = regionId("iowa");
-	const svId = regionId("silicon_valley");
+	const usEastId = regionId("us_east");
+	const usWestId = regionId("us_west");
 
-	// Build identical garages in Iowa and Silicon Valley
+	// Build identical garages in US East and US West
 	state = reduce(state, {
 		type: "BuildDatacenter",
 		specId: DATACENTER_CATALOG.garage.id,
-		dcId: datacenterId("dc-iowa"),
-		regionId: iowaId,
+		dcId: datacenterId("dc-us-east"),
+		regionId: usEastId,
 	});
 	state = reduce(state, {
 		type: "BuildDatacenter",
 		specId: DATACENTER_CATALOG.garage.id,
-		dcId: datacenterId("dc-sv"),
-		regionId: svId,
+		dcId: datacenterId("dc-us-west"),
+		regionId: usWestId,
 	});
 
-	const iowaDc = state.datacenters.find((d) => d.id === datacenterId("dc-iowa"))!;
-	const svDc = state.datacenters.find((d) => d.id === datacenterId("dc-sv"))!;
-	const iowaRegion = state.map.regions.find((r) => r.id === iowaId)!;
-	const svRegion = state.map.regions.find((r) => r.id === svId)!;
+	const usEastDc = state.datacenters.find((d) => d.id === datacenterId("dc-us-east"))!;
+	const usWestDc = state.datacenters.find((d) => d.id === datacenterId("dc-us-west"))!;
+	const usEastRegion = state.map.regions.find((r) => r.id === usEastId)!;
+	const usWestRegion = state.map.regions.find((r) => r.id === usWestId)!;
 
-	const iowaOpex = tickOpex(iowaDc, iowaRegion);
-	const svOpex = tickOpex(svDc, svRegion);
+	const usEastOpex = tickOpex(usEastDc, usEastRegion);
+	const usWestOpex = tickOpex(usWestDc, usWestRegion);
 
-	// Iowa should be cheaper than Silicon Valley for staff
-	assert.ok(iowaOpex.breakdown.staff < svOpex.breakdown.staff);
+	// US West should be cheaper than US East for staff
+	assert.ok(usWestOpex.breakdown.staff < usEastOpex.breakdown.staff);
 	// Both have no power/cooling/maintenance with no racks
-	assert.equal(iowaOpex.breakdown.power, 0);
-	assert.equal(svOpex.breakdown.power, 0);
-	assert.equal(iowaOpex.breakdown.cooling, 0);
-	assert.equal(svOpex.breakdown.cooling, 0);
-	assert.equal(iowaOpex.breakdown.maintenance, 0);
-	assert.equal(svOpex.breakdown.maintenance, 0);
-	// Iowa total should be much lower than SV
-	assert.ok(iowaOpex.total < svOpex.total);
+	assert.equal(usEastOpex.breakdown.power, 0);
+	assert.equal(usWestOpex.breakdown.power, 0);
+	assert.equal(usEastOpex.breakdown.cooling, 0);
+	assert.equal(usWestOpex.breakdown.cooling, 0);
+	assert.equal(usEastOpex.breakdown.maintenance, 0);
+	assert.equal(usWestOpex.breakdown.maintenance, 0);
+	// US West total should be much lower than US East
+	assert.ok(usWestOpex.total < usEastOpex.total);
 
 	// Verify staff cost matches region wage * garage staffCount (2)
-	assert.equal(iowaOpex.breakdown.staff, iowaRegion.staffWage * 2);
-	assert.equal(svOpex.breakdown.staff, svRegion.staffWage * 2);
+	assert.equal(usEastOpex.breakdown.staff, usEastRegion.staffWage * 2);
+	assert.equal(usWestOpex.breakdown.staff, usWestRegion.staffWage * 2);
 
 	// Run a tick and verify ledger reflects combined costs
 	state = reduce(state, { type: "Tick" });
 	const opexEntry = state.ledger.find((e) => e.type === "opex");
 	assert.ok(opexEntry);
-	assert.equal(opexEntry.amount, -(iowaOpex.total + svOpex.total));
+	assert.equal(opexEntry.amount, -(usEastOpex.total + usWestOpex.total));
 });
 
 test("tax is applied on profitable datacenters and varies by region", () => {
 	let state = newGame(42, { startingCash: 1_000_000 });
 	const dcId = datacenterId("dc-test-1");
-	const iowaId = regionId("iowa");
+	const usEastId = regionId("us_east");
 
 	state = reduce(state, {
 		type: "BuildDatacenter",
 		specId: DATACENTER_CATALOG.garage.id,
 		dcId,
-		regionId: iowaId,
+		regionId: usEastId,
 	});
 
 	state = reduce(state, {
@@ -187,7 +187,7 @@ test("tax is applied on profitable datacenters and varies by region", () => {
 		dcId,
 	});
 
-	const region = state.map.regions.find((r) => r.id === iowaId)!;
+	const region = state.map.regions.find((r) => r.id === usEastId)!;
 	const dc = state.datacenters.find((d) => d.id === dcId)!;
 	const opexBeforeTick = tickOpex(dc, region);
 
