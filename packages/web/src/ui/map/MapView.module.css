@@ -55,6 +55,15 @@
     grid-template-columns: 1fr;
     padding: var(--space-4) var(--mobile-shell-gutter) var(--space-6);
   }
+
+  .cardName {
+    white-space: normal;
+  }
+
+  .barRow {
+    grid-template-columns: 1fr;
+    justify-items: flex-start;
+  }
 }
 
 /* ── Region Card ────────────────────────────────────────────── */
