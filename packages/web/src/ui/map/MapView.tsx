@@ -1,11 +1,10 @@
 import { useState, useCallback } from "react";
-import { canBuildInRegion } from "@datacenter-tycoon/game-logic";
-import type { Region, RegionId } from "@datacenter-tycoon/game-logic";
+import type { RegionId } from "@datacenter-tycoon/game-logic";
 import { useSelector } from "../../store/storeContext.js";
 import { selectRegions, selectAllDatacenters, selectCash } from "../../store/selectors.js";
-import { ProgressBar } from "../../theme/primitives/index.js";
 import { RegionPanel } from "./RegionPanel.js";
 import { NewDatacenterModal } from "../onboarding/NewDatacenterModal.js";
+import { WorldMap } from "./WorldMap.js";
 import styles from "./MapView.module.css";
 
 export function MapView() {
@@ -33,18 +32,13 @@ export function MapView() {
         </span>
       </div>
 
-      {/* ── Region grid ── */}
-      <div className={styles.regionGrid}>
-        {regions.map((region) => (
-          <RegionCard
-            key={region.id}
-            region={region}
-            datacenters={datacenters}
-            cash={cash}
-            selected={region.id === selectedRegionId}
-            onSelect={() => setSelectedRegionId(region.id as RegionId)}
-          />
-        ))}
+      {/* ── World map ── */}
+      <div className={styles.mapArea}>
+        <WorldMap
+          regions={regions}
+          selectedRegionId={selectedRegionId}
+          onSelectRegion={(id) => setSelectedRegionId(id)}
+        />
       </div>
 
       {/* ── Region detail panel ── */}
@@ -66,128 +60,4 @@ export function MapView() {
       )}
     </div>
   );
-}
-
-// ── Region Card ───────────────────────────────────────────────────────────────
-
-interface RegionCardProps {
-  region: Region;
-  datacenters: import("@datacenter-tycoon/game-logic").Datacenter[];
-  cash: number;
-  selected: boolean;
-  onSelect: () => void;
-}
-
-function RegionCard({ region, datacenters, cash, selected, onSelect }: RegionCardProps) {
-  const dcCount = datacenters.filter((dc) => dc.regionId === region.id).length;
-
-  const powerRemaining = region.totalPowerAvailable - region.powerUsed;
-  const staffRemaining = region.totalStaffAvailable - region.staffUsed;
-
-  const powerRemainingPct = region.totalPowerAvailable > 0
-    ? powerRemaining / region.totalPowerAvailable
-    : 0;
-  const staffRemainingPct = region.totalStaffAvailable > 0
-    ? staffRemaining / region.totalStaffAvailable
-    : 0;
-
-  // Color based on how much is USED (not remaining)
-  const powerUsedPct = region.totalPowerAvailable > 0
-    ? region.powerUsed / region.totalPowerAvailable
-    : 0;
-  const staffUsedPct = region.totalStaffAvailable > 0
-    ? region.staffUsed / region.totalStaffAvailable
-    : 0;
-
-  const powerColor = powerUsedPct >= 0.9 ? "red" : powerUsedPct >= 0.7 ? "amber" : "cyan";
-  const staffColor = staffUsedPct >= 0.9 ? "red" : staffUsedPct >= 0.7 ? "amber" : "cyan";
-
-  // Color-code by power cost: cheap = lime, moderate = cyan, expensive = amber, very expensive = red
-  const costColor = getCostColor(region.powerCostPerKwh);
-
-  return (
-    <button
-      className={[
-        styles.card,
-        selected ? styles.cardSelected : "",
-      ].filter(Boolean).join(" ")}
-      onClick={onSelect}
-      aria-pressed={selected}
-    >
-      <div className={styles.cardHeader}>
-        <span className={[styles.costIndicator, styles[`cost-${costColor}`]].join(" ")} />
-        <span className={styles.cardName}>{region.name}</span>
-        {dcCount > 0 && (
-          <span className={styles.dcBadge}>{dcCount} DC</span>
-        )}
-      </div>
-
-      <div className={styles.cardStats}>
-        <StatRow label="POWER" value={`$${region.powerCostPerKwh.toFixed(2)}/kWh`} />
-        <StatRow label="WAGE" value={`$${(region.staffWage / 1000).toFixed(1)}K/mo`} />
-        <StatRow label="TAX" value={`${(region.taxRate * 100).toFixed(0)}%`} />
-      </div>
-
-      <div className={styles.bars}>
-        <BarRow
-          label="PWR"
-          remaining={powerRemaining}
-          total={region.totalPowerAvailable}
-          unit="kW"
-          remainingPct={powerRemainingPct}
-          color={powerColor}
-        />
-        <BarRow
-          label="STAFF"
-          remaining={staffRemaining}
-          total={region.totalStaffAvailable}
-          unit=""
-          remainingPct={staffRemainingPct}
-          color={staffColor}
-        />
-      </div>
-    </button>
-  );
-}
-
-function StatRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className={styles.statRow}>
-      <span className={styles.statLabel}>{label}</span>
-      <span className={styles.statValue}>{value}</span>
-    </div>
-  );
-}
-
-function BarRow({
-  label,
-  remaining,
-  total,
-  unit,
-  remainingPct,
-  color,
-}: {
-  label: string;
-  remaining: number;
-  total: number;
-  unit: string;
-  remainingPct: number;
-  color: "cyan" | "amber" | "lime" | "red";
-}) {
-  return (
-    <div className={styles.barRow}>
-      <span className={styles.barLabel}>{label}</span>
-      <ProgressBar value={remainingPct * 100} max={100} segments={12} color={color} height={4} />
-      <span className={styles.barAbs}>
-        {remaining.toLocaleString()}/{total.toLocaleString()}{unit ? ` ${unit}` : ""}
-      </span>
-    </div>
-  );
-}
-
-function getCostColor(costPerKwh: number): string {
-  if (costPerKwh < 0.08) return "lime";
-  if (costPerKwh < 0.12) return "cyan";
-  if (costPerKwh < 0.18) return "amber";
-  return "red";
 }
