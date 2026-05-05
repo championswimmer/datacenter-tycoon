@@ -39,6 +39,23 @@ afterEach(() => {
 });
 
 describe("Shell mobile drawers", () => {
+  it("keeps both rails visible on desktop without mobile triggers", () => {
+    act(() => {
+      setViewportWidth(1280);
+    });
+
+    render(
+      <Wrapper>
+        <Shell />
+      </Wrapper>,
+    );
+
+    expect(screen.getByLabelText("Datacenter navigation")).toBeTruthy();
+    expect(screen.getByLabelText("Event log")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Toggle datacenters drawer" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Toggle event log drawer" })).toBeNull();
+  });
+
   it("toggles the datacenter drawer from the phone trigger", () => {
     act(() => {
       setViewportWidth(390);

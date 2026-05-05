@@ -36,7 +36,7 @@ owner: web
 - [ ] **Phase 6 — Validation and release readiness**
   - [x] 6.1 Run web lint, typecheck, and test commands
   - [x] 6.2 Add manual QA checklist for common phone viewport sizes
-  - [ ] 6.3 Verify desktop layout remains unchanged
+  - [x] 6.3 Verify desktop layout remains unchanged
   - [ ] 6.4 Update documentation if new responsive conventions emerge
 
 ## Overview
@@ -425,3 +425,4 @@ Key decisions:
   - 430 × 932 portrait — verify top bar wrapping, speed controls, and hidden drawer affordances remain readable.
   - Phone landscape — verify the floor, contracts tabs, and map panel still allow horizontal-safe navigation.
   - Desktop baseline — verify permanent rails, desktop floor grid, hover affordances, and modal widths remain unchanged.
+- 2026-05-05 — step 6.3 completed by adding a desktop shell test that confirms permanent rails still render and that phone-only drawer triggers stay absent at desktop widths.
