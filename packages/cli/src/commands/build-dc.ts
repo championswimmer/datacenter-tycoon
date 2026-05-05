@@ -91,3 +91,37 @@ export async function runRemoveRackCommand(
 
 	writeCommandResult(parsed, `Removed rack ${placementId}`, { dcId, placementId });
 }
+
+export async function runMoveRackCommand(
+	parsed: ParsedArgv,
+	clientFactory: CommandClientFactory = (options) => new DctClient(options),
+): Promise<void> {
+	const dcId = requirePositional(parsed, 0, "dct move-rack <dcId> <placementId> <targetDcId> <row> <position>");
+	const placementId = requirePositional(parsed, 1, "dct move-rack <dcId> <placementId> <targetDcId> <row> <position>");
+	const targetDcId = requirePositional(parsed, 2, "dct move-rack <dcId> <placementId> <targetDcId> <row> <position>");
+	const row = parseInteger(requirePositional(parsed, 3, "dct move-rack <dcId> <placementId> <targetDcId> <row> <position>"), "row");
+	const position = parseInteger(requirePositional(parsed, 4, "dct move-rack <dcId> <placementId> <targetDcId> <row> <position>"), "position");
+
+	await withClient(
+		parsed,
+		async (client) => {
+			await client.dispatch({
+				type: "MoveRack",
+				dcId: datacenterId(dcId),
+				placementId: rackPlacementId(placementId),
+				targetDcId: datacenterId(targetDcId),
+				row,
+				position,
+			});
+		},
+		clientFactory,
+	);
+
+	writeCommandResult(parsed, `Moved rack ${placementId} to ${targetDcId} at row ${row}, position ${position}`, {
+		dcId,
+		placementId,
+		targetDcId,
+		row,
+		position,
+	});
+}

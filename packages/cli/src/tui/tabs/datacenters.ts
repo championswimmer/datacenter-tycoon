@@ -29,5 +29,7 @@ export function renderDatacentersTab(snapshot: GameState, selectedIndex: number)
 		`Power ${selected.spec.powerCapacityKw}kW · Cooling ${selected.spec.coolingCapacityBtuPerHr} BTU/h · Bandwidth ${selected.spec.bandwidthGbps} Gbps`,
 		"Rack grid:",
 		...rows,
+		"",
+		"m move rack · n new DC · r add rack · x remove rack",
 	];
 }
