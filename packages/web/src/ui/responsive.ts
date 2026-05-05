@@ -23,11 +23,9 @@ function subscribe(onStoreChange: () => void): () => void {
   }
 
   window.addEventListener("resize", onStoreChange, { passive: true });
-  window.addEventListener("orientationchange", onStoreChange, { passive: true });
 
   return () => {
     window.removeEventListener("resize", onStoreChange);
-    window.removeEventListener("orientationchange", onStoreChange);
   };
 }
 

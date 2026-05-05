@@ -14,7 +14,9 @@ export function useDialogFocus(closeButtonRef: RefObject<HTMLElement | null>) {
 
     return () => {
       window.cancelAnimationFrame(focusHandle);
-      previousFocusRef.current?.focus();
+      if (previousFocusRef.current?.isConnected) {
+        previousFocusRef.current.focus();
+      }
     };
   }, [closeButtonRef]);
 }

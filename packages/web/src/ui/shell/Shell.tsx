@@ -29,6 +29,7 @@ export function Shell({ isFreshStart = false }: ShellProps) {
   const isPhoneViewport = useIsPhoneViewport();
   const datacenterTriggerRef = useRef<HTMLButtonElement>(null);
   const logTriggerRef = useRef<HTMLButtonElement>(null);
+  const previousRouteKeyRef = useRef<string | null>(null);
 
   const setSpeed = useCallback((value: SetStateAction<Speed>) => {
     const newSpeed = typeof value === "function" ? value(speed) : value;
@@ -65,16 +66,17 @@ export function Shell({ isFreshStart = false }: ShellProps) {
     }
   }, []);
 
-  const closeMobileDrawer = useCallback((drawer: MobileDrawer = activeMobileDrawer) => {
+  const closeMobileDrawer = useCallback((drawer: MobileDrawer) => {
     setActiveMobileDrawer("none");
     window.requestAnimationFrame(() => focusDrawerTrigger(drawer));
-  }, [activeMobileDrawer, focusDrawerTrigger]);
+  }, [focusDrawerTrigger]);
 
   useEffect(() => {
-    if (activeMobileDrawer !== "none") {
+    if (previousRouteKeyRef.current !== null && previousRouteKeyRef.current !== routeKey && activeMobileDrawer !== "none") {
       closeMobileDrawer(activeMobileDrawer);
     }
-  }, [routeKey]);
+    previousRouteKeyRef.current = routeKey;
+  }, [routeKey, activeMobileDrawer, closeMobileDrawer]);
 
   useEffect(() => {
     if (activeMobileDrawer === "none") {
@@ -83,7 +85,7 @@ export function Shell({ isFreshStart = false }: ShellProps) {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        closeMobileDrawer();
+        closeMobileDrawer(activeMobileDrawer);
       }
     };
 
@@ -178,7 +180,7 @@ export function Shell({ isFreshStart = false }: ShellProps) {
             ref={logTriggerRef}
             type="button"
             className={[styles.drawerTrigger, styles.drawerTriggerRight].join(" ")}
-            onClick={() => toggleMobileDrawer("log")}
+          onClick={() => toggleMobileDrawer("log")}
             aria-label="Toggle event log drawer"
             aria-controls="shell-log-drawer"
             aria-expanded={isLogDrawerOpen}
@@ -192,7 +194,7 @@ export function Shell({ isFreshStart = false }: ShellProps) {
         <button
           type="button"
           className={styles.drawerBackdrop}
-          onClick={() => closeMobileDrawer()}
+          onClick={() => closeMobileDrawer(activeMobileDrawer)}
           aria-label="Close mobile drawer"
         />
       )}

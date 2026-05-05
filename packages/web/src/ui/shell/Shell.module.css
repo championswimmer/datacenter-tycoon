@@ -41,7 +41,7 @@
 
 .mobileDrawer {
   position: fixed;
-  top: 52px;
+  top: var(--mobile-topbar-height);
   bottom: 0;
   width: var(--mobile-drawer-max-width);
   max-width: var(--mobile-drawer-max-width);
@@ -81,7 +81,7 @@
 
 .drawerBackdrop {
   position: fixed;
-  inset: 52px 0 0;
+  inset: var(--mobile-topbar-height) 0 0;
   z-index: var(--z-overlay);
   background: rgba(5, 7, 11, 0.6);
   border: 0;
@@ -90,7 +90,7 @@
 
 .drawerTrigger {
   position: fixed;
-  top: calc(52px + var(--space-4));
+  top: calc(var(--mobile-topbar-height) + var(--space-4));
   z-index: calc(var(--z-overlay) + 2);
   min-width: var(--touch-target-min);
   min-height: var(--touch-target-min);

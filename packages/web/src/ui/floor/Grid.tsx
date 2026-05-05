@@ -41,8 +41,13 @@ export function Grid({
     return (
       <div className={styles.mobileWrapper}>
         {Array.from({ length: rows }, (_, r) => (
-          <section key={r} className={styles.mobileRowGroup} aria-label={`Row ${String.fromCharCode(65 + r)}`}>
-            <div className={styles.mobileRowHeader}>
+          <section
+            key={r}
+            className={styles.mobileRowGroup}
+            role="group"
+            aria-labelledby={`mobile-row-${r}`}
+          >
+            <div id={`mobile-row-${r}`} className={styles.mobileRowHeader}>
               <span className={styles.mobileRowLabel}>ROW {String.fromCharCode(65 + r)}</span>
               <span className={styles.mobileRowMeta}>{positionsPerRow} slots</span>
             </div>
