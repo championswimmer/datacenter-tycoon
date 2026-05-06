@@ -11,6 +11,8 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 - [`015-rack-aging-failures-and-maintenance.md`](./015-rack-aging-failures-and-maintenance.md) — age-based rack failures, automatic repairs, and a maintenance staffing lever. _status: created_
 - [`016-regional-fabric-and-pooled-capacity.md`](./016-regional-fabric-and-pooled-capacity.md) — region-local fabric investment and pooled capacity for contract fulfilment. _status: created_
 - [`018-mobile-responsive-ux.md`](./018-mobile-responsive-ux.md) — responsive web UX plan for collapsible mobile panels, portrait rack layouts, scroll-safe modals, and touch-friendly controls. _status: created_
+- [`021-reliability-score-and-contract-slas.md`](./021-reliability-score-and-contract-slas.md) — player reliability scoring, SLA-driven reputation changes, and reliability-shaped contract frequency and term length. _status: created_
+- [`022-rack-usage-based-billing.md`](./022-rack-usage-based-billing.md) — split rack power reservation from active-vs-idle power billing with deterministic rack activity allocation. _status: created_
 
 ## Conventions
 
