@@ -5,6 +5,7 @@ import {
 	DATACENTER_CATALOG,
 	RACK_CATALOG,
 	RELIABILITY_MARKET_OFFER_COUNT,
+	datacenterRackPowerSummary,
 	newGame,
 	reduce,
 	tickOpex,
@@ -300,4 +301,121 @@ test("tax is applied on profitable datacenters and varies by region", () => {
 
 	// Cash should have increased because revenue exceeds opex
 	assert.ok(state.player.cash > 700_000);
+});
+
+test("activity-aware power billing rises with active contracts and drops after contract completion", () => {
+	let state = newGame(101, { startingCash: 1_000_000 });
+	const dcId = datacenterId("dc-billing-lifecycle");
+	const targetRegionId = regionId("us_east");
+
+	state = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId,
+		regionId: targetRegionId,
+	});
+	state = reduce(state, {
+		type: "PlaceRack",
+		dcId,
+		specId: RACK_CATALOG.C1.id,
+		row: 0,
+		position: 0,
+		placementId: rackPlacementId("rack-billing-c1"),
+	});
+
+	const region = state.map.regions.find((candidate) => candidate.id === targetRegionId)!;
+	const datacenter = state.datacenters.find((candidate) => candidate.id === dcId)!;
+	const idleOpex = tickOpex(datacenter, region, []).total;
+
+	state = {
+		...state,
+		contractMarket: [
+			{
+				id: contractId("billing-lifecycle-contract"),
+				name: "Billing Lifecycle Contract",
+				requirements: { vCpu: 32, ramGb: 64, storageTb: 0, gpuFlops: 0 },
+				monthlyPayment: 35_000,
+				penaltyPerMonth: 6_000,
+				termMonths: 1,
+				status: "offered",
+				offeredAtTick: state.tick,
+				expiresAtTick: state.tick + 6,
+			},
+		],
+	};
+	state = reduce(state, {
+		type: "AcceptContract",
+		contractId: contractId("billing-lifecycle-contract"),
+		dcId,
+	});
+
+	const activeDatacenter = state.datacenters.find((candidate) => candidate.id === dcId)!;
+	const activeOpex = tickOpex(activeDatacenter, region, state.activeContracts).total;
+	assert.ok(activeOpex > idleOpex);
+
+	state = reduce(state, { type: "Tick" });
+	const firstOpex = Math.abs(state.ledger.find((entry) => entry.type === "opex" && entry.tick === state.tick)!.amount);
+	assert.equal(
+		state.activeContracts.find((contract) => contract.id === contractId("billing-lifecycle-contract"))?.status,
+		"completed",
+	);
+
+	state = reduce(state, { type: "Tick" });
+	const secondOpex = Math.abs(state.ledger.find((entry) => entry.type === "opex" && entry.tick === state.tick)!.amount);
+	assert.ok(secondOpex < firstOpex);
+});
+
+test("repairing racks reduce active billed draw and force remaining healthy racks to absorb load", () => {
+	let state = newGame(202, { startingCash: 1_000_000 });
+	const dcId = datacenterId("dc-repair-billing");
+
+	state = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId,
+		regionId: regionId("us_east"),
+	});
+	state = reduce(state, {
+		type: "PlaceRack",
+		dcId,
+		specId: RACK_CATALOG.C1.id,
+		row: 0,
+		position: 0,
+		placementId: rackPlacementId("rack-repair-1"),
+	});
+	state = reduce(state, {
+		type: "PlaceRack",
+		dcId,
+		specId: RACK_CATALOG.C1.id,
+		row: 0,
+		position: 1,
+		placementId: rackPlacementId("rack-repair-2"),
+	});
+
+	const datacenter = state.datacenters.find((candidate) => candidate.id === dcId)!;
+	const demand = {
+		vCpu: 200,
+		ramGb: 0,
+		storageTb: 0,
+		gpuFlops: 0,
+	};
+
+	const healthySummary = datacenterRackPowerSummary(datacenter, demand);
+	assert.equal(healthySummary.activeRackCount, 2);
+	assert.equal(healthySummary.repairingRackCount, 0);
+
+	const repairingDatacenter = {
+		...datacenter,
+		placements: [
+			{ ...datacenter.placements[0]!, health: "repairing" as const, repairProgressDays: 0 },
+			datacenter.placements[1]!,
+		],
+	};
+	const repairingSummary = datacenterRackPowerSummary(repairingDatacenter, demand);
+
+	assert.equal(repairingSummary.activeRackCount, 1);
+	assert.equal(repairingSummary.repairingRackCount, 1);
+	assert.ok(repairingSummary.activePowerKw < healthySummary.activePowerKw);
+	assert.ok(repairingSummary.billedPowerKw < healthySummary.billedPowerKw);
+	assert.ok(repairingSummary.idleBaselinePowerKw > 0);
 });
