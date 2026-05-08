@@ -26,7 +26,7 @@ owner: game-logic, web
   - [x] 4.2 Update rack and datacenter views to show activity state and billed power
   - [x] 4.3 Clarify the new billing model in power/opex UI
 - [ ] **Phase 5 — Regression coverage and docs**
-  - [ ] 5.1 Add integration tests for power bills changing as contracts start and end
+  - [x] 5.1 Add integration tests for power bills changing as contracts start and end
   - [ ] 5.2 Update docs for rack idle baseline behavior and power budgeting rules
 
 ## Overview
@@ -236,3 +236,4 @@ export interface RackPowerSummary {
 - 2026-05-08 — completed Step 4.1 by exposing per-datacenter rack activity and power-summary selectors with empty/idle/active selector coverage.
 - 2026-05-08 — completed Step 4.2 by wiring rack activity states into floor/grid/datacenter views and adding component tests for active/idle/repairing visibility.
 - 2026-05-08 — completed Step 4.3 by adding reserved-vs-billed power UI cards and explainer copy in Power/Opex views with UI test assertions for labeled values.
+- 2026-05-08 — completed Step 5.1 by adding integration and store-level regression tests that verify billed power rises with active contracts, drops after completion, and reacts to repairing racks.

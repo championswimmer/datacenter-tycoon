@@ -1,8 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 import {
+  DATACENTER_CATALOG,
+  RACK_CATALOG,
   RELIABILITY_MARKET_OFFER_COUNT,
   deserialize,
   newGame,
+  reduce,
   serialize,
   type GameState,
 } from "@datacenter-tycoon/game-logic";
@@ -142,5 +145,62 @@ describe("createGameStore", () => {
 
     expect(store.getState().player.reliability.score).toBe(20);
     expect(store.getState().contractMarket).toHaveLength(RELIABILITY_MARKET_OFFER_COUNT["silver"]);
+  });
+
+  it("dispatch() lowers opex after a short active contract completes and billing returns to idle baseline", () => {
+    let state = newGame(seed, { startingCash: 1_000_000 });
+    const dcId = "dc-store-opex-1" as GameState["datacenters"][number]["id"];
+
+    state = reduce(state, {
+      type: "BuildDatacenter",
+      specId: DATACENTER_CATALOG.garage!.id,
+      dcId,
+      regionId: state.map.regions[0]!.id,
+    });
+    state = reduce(state, {
+      type: "PlaceRack",
+      dcId,
+      specId: RACK_CATALOG.C1!.id,
+      row: 0,
+      position: 0,
+      placementId: "rack-store-opex-1" as GameState["datacenters"][number]["placements"][number]["id"],
+    });
+
+    state = {
+      ...state,
+      contractMarket: [
+        {
+          id: "store-opex-contract" as GameState["contractMarket"][number]["id"],
+          name: "Store Opex Contract",
+          requirements: { vCpu: 32, ramGb: 64, storageTb: 0, gpuFlops: 0 },
+          monthlyPayment: 40_000,
+          penaltyPerMonth: 6_000,
+          termMonths: 1,
+          status: "offered",
+          urgency: "standard",
+          tier: 1,
+          offeredAtTick: state.tick,
+          expiresAtTick: state.tick + 6,
+        },
+      ],
+    };
+    state = reduce(state, {
+      type: "AcceptContract",
+      contractId: "store-opex-contract" as GameState["contractMarket"][number]["id"],
+      dcId,
+    });
+
+    const store = createGameStore(state);
+    store.dispatch({ type: "Tick" });
+    store.dispatch({ type: "Tick" });
+
+    const opexEntries = store
+      .getState()
+      .ledger
+      .filter((entry) => entry.type === "opex")
+      .sort((a, b) => a.tick - b.tick);
+
+    expect(opexEntries.length).toBeGreaterThanOrEqual(2);
+    expect(Math.abs(opexEntries[1]!.amount)).toBeLessThan(Math.abs(opexEntries[0]!.amount));
   });
 });
