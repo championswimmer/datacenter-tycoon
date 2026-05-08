@@ -200,6 +200,13 @@ Installed racks now have two different power views that intentionally serve diff
 
 That split lets players pre-install hardware for future growth without always paying full electricity cost for every rack before contracts arrive.
 
+Operational behavior to expect:
+
+- With **no active demand**, billed power is the idle baseline (`RACK_IDLE_BASELINE_POWER_KW`) multiplied by rack count.
+- With **active contracts**, a deterministic allocator marks the minimum healthy racks active for assigned demand; those racks bill full spec draw.
+- **Repairing racks** cannot absorb active workload, so healthy racks take load first; repairing/idle racks continue at baseline billing.
+- When contracts are completed, cancelled, or unassigned, billed power drops back toward baseline on the next monthly tick.
+
 ## `GameState` shape
 
 ```ts

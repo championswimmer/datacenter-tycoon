@@ -12,11 +12,12 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 - [`016-regional-fabric-and-pooled-capacity.md`](./016-regional-fabric-and-pooled-capacity.md) — region-local fabric investment and pooled capacity for contract fulfilment. _status: created_
 - [`018-mobile-responsive-ux.md`](./018-mobile-responsive-ux.md) — responsive web UX plan for collapsible mobile panels, portrait rack layouts, scroll-safe modals, and touch-friendly controls. _status: created_
 - [`021-reliability-score-and-contract-slas.md`](./021-reliability-score-and-contract-slas.md) — player reliability scoring, SLA-driven reputation changes, and reliability-shaped contract frequency and term length. _status: completed_
-- [`022-rack-usage-based-billing.md`](./022-rack-usage-based-billing.md) — split rack power reservation from active-vs-idle power billing with deterministic rack activity allocation. _status: created_
+- [`022-rack-usage-based-billing.md`](./022-rack-usage-based-billing.md) — split rack power reservation from active-vs-idle power billing with deterministic rack activity allocation. _status: completed_
 
 ## Related plan guidance
 
 - If future work touches **contract availability, term mix, SLA penalties, reputation, or player-facing contract explanations**, read [`021-reliability-score-and-contract-slas.md`](./021-reliability-score-and-contract-slas.md) first. It establishes the persisted reliability loop that now shapes market refresh volume, contract-term bias, save data, and web UI copy.
+- If future work touches **power budgeting, rack activity/billing, or datacenter power UI semantics**, read [`022-rack-usage-based-billing.md`](./022-rack-usage-based-billing.md) first. It defines the canonical reserved-vs-billed power vocabulary and deterministic allocation model used by both game logic and web selectors.
 
 ## Conventions
 
