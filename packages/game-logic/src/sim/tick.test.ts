@@ -218,7 +218,7 @@ test("tick auto-cancels a previously breached contract after one penalty tick", 
 	assert.equal(nextState.player.cash, state.player.cash - opex - breachedContract.penaltyPerMonth);
 });
 
-test("tick rolls deterministic failures for aged healthy racks", () => {
+test("tick rolls deterministic late-life failures for healthy racks", () => {
 	const agedDatacenter = makeDatacenter("dc-1", [
 		{
 			...placement("rack-1", "C1", 0, 0),
@@ -226,7 +226,7 @@ test("tick rolls deterministic failures for aged healthy racks", () => {
 		},
 	]);
 	const state = makeState({
-		tick: tickValue(35),
+		tick: tickValue(47),
 		rngState: 99,
 		datacenters: [agedDatacenter],
 	});
@@ -236,7 +236,7 @@ test("tick rolls deterministic failures for aged healthy racks", () => {
 
 	assert.equal(failedRack?.health, "repairing");
 	assert.equal(failedRack?.repairProgressDays, 0);
-	assert.equal(failedRack?.lastFailureAtTick, 36);
+	assert.equal(failedRack?.lastFailureAtTick, 48);
 	assert.notEqual(nextState.rngState, state.rngState);
 });
 
@@ -275,7 +275,7 @@ test("higher maintenance staffing restores repairing racks in fewer ticks", () =
 	assert.equal(highStaffState.datacenters[0]?.placements[0]?.health, "healthy");
 });
 
-test("a rack failure can breach an overcommitted contract in the same tick", () => {
+test("a late-life rack failure can breach an overcommitted contract in the same tick", () => {
 	const datacenter = makeDatacenter("dc-1", [
 		{
 			...placement("rack-1", "C1", 0, 0),
@@ -287,10 +287,10 @@ test("a rack failure can breach an overcommitted contract in the same tick", () 
 		monthlyPayment: 5_000,
 		penaltyPerMonth: 2_000,
 		termMonths: 12,
-		startedAtTick: tickValue(35),
+		startedAtTick: tickValue(47),
 	});
 	const state = makeState({
-		tick: tickValue(35),
+		tick: tickValue(47),
 		rngState: 99,
 		datacenters: [datacenter],
 		activeContracts: [contract],
