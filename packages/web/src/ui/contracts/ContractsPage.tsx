@@ -97,9 +97,9 @@ export function ContractsPage() {
             <span className={styles.reliabilityLabel}>RELIABILITY OUTLOOK</span>
             <span className={[
               styles.reliabilityScore,
-              reliability.band === "trusted"
+              (reliability.band === "platinum" || reliability.band === "diamond")
                 ? styles.reliabilityTrusted
-                : reliability.band === "at-risk"
+                : (reliability.band === "silver" || reliability.band === "bronze")
                   ? styles.reliabilityAtRisk
                   : styles.reliabilityBaseline,
             ].join(" ")}>{reliability.score} · {reliability.band.toUpperCase()}</span>

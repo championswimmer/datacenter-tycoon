@@ -88,7 +88,7 @@ describe("createGameStore", () => {
     expect(tickSeenInSubscriber).toBe(1);
   });
 
-  it("dispatch() keeps trusted reliability market expansion after hydration", () => {
+  it("dispatch() keeps platinum reliability market expansion after hydration", () => {
     const hydrated = hydrate({
       ...newGame(seed),
       contractMarket: [],
@@ -99,8 +99,8 @@ describe("createGameStore", () => {
           lastDelta: 3,
           recentOutcomes: [
             {
-              contractId: "trusted-save" as GameState["player"]["reliability"]["recentOutcomes"][number]["contractId"],
-              contractName: "Trusted Save",
+              contractId: "platinum-save" as GameState["player"]["reliability"]["recentOutcomes"][number]["contractId"],
+              contractName: "Platinum Save",
               tick: 2,
               kind: "fulfilled",
             },
@@ -113,10 +113,10 @@ describe("createGameStore", () => {
     store.dispatch({ type: "Tick" });
 
     expect(store.getState().player.reliability.score).toBe(77);
-    expect(store.getState().contractMarket).toHaveLength(RELIABILITY_MARKET_OFFER_COUNT.trusted);
+    expect(store.getState().contractMarket).toHaveLength(RELIABILITY_MARKET_OFFER_COUNT.platinum);
   });
 
-  it("dispatch() keeps at-risk reliability market contraction after hydration", () => {
+  it("dispatch() keeps silver reliability market contraction after hydration", () => {
     const hydrated = hydrate({
       ...newGame(seed),
       contractMarket: [],
@@ -127,8 +127,8 @@ describe("createGameStore", () => {
           lastDelta: -12,
           recentOutcomes: [
             {
-              contractId: "at-risk-save" as GameState["player"]["reliability"]["recentOutcomes"][number]["contractId"],
-              contractName: "At Risk Save",
+              contractId: "silver-save" as GameState["player"]["reliability"]["recentOutcomes"][number]["contractId"],
+              contractName: "Silver Save",
               tick: 2,
               kind: "cancelled",
             },
@@ -141,6 +141,6 @@ describe("createGameStore", () => {
     store.dispatch({ type: "Tick" });
 
     expect(store.getState().player.reliability.score).toBe(20);
-    expect(store.getState().contractMarket).toHaveLength(RELIABILITY_MARKET_OFFER_COUNT["at-risk"]);
+    expect(store.getState().contractMarket).toHaveLength(RELIABILITY_MARKET_OFFER_COUNT["silver"]);
   });
 });

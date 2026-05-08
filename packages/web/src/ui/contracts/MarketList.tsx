@@ -111,15 +111,15 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
         const isConfirming = pendingAssignment?.contractId === c.id;
         const score = contractDealScore(c);
         const cat = CATEGORY_MAP[c.name];
-        const reliabilityHint = reliability.band === "at-risk"
+        const reliabilityHint = (reliability.band === "silver" || reliability.band === "bronze")
           ? {
               tone: styles.reliabilityHintNegative,
-              text: "At-risk reliability is limiting longer-term work until SLA performance improves.",
+              text: "Low reliability is limiting longer-term work until SLA performance improves.",
             }
-          : reliability.band === "trusted" && (c.urgency === "anchor" || c.termMonths >= 8)
+          : (reliability.band === "platinum" || reliability.band === "diamond") && (c.urgency === "anchor" || c.termMonths >= 8)
             ? {
                 tone: styles.reliabilityHintPositive,
-                text: "Trusted reliability is helping surface longer-term offers like this.",
+                text: `${reliability.band.charAt(0).toUpperCase() + reliability.band.slice(1)} reliability is helping surface longer-term offers like this.`,
               }
             : null;
         return (

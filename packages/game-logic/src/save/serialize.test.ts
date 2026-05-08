@@ -112,7 +112,7 @@ test("deserialize preserves reliability so future market refreshes still use the
 
 	assert.deepEqual(restored.player.reliability, state.player.reliability);
 	assert.equal(refreshed.player.reliability.score, 77);
-	assert.equal(refreshed.contractMarket.length, RELIABILITY_MARKET_OFFER_COUNT.trusted);
+	assert.equal(refreshed.contractMarket.length, RELIABILITY_MARKET_OFFER_COUNT.platinum);
 });
 
 test("migrate is a no-op for current-version envelopes", () => {

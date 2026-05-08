@@ -17,18 +17,18 @@ function renderContractsPage(state: GameState = newGame(42, { playerName: "Acme 
 }
 
 describe("ContractsPage", () => {
-  it("surfaces baseline reliability guidance in the contracts header", () => {
+  it("surfaces gold reliability guidance in the contracts header", () => {
     renderContractsPage();
 
     expect(screen.getByText("RELIABILITY OUTLOOK")).toBeTruthy();
-    expect(screen.getByText("50 · BASELINE")).toBeTruthy();
+    expect(screen.getByText("50 · GOLD")).toBeTruthy();
     expect(screen.getByText("— steady last tick")).toBeTruthy();
     expect(screen.getByText("Fulfilled contracts improve future opportunities; breaches reduce them.")).toBeTruthy();
     expect(screen.getByText("6 standard market offers")).toBeTruthy();
     expect(screen.getByText("Balanced mix of short and long-term work.")).toBeTruthy();
   });
 
-  it("updates contracts guidance for trusted reliability states", () => {
+  it("updates contracts guidance for platinum reliability states", () => {
     const base = newGame(42, { playerName: "Acme Corp" });
     const trustedState: GameState = {
       ...base,
@@ -51,10 +51,10 @@ describe("ContractsPage", () => {
 
     renderContractsPage(trustedState);
 
-    expect(screen.getByText("77 · TRUSTED")).toBeTruthy();
+    expect(screen.getByText("77 · PLATINUM")).toBeTruthy();
     expect(screen.getByText("▲ +3 last tick")).toBeTruthy();
-    expect(screen.getByText("Reliable fulfillment unlocks more offers and better long-term contract mix.")).toBeTruthy();
-    expect(screen.getByText("8 market offers with extra premium access")).toBeTruthy();
+    expect(screen.getByText("Reliable fulfillment unlocks more offers and a better long-term contract mix.")).toBeTruthy();
+    expect(screen.getByText("8 market offers with Platinum-tier access")).toBeTruthy();
     expect(screen.getByText("Longer anchor contracts appear more often.")).toBeTruthy();
   });
 });
