@@ -239,6 +239,26 @@
   color: var(--fg-3);
 }
 
+.reliabilityHint {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+}
+
+.reliabilityHintPositive {
+  color: var(--neon-lime);
+  border: 1px solid rgba(155,255,90,.28);
+  background: rgba(155,255,90,.08);
+}
+
+.reliabilityHintNegative {
+  color: var(--neon-amber);
+  border: 1px solid rgba(255,177,60,.3);
+  background: rgba(255,177,60,.08);
+}
+
 /* ── Accept button ────────────────────────────────────────── */
 
 .acceptBtn {

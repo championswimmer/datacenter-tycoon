@@ -76,6 +76,53 @@ describe("MarketList", () => {
     expect(screen.getByText("6 months left")).toBeTruthy();
   });
 
+  it("shows at-risk market hints when reliability is limiting longer work", () => {
+    const state = buildMarketState();
+    state.player.reliability = {
+      score: 20,
+      lastDelta: -12,
+      recentOutcomes: [
+        {
+          contractId: "contract-bad" as Contract["id"],
+          contractName: "Lost Customer",
+          tick: 1,
+          kind: "cancelled",
+        },
+      ],
+    };
+
+    renderMarket(state);
+
+    expect(screen.getByText(/At-risk reliability is limiting longer-term work/i)).toBeTruthy();
+  });
+
+  it("shows trusted market hints on long-term opportunities", () => {
+    const state = buildMarketState();
+    state.player.reliability = {
+      score: 77,
+      lastDelta: 3,
+      recentOutcomes: [
+        {
+          contractId: "contract-good" as Contract["id"],
+          contractName: "Trusted Anchor",
+          tick: 1,
+          kind: "fulfilled",
+        },
+      ],
+    };
+    state.contractMarket = [
+      {
+        ...state.contractMarket[0]!,
+        urgency: "anchor",
+        termMonths: 12,
+      },
+    ];
+
+    renderMarket(state);
+
+    expect(screen.getByText(/Trusted reliability is helping surface longer-term offers like this/i)).toBeTruthy();
+  });
+
   it("requires datacenter selection and confirmation before accepting", () => {
     const store = renderMarket();
     const dcName = store.getState().datacenters[0]!.name;
