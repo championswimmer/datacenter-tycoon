@@ -75,7 +75,7 @@ Main exports from `src/index.ts`:
 - `REGION_CATALOG`
 - `generateMap(seed)` — deterministic world map generator
 - maintenance balance constants such as `RACK_FAILURE_MAX_CHANCE`, `BASE_REPAIR_DAYS`, and `DAYS_PER_TICK`
-- reliability balance helpers such as `RELIABILITY_BASELINE_SCORE`, `RELIABILITY_MARKET_OFFER_COUNT`, and `reliabilityBandForScore()`
+- reliability balance helpers such as `RELIABILITY_BASELINE_SCORE`, `RELIABILITY_MARKET_OFFER_COUNT`, `reliabilityBandForScore()`, and `reliabilityMarketPolicyForScore()`
 - all public domain types from `types.ts`
 
 ## Rack health & maintenance scaffolding
@@ -130,6 +130,34 @@ interface ContractSlaOutcome {
 ```
 
 The current save policy remains **destructive on incompatible format changes**. Version `4` added this reliability shape, so older saves are intentionally rejected rather than migrated.
+
+## Reliability-driven contract market
+
+Reliability is now a full simulation input, not just persisted profile metadata:
+
+- New games start at **50** reliability (`RELIABILITY_BASELINE_SCORE`).
+- Each fulfilled month contributes **+3** reliability.
+- A breached month contributes **-8** reliability.
+- A cancellation after sustained breach contributes **-12** reliability.
+- Scores are clamped to **0–100** and recent SLA history keeps the last **6** outcomes.
+
+The score maps to three bands:
+
+- **At-risk**: `0–34`
+- **Baseline**: `35–69`
+- **Trusted**: `70–100`
+
+Those bands shape the future contract market on the **same tick** that the SLA outcome is evaluated:
+
+| Band | Offer count | Market feel |
+| --- | ---: | --- |
+| `at-risk` | 4 | fewer offers, shorter/riskier work is more common |
+| `baseline` | 6 | default market mix |
+| `trusted` | 8 | more offers and better access to long-term anchor work |
+
+Use `reliabilityMarketPolicyForScore(score)` when a consumer needs the exact offer count and term-bias values, and `reliabilityBandForScore(score)` when only the user-facing band label matters.
+
+Because `tick()` updates reliability **before** refreshing the market, a clean fulfillment month can immediately improve the next offer refresh, while a breach can reduce the next refresh without any UI-side bookkeeping.
 
 ## Action reference
 

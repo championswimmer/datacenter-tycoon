@@ -1,7 +1,7 @@
 ---
 name: Reliability Score & Contract SLA Progression
 description: Add a player reliability score that reacts to fulfilled vs breached contracts and shapes future contract frequency and term length.
-status: started
+status: completed
 created: 2026-05-06
 updated: 2026-05-08
 owner: game-logic, web
@@ -25,9 +25,9 @@ owner: game-logic, web
   - [x] 4.1 Expose reliability summaries and recent SLA outcomes through selectors
   - [x] 4.2 Surface reliability score, trend, and contract-market effects in the web UI
   - [x] 4.3 Highlight SLA consequences on active/breached contracts and offer cards
-- [ ] **Phase 5 — Regression coverage and docs**
+- [x] **Phase 5 — Regression coverage and docs**
   - [x] 5.1 Add reducer/tick/contract tests for reliability-driven market behavior
-  - [ ] 5.2 Update package and plan documentation for the new system
+  - [x] 5.2 Update package and plan documentation for the new system
 
 ## Overview
 
@@ -211,3 +211,4 @@ export interface ReliabilityMarketPolicy {
 ## Changelog
 
 - 2026-05-06 — created.
+- 2026-05-08 — completed implementation across game-logic, market shaping, UI feedback, regression coverage, and docs.
