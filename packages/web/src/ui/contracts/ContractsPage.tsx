@@ -5,7 +5,11 @@ import { ActiveList } from "./ActiveList.js";
 import { CompletedList } from "./CompletedList.js";
 import { useSelector } from "../../store/storeContext.js";
 import {
-  selectMarket, selectActiveContracts, selectAllDatacenters,
+  selectMarket,
+  selectActiveContracts,
+  selectAllDatacenters,
+  selectReliabilitySummary,
+  selectReliabilityMarketEffectSummary,
 } from "../../store/selectors.js";
 import { contractDealScore, canFulfill, dcFreeCapacity } from "./contractUtils.js";
 import styles from "./ContractsPage.module.css";
@@ -38,6 +42,8 @@ export function ContractsPage() {
   const market   = useSelector(selectMarket);
   const active   = useSelector(selectActiveContracts);
   const datacenters = useSelector(selectAllDatacenters);
+  const reliability = useSelector(selectReliabilitySummary);
+  const reliabilityFx = useSelector(selectReliabilityMarketEffectSummary);
   const activeAll = useSelector((s: import("@datacenter-tycoon/game-logic").GameState) =>
     s.activeContracts.filter(c => c.status === "completed" || c.status === "cancelled")
   );
@@ -86,6 +92,33 @@ export function ContractsPage() {
     <div className={styles.page}>
       <div className={styles.header}>
         <h2 className={styles.title}>CONTRACTS</h2>
+        <div className={styles.reliabilityPanel}>
+          <div className={styles.reliabilityScoreBlock}>
+            <span className={styles.reliabilityLabel}>RELIABILITY OUTLOOK</span>
+            <span className={[
+              styles.reliabilityScore,
+              reliability.band === "trusted"
+                ? styles.reliabilityTrusted
+                : reliability.band === "at-risk"
+                  ? styles.reliabilityAtRisk
+                  : styles.reliabilityBaseline,
+            ].join(" ")}>{reliability.score} · {reliability.band.toUpperCase()}</span>
+            <span className={styles.reliabilityTrend}>
+              {reliability.lastDelta > 0
+                ? `▲ +${reliability.lastDelta} last tick`
+                : reliability.lastDelta < 0
+                  ? `▼ ${reliability.lastDelta} last tick`
+                  : "— steady last tick"}
+            </span>
+          </div>
+          <div className={styles.reliabilityCopy}>
+            <p className={styles.reliabilitySummary}>{reliabilityFx.summary}</p>
+            <div className={styles.reliabilityEffects}>
+              <span className={styles.reliabilityEffectChip}>{reliabilityFx.supplyLabel}</span>
+              <span className={styles.reliabilityEffectChip}>{reliabilityFx.termLabel}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className={styles.tabBar} role="tablist">

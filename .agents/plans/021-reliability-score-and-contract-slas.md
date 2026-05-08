@@ -23,7 +23,7 @@ owner: game-logic, web
   - [x] 3.3 Keep market difficulty and seeded RNG behavior deterministic under the new policy
 - [ ] **Phase 4 — Player-facing UI and feedback**
   - [x] 4.1 Expose reliability summaries and recent SLA outcomes through selectors
-  - [ ] 4.2 Surface reliability score, trend, and contract-market effects in the web UI
+  - [x] 4.2 Surface reliability score, trend, and contract-market effects in the web UI
   - [ ] 4.3 Highlight SLA consequences on active/breached contracts and offer cards
 - [ ] **Phase 5 — Regression coverage and docs**
   - [ ] 5.1 Add reducer/tick/contract tests for reliability-driven market behavior

@@ -74,6 +74,17 @@ describe("TopBar", () => {
     expect(screen.queryByText("TICK")).toBeNull();
   });
 
+  it("renders reliability score and market effect count in the persistent HUD", () => {
+    render(
+      <Wrapper>
+        <TopBar speed={1} onSpeedChange={() => {}} />
+      </Wrapper>,
+    );
+    expect(screen.getByText("RELIABILITY")).toBeTruthy();
+    expect(screen.getByText("50 · BASELINE")).toBeTruthy();
+    expect(screen.getByText("— steady · 6 offers")).toBeTruthy();
+  });
+
   it("shows formatted date at tick 0 as '1 Jan 2025'", () => {
     render(
       <Wrapper>
@@ -93,6 +104,37 @@ describe("TopBar", () => {
     // fraction 0.5 → day 16
     act(() => setTickFraction(0.5));
     expect(screen.getByText("16 Jan 2025")).toBeTruthy();
+  });
+
+  it("shows trusted reliability changes in the HUD when store state changes", () => {
+    const base = newGame(42, { playerName: "Acme Corp" });
+    const trustedState: GameState = {
+      ...base,
+      player: {
+        ...base.player,
+        reliability: {
+          score: 77,
+          lastDelta: 3,
+          recentOutcomes: [
+            {
+              contractId: "contract-good" as Contract["id"],
+              contractName: "Trusted Anchor",
+              tick: 1,
+              kind: "fulfilled",
+            },
+          ],
+        },
+      },
+    };
+
+    render(
+      <Wrapper state={trustedState}>
+        <TopBar speed={1} onSpeedChange={() => {}} />
+      </Wrapper>,
+    );
+
+    expect(screen.getByText("77 · TRUSTED")).toBeTruthy();
+    expect(screen.getByText("▲ +3 · 8 offers")).toBeTruthy();
   });
 
   it("shows an expiring contracts banner that navigates to contracts", () => {
