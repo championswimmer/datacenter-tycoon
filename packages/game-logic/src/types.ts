@@ -22,6 +22,8 @@ export type ContractUrgency = "standard" | "rush" | "anchor";
 export type ContractTier = 1 | 2 | 3;
 export type LedgerEntryType = "capex" | "opex" | "revenue" | "penalty" | "adjustment";
 export type RackHealthStatus = "healthy" | "repairing";
+export type ReliabilityBand = "at-risk" | "baseline" | "trusted";
+export type ContractSlaOutcomeKind = "fulfilled" | "breached" | "cancelled";
 
 export interface Capacity {
 	vCpu: number;
@@ -110,10 +112,24 @@ export interface Contract {
 	assignedDcId?: DatacenterId;
 }
 
+export interface ContractSlaOutcome {
+	contractId: ContractId;
+	contractName: string;
+	tick: Tick;
+	kind: ContractSlaOutcomeKind;
+}
+
+export interface PlayerReliability {
+	score: number;
+	lastDelta?: number;
+	recentOutcomes: ContractSlaOutcome[];
+}
+
 export interface Player {
 	id: PlayerId;
 	name: string;
 	cash: Money;
+	reliability: PlayerReliability;
 }
 
 export interface LedgerEntry {
