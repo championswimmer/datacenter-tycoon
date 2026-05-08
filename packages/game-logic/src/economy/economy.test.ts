@@ -177,6 +177,53 @@ test("tickOpex includes power, cooling, staff, bandwidth, and rack maintenance",
 	});
 });
 
+test("tickOpex charges idle-baseline power when no active workload is assigned", () => {
+	const datacenter = makeDatacenter("warehouse-1", DATACENTER_CATALOG.warehouse, [
+		placement("rack-1", "C2", 0, 0),
+		placement("rack-2", "M1", 0, 1),
+	]);
+
+	assert.deepEqual(tickOpex(datacenter, TEST_REGION, []), {
+		total: 84032.21,
+		breakdown: {
+			power: 140.16,
+			cooling: 42.05,
+			bandwidth: 34_000,
+			staff: 48_000,
+			maintenance: 1_850,
+			tax: 0,
+		},
+	});
+});
+
+test("tickOpex charges full draw only for racks needed by assigned contract demand", () => {
+	const datacenter = makeDatacenter("warehouse-1", DATACENTER_CATALOG.warehouse, [
+		placement("rack-1", "C2", 0, 0),
+		placement("rack-2", "M1", 0, 1),
+	]);
+	const computeOnlyContract = makeContract("contract-compute", datacenter, {
+		requirements: {
+			vCpu: 100,
+			ramGb: 0,
+			storageTb: 0,
+			gpuFlops: 0,
+		},
+		assignedDcId: datacenter.id,
+	});
+
+	assert.deepEqual(tickOpex(datacenter, TEST_REGION, [computeOnlyContract]), {
+		total: 84738.26,
+		breakdown: {
+			power: 683.28,
+			cooling: 204.98,
+			bandwidth: 34_000,
+			staff: 48_000,
+			maintenance: 1_850,
+			tax: 0,
+		},
+	});
+});
+
 test("tickOpex charges additional wages for maintenance staffing", () => {
 	const datacenter = {
 		...makeDatacenter("garage-1", DATACENTER_CATALOG.garage),

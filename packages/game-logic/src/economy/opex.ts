@@ -1,5 +1,5 @@
 import { RACK_CATALOG } from "../catalog/racks.js";
-import { datacenterCapacity, datacenterUsage } from "../entities/datacenter.js";
+import { datacenterCapacity, datacenterRackPowerSummary, datacenterUsage } from "../entities/datacenter.js";
 import type {
 	Capacity,
 	Contract,
@@ -60,8 +60,16 @@ function getAssignedDemand(activeContracts: Contract[], datacenterId: Datacenter
 	}, EMPTY_CAPACITY);
 }
 
-export function tickOpex(datacenter: Datacenter, region: Region): OpexTickResult {
+export function tickOpex(
+	datacenter: Datacenter,
+	region: Region,
+	activeContracts?: readonly Contract[],
+): OpexTickResult {
 	const usage = datacenterUsage(datacenter);
+	const assignedDemand = activeContracts ? getAssignedDemand([...activeContracts], datacenter.id) : EMPTY_CAPACITY;
+	const billedPowerKw = activeContracts
+		? datacenterRackPowerSummary(datacenter, assignedDemand).billedPowerKw
+		: usage.powerKw;
 	const maintenance = datacenter.placements.reduce((total, placement) => {
 		const spec = RACK_CATALOG[placement.specId];
 		if (!spec) {
@@ -71,7 +79,7 @@ export function tickOpex(datacenter: Datacenter, region: Region): OpexTickResult
 		return total + spec.monthlyMaintenance;
 	}, 0);
 
-	const rawPowerCost = usage.powerKw * HOURS_PER_MONTH * region.powerCostPerKwh;
+	const rawPowerCost = billedPowerKw * HOURS_PER_MONTH * region.powerCostPerKwh;
 	const power = roundMoney(rawPowerCost);
 	const cooling = roundMoney(rawPowerCost * COOLING_OVERHEAD_RATIO);
 	const bandwidth = roundMoney(datacenter.spec.bandwidthGbps * BANDWIDTH_USD_PER_GBPS_MONTH);

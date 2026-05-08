@@ -105,7 +105,7 @@ export function tick(state: GameState): GameState {
 		if (!region) {
 			throw new Error(`Region not found for datacenter: ${datacenter.regionId}`);
 		}
-		const opex = tickOpex(datacenter, region);
+		const opex = tickOpex(datacenter, region, maintenanceState.activeContracts);
 		perDcOpex.set(datacenter.id, opex);
 		baseOpexTotal += opex.total;
 	}

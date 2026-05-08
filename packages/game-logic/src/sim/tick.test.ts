@@ -128,7 +128,7 @@ test("tick advances time, applies opex and revenue, and refreshes the contract m
 		datacenters: [datacenter],
 		activeContracts: [contract],
 	});
-	const opex = tickOpex(datacenter, TEST_REGION).total;
+	const opex = tickOpex(datacenter, TEST_REGION, state.activeContracts).total;
 
 	const nextState = tick(state);
 
@@ -160,7 +160,7 @@ test("tick cancels breached contracts when their term ends and records penalties
 		datacenters: [weakDatacenter],
 		activeContracts: [expiringContract],
 	});
-	const opex = tickOpex(weakDatacenter, TEST_REGION).total;
+	const opex = tickOpex(weakDatacenter, TEST_REGION, state.activeContracts).total;
 
 	const nextState = tick(state);
 
@@ -210,7 +210,7 @@ test("tick auto-cancels a previously breached contract after one penalty tick", 
 		datacenters: [weakDatacenter],
 		activeContracts: [breachedContract],
 	});
-	const opex = tickOpex(weakDatacenter, TEST_REGION).total;
+	const opex = tickOpex(weakDatacenter, TEST_REGION, state.activeContracts).total;
 
 	const nextState = tick(state);
 
@@ -295,9 +295,9 @@ test("a rack failure can breach an overcommitted contract in the same tick", () 
 		datacenters: [datacenter],
 		activeContracts: [contract],
 	});
-	const opex = tickOpex(datacenter, TEST_REGION).total;
-
 	const nextState = tick(state);
+	const postFailureDatacenter = nextState.datacenters[0]!;
+	const opex = tickOpex(postFailureDatacenter, TEST_REGION, state.activeContracts).total;
 
 	assert.equal(nextState.datacenters[0]?.placements[0]?.health, "repairing");
 	assert.equal(nextState.activeContracts[0]?.status, "breached");
@@ -339,6 +339,7 @@ test("a repaired rack can restore contract revenue in the same tick", () => {
 			],
 		},
 		TEST_REGION,
+		[contract],
 	).total;
 	const state = makeState({
 		tick: tickValue(1),
