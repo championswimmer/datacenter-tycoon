@@ -16,7 +16,7 @@ owner: game-logic
   - [x] 2.1 Raise `coolingCapacityBtuPerHr` across the starter datacenter blueprints in `packages/game-logic/src/catalog/datacenters.ts`
   - [x] 2.2 Update catalog and placement tests to lock in the new cooling headroom
 - [ ] **Phase 3 — Supra-linear rack failure progression**
-  - [ ] 3.1 Replace the linear `rackFailureChance()` formula in `packages/game-logic/src/sim/maintenance.ts`
+  - [x] 3.1 Replace the linear `rackFailureChance()` formula in `packages/game-logic/src/sim/maintenance.ts`
   - [ ] 3.2 Extend maintenance tests to verify year-1, year-6, clamp, and acceleration behavior
   - [ ] 3.3 Confirm the monthly tick still uses the new curve deterministically without changing repair semantics
 - [ ] **Phase 4 — Versioning and docs**
