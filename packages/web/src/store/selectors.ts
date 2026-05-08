@@ -1,25 +1,30 @@
 import {
   BASE_REPAIR_DAYS,
+  RELIABILITY_BASELINE_SCORE,
   datacenterMaintenanceSummary,
   datacenterCapacity,
   datacenterUsage,
   rackAgeMonths,
+  reliabilityBandForScore,
+  reliabilityMarketPolicyForScore,
   repairProgressPerTick,
   tickOpex,
 } from "@datacenter-tycoon/game-logic";
 import type {
   Capacity,
   Contract,
+  ContractSlaOutcome,
   DatacenterId,
   Datacenter,
+  DatacenterResourceUsage,
   GameState,
   LedgerEntry,
   Money,
   OpexTickResult,
   RackHealthStatus,
   RackPlacementId,
+  ReliabilityBand,
   Tick,
-  DatacenterResourceUsage,
 } from "@datacenter-tycoon/game-logic";
 
 // ── Primitive selectors ───────────────────────────────────────────────────────
@@ -34,6 +39,100 @@ export function selectCash(state: GameState): Money {
 
 export function selectPlayerName(state: GameState): string {
   return state.player.name;
+}
+
+export function selectReliabilityScore(state: GameState): number {
+  return state.player.reliability.score;
+}
+
+export function selectReliabilityBand(state: GameState): ReliabilityBand {
+  return reliabilityBandForScore(state.player.reliability.score);
+}
+
+export function selectReliabilityDelta(state: GameState): number {
+  return state.player.reliability.lastDelta ?? 0;
+}
+
+export function selectRecentSlaOutcomes(state: GameState): ContractSlaOutcome[] {
+  return state.player.reliability.recentOutcomes;
+}
+
+export interface ReliabilitySummary {
+  score: number;
+  band: ReliabilityBand;
+  lastDelta: number;
+  trend: "up" | "down" | "steady";
+  recentOutcomes: ContractSlaOutcome[];
+}
+
+export interface ReliabilityMarketEffectSummary {
+  band: ReliabilityBand;
+  offerCount: number;
+  offerDeltaFromBaseline: number;
+  longTermBias: number;
+  shortTermBias: number;
+  supplyLabel: string;
+  termLabel: string;
+  summary: string;
+}
+
+export function selectReliabilitySummary(state: GameState): ReliabilitySummary {
+  const score = selectReliabilityScore(state);
+  const lastDelta = selectReliabilityDelta(state);
+
+  return {
+    score,
+    band: selectReliabilityBand(state),
+    lastDelta,
+    trend: lastDelta > 0 ? "up" : lastDelta < 0 ? "down" : "steady",
+    recentOutcomes: selectRecentSlaOutcomes(state),
+  };
+}
+
+export function selectReliabilityMarketEffectSummary(
+  state: GameState,
+): ReliabilityMarketEffectSummary {
+  const band = selectReliabilityBand(state);
+  const policy = reliabilityMarketPolicyForScore(selectReliabilityScore(state));
+  const baselineOfferCount = reliabilityMarketPolicyForScore(RELIABILITY_BASELINE_SCORE).offerCount;
+  const offerDeltaFromBaseline = policy.offerCount - baselineOfferCount;
+
+  if (band === "trusted") {
+    return {
+      band,
+      offerCount: policy.offerCount,
+      offerDeltaFromBaseline,
+      longTermBias: policy.longTermBias,
+      shortTermBias: policy.shortTermBias,
+      supplyLabel: `${policy.offerCount} market offers with extra premium access`,
+      termLabel: "Longer anchor contracts appear more often.",
+      summary: "Reliable fulfillment unlocks more offers and better long-term contract mix.",
+    };
+  }
+
+  if (band === "at-risk") {
+    return {
+      band,
+      offerCount: policy.offerCount,
+      offerDeltaFromBaseline,
+      longTermBias: policy.longTermBias,
+      shortTermBias: policy.shortTermBias,
+      supplyLabel: `${policy.offerCount} market offers while reputation recovers`,
+      termLabel: "Shorter rush work is more common until SLA performance improves.",
+      summary: "Breaches shrink the market and make longer-term deals harder to earn.",
+    };
+  }
+
+  return {
+    band,
+    offerCount: policy.offerCount,
+    offerDeltaFromBaseline,
+    longTermBias: policy.longTermBias,
+    shortTermBias: policy.shortTermBias,
+    supplyLabel: `${policy.offerCount} standard market offers`,
+    termLabel: "Balanced mix of short and long-term work.",
+    summary: "Fulfilled contracts improve future opportunities; breaches reduce them.",
+  };
 }
 
 export function selectAllDatacenters(state: GameState): Datacenter[] {
