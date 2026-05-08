@@ -26,6 +26,7 @@ import {
   selectMaintenanceViews,
   selectCapacity,
   selectOpexBreakdown,
+  selectRackPowerSummary,
   selectResourceUsage,
   selectMonthlyPnl,
   selectFreeCapacity,
@@ -406,6 +407,44 @@ describe("selectOpexBreakdown", () => {
       perDc.reduce((s, { result }) => s + result.total, 0) * 100,
     ) / 100;
     expect(total).toBe(summed);
+  });
+});
+
+describe("selectRackPowerSummary", () => {
+  it("exposes reserved and billed power separately for idle fleets", () => {
+    const summary = selectRackPowerSummary(stateWithDcAndRack());
+
+    expect(summary.total.totalRackCount).toBe(1);
+    expect(summary.total.activeRackCount).toBe(0);
+    expect(summary.total.reservedPowerKw).toBeGreaterThan(summary.total.billedPowerKw);
+    expect(summary.total.idleRackCount).toBe(1);
+  });
+
+  it("increases billed power as contracts activate without changing reserved power", () => {
+    const baseState = stateWithDcAndRack();
+    const datacenter = baseState.datacenters[0]!;
+    const offered = baseState.contractMarket.find((contract) => contract.requirements.vCpu > 0)
+      ?? baseState.contractMarket[0]!;
+
+    const activeState = {
+      ...baseState,
+      contractMarket: baseState.contractMarket.filter((contract) => contract.id !== offered.id),
+      activeContracts: [
+        {
+          ...offered,
+          status: "active" as const,
+          assignedDcId: datacenter.id,
+          activatedAtTick: baseState.tick,
+        },
+      ],
+    };
+
+    const idleSummary = selectRackPowerSummary(baseState);
+    const activeSummary = selectRackPowerSummary(activeState);
+
+    expect(activeSummary.total.reservedPowerKw).toBe(idleSummary.total.reservedPowerKw);
+    expect(activeSummary.total.billedPowerKw).toBeGreaterThan(idleSummary.total.billedPowerKw);
+    expect(activeSummary.total.activeRackCount).toBeGreaterThan(idleSummary.total.activeRackCount);
   });
 });
 
