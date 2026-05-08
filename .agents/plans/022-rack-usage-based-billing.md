@@ -15,7 +15,7 @@ owner: game-logic, web
   - [x] 1.3 Expose public helpers and document the budgeting-vs-billing split
 - [ ] **Phase 2 — Deterministic rack activity allocation**
   - [x] 2.1 Add pure helpers that map contract demand onto healthy racks in stable order
-  - [ ] 2.2 Derive per-rack activity, idle counts, and billed power without persisting transient state
+  - [x] 2.2 Derive per-rack activity, idle counts, and billed power without persisting transient state
   - [ ] 2.3 Add tests for mixed idle/active fleets and rack-health interactions
 - [ ] **Phase 3 — Opex and placement integration**
   - [ ] 3.1 Preserve placement-time power-cap checks against installed maximum draw
@@ -228,3 +228,4 @@ export interface RackPowerSummary {
 - 2026-05-08 — completed Step 1.2 by adding centralized idle-baseline and monthly power-billing constants in `balance/power.ts`.
 - 2026-05-08 — completed Step 1.3 by documenting reserved-vs-billed power and confirming helper exports from the package surface.
 - 2026-05-08 — completed Step 2.1 by adding deterministic demand-to-rack allocation helpers and a datacenter wrapper for activity allocation.
+- 2026-05-08 — completed Step 2.2 by deriving rack activity snapshots and billed-vs-reserved power summaries from transient allocation output.
