@@ -1,6 +1,16 @@
 import { describe, it, expect, vi } from "vitest";
-import { newGame } from "@datacenter-tycoon/game-logic";
+import {
+  RELIABILITY_MARKET_OFFER_COUNT,
+  deserialize,
+  newGame,
+  serialize,
+  type GameState,
+} from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "./gameStore.js";
+
+function hydrate(state: GameState): GameState {
+  return deserialize(serialize(state));
+}
 
 const seed = 42;
 
@@ -76,5 +86,61 @@ describe("createGameStore", () => {
     });
     store.dispatch({ type: "Tick" });
     expect(tickSeenInSubscriber).toBe(1);
+  });
+
+  it("dispatch() keeps trusted reliability market expansion after hydration", () => {
+    const hydrated = hydrate({
+      ...newGame(seed),
+      contractMarket: [],
+      player: {
+        ...newGame(seed).player,
+        reliability: {
+          score: 77,
+          lastDelta: 3,
+          recentOutcomes: [
+            {
+              contractId: "trusted-save" as GameState["player"]["reliability"]["recentOutcomes"][number]["contractId"],
+              contractName: "Trusted Save",
+              tick: 2,
+              kind: "fulfilled",
+            },
+          ],
+        },
+      },
+    });
+    const store = createGameStore(hydrated);
+
+    store.dispatch({ type: "Tick" });
+
+    expect(store.getState().player.reliability.score).toBe(77);
+    expect(store.getState().contractMarket).toHaveLength(RELIABILITY_MARKET_OFFER_COUNT.trusted);
+  });
+
+  it("dispatch() keeps at-risk reliability market contraction after hydration", () => {
+    const hydrated = hydrate({
+      ...newGame(seed),
+      contractMarket: [],
+      player: {
+        ...newGame(seed).player,
+        reliability: {
+          score: 20,
+          lastDelta: -12,
+          recentOutcomes: [
+            {
+              contractId: "at-risk-save" as GameState["player"]["reliability"]["recentOutcomes"][number]["contractId"],
+              contractName: "At Risk Save",
+              tick: 2,
+              kind: "cancelled",
+            },
+          ],
+        },
+      },
+    });
+    const store = createGameStore(hydrated);
+
+    store.dispatch({ type: "Tick" });
+
+    expect(store.getState().player.reliability.score).toBe(20);
+    expect(store.getState().contractMarket).toHaveLength(RELIABILITY_MARKET_OFFER_COUNT["at-risk"]);
   });
 });

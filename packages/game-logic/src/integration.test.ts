@@ -4,6 +4,7 @@ import test from "node:test";
 import {
 	DATACENTER_CATALOG,
 	RACK_CATALOG,
+	RELIABILITY_MARKET_OFFER_COUNT,
 	newGame,
 	reduce,
 	tickOpex,
@@ -140,6 +141,95 @@ test("regional opex reflects location economics", () => {
 	const opexEntry = state.ledger.find((e) => e.type === "opex");
 	assert.ok(opexEntry);
 	assert.equal(opexEntry.amount, -(usEastOpex.total + usWestOpex.total));
+});
+
+function stateWithGarage(seed: number, dcIdValue: string) {
+	let state = newGame(seed, { startingCash: 1_000_000 });
+	state = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId(dcIdValue),
+		regionId: regionId("us_east"),
+	});
+	return state;
+}
+
+test("trusted reliability from clean SLA months expands future market supply", () => {
+	const dcId = datacenterId("dc-reliable-1");
+	let state = stateWithGarage(84, "dc-reliable-1");
+	state = {
+		...state,
+		player: {
+			...state.player,
+			reliability: {
+				score: 68,
+				recentOutcomes: [],
+			},
+		},
+		contractMarket: [],
+		activeContracts: [
+			{
+				id: contractId("reliable-contract"),
+				name: "Reliable Growth Contract",
+				requirements: { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 },
+				monthlyPayment: 18_000,
+				penaltyPerMonth: 2_000,
+				termMonths: 12,
+				status: "active",
+				offeredAtTick: 0,
+				expiresAtTick: 6,
+				startedAtTick: 0,
+				assignedDcId: dcId,
+			},
+		],
+	};
+
+	state = reduce(state, { type: "Tick" });
+
+	assert.equal(state.player.reliability.score, 71);
+	assert.equal(state.player.reliability.lastDelta, 3);
+	assert.equal(state.contractMarket.length, RELIABILITY_MARKET_OFFER_COUNT.trusted);
+	assert.equal(state.activeContracts[0]?.status, "active");
+	assert.equal(state.player.reliability.recentOutcomes.at(-1)?.kind, "fulfilled");
+});
+
+test("breached reliability loops shrink later market opportunities once the score falls at-risk", () => {
+	const dcId = datacenterId("dc-breach-1");
+	let state = stateWithGarage(85, "dc-breach-1");
+	state = {
+		...state,
+		player: {
+			...state.player,
+			reliability: {
+				score: 38,
+				recentOutcomes: [],
+			},
+		},
+		contractMarket: [],
+		activeContracts: [
+			{
+				id: contractId("breached-contract"),
+				name: "Impossible SLA Contract",
+				requirements: { vCpu: 500, ramGb: 5_000, storageTb: 500, gpuFlops: 500 },
+				monthlyPayment: 25_000,
+				penaltyPerMonth: 9_000,
+				termMonths: 12,
+				status: "active",
+				offeredAtTick: 0,
+				expiresAtTick: 6,
+				startedAtTick: 0,
+				assignedDcId: dcId,
+			},
+		],
+	};
+
+	state = reduce(state, { type: "Tick" });
+
+	assert.equal(state.player.reliability.score, 30);
+	assert.equal(state.player.reliability.lastDelta, -8);
+	assert.equal(state.contractMarket.length, RELIABILITY_MARKET_OFFER_COUNT["at-risk"]);
+	assert.equal(state.activeContracts[0]?.status, "breached");
+	assert.equal(state.player.reliability.recentOutcomes.at(-1)?.kind, "breached");
 });
 
 test("tax is applied on profitable datacenters and varies by region", () => {
