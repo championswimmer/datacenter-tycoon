@@ -1,16 +1,16 @@
 ---
 name: Rack Usage-Based Billing
 description: Split rack power budgeting from active-vs-idle power billing so installed racks reserve capacity while only contract-serving racks incur full electricity cost.
-status: created
+status: started
 created: 2026-05-06
-updated: 2026-05-06
+updated: 2026-05-08
 owner: game-logic, web
 ---
 
 ## Progress
 
 - [ ] **Phase 1 — Power-state model and balance scaffolding**
-  - [ ] 1.1 Add explicit active-vs-idle power usage vocabulary and summaries
+  - [x] 1.1 Add explicit active-vs-idle power usage vocabulary and summaries
   - [ ] 1.2 Centralize idle baseline and active-power billing constants
   - [ ] 1.3 Expose public helpers and document the budgeting-vs-billing split
 - [ ] **Phase 2 — Deterministic rack activity allocation**
@@ -224,3 +224,4 @@ export interface RackPowerSummary {
 ## Changelog
 
 - 2026-05-06 — created.
+- 2026-05-08 — completed Step 1.1 by adding rack activity and rack power summary public types.
