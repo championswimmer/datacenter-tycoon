@@ -3,7 +3,10 @@ import type { Contract, ContractStatus } from "@datacenter-tycoon/game-logic";
 import { tickOpex } from "@datacenter-tycoon/game-logic";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import {
-  selectActiveContracts, selectAllDatacenters, selectTick,
+  selectActiveContracts,
+  selectAllDatacenters,
+  selectTick,
+  selectReliabilitySummary,
 } from "../../store/selectors.js";
 import { ProgressBar } from "../../theme/primitives/index.js";
 import { dcFreeCapacity, canFulfill } from "./contractUtils.js";
@@ -30,6 +33,7 @@ export function ActiveList() {
   const datacenters = useSelector(selectAllDatacenters);
   const regions     = useSelector(s => s.map.regions);
   const tick        = useSelector(selectTick);
+  const reliability = useSelector(selectReliabilitySummary);
   const dispatch    = useGameDispatch();
   const fraction    = useTickFraction();
   const [confirming, setConfirming] = useState<string | null>(null);
@@ -86,6 +90,14 @@ export function ActiveList() {
            free.ramGb < c.requirements.ramGb * 0.1 ||
            (c.requirements.storageTb > 0 && free.storageTb < c.requirements.storageTb * 0.1) ||
            (c.requirements.gpuFlops > 0 && free.gpuFlops < c.requirements.gpuFlops * 0.1));
+        const latestOutcome = [...reliability.recentOutcomes].reverse().find(outcome => outcome.contractId === c.id);
+        const slaHint = c.status === "breached"
+          ? "SLA hit: this breach already hurt reliability. Recover service now or cancellation will damage it again."
+          : latestOutcome?.kind === "fulfilled"
+            ? "SLA credit: this contract improved reliability last month — keep it stable to preserve market access."
+            : reliability.band === "at-risk"
+              ? "SLA recovery: clean delivery here helps restore reputation and future offer volume."
+              : "SLA impact: fulfilled months improve future contract access and longer-term opportunities.";
 
         return (
           <div key={c.id} className={[styles.card, styles[`status-${c.status}`]].join(" ")}>
@@ -110,6 +122,11 @@ export function ActiveList() {
             {bufferLow && c.status === "active" && (
               <div className={styles.warningBadge}>Capacity buffer low</div>
             )}
+
+            <div className={[
+              styles.slaHint,
+              c.status === "breached" ? styles.slaHintNegative : styles.slaHintPositive,
+            ].join(" ")}>{slaHint}</div>
 
             <div className={styles.progressRow}>
               <ProgressBar

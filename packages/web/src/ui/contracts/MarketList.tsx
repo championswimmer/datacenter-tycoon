@@ -2,7 +2,10 @@ import { useState, useCallback } from "react";
 import type { Capacity, Contract, Datacenter } from "@datacenter-tycoon/game-logic";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import {
-  selectAllDatacenters, selectActiveContracts, selectTick, selectAudioEnabled,
+  selectAllDatacenters,
+  selectActiveContracts,
+  selectTick,
+  selectReliabilitySummary,
 } from "../../store/selectors.js";
 import { canFulfill, dcFreeCapacity, contractDealScore } from "./contractUtils.js";
 import { playSound } from "../../audio/AudioEngine.js";
@@ -74,6 +77,7 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
   const datacenters     = useSelector(selectAllDatacenters);
   const activeContracts = useSelector(selectActiveContracts);
   const tick            = useSelector(selectTick);
+  const reliability     = useSelector(selectReliabilitySummary);
   const dispatch        = useGameDispatch();
   const fraction        = useTickFraction();
 
@@ -107,6 +111,17 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
         const isConfirming = pendingAssignment?.contractId === c.id;
         const score = contractDealScore(c);
         const cat = CATEGORY_MAP[c.name];
+        const reliabilityHint = reliability.band === "at-risk"
+          ? {
+              tone: styles.reliabilityHintNegative,
+              text: "At-risk reliability is limiting longer-term work until SLA performance improves.",
+            }
+          : reliability.band === "trusted" && (c.urgency === "anchor" || c.termMonths >= 8)
+            ? {
+                tone: styles.reliabilityHintPositive,
+                text: "Trusted reliability is helping surface longer-term offers like this.",
+              }
+            : null;
         return (
           <div key={c.id} className={[styles.card, styles[`fit-${fit}`]].join(" ")}>
             <div className={styles.cardTop}>
@@ -149,6 +164,10 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
 
             <RequirementsRow reqs={c.requirements} />
             <CapacityComparison reqs={c.requirements} free={networkFree} />
+
+            {reliabilityHint && (
+              <div className={[styles.reliabilityHint, reliabilityHint.tone].join(" ")}>{reliabilityHint.text}</div>
+            )}
 
             {!isAccepting && !isConfirming ? (
               <button
