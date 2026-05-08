@@ -26,7 +26,7 @@ owner: game-logic, web
   - [x] 4.2 Surface reliability score, trend, and contract-market effects in the web UI
   - [x] 4.3 Highlight SLA consequences on active/breached contracts and offer cards
 - [ ] **Phase 5 — Regression coverage and docs**
-  - [ ] 5.1 Add reducer/tick/contract tests for reliability-driven market behavior
+  - [x] 5.1 Add reducer/tick/contract tests for reliability-driven market behavior
   - [ ] 5.2 Update package and plan documentation for the new system
 
 ## Overview

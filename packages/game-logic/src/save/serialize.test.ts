@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { RELIABILITY_MARKET_OFFER_COUNT } from "../balance/reliability.js";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import type { ContractId, DatacenterId, RackPlacementId } from "../types.js";
@@ -83,6 +84,35 @@ test("serialize and deserialize round-trip a non-trivial game state", () => {
 
 	assert.deepEqual(restored, state);
 	assert.deepEqual(restored.player.reliability, state.player.reliability);
+});
+
+test("deserialize preserves reliability so future market refreshes still use the saved reputation band", () => {
+	const state = {
+		...newGame(99),
+		contractMarket: [],
+		player: {
+			...newGame(99).player,
+			reliability: {
+				score: 77,
+				lastDelta: 3,
+				recentOutcomes: [
+					{
+						contractId: contractId("saved-reputation"),
+						contractName: "Saved Reputation",
+						tick: 3,
+						kind: "fulfilled",
+					},
+				],
+			},
+		},
+	};
+
+	const restored = deserialize(serialize(state));
+	const refreshed = reduce(restored, { type: "Tick" });
+
+	assert.deepEqual(restored.player.reliability, state.player.reliability);
+	assert.equal(refreshed.player.reliability.score, 77);
+	assert.equal(refreshed.contractMarket.length, RELIABILITY_MARKET_OFFER_COUNT.trusted);
 });
 
 test("migrate is a no-op for current-version envelopes", () => {
