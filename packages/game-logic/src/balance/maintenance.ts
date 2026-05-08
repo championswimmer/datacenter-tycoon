@@ -1,5 +1,8 @@
-export const RACK_FAILURE_MAX_CHANCE = 0.5;
-export const RACK_FAILURE_MAX_AGE_MONTHS = 36;
+export const RACK_FAILURE_YEAR_ONE_AGE_MONTHS = 12;
+export const RACK_FAILURE_YEAR_ONE_CHANCE = 0.02;
+export const RACK_FAILURE_MAX_CHANCE = 0.6;
+export const RACK_FAILURE_MAX_AGE_MONTHS = 72;
+export const RACK_FAILURE_CURVE_EXPONENT = 1.5;
 
 // Repair progress stays in days even though one simulation tick equals one month,
 // so tick-time maintenance can remain deterministic without converting the whole sim to daily turns.
