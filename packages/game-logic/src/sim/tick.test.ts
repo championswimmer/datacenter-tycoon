@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
+import { RELIABILITY_BASELINE_SCORE } from "../balance/reliability.js";
 import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
 import { tickOpex } from "../economy/opex.js";
 import { tick } from "./tick.js";
@@ -106,6 +107,10 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
 			id: playerId("player-1"),
 			name: "Player One",
 			cash: 500_000,
+			reliability: {
+				score: RELIABILITY_BASELINE_SCORE,
+				recentOutcomes: [],
+			},
 		},
 		datacenters: [],
 		contractMarket: [],
@@ -188,6 +193,7 @@ test("tick is deterministic across multiple months for the same seed and startin
 	assert.deepEqual(firstRun, secondRun);
 	assert.equal(firstRun.tick, 6);
 	assert.equal(firstRun.contractMarket.length, MARKET_REFRESH_SIZE);
+	assert.deepEqual(firstRun.player.reliability, secondRun.player.reliability);
 });
 
 test("tick auto-cancels a previously breached contract after one penalty tick", () => {
