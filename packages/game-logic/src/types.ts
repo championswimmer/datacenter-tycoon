@@ -147,6 +147,28 @@ export interface DatacenterResourceUsage {
 	slotsUsed: number;
 }
 
+export type RackActivityStatus = "idle" | "active" | "repairing";
+
+export interface RackActivityView {
+	placementId: RackPlacementId;
+	specId: RackSpecId;
+	kind: RackKind;
+	status: RackActivityStatus;
+	reservedPowerKw: number;
+	billedPowerKw: number;
+}
+
+export interface RackPowerSummary {
+	reservedPowerKw: number;
+	idleBaselinePowerKw: number;
+	activePowerKw: number;
+	billedPowerKw: number;
+	activeRackCount: number;
+	idleRackCount: number;
+	repairingRackCount: number;
+	totalRackCount: number;
+}
+
 export type PlacementFailureReason =
 	| "slot_taken"
 	| "out_of_bounds"
