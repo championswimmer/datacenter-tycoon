@@ -8,8 +8,9 @@ import {
   selectMonthlyPnl,
   selectActiveContracts,
   selectMarket,
-  selectAudioEnabled,
   selectAudioSettings,
+  selectReliabilitySummary,
+  selectReliabilityMarketEffectSummary,
 } from "../../store/selectors.js";
 import { LedSegment } from "../../theme/primitives/index.js";
 import { navigate } from "../../router/hashRouter.js";
@@ -47,6 +48,8 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
   const activeContracts = useSelector(selectActiveContracts);
   const market          = useSelector(selectMarket);
   const audioSettings   = useSelector(selectAudioSettings);
+  const reliability     = useSelector(selectReliabilitySummary);
+  const reliabilityFx   = useSelector(selectReliabilityMarketEffectSummary);
 
   const gameDate = tickToGameDate(tick, fraction);
 
@@ -61,6 +64,16 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
   const [showResetModal, setShowResetModal] = useState(false);
   const [showAudioModal, setShowAudioModal] = useState(false);
   const openContracts = () => navigate({ view: "contracts" });
+  const reliabilityBandLabel = reliability.band === "at-risk"
+    ? "AT-RISK"
+    : reliability.band === "trusted"
+      ? "TRUSTED"
+      : "BASELINE";
+  const reliabilityTrendLabel = reliability.lastDelta > 0
+    ? `▲ +${reliability.lastDelta}`
+    : reliability.lastDelta < 0
+      ? `▼ ${reliability.lastDelta}`
+      : "— steady";
 
   const banner = breachedCount > 0
     ? { tone: "danger", label: `⚠ ${breachedCount} contract breach${breachedCount > 1 ? "es" : ""}` }
@@ -112,6 +125,21 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
           ].join(" ")}>
             {formatMoney(pnl.net, true)}
           </span>
+        </div>
+
+        <div className={styles.divider} />
+
+        <div className={styles.hudBlock} title={reliabilityFx.summary}>
+          <span className={styles.hudLabel}>RELIABILITY</span>
+          <span className={[
+            styles.hudValue,
+            reliability.band === "trusted"
+              ? styles.reliabilityTrusted
+              : reliability.band === "at-risk"
+                ? styles.reliabilityAtRisk
+                : styles.reliabilityBaseline,
+          ].join(" ")}>{reliability.score} · {reliabilityBandLabel}</span>
+          <span className={styles.hudMeta}>{reliabilityTrendLabel} · {reliabilityFx.offerCount} offers</span>
         </div>
 
         <div className={styles.divider} />

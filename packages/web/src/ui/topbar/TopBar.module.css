@@ -91,12 +91,23 @@
   white-space: nowrap;
 }
 
+.hudMeta {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--fg-3);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
 .cashOk      { color: var(--neon-cyan);    text-shadow: var(--glow-cyan); }
 .cashLow     { color: var(--neon-red);     text-shadow: var(--glow-red);  animation: cashBlink 1s ease-in-out infinite; }
 .revenue     { color: var(--neon-lime); }
 .opex        { color: var(--neon-amber); }
 .netPositive { color: var(--neon-lime);    text-shadow: var(--glow-lime); }
 .netNegative { color: var(--neon-red);     text-shadow: var(--glow-red); }
+.reliabilityBaseline { color: var(--neon-cyan); }
+.reliabilityTrusted  { color: var(--neon-lime); text-shadow: var(--glow-lime); }
+.reliabilityAtRisk   { color: var(--neon-red); text-shadow: var(--glow-red); }
 
 @keyframes cashBlink {
   0%, 100% { opacity: 1; }
@@ -269,5 +280,9 @@
     max-width: 100%;
     white-space: normal;
     text-align: left;
+  }
+
+  .hudMeta {
+    white-space: normal;
   }
 }
