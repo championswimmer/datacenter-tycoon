@@ -167,6 +167,8 @@ export function generateContract(
 	let paymentMultiplier = 1;
 	let penaltyMultiplier = 1;
 
+	// Reliability only reshapes urgency thresholds and final term length. Difficulty,
+	// requirements, and pricing inputs still originate from the seeded difficulty roll.
 	if (urgencyRoll < urgencyThresholds.rushThreshold) {
 		urgency = "rush";
 		offerDuration = 2;
