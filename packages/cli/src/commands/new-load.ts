@@ -12,6 +12,7 @@ import {
 	hasBooleanFlag,
 	requirePositional,
 	resolveCommandPaths,
+	waitForDaemonShutdown,
 	writeCommandResult,
 	writeStateFile,
 	withClient,
@@ -106,6 +107,7 @@ export async function runQuitCommand(
 	parsed: ParsedArgv,
 	clientFactory?: CommandClientFactory,
 ): Promise<void> {
+	const paths = resolveCommandPaths(parsed);
 	await withClient(
 		parsed,
 		async (client) => {
@@ -113,6 +115,7 @@ export async function runQuitCommand(
 		},
 		clientFactory,
 	);
+	await waitForDaemonShutdown(paths);
 	writeCommandResult(parsed, "Daemon shutdown requested", { ok: true });
 }
 

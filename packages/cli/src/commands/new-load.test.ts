@@ -61,6 +61,21 @@ test("runNewCommand recreates the save and reconnects to the daemon", async () =
 	assert.match(fs.readFileSync(savePath, "utf8"), /"seed":42/);
 });
 
+test("runNewCommand disables daemon auto-spawn during the pre-reset shutdown check", async () => {
+	const { savePath, socketPath } = createTempPaths();
+	const seenNoDaemonFlags: boolean[] = [];
+
+	await runNewCommand(
+		parseArgv(["new", "--yes", "--seed", "42", "--save", savePath, "--socket", socketPath, "--quiet"]),
+		(options) => {
+			seenNoDaemonFlags.push(options.noDaemon === true);
+			return createFakeClient([]);
+		},
+	);
+
+	assert.deepEqual(seenNoDaemonFlags, [true, false]);
+});
+
 test("runLoadCommand validates and copies a save before reconnecting", async () => {
 	const { savePath, socketPath, importPath } = createTempPaths();
 	const log: string[] = [];
