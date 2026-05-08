@@ -13,7 +13,7 @@ owner: game-logic
   - [x] 1.1 Define the new rack-failure curve anchors and tunable exponent in `packages/game-logic/src/balance/maintenance.ts`
   - [x] 1.2 Capture cooling rebalance expectations in catalog/capacity tests before or alongside catalog edits
 - [ ] **Phase 2 — Datacenter cooling rebalance**
-  - [ ] 2.1 Raise `coolingCapacityBtuPerHr` across the starter datacenter blueprints in `packages/game-logic/src/catalog/datacenters.ts`
+  - [x] 2.1 Raise `coolingCapacityBtuPerHr` across the starter datacenter blueprints in `packages/game-logic/src/catalog/datacenters.ts`
   - [ ] 2.2 Update catalog and placement tests to lock in the new cooling headroom
 - [ ] **Phase 3 — Supra-linear rack failure progression**
   - [ ] 3.1 Replace the linear `rackFailureChance()` formula in `packages/game-logic/src/sim/maintenance.ts`
