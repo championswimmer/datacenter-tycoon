@@ -37,6 +37,10 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 			id: DEFAULT_PLAYER_ID,
 			name: options.playerName ?? "Player",
 			cash: startingCash,
+			reliability: {
+				score: 50,
+				recentOutcomes: [],
+			},
 		},
 		datacenters: [],
 		contractMarket: [],

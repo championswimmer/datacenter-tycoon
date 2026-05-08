@@ -1,16 +1,16 @@
 ---
 name: Reliability Score & Contract SLA Progression
 description: Add a player reliability score that reacts to fulfilled vs breached contracts and shapes future contract frequency and term length.
-status: created
+status: started
 created: 2026-05-06
-updated: 2026-05-06
+updated: 2026-05-08
 owner: game-logic, web
 ---
 
 ## Progress
 
 - [ ] **Phase 1 — Reliability domain model and persistence**
-  - [ ] 1.1 Add serializable player reliability state and SLA outcome vocabulary to core types
+  - [x] 1.1 Add serializable player reliability state and SLA outcome vocabulary to core types
   - [ ] 1.2 Centralize reliability balance constants and recovery/decay rules
   - [ ] 1.3 Update save/versioned public surfaces for the new reliability data
 - [ ] **Phase 2 — SLA evaluation and reliability scoring**
