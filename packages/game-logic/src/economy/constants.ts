@@ -1,4 +1,4 @@
-export const BALANCE_VERSION = 1;
+export const BALANCE_VERSION = 2;
 
 export const HOURS_PER_MONTH = 730;
 export const BANDWIDTH_USD_PER_GBPS_MONTH = 85;
