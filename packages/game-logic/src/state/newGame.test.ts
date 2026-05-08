@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { RELIABILITY_BASELINE_SCORE } from "../balance/reliability.js";
 import { MARKET_REFRESH_SIZE, STARTING_CASH } from "../economy/constants.js";
 import { newGame } from "./newGame.js";
 
@@ -22,7 +23,7 @@ test("newGame creates a deterministic initial state with a primed contract marke
 	assert.equal(first.player.name, "Player");
 	assert.equal(first.player.cash, STARTING_CASH);
 	assert.deepEqual(first.player.reliability, {
-		score: 50,
+		score: RELIABILITY_BASELINE_SCORE,
 		recentOutcomes: [],
 	});
 	assert.equal(first.datacenters.length, 0);
@@ -43,7 +44,7 @@ test("newGame accepts option overrides", () => {
 	assert.equal(state.player.name, "Alex");
 	assert.equal(state.player.cash, 123_456);
 	assert.deepEqual(state.player.reliability, {
-		score: 50,
+		score: RELIABILITY_BASELINE_SCORE,
 		recentOutcomes: [],
 	});
 	assert.equal(state.contractMarket.length, MARKET_REFRESH_SIZE);
