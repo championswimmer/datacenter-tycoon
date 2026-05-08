@@ -1,3 +1,8 @@
+import {
+	RELIABILITY_BASELINE_SCORE,
+	reliabilityMarketPolicyForScore,
+	type ReliabilityMarketPolicy,
+} from "../balance/reliability.js";
 import type { Contract, ContractId, ContractRequirements, ContractTier, ContractUrgency, Money } from "../types.js";
 import type { Rng } from "../sim/rng.js";
 
@@ -53,6 +58,12 @@ export const PRICING_WEIGHTS = {
 } as const;
 
 export const OFFER_DURATION_TICKS = 6;
+
+export interface ContractGenerationPolicy extends Pick<ReliabilityMarketPolicy, "longTermBias" | "shortTermBias"> {}
+
+const BASELINE_CONTRACT_GENERATION_POLICY: ContractGenerationPolicy = reliabilityMarketPolicyForScore(
+	RELIABILITY_BASELINE_SCORE,
+);
 
 function clampDifficulty(difficulty: number): number {
 	return Math.min(1, Math.max(0, difficulty));
@@ -114,31 +125,62 @@ function contractValue(requirements: ContractRequirements): number {
 	);
 }
 
-export function generateContract(rng: Rng, difficulty: number): Contract {
+export function urgencyThresholdsForPolicy(policy: ContractGenerationPolicy): {
+	rushThreshold: number;
+	anchorThreshold: number;
+} {
+	const rushThreshold = Math.max(0.12, Math.min(0.32, 0.2 * policy.shortTermBias));
+	const anchorThreshold = Math.max(
+		rushThreshold + 0.05,
+		Math.min(0.48, rushThreshold + 0.15 * policy.longTermBias),
+	);
+
+	return {
+		rushThreshold,
+		anchorThreshold,
+	};
+}
+
+function termBiasOffset(policy: ContractGenerationPolicy): number {
+	return Math.round((policy.longTermBias - policy.shortTermBias) * 2);
+}
+
+function applyTermBias(termMonths: number, policy: ContractGenerationPolicy): number {
+	return Math.max(1, termMonths + termBiasOffset(policy));
+}
+
+export function generateContract(
+	rng: Rng,
+	difficulty: number,
+	policy: ContractGenerationPolicy = BASELINE_CONTRACT_GENERATION_POLICY,
+): Contract {
 	const normalizedDifficulty = clampDifficulty(difficulty);
 	const theme = pickOne(rng, availableThemes(normalizedDifficulty));
 	const requirements = createRequirements(rng, theme, normalizedDifficulty);
 	const weightedValue = contractValue(requirements);
 
 	const urgencyRoll = rng.next();
+	const urgencyThresholds = urgencyThresholdsForPolicy(policy);
 	let urgency: ContractUrgency = "standard";
 	let offerDuration = OFFER_DURATION_TICKS;
 	let termMonths = 3 + Math.floor(normalizedDifficulty * 8) + Math.floor(rng.next() * 4);
 	let paymentMultiplier = 1;
 	let penaltyMultiplier = 1;
 
-	if (urgencyRoll < 0.2) {
+	if (urgencyRoll < urgencyThresholds.rushThreshold) {
 		urgency = "rush";
 		offerDuration = 2;
 		termMonths = 1 + Math.floor(rng.next() * 2);
 		paymentMultiplier = 1.4;
 		penaltyMultiplier = 1.2;
-	} else if (urgencyRoll < 0.35) {
+	} else if (urgencyRoll < urgencyThresholds.anchorThreshold) {
 		urgency = "anchor";
 		termMonths = 8 + Math.floor(rng.next() * 6);
 		paymentMultiplier = 0.75;
 		penaltyMultiplier = 0.6;
 	}
+
+	termMonths = applyTermBias(termMonths, policy);
 
 	const tier: ContractTier = normalizedDifficulty < 0.35 ? 1 : normalizedDifficulty < 0.7 ? 2 : 3;
 
