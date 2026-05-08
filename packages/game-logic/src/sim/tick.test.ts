@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
-import { RELIABILITY_BASELINE_SCORE } from "../balance/reliability.js";
+import { RELIABILITY_BASELINE_SCORE, reliabilityBandForScore } from "../balance/reliability.js";
 import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
 import { tickOpex } from "../economy/opex.js";
 import { tick } from "./tick.js";
@@ -351,4 +351,119 @@ test("a repaired rack can restore contract revenue in the same tick", () => {
 	assert.equal(nextState.datacenters[0]?.placements[0]?.health, "healthy");
 	assert.equal(nextState.activeContracts[0]?.status, "active");
 	assert.equal(nextState.player.cash, state.player.cash - repairedOpex + contract.monthlyPayment);
+});
+
+test("tick increases reliability and records fulfilled SLA outcomes for healthy months", () => {
+	const datacenter = makeDatacenter("dc-1");
+	const contract = makeContract("contract-1", datacenter, {
+		requirements: { vCpu: 64, ramGb: 128, storageTb: 8, gpuFlops: 0 },
+		monthlyPayment: 5_000,
+		penaltyPerMonth: 2_000,
+		termMonths: 12,
+	});
+	const state = makeState({
+		datacenters: [datacenter],
+		activeContracts: [contract],
+	});
+
+	const nextState = tick(state);
+
+	assert.equal(nextState.player.reliability.score, 53);
+	assert.equal(nextState.player.reliability.lastDelta, 3);
+	assert.deepEqual(nextState.player.reliability.recentOutcomes, [
+		{
+			contractId: contract.id,
+			contractName: contract.name,
+			tick: 1,
+			kind: "fulfilled",
+		},
+	]);
+});
+
+test("tick lowers reliability for breached and cancelled SLA months", () => {
+	const weakDatacenter = makeDatacenter("dc-1", [placement("rack-1", "C1", 0, 0)]);
+	const breachedContract = makeContract("contract-1", weakDatacenter, {
+		requirements: { vCpu: 500, ramGb: 5_000, storageTb: 500, gpuFlops: 500 },
+		penaltyPerMonth: 6_000,
+		termMonths: 10,
+	});
+	const breachedState = makeState({
+		datacenters: [weakDatacenter],
+		activeContracts: [breachedContract],
+	});
+
+	const afterBreach = tick(breachedState);
+
+	assert.equal(afterBreach.activeContracts[0]?.status, "breached");
+	assert.equal(afterBreach.player.reliability.score, 42);
+	assert.equal(afterBreach.player.reliability.lastDelta, -8);
+	assert.equal(afterBreach.player.reliability.recentOutcomes.at(-1)?.kind, "breached");
+
+	const afterCancellation = tick(afterBreach);
+
+	assert.equal(afterCancellation.activeContracts[0]?.status, "cancelled");
+	assert.equal(afterCancellation.player.reliability.score, 30);
+	assert.equal(afterCancellation.player.reliability.lastDelta, -12);
+	assert.equal(afterCancellation.player.reliability.recentOutcomes.at(-1)?.kind, "cancelled");
+	assert.equal(reliabilityBandForScore(afterCancellation.player.reliability.score), "at-risk");
+});
+
+test("fulfilled streaks and clamp edges behave deterministically across repeated ticks", () => {
+	const datacenter = makeDatacenter("dc-1");
+	const weakDatacenter = makeDatacenter("dc-weak", [placement("rack-1", "C1", 0, 0)]);
+	const contract = makeContract("contract-1", datacenter, {
+		requirements: { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 },
+		monthlyPayment: 5_000,
+		penaltyPerMonth: 2_000,
+		termMonths: 12,
+	});
+	let streakState = makeState({
+		datacenters: [datacenter],
+		activeContracts: [contract],
+	});
+
+	for (let month = 0; month < 7; month += 1) {
+		streakState = tick(streakState);
+	}
+
+	assert.equal(streakState.player.reliability.score, 71);
+	assert.equal(reliabilityBandForScore(streakState.player.reliability.score), "trusted");
+
+	const baselinePlayer = makeState().player;
+	const cappedHighState = tick({
+		...makeState({
+			datacenters: [datacenter],
+			activeContracts: [contract],
+		}),
+		player: {
+			...baselinePlayer,
+			reliability: {
+				score: 99,
+				recentOutcomes: [],
+			},
+		},
+	});
+	assert.equal(cappedHighState.player.reliability.score, 100);
+
+	const cappedLowState = tick({
+		...makeState({
+			datacenters: [weakDatacenter],
+			activeContracts: [
+				makeContract("contract-2", weakDatacenter, {
+					status: "breached",
+					requirements: { vCpu: 500, ramGb: 5_000, storageTb: 500, gpuFlops: 500 },
+					penaltyPerMonth: 6_000,
+					termMonths: 10,
+				}),
+			],
+		}),
+		player: {
+			...baselinePlayer,
+			reliability: {
+				score: 4,
+				recentOutcomes: [],
+			},
+		},
+	});
+	assert.equal(cappedLowState.player.reliability.score, 0);
 });
