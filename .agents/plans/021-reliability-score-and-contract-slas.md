@@ -18,7 +18,7 @@ owner: game-logic, web
   - [x] 2.2 Wire reliability updates into the monthly tick without breaking deterministic contract flow
   - [x] 2.3 Add tests for streaks, baseline clamps, and fulfilled vs breached score changes
 - [ ] **Phase 3 — Reliability-aware contract market shaping**
-  - [ ] 3.1 Make offer refresh volume depend on reliability bands
+  - [x] 3.1 Make offer refresh volume depend on reliability bands
   - [ ] 3.2 Bias generated contract terms toward longer or shorter durations from reliability
   - [ ] 3.3 Keep market difficulty and seeded RNG behavior deterministic under the new policy
 - [ ] **Phase 4 — Player-facing UI and feedback**

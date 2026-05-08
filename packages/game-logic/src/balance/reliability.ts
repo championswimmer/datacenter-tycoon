@@ -1,6 +1,13 @@
 import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
 import type { ReliabilityBand } from "../types.js";
 
+export interface ReliabilityMarketPolicy {
+	band: ReliabilityBand;
+	offerCount: number;
+	longTermBias: number;
+	shortTermBias: number;
+}
+
 export const RELIABILITY_MIN_SCORE = 0;
 export const RELIABILITY_MAX_SCORE = 100;
 export const RELIABILITY_BASELINE_SCORE = 50;
@@ -62,4 +69,16 @@ export function reliabilityBandForScore(score: number): ReliabilityBand {
 	}
 
 	return "baseline";
+}
+
+export function reliabilityMarketPolicyForScore(score: number): ReliabilityMarketPolicy {
+	const band = reliabilityBandForScore(score);
+	const termBias = RELIABILITY_TERM_BIAS[band];
+
+	return {
+		band,
+		offerCount: RELIABILITY_MARKET_OFFER_COUNT[band],
+		longTermBias: termBias.longTermBias,
+		shortTermBias: termBias.shortTermBias,
+	};
 }

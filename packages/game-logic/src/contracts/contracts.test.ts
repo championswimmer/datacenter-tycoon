@@ -4,6 +4,10 @@ import test from "node:test";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import {
+	RELIABILITY_BASELINE_SCORE,
+	RELIABILITY_MARKET_OFFER_COUNT,
+} from "../balance/reliability.js";
+import {
 	acceptContract,
 	advanceContract,
 	evaluateContract,
@@ -95,6 +99,10 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
 			id: playerId("player-1"),
 			name: "Player One",
 			cash: 250_000,
+			reliability: {
+				score: RELIABILITY_BASELINE_SCORE,
+				recentOutcomes: [],
+			},
 		},
 		datacenters: [makeDatacenter("dc-1")],
 		contractMarket: [],
@@ -206,6 +214,45 @@ test("advanceContract transitions between active, breached, completed, and cance
 	assert.equal(advanceContract(baseContract, breachedDatacenter, 5).status, "breached");
 	assert.equal(advanceContract(baseContract, datacenter, 8).status, "completed");
 	assert.equal(advanceContract(baseContract, breachedDatacenter, 8).status, "cancelled");
+});
+
+test("refreshContractMarket adjusts offer count by reliability band while preserving retained offers", () => {
+	const retained = makeContract("retained", {
+		status: "offered",
+		offeredAtTick: tick(6),
+		expiresAtTick: tick(12),
+	});
+	const trustedState = makeState({
+		tick: tick(8),
+		rngState: 99,
+		player: {
+			...makeState().player,
+			reliability: {
+				score: 80,
+				recentOutcomes: [],
+			},
+		},
+		contractMarket: [retained],
+	});
+	const atRiskState = {
+		...trustedState,
+		player: {
+			...trustedState.player,
+			reliability: {
+				score: 20,
+				recentOutcomes: [],
+			},
+		},
+	};
+
+	const trustedMarket = refreshContractMarket(trustedState);
+	const atRiskMarket = refreshContractMarket(atRiskState);
+
+	assert.equal(trustedMarket.contractMarket.length, RELIABILITY_MARKET_OFFER_COUNT.trusted);
+	assert.equal(atRiskMarket.contractMarket.length, RELIABILITY_MARKET_OFFER_COUNT["at-risk"]);
+	assert.ok(trustedMarket.contractMarket.some((contract) => contract.id === retained.id));
+	assert.ok(atRiskMarket.contractMarket.some((contract) => contract.id === retained.id));
+	assert.deepEqual(refreshContractMarket(trustedState), trustedMarket);
 });
 
 test("acceptContract backfills the market slot immediately to keep MARKET_REFRESH_SIZE offers", () => {
