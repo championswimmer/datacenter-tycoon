@@ -76,7 +76,7 @@ describe("MarketList", () => {
     expect(screen.getByText("6 months left")).toBeTruthy();
   });
 
-  it("shows at-risk market hints when reliability is limiting longer work", () => {
+  it("shows silver-tier market hints when reliability is limiting longer work", () => {
     const state = buildMarketState();
     state.player.reliability = {
       score: 20,
@@ -93,10 +93,10 @@ describe("MarketList", () => {
 
     renderMarket(state);
 
-    expect(screen.getByText(/At-risk reliability is limiting longer-term work/i)).toBeTruthy();
+    expect(screen.getByText(/Low reliability is limiting longer-term work/i)).toBeTruthy();
   });
 
-  it("shows trusted market hints on long-term opportunities", () => {
+  it("shows platinum market hints on long-term opportunities", () => {
     const state = buildMarketState();
     state.player.reliability = {
       score: 77,
@@ -120,7 +120,7 @@ describe("MarketList", () => {
 
     renderMarket(state);
 
-    expect(screen.getByText(/Trusted reliability is helping surface longer-term offers like this/i)).toBeTruthy();
+    expect(screen.getByText(/Platinum reliability is helping surface longer-term offers like this/i)).toBeTruthy();
   });
 
   it("requires datacenter selection and confirmation before accepting", () => {

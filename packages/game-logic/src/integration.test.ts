@@ -154,7 +154,7 @@ function stateWithGarage(seed: number, dcIdValue: string) {
 	return state;
 }
 
-test("trusted reliability from clean SLA months expands future market supply", () => {
+test("platinum reliability from clean SLA months expands future market supply", () => {
 	const dcId = datacenterId("dc-reliable-1");
 	let state = stateWithGarage(84, "dc-reliable-1");
 	state = {
@@ -188,12 +188,12 @@ test("trusted reliability from clean SLA months expands future market supply", (
 
 	assert.equal(state.player.reliability.score, 71);
 	assert.equal(state.player.reliability.lastDelta, 3);
-	assert.equal(state.contractMarket.length, RELIABILITY_MARKET_OFFER_COUNT.trusted);
+	assert.equal(state.contractMarket.length, RELIABILITY_MARKET_OFFER_COUNT.platinum);
 	assert.equal(state.activeContracts[0]?.status, "active");
 	assert.equal(state.player.reliability.recentOutcomes.at(-1)?.kind, "fulfilled");
 });
 
-test("breached reliability loops shrink later market opportunities once the score falls at-risk", () => {
+test("breached reliability loops shrink later market opportunities once the score falls silver-tier", () => {
 	const dcId = datacenterId("dc-breach-1");
 	let state = stateWithGarage(85, "dc-breach-1");
 	state = {
@@ -227,7 +227,7 @@ test("breached reliability loops shrink later market opportunities once the scor
 
 	assert.equal(state.player.reliability.score, 30);
 	assert.equal(state.player.reliability.lastDelta, -8);
-	assert.equal(state.contractMarket.length, RELIABILITY_MARKET_OFFER_COUNT["at-risk"]);
+	assert.equal(state.contractMarket.length, RELIABILITY_MARKET_OFFER_COUNT["silver"]);
 	assert.equal(state.activeContracts[0]?.status, "breached");
 	assert.equal(state.player.reliability.recentOutcomes.at(-1)?.kind, "breached");
 });

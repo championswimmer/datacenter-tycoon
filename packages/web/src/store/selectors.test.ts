@@ -121,22 +121,22 @@ describe("selectPlayerName", () => {
 });
 
 describe("reliability selectors", () => {
-  it("returns baseline reliability summaries on a fresh game", () => {
+  it("returns gold reliability summaries on a fresh game", () => {
     const state = freshState();
 
     expect(selectReliabilityScore(state)).toBe(50);
-    expect(selectReliabilityBand(state)).toBe("baseline");
+    expect(selectReliabilityBand(state)).toBe("gold");
     expect(selectReliabilityDelta(state)).toBe(0);
     expect(selectRecentSlaOutcomes(state)).toEqual([]);
     expect(selectReliabilitySummary(state)).toEqual({
       score: 50,
-      band: "baseline",
+      band: "gold",
       lastDelta: 0,
       trend: "steady",
       recentOutcomes: [],
     });
     expect(selectReliabilityMarketEffectSummary(state)).toMatchObject({
-      band: "baseline",
+      band: "gold",
       offerCount: 6,
       offerDeltaFromBaseline: 0,
       supplyLabel: expect.stringContaining("standard market offers"),
@@ -157,22 +157,22 @@ describe("reliability selectors", () => {
       ],
     });
 
-    expect(selectReliabilityBand(state)).toBe("trusted");
+    expect(selectReliabilityBand(state)).toBe("platinum");
     expect(selectReliabilitySummary(state)).toMatchObject({
       score: 77,
-      band: "trusted",
+      band: "platinum",
       lastDelta: 3,
       trend: "up",
     });
     expect(selectReliabilityMarketEffectSummary(state)).toMatchObject({
-      band: "trusted",
+      band: "platinum",
       offerCount: 8,
       offerDeltaFromBaseline: 2,
       termLabel: expect.stringContaining("Longer anchor contracts"),
     });
   });
 
-  it("returns at-risk market warnings after breaches and cancellations", () => {
+  it("returns silver market warnings after breaches and cancellations", () => {
     const state = withReliability(freshState(), {
       score: 20,
       lastDelta: -12,
@@ -186,17 +186,17 @@ describe("reliability selectors", () => {
       ],
     });
 
-    expect(selectReliabilityBand(state)).toBe("at-risk");
+    expect(selectReliabilityBand(state)).toBe("silver");
     expect(selectReliabilitySummary(state)).toMatchObject({
       score: 20,
-      band: "at-risk",
+      band: "silver",
       lastDelta: -12,
       trend: "down",
     });
     expect(selectReliabilityMarketEffectSummary(state)).toMatchObject({
-      band: "at-risk",
-      offerCount: 4,
-      offerDeltaFromBaseline: -2,
+      band: "silver",
+      offerCount: 5,
+      offerDeltaFromBaseline: -1,
       summary: expect.stringContaining("Breaches shrink the market"),
     });
   });

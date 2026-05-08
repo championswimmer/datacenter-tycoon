@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
-import { RELIABILITY_BASELINE_SCORE, reliabilityBandForScore } from "../balance/reliability.js";
+import { RELIABILITY_BASELINE_SCORE, RELIABILITY_MARKET_OFFER_COUNT, reliabilityBandForScore } from "../balance/reliability.js";
 import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
 import { tickOpex } from "../economy/opex.js";
 import { tick } from "./tick.js";
@@ -192,7 +192,7 @@ test("tick is deterministic across multiple months for the same seed and startin
 
 	assert.deepEqual(firstRun, secondRun);
 	assert.equal(firstRun.tick, 6);
-	assert.equal(firstRun.contractMarket.length, MARKET_REFRESH_SIZE);
+	assert.equal(firstRun.contractMarket.length, RELIABILITY_MARKET_OFFER_COUNT.platinum);
 	assert.deepEqual(firstRun.player.reliability, secondRun.player.reliability);
 });
 
@@ -405,7 +405,7 @@ test("tick lowers reliability for breached and cancelled SLA months", () => {
 	assert.equal(afterCancellation.player.reliability.score, 30);
 	assert.equal(afterCancellation.player.reliability.lastDelta, -12);
 	assert.equal(afterCancellation.player.reliability.recentOutcomes.at(-1)?.kind, "cancelled");
-	assert.equal(reliabilityBandForScore(afterCancellation.player.reliability.score), "at-risk");
+	assert.equal(reliabilityBandForScore(afterCancellation.player.reliability.score), "silver");
 });
 
 test("fulfilled streaks and clamp edges behave deterministically across repeated ticks", () => {
@@ -427,7 +427,7 @@ test("fulfilled streaks and clamp edges behave deterministically across repeated
 	}
 
 	assert.equal(streakState.player.reliability.score, 71);
-	assert.equal(reliabilityBandForScore(streakState.player.reliability.score), "trusted");
+	assert.equal(reliabilityBandForScore(streakState.player.reliability.score), "platinum");
 
 	const baselinePlayer = makeState().player;
 	const cappedHighState = tick({

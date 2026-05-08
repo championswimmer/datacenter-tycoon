@@ -17,16 +17,20 @@ export const RELIABILITY_DELTA_BREACHED = -8;
 export const RELIABILITY_DELTA_CANCELLED = -12;
 
 export const RELIABILITY_BAND_THRESHOLDS = {
-	atRiskMax: 34,
-	trustedMin: 70,
+	bronzeMax: 19,
+	silverMax: 39,
+	goldMax: 59,
+	platinumMax: 79,
 } as const;
 
 export const RELIABILITY_RECENT_OUTCOME_LIMIT = 6;
 
 export const RELIABILITY_MARKET_OFFER_COUNT: Readonly<Record<ReliabilityBand, number>> = {
-	"at-risk": 4,
-	baseline: MARKET_REFRESH_SIZE,
-	trusted: 8,
+	bronze: 3,
+	silver: 5,
+	gold: MARKET_REFRESH_SIZE,
+	platinum: 8,
+	diamond: 10,
 };
 
 export interface ReliabilityTermBias {
@@ -35,17 +39,25 @@ export interface ReliabilityTermBias {
 }
 
 export const RELIABILITY_TERM_BIAS: Readonly<Record<ReliabilityBand, ReliabilityTermBias>> = {
-	"at-risk": {
-		longTermBias: 0.75,
-		shortTermBias: 1.3,
+	bronze: {
+		longTermBias: 0.6,
+		shortTermBias: 1.4,
 	},
-	baseline: {
+	silver: {
+		longTermBias: 0.85,
+		shortTermBias: 1.15,
+	},
+	gold: {
 		longTermBias: 1,
 		shortTermBias: 1,
 	},
-	trusted: {
-		longTermBias: 1.3,
-		shortTermBias: 0.75,
+	platinum: {
+		longTermBias: 1.2,
+		shortTermBias: 0.85,
+	},
+	diamond: {
+		longTermBias: 1.4,
+		shortTermBias: 0.6,
 	},
 };
 
@@ -60,15 +72,23 @@ export function clampReliabilityScore(score: number): number {
 export function reliabilityBandForScore(score: number): ReliabilityBand {
 	const normalizedScore = clampReliabilityScore(score);
 
-	if (normalizedScore <= RELIABILITY_BAND_THRESHOLDS.atRiskMax) {
-		return "at-risk";
+	if (normalizedScore <= RELIABILITY_BAND_THRESHOLDS.bronzeMax) {
+		return "bronze";
 	}
 
-	if (normalizedScore >= RELIABILITY_BAND_THRESHOLDS.trustedMin) {
-		return "trusted";
+	if (normalizedScore <= RELIABILITY_BAND_THRESHOLDS.silverMax) {
+		return "silver";
 	}
 
-	return "baseline";
+	if (normalizedScore <= RELIABILITY_BAND_THRESHOLDS.goldMax) {
+		return "gold";
+	}
+
+	if (normalizedScore <= RELIABILITY_BAND_THRESHOLDS.platinumMax) {
+		return "platinum";
+	}
+
+	return "diamond";
 }
 
 export function reliabilityMarketPolicyForScore(score: number): ReliabilityMarketPolicy {

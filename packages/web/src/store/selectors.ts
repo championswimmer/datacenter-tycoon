@@ -97,20 +97,33 @@ export function selectReliabilityMarketEffectSummary(
   const baselineOfferCount = reliabilityMarketPolicyForScore(RELIABILITY_BASELINE_SCORE).offerCount;
   const offerDeltaFromBaseline = policy.offerCount - baselineOfferCount;
 
-  if (band === "trusted") {
+  if (band === "diamond") {
     return {
       band,
       offerCount: policy.offerCount,
       offerDeltaFromBaseline,
       longTermBias: policy.longTermBias,
       shortTermBias: policy.shortTermBias,
-      supplyLabel: `${policy.offerCount} market offers with extra premium access`,
-      termLabel: "Longer anchor contracts appear more often.",
-      summary: "Reliable fulfillment unlocks more offers and better long-term contract mix.",
+      supplyLabel: `${policy.offerCount} market offers with Diamond-tier premium access`,
+      termLabel: "Extended anchor contracts dominate your market mix.",
+      summary: "Diamond status unlocks the widest market and the best long-term opportunities.",
     };
   }
 
-  if (band === "at-risk") {
+  if (band === "platinum") {
+    return {
+      band,
+      offerCount: policy.offerCount,
+      offerDeltaFromBaseline,
+      longTermBias: policy.longTermBias,
+      shortTermBias: policy.shortTermBias,
+      supplyLabel: `${policy.offerCount} market offers with Platinum-tier access`,
+      termLabel: "Longer anchor contracts appear more often.",
+      summary: "Reliable fulfillment unlocks more offers and a better long-term contract mix.",
+    };
+  }
+
+  if (band === "silver") {
     return {
       band,
       offerCount: policy.offerCount,
@@ -120,6 +133,19 @@ export function selectReliabilityMarketEffectSummary(
       supplyLabel: `${policy.offerCount} market offers while reputation recovers`,
       termLabel: "Shorter rush work is more common until SLA performance improves.",
       summary: "Breaches shrink the market and make longer-term deals harder to earn.",
+    };
+  }
+
+  if (band === "bronze") {
+    return {
+      band,
+      offerCount: policy.offerCount,
+      offerDeltaFromBaseline,
+      longTermBias: policy.longTermBias,
+      shortTermBias: policy.shortTermBias,
+      supplyLabel: `${policy.offerCount} market offers with Bronze-tier restricted access`,
+      termLabel: "Only short-term rush contracts are available at this reputation level.",
+      summary: "Severe reputation damage has heavily restricted your contract market.",
     };
   }
 

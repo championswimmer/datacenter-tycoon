@@ -95,7 +95,7 @@ export function ActiveList() {
           ? "SLA hit: this breach already hurt reliability. Recover service now or cancellation will damage it again."
           : latestOutcome?.kind === "fulfilled"
             ? "SLA credit: this contract improved reliability last month — keep it stable to preserve market access."
-            : reliability.band === "at-risk"
+            : (reliability.band === "silver" || reliability.band === "bronze")
               ? "SLA recovery: clean delivery here helps restore reputation and future offer volume."
               : "SLA impact: fulfilled months improve future contract access and longer-term opportunities.";
 

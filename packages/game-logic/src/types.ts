@@ -22,7 +22,7 @@ export type ContractUrgency = "standard" | "rush" | "anchor";
 export type ContractTier = 1 | 2 | 3;
 export type LedgerEntryType = "capex" | "opex" | "revenue" | "penalty" | "adjustment";
 export type RackHealthStatus = "healthy" | "repairing";
-export type ReliabilityBand = "at-risk" | "baseline" | "trusted";
+export type ReliabilityBand = "bronze" | "silver" | "gold" | "platinum" | "diamond";
 export type ContractSlaOutcomeKind = "fulfilled" | "breached" | "cancelled";
 
 export interface Capacity {

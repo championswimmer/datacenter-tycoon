@@ -20,16 +20,18 @@ test("clampReliabilityScore enforces the configured score bounds", () => {
 	assert.equal(clampReliabilityScore(62.6), 63);
 });
 
-test("reliabilityBandForScore maps score thresholds to stability bands", () => {
-	assert.equal(reliabilityBandForScore(RELIABILITY_BAND_THRESHOLDS.atRiskMax), "at-risk");
-	assert.equal(reliabilityBandForScore(RELIABILITY_BASELINE_SCORE), "baseline");
-	assert.equal(reliabilityBandForScore(RELIABILITY_BAND_THRESHOLDS.trustedMin), "trusted");
+test("reliabilityBandForScore maps score thresholds to tier bands", () => {
+	assert.equal(reliabilityBandForScore(RELIABILITY_BAND_THRESHOLDS.bronzeMax), "bronze");
+	assert.equal(reliabilityBandForScore(RELIABILITY_BAND_THRESHOLDS.silverMax), "silver");
+	assert.equal(reliabilityBandForScore(RELIABILITY_BASELINE_SCORE), "gold");
+	assert.equal(reliabilityBandForScore(RELIABILITY_BAND_THRESHOLDS.platinumMax), "platinum");
+	assert.equal(reliabilityBandForScore(RELIABILITY_BAND_THRESHOLDS.platinumMax + 1), "diamond");
 });
 
-test("baseline reliability preserves current offer volume while trusted and at-risk bands skew market policy", () => {
-	assert.equal(RELIABILITY_MARKET_OFFER_COUNT.baseline, MARKET_REFRESH_SIZE);
-	assert.ok(RELIABILITY_MARKET_OFFER_COUNT.trusted > RELIABILITY_MARKET_OFFER_COUNT.baseline);
-	assert.ok(RELIABILITY_MARKET_OFFER_COUNT["at-risk"] < RELIABILITY_MARKET_OFFER_COUNT.baseline);
-	assert.ok(RELIABILITY_TERM_BIAS.trusted.longTermBias > RELIABILITY_TERM_BIAS.baseline.longTermBias);
-	assert.ok(RELIABILITY_TERM_BIAS["at-risk"].shortTermBias > RELIABILITY_TERM_BIAS.baseline.shortTermBias);
+test("gold tier preserves current offer volume while higher and lower tiers skew market policy", () => {
+	assert.equal(RELIABILITY_MARKET_OFFER_COUNT.gold, MARKET_REFRESH_SIZE);
+	assert.ok(RELIABILITY_MARKET_OFFER_COUNT.diamond > RELIABILITY_MARKET_OFFER_COUNT.gold);
+	assert.ok(RELIABILITY_MARKET_OFFER_COUNT.bronze < RELIABILITY_MARKET_OFFER_COUNT.gold);
+	assert.ok(RELIABILITY_TERM_BIAS.diamond.longTermBias > RELIABILITY_TERM_BIAS.gold.longTermBias);
+	assert.ok(RELIABILITY_TERM_BIAS.bronze.shortTermBias > RELIABILITY_TERM_BIAS.gold.shortTermBias);
 });

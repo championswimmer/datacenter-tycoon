@@ -64,11 +64,7 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
   const [showResetModal, setShowResetModal] = useState(false);
   const [showAudioModal, setShowAudioModal] = useState(false);
   const openContracts = () => navigate({ view: "contracts" });
-  const reliabilityBandLabel = reliability.band === "at-risk"
-    ? "AT-RISK"
-    : reliability.band === "trusted"
-      ? "TRUSTED"
-      : "BASELINE";
+  const reliabilityBandLabel = reliability.band.toUpperCase();
   const reliabilityTrendLabel = reliability.lastDelta > 0
     ? `▲ +${reliability.lastDelta}`
     : reliability.lastDelta < 0
@@ -133,9 +129,9 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
           <span className={styles.hudLabel}>RELIABILITY</span>
           <span className={[
             styles.hudValue,
-            reliability.band === "trusted"
+            (reliability.band === "platinum" || reliability.band === "diamond")
               ? styles.reliabilityTrusted
-              : reliability.band === "at-risk"
+              : (reliability.band === "silver" || reliability.band === "bronze")
                 ? styles.reliabilityAtRisk
                 : styles.reliabilityBaseline,
           ].join(" ")}>{reliability.score} · {reliabilityBandLabel}</span>

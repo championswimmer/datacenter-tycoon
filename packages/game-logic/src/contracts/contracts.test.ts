@@ -223,7 +223,7 @@ test("refreshContractMarket adjusts offer count by reliability band while preser
 		offeredAtTick: tick(6),
 		expiresAtTick: tick(12),
 	});
-	const trustedState = makeState({
+	const diamondState = makeState({
 		tick: tick(8),
 		rngState: 99,
 		player: {
@@ -235,10 +235,10 @@ test("refreshContractMarket adjusts offer count by reliability band while preser
 		},
 		contractMarket: [retained],
 	});
-	const atRiskState = {
-		...trustedState,
+	const silverState = {
+		...diamondState,
 		player: {
-			...trustedState.player,
+			...diamondState.player,
 			reliability: {
 				score: 20,
 				recentOutcomes: [],
@@ -246,14 +246,14 @@ test("refreshContractMarket adjusts offer count by reliability band while preser
 		},
 	};
 
-	const trustedMarket = refreshContractMarket(trustedState);
-	const atRiskMarket = refreshContractMarket(atRiskState);
+	const diamondMarket = refreshContractMarket(diamondState);
+	const silverMarket = refreshContractMarket(silverState);
 
-	assert.equal(trustedMarket.contractMarket.length, RELIABILITY_MARKET_OFFER_COUNT.trusted);
-	assert.equal(atRiskMarket.contractMarket.length, RELIABILITY_MARKET_OFFER_COUNT["at-risk"]);
-	assert.ok(trustedMarket.contractMarket.some((contract) => contract.id === retained.id));
-	assert.ok(atRiskMarket.contractMarket.some((contract) => contract.id === retained.id));
-	assert.deepEqual(refreshContractMarket(trustedState), trustedMarket);
+	assert.equal(diamondMarket.contractMarket.length, RELIABILITY_MARKET_OFFER_COUNT.diamond);
+	assert.equal(silverMarket.contractMarket.length, RELIABILITY_MARKET_OFFER_COUNT["silver"]);
+	assert.ok(diamondMarket.contractMarket.some((contract) => contract.id === retained.id));
+	assert.ok(silverMarket.contractMarket.some((contract) => contract.id === retained.id));
+	assert.deepEqual(refreshContractMarket(diamondState), diamondMarket);
 });
 
 test("acceptContract backfills the market slot immediately to keep MARKET_REFRESH_SIZE offers", () => {
@@ -315,21 +315,21 @@ test("generateContract at low difficulty never requires GPU", () => {
 });
 
 test("generateContract biases average term length by reliability policy", () => {
-	const trustedPolicy = reliabilityMarketPolicyForScore(80);
-	const baselinePolicy = reliabilityMarketPolicyForScore(RELIABILITY_BASELINE_SCORE);
-	const atRiskPolicy = reliabilityMarketPolicyForScore(20);
-	const trustedRng = createRng(2026);
-	const baselineRng = createRng(2026);
-	const atRiskRng = createRng(2026);
+	const diamondPolicy = reliabilityMarketPolicyForScore(80);
+	const goldPolicy = reliabilityMarketPolicyForScore(RELIABILITY_BASELINE_SCORE);
+	const silverPolicy = reliabilityMarketPolicyForScore(20);
+	const diamondRng = createRng(2026);
+	const goldRng = createRng(2026);
+	const silverRng = createRng(2026);
 	const sampleSize = 200;
 
 	const averageTerm = (terms: number[]): number => terms.reduce((sum, term) => sum + term, 0) / terms.length;
-	const trustedTerms = Array.from({ length: sampleSize }, () => generateContract(trustedRng, 0.5, trustedPolicy).termMonths);
-	const baselineTerms = Array.from({ length: sampleSize }, () => generateContract(baselineRng, 0.5, baselinePolicy).termMonths);
-	const atRiskTerms = Array.from({ length: sampleSize }, () => generateContract(atRiskRng, 0.5, atRiskPolicy).termMonths);
+	const diamondTerms = Array.from({ length: sampleSize }, () => generateContract(diamondRng, 0.5, diamondPolicy).termMonths);
+	const goldTerms = Array.from({ length: sampleSize }, () => generateContract(goldRng, 0.5, goldPolicy).termMonths);
+	const silverTerms = Array.from({ length: sampleSize }, () => generateContract(silverRng, 0.5, silverPolicy).termMonths);
 
-	assert.ok(averageTerm(trustedTerms) > averageTerm(baselineTerms));
-	assert.ok(averageTerm(baselineTerms) > averageTerm(atRiskTerms));
+	assert.ok(averageTerm(diamondTerms) > averageTerm(goldTerms));
+	assert.ok(averageTerm(goldTerms) > averageTerm(silverTerms));
 });
 
 test("generateContract produces rush, anchor, and standard urgency types over a large sample", () => {

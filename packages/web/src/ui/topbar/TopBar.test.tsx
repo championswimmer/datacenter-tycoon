@@ -81,7 +81,7 @@ describe("TopBar", () => {
       </Wrapper>,
     );
     expect(screen.getByText("RELIABILITY")).toBeTruthy();
-    expect(screen.getByText("50 · BASELINE")).toBeTruthy();
+    expect(screen.getByText("50 · GOLD")).toBeTruthy();
     expect(screen.getByText("— steady · 6 offers")).toBeTruthy();
   });
 
@@ -106,7 +106,7 @@ describe("TopBar", () => {
     expect(screen.getByText("16 Jan 2025")).toBeTruthy();
   });
 
-  it("shows trusted reliability changes in the HUD when store state changes", () => {
+  it("shows platinum reliability changes in the HUD when store state changes", () => {
     const base = newGame(42, { playerName: "Acme Corp" });
     const trustedState: GameState = {
       ...base,
@@ -133,7 +133,7 @@ describe("TopBar", () => {
       </Wrapper>,
     );
 
-    expect(screen.getByText("77 · TRUSTED")).toBeTruthy();
+    expect(screen.getByText("77 · PLATINUM")).toBeTruthy();
     expect(screen.getByText("▲ +3 · 8 offers")).toBeTruthy();
   });
 
