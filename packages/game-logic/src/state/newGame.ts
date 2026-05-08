@@ -1,3 +1,4 @@
+import { RELIABILITY_BASELINE_SCORE } from "../balance/reliability.js";
 import { refreshContractMarket } from "../contracts/market.js";
 import { STARTING_CASH } from "../economy/constants.js";
 import { generateMap } from "../sim/mapgen.js";
@@ -38,7 +39,7 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 			name: options.playerName ?? "Player",
 			cash: startingCash,
 			reliability: {
-				score: 50,
+				score: RELIABILITY_BASELINE_SCORE,
 				recentOutcomes: [],
 			},
 		},

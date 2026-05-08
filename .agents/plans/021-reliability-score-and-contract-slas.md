@@ -11,7 +11,7 @@ owner: game-logic, web
 
 - [ ] **Phase 1 — Reliability domain model and persistence**
   - [x] 1.1 Add serializable player reliability state and SLA outcome vocabulary to core types
-  - [ ] 1.2 Centralize reliability balance constants and recovery/decay rules
+  - [x] 1.2 Centralize reliability balance constants and recovery/decay rules
   - [ ] 1.3 Update save/versioned public surfaces for the new reliability data
 - [ ] **Phase 2 — SLA evaluation and reliability scoring**
   - [ ] 2.1 Add pure helpers that classify monthly contract outcomes and compute reliability deltas
