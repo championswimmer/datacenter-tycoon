@@ -3,6 +3,9 @@ import { rngFromState } from "../sim/rng.js";
 import type { ContractId, DatacenterId, GameState } from "../types.js";
 import { generateContract } from "./generator.js";
 
+// Reliability never changes the core difficulty curve itself. It only affects how many
+// offers are backfilled and the generation policy used after this tick-based difficulty
+// roll has already been produced from the seeded RNG stream.
 export function marketDifficulty(currentTick: number, roll: number): number {
 	const baseline = 0.15 + Math.min(0.65, currentTick * 0.015);
 	if (currentTick <= 5) {

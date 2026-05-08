@@ -273,6 +273,31 @@ test("acceptContract backfills the market slot immediately to keep MARKET_REFRES
 	assert.equal(nextState.activeContracts[0]!.status, "active");
 });
 
+test("market refresh and acceptance stay deterministic for identical reliability state", () => {
+	const initialState = makeState({
+		tick: tick(8),
+		rngState: 321,
+		player: {
+			...makeState().player,
+			reliability: {
+				score: 80,
+				recentOutcomes: [],
+			},
+		},
+	});
+
+	const firstRefresh = refreshContractMarket(initialState);
+	const secondRefresh = refreshContractMarket(initialState);
+
+	assert.deepEqual(firstRefresh, secondRefresh);
+
+	const acceptedContractId = firstRefresh.contractMarket[0]!.id;
+	const firstAccepted = acceptContract(firstRefresh, acceptedContractId, firstRefresh.datacenters[0]!.id);
+	const secondAccepted = acceptContract(secondRefresh, acceptedContractId, secondRefresh.datacenters[0]!.id);
+
+	assert.deepEqual(firstAccepted, secondAccepted);
+});
+
 test("marketDifficulty clamps low for ticks 0-5 and caps at 0.85 for later ticks", () => {
 	assert.ok(marketDifficulty(0, 0) <= 0.25);
 	assert.ok(marketDifficulty(3, 1) <= 0.25);
