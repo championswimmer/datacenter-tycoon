@@ -229,6 +229,28 @@ test("placement still uses reserved full-draw power even when billed power is mo
 	});
 });
 
+test("garage cooling rebalance allows more routine storage growth before hitting the thermal cap", () => {
+	const garageWithFiveStorageRacks = makeDatacenter(DATACENTER_CATALOG.garage, [
+		placement("rack-1", "S2", 0, 0),
+		placement("rack-2", "S2", 0, 1),
+		placement("rack-3", "S2", 0, 2),
+		placement("rack-4", "S2", 0, 3),
+		placement("rack-5", "S2", 1, 0),
+	]);
+	const garageWithSixStorageRacks = makeDatacenter(DATACENTER_CATALOG.garage, [
+		...garageWithFiveStorageRacks.placements,
+		placement("rack-6", "S2", 1, 1),
+	]);
+
+	assert.deepEqual(canPlaceRack(garageWithFiveStorageRacks, RACK_CATALOG.S2, { row: 1, position: 1 }), {
+		ok: true,
+	});
+	assert.deepEqual(canPlaceRack(garageWithSixStorageRacks, RACK_CATALOG.S2, { row: 1, position: 2 }), {
+		ok: false,
+		reason: "insufficient_cooling",
+	});
+});
+
 test("canPlaceRack rejects placements that exceed remaining cooling budget", () => {
 	const datacenter = makeDatacenter(
 		DATACENTER_CATALOG.hyperscale,
