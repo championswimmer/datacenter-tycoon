@@ -1,7 +1,10 @@
 import { RACK_CATALOG } from "../catalog/racks.js";
+import { allocateRackActivity, rackDemandByKindFromRequirements, type RackActivityAllocationResult } from "../economy/rack-activity.js";
+import { rackAgeMonths } from "../sim/maintenance.js";
 import type {
 	CanPlaceRackResult,
 	Capacity,
+	ContractRequirements,
 	Datacenter,
 	DatacenterResourceUsage,
 	GridPosition,
@@ -9,7 +12,6 @@ import type {
 	RackSpec,
 	Tick,
 } from "../types.js";
-import { rackAgeMonths } from "../sim/maintenance.js";
 import { rackCapacity } from "./rack.js";
 
 const EMPTY_CAPACITY: Capacity = {
@@ -86,6 +88,40 @@ export function datacenterInstalledCapacity(datacenter: Datacenter): Capacity {
 			gpuFlops: capacity.gpuFlops + placementCapacity.gpuFlops,
 		};
 	}, EMPTY_CAPACITY);
+}
+
+function serviceUnitsForRackKind(spec: RackSpec): number {
+	switch (spec.kind) {
+		case "compute":
+			return spec.vCpu;
+		case "memory":
+			return spec.ramGb;
+		case "storage":
+			return spec.storageTb;
+		case "gpu":
+			return spec.gpuFlops;
+		default:
+			return 0;
+	}
+}
+
+export function allocateDatacenterRackActivity(
+	datacenter: Datacenter,
+	assignedDemand: ContractRequirements,
+): RackActivityAllocationResult {
+	const candidates = datacenter.placements.map((placement) => {
+		const spec = getRackSpec(placement);
+		return {
+			placementId: placement.id,
+			specId: placement.specId,
+			kind: placement.kind,
+			powerDrawKw: spec.powerDrawKw,
+			serviceUnits: serviceUnitsForRackKind(spec),
+			isRepairing: placement.health !== "healthy",
+		};
+	});
+
+	return allocateRackActivity(candidates, rackDemandByKindFromRequirements(assignedDemand));
 }
 
 export interface DatacenterMaintenanceSummary {
