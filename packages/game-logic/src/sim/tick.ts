@@ -1,3 +1,4 @@
+import { collectContractSlaOutcomes, updatePlayerReliability } from "../contracts/reliability.js";
 import { refreshContractMarket } from "../contracts/market.js";
 import { tickOpex, tickRevenue } from "../economy/opex.js";
 import { advanceRackRepair, rackAgeMonths, rackFailureChance } from "./maintenance.js";
@@ -139,6 +140,8 @@ export function tick(state: GameState): GameState {
 	});
 
 	const finalizedContracts = autoCancelledContracts.map((contract) => finalizeContract(contract, nextTick));
+	const reliabilityOutcomes = collectContractSlaOutcomes(state.activeContracts, finalizedContracts, nextTick);
+	const nextReliability = updatePlayerReliability(state.player.reliability, reliabilityOutcomes);
 	const netCashDelta = roundMoney(revenueResult.revenue - totalOpex);
 	const ledgerEntries: LedgerEntry[] = [];
 
@@ -177,6 +180,7 @@ export function tick(state: GameState): GameState {
 		player: {
 			...maintenanceState.player,
 			cash: roundMoney(state.player.cash + netCashDelta),
+			reliability: nextReliability,
 		},
 		activeContracts: finalizedContracts,
 		ledger: [...state.ledger, ...ledgerEntries],
