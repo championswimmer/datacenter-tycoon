@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import net from "node:net";
 import path from "node:path";
 
 import crypto from "node:crypto";
@@ -124,20 +125,64 @@ export async function withClient<T>(
 	}
 }
 
-export async function bestEffortShutdown(parsed: ParsedArgv, clientFactory?: CommandClientFactory): Promise<void> {
+async function canConnectToSocket(socketPath: string): Promise<boolean> {
 	try {
+		await new Promise<void>((resolve, reject) => {
+			const socket = net.createConnection(socketPath);
+			socket.once("connect", () => {
+				socket.end();
+				resolve();
+			});
+			socket.once("error", (error) => {
+				socket.destroy();
+				reject(error);
+			});
+		});
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+export async function waitForDaemonShutdown(paths: Pick<CommandPaths, "socketPath" | "pidPath">, timeoutMs = 4_000): Promise<void> {
+	const deadline = Date.now() + timeoutMs;
+	while (Date.now() < deadline) {
+		const socketStillAcceptingConnections = await canConnectToSocket(paths.socketPath);
+		const pidLockStillPresent = fs.existsSync(paths.pidPath);
+		if (!socketStillAcceptingConnections && !pidLockStillPresent) {
+			return;
+		}
+		await new Promise((resolve) => setTimeout(resolve, 50));
+	}
+
+	throw new Error(`Timed out waiting for daemon shutdown at ${paths.socketPath}`);
+}
+
+export async function bestEffortShutdown(parsed: ParsedArgv, clientFactory?: CommandClientFactory): Promise<void> {
+	const noSpawnParsed: ParsedArgv = {
+		...parsed,
+		flags: {
+			...parsed.flags,
+			"--no-daemon": true,
+		},
+	};
+
+	try {
+		const paths = resolveCommandPaths(parsed);
 		await withClient(
-			parsed,
+			noSpawnParsed,
 			async (client) => {
 				await client.control({ op: "shutdown" });
 			},
 			clientFactory,
 		);
+		await waitForDaemonShutdown(paths);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 		if (message.includes("ENOENT") || message.includes("ECONNREFUSED") || message.includes("No daemon running")) {
 			return;
 		}
+		throw error;
 	}
 }
 
