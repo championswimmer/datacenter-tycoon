@@ -11,21 +11,18 @@ export function marketDifficulty(currentTick: number, roll: number): number {
 	return Math.max(0.05, Math.min(0.85, baseline + roll * 0.35 - 0.1));
 }
 
-function targetOfferCount(state: GameState): number {
-	return reliabilityMarketPolicyForScore(state.player.reliability.score).offerCount;
-}
-
 export function refreshContractMarket(state: GameState): GameState {
 	const retainedOffers = state.contractMarket.filter(
 		(contract) => contract.status === "offered" && contract.expiresAtTick > state.tick,
 	);
 	const rng = rngFromState(state.rngState);
 	const refreshedOffers = [...retainedOffers];
-	const offerTarget = targetOfferCount(state);
+	const marketPolicy = reliabilityMarketPolicyForScore(state.player.reliability.score);
+	const offerTarget = marketPolicy.offerCount;
 
 	while (refreshedOffers.length < offerTarget) {
 		const difficulty = marketDifficulty(state.tick, rng.next());
-		const generatedContract = generateContract(rng, difficulty);
+		const generatedContract = generateContract(rng, difficulty, marketPolicy);
 		refreshedOffers.push({
 			...generatedContract,
 			offeredAtTick: state.tick,
@@ -65,10 +62,11 @@ export function acceptContract(
 
 	const rng = rngFromState(state.rngState);
 	const backfilledMarket = [...remainingMarket];
-	const offerTarget = targetOfferCount(state);
+	const marketPolicy = reliabilityMarketPolicyForScore(state.player.reliability.score);
+	const offerTarget = marketPolicy.offerCount;
 	while (backfilledMarket.length < offerTarget) {
 		const difficulty = marketDifficulty(state.tick, rng.next());
-		const generatedContract = generateContract(rng, difficulty);
+		const generatedContract = generateContract(rng, difficulty, marketPolicy);
 		backfilledMarket.push({
 			...generatedContract,
 			offeredAtTick: state.tick,

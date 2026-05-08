@@ -6,6 +6,7 @@ import { RACK_CATALOG } from "../catalog/racks.js";
 import {
 	RELIABILITY_BASELINE_SCORE,
 	RELIABILITY_MARKET_OFFER_COUNT,
+	reliabilityMarketPolicyForScore,
 } from "../balance/reliability.js";
 import {
 	acceptContract,
@@ -286,6 +287,24 @@ test("generateContract at low difficulty never requires GPU", () => {
 		const contract = generateContract(rng, 0.1);
 		assert.equal(contract.requirements.gpuFlops, 0, `${contract.name} should not require GPU at low difficulty`);
 	}
+});
+
+test("generateContract biases average term length by reliability policy", () => {
+	const trustedPolicy = reliabilityMarketPolicyForScore(80);
+	const baselinePolicy = reliabilityMarketPolicyForScore(RELIABILITY_BASELINE_SCORE);
+	const atRiskPolicy = reliabilityMarketPolicyForScore(20);
+	const trustedRng = createRng(2026);
+	const baselineRng = createRng(2026);
+	const atRiskRng = createRng(2026);
+	const sampleSize = 200;
+
+	const averageTerm = (terms: number[]): number => terms.reduce((sum, term) => sum + term, 0) / terms.length;
+	const trustedTerms = Array.from({ length: sampleSize }, () => generateContract(trustedRng, 0.5, trustedPolicy).termMonths);
+	const baselineTerms = Array.from({ length: sampleSize }, () => generateContract(baselineRng, 0.5, baselinePolicy).termMonths);
+	const atRiskTerms = Array.from({ length: sampleSize }, () => generateContract(atRiskRng, 0.5, atRiskPolicy).termMonths);
+
+	assert.ok(averageTerm(trustedTerms) > averageTerm(baselineTerms));
+	assert.ok(averageTerm(baselineTerms) > averageTerm(atRiskTerms));
 });
 
 test("generateContract produces rush, anchor, and standard urgency types over a large sample", () => {
