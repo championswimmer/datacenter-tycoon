@@ -3,7 +3,9 @@
 
 export const VERSION = "0.1.0";
 
+// Includes rack activity/power summary types.
 export * from "./types.js";
+// Includes power billing helpers (idle baseline + kW→kWh monthly conversion).
 export * from "./balance/index.js";
 export * from "./catalog/index.js";
 export * from "./entities/index.js";
