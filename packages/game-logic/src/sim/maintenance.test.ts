@@ -5,8 +5,10 @@ import {
 	BASE_REPAIR_DAYS,
 	DAYS_PER_TICK,
 	MAX_REPAIR_SPEED_MULTIPLIER,
-	RACK_FAILURE_MAX_CHANCE,
 	RACK_FAILURE_MAX_AGE_MONTHS,
+	RACK_FAILURE_MAX_CHANCE,
+	RACK_FAILURE_YEAR_ONE_AGE_MONTHS,
+	RACK_FAILURE_YEAR_ONE_CHANCE,
 } from "../balance/index.js";
 import {
 	advanceRackRepair,
@@ -40,11 +42,16 @@ test("rackAgeMonths never goes below zero", () => {
 	assert.equal(rackAgeMonths(tick(3), { installedAtTick: tick(6) }), 0);
 });
 
-test("rackFailureChance follows the planned linear curve and cap", () => {
+test("rackFailureChance hits the new year-1 and year-6 anchors with late-life acceleration", () => {
 	assert.equal(rackFailureChance(0), 0);
-	assert.equal(rackFailureChance(18), 0.25);
+	assert.equal(rackFailureChance(RACK_FAILURE_YEAR_ONE_AGE_MONTHS / 2), RACK_FAILURE_YEAR_ONE_CHANCE / 2);
+	assert.equal(rackFailureChance(RACK_FAILURE_YEAR_ONE_AGE_MONTHS), RACK_FAILURE_YEAR_ONE_CHANCE);
 	assert.equal(rackFailureChance(RACK_FAILURE_MAX_AGE_MONTHS), RACK_FAILURE_MAX_CHANCE);
-	assert.equal(rackFailureChance(60), RACK_FAILURE_MAX_CHANCE);
+	assert.equal(rackFailureChance(RACK_FAILURE_MAX_AGE_MONTHS + 24), RACK_FAILURE_MAX_CHANCE);
+
+	const earlyLifeDelta = rackFailureChance(24) - rackFailureChance(12);
+	const lateLifeDelta = rackFailureChance(60) - rackFailureChance(48);
+	assert.ok(lateLifeDelta > earlyLifeDelta);
 });
 
 test("repair speed scales with maintenance staff and clamps at the configured max", () => {
