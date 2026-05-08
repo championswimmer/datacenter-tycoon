@@ -1,7 +1,7 @@
 ---
 name: Rack Usage-Based Billing
 description: Split rack power budgeting from active-vs-idle power billing so installed racks reserve capacity while only contract-serving racks incur full electricity cost.
-status: started
+status: completed
 created: 2026-05-06
 updated: 2026-05-08
 owner: game-logic, web
@@ -25,9 +25,9 @@ owner: game-logic, web
   - [x] 4.1 Expose active/idle rack power summaries through selectors
   - [x] 4.2 Update rack and datacenter views to show activity state and billed power
   - [x] 4.3 Clarify the new billing model in power/opex UI
-- [ ] **Phase 5 — Regression coverage and docs**
+- [x] **Phase 5 — Regression coverage and docs**
   - [x] 5.1 Add integration tests for power bills changing as contracts start and end
-  - [ ] 5.2 Update docs for rack idle baseline behavior and power budgeting rules
+  - [x] 5.2 Update docs for rack idle baseline behavior and power budgeting rules
 
 ## Overview
 
@@ -237,3 +237,4 @@ export interface RackPowerSummary {
 - 2026-05-08 — completed Step 4.2 by wiring rack activity states into floor/grid/datacenter views and adding component tests for active/idle/repairing visibility.
 - 2026-05-08 — completed Step 4.3 by adding reserved-vs-billed power UI cards and explainer copy in Power/Opex views with UI test assertions for labeled values.
 - 2026-05-08 — completed Step 5.1 by adding integration and store-level regression tests that verify billed power rises with active contracts, drops after completion, and reacts to repairing racks.
+- 2026-05-08 — completed Step 5.2 by documenting idle-baseline lifecycle behavior in `game-logic/README.md` and linking power-model guidance from `.agents/plans/README.md`.
