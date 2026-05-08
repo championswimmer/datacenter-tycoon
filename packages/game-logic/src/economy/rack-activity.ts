@@ -4,6 +4,7 @@ import type {
 	RackActivityView,
 	RackKind,
 	RackPlacementId,
+	RackPowerSummary,
 	RackSpecId,
 } from "../types.js";
 
@@ -21,6 +22,10 @@ export interface RackAllocationCandidate {
 export interface RackActivityAllocationResult {
 	activities: RackActivityView[];
 	remainingDemandByKind: Record<RackKind, number>;
+}
+
+export interface RackActivitySnapshot extends RackActivityAllocationResult {
+	powerSummary: RackPowerSummary;
 }
 
 export function rackDemandByKindFromRequirements(
@@ -100,5 +105,57 @@ export function allocateRackActivity(
 	return {
 		activities,
 		remainingDemandByKind,
+	};
+}
+
+export function summarizeRackActivity(
+	activities: readonly RackActivityView[],
+): RackPowerSummary {
+	let reservedPowerKw = 0;
+	let idleBaselinePowerKw = 0;
+	let activePowerKw = 0;
+	let billedPowerKw = 0;
+	let activeRackCount = 0;
+	let idleRackCount = 0;
+	let repairingRackCount = 0;
+
+	for (const activity of activities) {
+		reservedPowerKw += activity.reservedPowerKw;
+		billedPowerKw += activity.billedPowerKw;
+
+		if (activity.status === "active") {
+			activeRackCount += 1;
+			activePowerKw += activity.reservedPowerKw;
+			continue;
+		}
+
+		idleBaselinePowerKw += activity.billedPowerKw;
+		if (activity.status === "repairing") {
+			repairingRackCount += 1;
+		} else {
+			idleRackCount += 1;
+		}
+	}
+
+	return {
+		reservedPowerKw,
+		idleBaselinePowerKw,
+		activePowerKw,
+		billedPowerKw,
+		activeRackCount,
+		idleRackCount,
+		repairingRackCount,
+		totalRackCount: activities.length,
+	};
+}
+
+export function allocateRackActivitySnapshot(
+	racks: readonly RackAllocationCandidate[],
+	demandByKind: Partial<Record<RackKind, number>>,
+): RackActivitySnapshot {
+	const allocation = allocateRackActivity(racks, demandByKind);
+	return {
+		...allocation,
+		powerSummary: summarizeRackActivity(allocation.activities),
 	};
 }

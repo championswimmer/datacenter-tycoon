@@ -1,5 +1,10 @@
 import { RACK_CATALOG } from "../catalog/racks.js";
-import { allocateRackActivity, rackDemandByKindFromRequirements, type RackActivityAllocationResult } from "../economy/rack-activity.js";
+import {
+	allocateRackActivity,
+	rackDemandByKindFromRequirements,
+	summarizeRackActivity,
+	type RackActivityAllocationResult,
+} from "../economy/rack-activity.js";
 import { rackAgeMonths } from "../sim/maintenance.js";
 import type {
 	CanPlaceRackResult,
@@ -8,6 +13,8 @@ import type {
 	Datacenter,
 	DatacenterResourceUsage,
 	GridPosition,
+	RackActivityView,
+	RackPowerSummary,
 	RackPlacement,
 	RackSpec,
 	Tick,
@@ -105,11 +112,8 @@ function serviceUnitsForRackKind(spec: RackSpec): number {
 	}
 }
 
-export function allocateDatacenterRackActivity(
-	datacenter: Datacenter,
-	assignedDemand: ContractRequirements,
-): RackActivityAllocationResult {
-	const candidates = datacenter.placements.map((placement) => {
+function datacenterRackActivityCandidates(datacenter: Datacenter) {
+	return datacenter.placements.map((placement) => {
 		const spec = getRackSpec(placement);
 		return {
 			placementId: placement.id,
@@ -120,8 +124,31 @@ export function allocateDatacenterRackActivity(
 			isRepairing: placement.health !== "healthy",
 		};
 	});
+}
 
-	return allocateRackActivity(candidates, rackDemandByKindFromRequirements(assignedDemand));
+export function allocateDatacenterRackActivity(
+	datacenter: Datacenter,
+	assignedDemand: ContractRequirements,
+): RackActivityAllocationResult {
+	return allocateRackActivity(
+		datacenterRackActivityCandidates(datacenter),
+		rackDemandByKindFromRequirements(assignedDemand),
+	);
+}
+
+export function datacenterRackActivityView(
+	datacenter: Datacenter,
+	assignedDemand: ContractRequirements,
+): RackActivityView[] {
+	return allocateDatacenterRackActivity(datacenter, assignedDemand).activities;
+}
+
+export function datacenterRackPowerSummary(
+	datacenter: Datacenter,
+	assignedDemand: ContractRequirements,
+): RackPowerSummary {
+	const activities = datacenterRackActivityView(datacenter, assignedDemand);
+	return summarizeRackActivity(activities);
 }
 
 export interface DatacenterMaintenanceSummary {
