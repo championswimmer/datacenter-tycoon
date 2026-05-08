@@ -9,10 +9,10 @@ owner: game-logic, web
 
 ## Progress
 
-- [ ] **Phase 1 — Power-state model and balance scaffolding**
+- [x] **Phase 1 — Power-state model and balance scaffolding**
   - [x] 1.1 Add explicit active-vs-idle power usage vocabulary and summaries
   - [x] 1.2 Centralize idle baseline and active-power billing constants
-  - [ ] 1.3 Expose public helpers and document the budgeting-vs-billing split
+  - [x] 1.3 Expose public helpers and document the budgeting-vs-billing split
 - [ ] **Phase 2 — Deterministic rack activity allocation**
   - [ ] 2.1 Add pure helpers that map contract demand onto healthy racks in stable order
   - [ ] 2.2 Derive per-rack activity, idle counts, and billed power without persisting transient state
@@ -226,3 +226,4 @@ export interface RackPowerSummary {
 - 2026-05-06 — created.
 - 2026-05-08 — completed Step 1.1 by adding rack activity and rack power summary public types.
 - 2026-05-08 — completed Step 1.2 by adding centralized idle-baseline and monthly power-billing constants in `balance/power.ts`.
+- 2026-05-08 — completed Step 1.3 by documenting reserved-vs-billed power and confirming helper exports from the package surface.

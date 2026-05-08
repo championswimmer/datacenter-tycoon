@@ -76,7 +76,8 @@ Main exports from `src/index.ts`:
 - `generateMap(seed)` — deterministic world map generator
 - maintenance balance constants such as `RACK_FAILURE_MAX_CHANCE`, `BASE_REPAIR_DAYS`, and `DAYS_PER_TICK`
 - reliability balance helpers such as `RELIABILITY_BASELINE_SCORE`, `RELIABILITY_MARKET_OFFER_COUNT`, `reliabilityBandForScore()`, and `reliabilityMarketPolicyForScore()`
-- all public domain types from `types.ts`
+- power billing helpers such as `RACK_IDLE_BASELINE_POWER_KW`, `idleBaselinePowerForRackCount()`, `monthlyKwhFromPowerKw()`, and `KWH_PER_KW_PER_MONTH`
+- all public domain types from `types.ts`, including `RackActivityView` and `RackPowerSummary`
 
 ## Rack health & maintenance scaffolding
 
@@ -189,6 +190,15 @@ export type Action =
   - speeds up repairs,
   - increases monthly wage opex,
   - consumes more of the region's finite labor pool.
+
+## Power reservation vs billed usage
+
+Installed racks now have two different power views that intentionally serve different gameplay systems:
+
+- **Reserved power** (placement-time): placement validation still assumes each installed rack could draw its full `powerDrawKw`. This keeps datacenter build limits strict and prevents overbuilding beyond facility capacity.
+- **Billed power** (monthly opex): billing uses usage-aware rack activity. Idle racks contribute only the global `RACK_IDLE_BASELINE_POWER_KW`, while active racks consume their full rack-spec draw.
+
+That split lets players pre-install hardware for future growth without always paying full electricity cost for every rack before contracts arrive.
 
 ## `GameState` shape
 
