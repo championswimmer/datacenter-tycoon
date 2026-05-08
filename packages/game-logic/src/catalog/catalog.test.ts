@@ -139,10 +139,10 @@ test("datacenter catalog exposes three starter blueprints with sane capacities",
 	assert.equal(DATACENTER_CATALOG.hyperscale.coolingType, "liquid");
 });
 
-test("starter datacenter blueprints reserve more cooling headroom for routine growth", () => {
-	assert.ok(DATACENTER_CATALOG.garage.coolingCapacityBtuPerHr >= 120_000);
-	assert.ok(DATACENTER_CATALOG.warehouse.coolingCapacityBtuPerHr >= 500_000);
-	assert.ok(DATACENTER_CATALOG.hyperscale.coolingCapacityBtuPerHr >= 10_000_000);
+test("starter datacenter blueprints reserve the rebalanced cooling headroom", () => {
+	assert.equal(DATACENTER_CATALOG.garage.coolingCapacityBtuPerHr, 120_000);
+	assert.equal(DATACENTER_CATALOG.warehouse.coolingCapacityBtuPerHr, 520_000);
+	assert.equal(DATACENTER_CATALOG.hyperscale.coolingCapacityBtuPerHr, 10_500_000);
 });
 
 test("economy constants are positive and within expected ranges", () => {
