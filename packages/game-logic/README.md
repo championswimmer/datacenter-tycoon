@@ -74,7 +74,7 @@ Main exports from `src/index.ts`:
 - `DATACENTER_CATALOG`
 - `REGION_CATALOG`
 - `generateMap(seed)` — deterministic world map generator
-- maintenance balance constants such as `RACK_FAILURE_MAX_CHANCE`, `BASE_REPAIR_DAYS`, and `DAYS_PER_TICK`
+- maintenance balance constants such as `RACK_FAILURE_YEAR_ONE_CHANCE`, `RACK_FAILURE_MAX_CHANCE`, `BASE_REPAIR_DAYS`, and `DAYS_PER_TICK`
 - reliability balance helpers such as `RELIABILITY_BASELINE_SCORE`, `RELIABILITY_MARKET_OFFER_COUNT`, `reliabilityBandForScore()`, and `reliabilityMarketPolicyForScore()`
 - power billing helpers such as `RACK_IDLE_BASELINE_POWER_KW`, `idleBaselinePowerForRackCount()`, `monthlyKwhFromPowerKw()`, and `KWH_PER_KW_PER_MONTH`
 - all public domain types from `types.ts`, including `RackActivityView` and `RackPowerSummary`
@@ -183,13 +183,24 @@ export type Action =
 ## Rack aging, failures, and maintenance
 
 - Rack age is derived from `currentTick - installedAtTick`, so wear stays deterministic and serializable.
-- Failure chance ramps linearly from `0` to `50%` over the first `36` months of rack life.
+- Failure chance now ramps to `2%` at `12` months, then accelerates through the rest of a rack's lifespan until it caps at `60%` by `72` months.
+- That means early-life racks are more reliable than before, while older fleets degrade more sharply in the late game instead of following a flat linear climb.
 - Repairs accumulate in **days** even though the main sim still advances in **monthly** ticks. The default repair target is `90` days, and each tick contributes `repairProgressPerTick(maintenanceStaff)` days.
 - Repairing racks still occupy slots and count toward installed hardware, but they contribute **zero usable contract capacity** until repairs complete.
 - `maintenanceStaff` is extra datacenter headcount on top of the blueprint's baseline staff. More maintenance staff:
   - speeds up repairs,
   - increases monthly wage opex,
   - consumes more of the region's finite labor pool.
+
+## Starter datacenter cooling headroom
+
+Starter datacenters now ship with slightly more thermal budget for normal expansion:
+
+- `garage`: `120,000` BTU/hr
+- `warehouse`: `520,000` BTU/hr
+- `hyperscale`: `10,500,000` BTU/hr
+
+The extra headroom makes routine compute / memory / storage growth less punishing, but air-cooled sites are still intentionally constrained: tier-3 racks remain too thermally dense for garage and warehouse blueprints on a per-slot basis.
 
 ## Power reservation vs billed usage
 
