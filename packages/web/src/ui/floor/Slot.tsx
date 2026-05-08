@@ -1,4 +1,4 @@
-import type { RackPlacement, RackSpec } from "@datacenter-tycoon/game-logic";
+import type { RackActivityView, RackPlacement, RackSpec } from "@datacenter-tycoon/game-logic";
 import type { RackMaintenanceView } from "../../store/selectors.js";
 import { RackTile } from "./RackTile.js";
 import styles from "./Slot.module.css";
@@ -9,6 +9,7 @@ export interface SlotProps {
   placement?:        RackPlacement;
   spec?:             RackSpec;
   maintenanceView?:  RackMaintenanceView;
+  rackActivityView?: RackActivityView;
   hasActiveContract: boolean;
   hasFault:          boolean;
   onOpenPicker:      (row: number, position: number) => void;
@@ -23,6 +24,7 @@ export function Slot({
   placement,
   spec,
   maintenanceView,
+  rackActivityView,
   hasActiveContract,
   hasFault,
   onOpenPicker,
@@ -36,6 +38,7 @@ export function Slot({
         <RackTile
           placement={placement}
           maintenanceView={maintenanceView}
+          rackActivity={rackActivityView}
           spec={spec}
           hasActiveContract={hasActiveContract}
           hasFault={hasFault}

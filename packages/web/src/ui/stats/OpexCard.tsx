@@ -29,9 +29,13 @@ export function OpexCard({ total, breakdown }: OpexCardProps) {
   return (
     <div className={styles.card}>
       <div className={styles.header}>
-        <span className={styles.title}>OPEX</span>
+        <span className={styles.title}>OPEX (BILLED)</span>
         <span className={styles.total}>{fmt(total)}<span className={styles.perMo}>/mo</span></span>
       </div>
+
+      <p className={styles.copy}>
+        Power + cooling lines follow billed usage (active racks + idle baseline), not total reserved rack draw.
+      </p>
 
       {/* Stacked bar */}
       <div className={styles.stackBar}>

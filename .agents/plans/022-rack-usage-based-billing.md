@@ -21,10 +21,10 @@ owner: game-logic, web
   - [x] 3.1 Preserve placement-time power-cap checks against installed maximum draw
   - [x] 3.2 Switch monthly power billing to activity-aware power usage
   - [x] 3.3 Keep cooling/bandwidth/resource summaries coherent with the new power model
-- [ ] **Phase 4 — Web visibility and player feedback**
-  - [ ] 4.1 Expose active/idle rack power summaries through selectors
-  - [ ] 4.2 Update rack and datacenter views to show activity state and billed power
-  - [ ] 4.3 Clarify the new billing model in power/opex UI
+- [x] **Phase 4 — Web visibility and player feedback**
+  - [x] 4.1 Expose active/idle rack power summaries through selectors
+  - [x] 4.2 Update rack and datacenter views to show activity state and billed power
+  - [x] 4.3 Clarify the new billing model in power/opex UI
 - [ ] **Phase 5 — Regression coverage and docs**
   - [ ] 5.1 Add integration tests for power bills changing as contracts start and end
   - [ ] 5.2 Update docs for rack idle baseline behavior and power budgeting rules
@@ -233,3 +233,6 @@ export interface RackPowerSummary {
 - 2026-05-08 — completed Step 3.1 by adding explicit placement power-cap regression tests in `entities/capacity.test.ts` and `state/reduce.test.ts`.
 - 2026-05-08 — completed Step 3.2 by switching `tickOpex()` to activity-aware billed power when contract context is provided from the simulation tick.
 - 2026-05-08 — completed Step 3.3 by adding reserved-vs-billed rack power selectors and wiring selector opex calculations to active contracts while preserving bandwidth/slot semantics.
+- 2026-05-08 — completed Step 4.1 by exposing per-datacenter rack activity and power-summary selectors with empty/idle/active selector coverage.
+- 2026-05-08 — completed Step 4.2 by wiring rack activity states into floor/grid/datacenter views and adding component tests for active/idle/repairing visibility.
+- 2026-05-08 — completed Step 4.3 by adding reserved-vs-billed power UI cards and explainer copy in Power/Opex views with UI test assertions for labeled values.

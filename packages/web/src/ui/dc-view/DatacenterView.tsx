@@ -4,6 +4,7 @@ import {
   selectActiveContracts,
   selectDatacenter,
   selectDatacenterMaintenanceView,
+  selectDatacenterRackPowerSummary,
   selectRegionById,
   selectResourceUsage,
 } from "../../store/selectors.js";
@@ -31,6 +32,7 @@ const EMPTY_USAGE = { powerKw: 0, heatOutputBtuPerHr: 0, bandwidthGbps: 0, slots
 export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
   const dc       = useSelector(s => selectDatacenter(s, dcId as DatacenterId));
   const maintenance = useSelector(s => selectDatacenterMaintenanceView(s, dcId as DatacenterId));
+  const rackPowerSummary = useSelector(s => selectDatacenterRackPowerSummary(s, dcId as DatacenterId));
   const usageAgg = useSelector(selectResourceUsage);
   const region   = useSelector(s => dc ? selectRegionById(s, dc.regionId) : undefined);
   const dispatch = useGameDispatch();
@@ -94,6 +96,15 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
             <span className={styles.maintenanceMeta}>
               {maintenance.repairingRackCount} REPAIRING / {maintenance.totalRackCount} TOTAL
             </span>
+          </div>
+        )}
+        {rackPowerSummary && rackPowerSummary.totalRackCount > 0 && (
+          <div className={styles.activityStrip}>
+            <span className={styles.activityBadge}>ACTIVE {rackPowerSummary.activeRackCount}</span>
+            <span className={styles.activityMeta}>IDLE {rackPowerSummary.idleRackCount}</span>
+            <span className={styles.activityMeta}>REPAIRING {rackPowerSummary.repairingRackCount}</span>
+            <span className={styles.activityMeta}>BILLED {rackPowerSummary.billedPowerKw.toFixed(1)} kW</span>
+            <span className={styles.activityMeta}>RESERVED {rackPowerSummary.reservedPowerKw.toFixed(1)} kW</span>
           </div>
         )}
         {maintenance && (

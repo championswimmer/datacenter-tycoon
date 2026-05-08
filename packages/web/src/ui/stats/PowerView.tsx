@@ -3,6 +3,7 @@ import { useSelector } from "../../store/storeContext.js";
 import {
   selectDatacenter,
   selectCapacity,
+  selectDatacenterRackPowerSummary,
   selectFreeCapacity,
   selectOpexBreakdown,
   selectResourceUsage,
@@ -23,6 +24,7 @@ export function PowerView({ dcId }: PowerViewProps) {
   const freeCapacity  = useSelector(selectFreeCapacity);
   const opexAgg       = useSelector(selectOpexBreakdown);
   const usageAgg      = useSelector(selectResourceUsage);
+  const rackPowerSummary = useSelector(s => selectDatacenterRackPowerSummary(s, dcId));
 
   if (!dc) return null;
 
@@ -58,6 +60,39 @@ export function PowerView({ dcId }: PowerViewProps) {
         <h3 className={styles.sectionTitle}>RACK CAPACITY</h3>
         <CapacityTiles total={dcCapacity} free={dcFree} />
       </section>
+
+      {/* ── Reserved vs billed power ── */}
+      {rackPowerSummary && (
+        <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>POWER BILLING MODEL</h3>
+          <div className={styles.powerSplitGrid}>
+            <div className={styles.powerSplitCard}>
+              <span className={styles.powerSplitLabel}>Reserved power</span>
+              <span className={styles.powerSplitValue}>{rackPowerSummary.reservedPowerKw.toFixed(1)} kW</span>
+              <span className={styles.powerSplitHint}>Placement limit guardrail (full rack draw)</span>
+            </div>
+            <div className={styles.powerSplitCard}>
+              <span className={styles.powerSplitLabel}>Billed power</span>
+              <span className={styles.powerSplitValue}>{rackPowerSummary.billedPowerKw.toFixed(1)} kW</span>
+              <span className={styles.powerSplitHint}>Electricity charged this month</span>
+            </div>
+            <div className={styles.powerSplitCard}>
+              <span className={styles.powerSplitLabel}>Idle baseline</span>
+              <span className={styles.powerSplitValue}>{rackPowerSummary.idleBaselinePowerKw.toFixed(1)} kW</span>
+              <span className={styles.powerSplitHint}>{rackPowerSummary.idleRackCount} idle / {rackPowerSummary.repairingRackCount} repairing racks</span>
+            </div>
+            <div className={styles.powerSplitCard}>
+              <span className={styles.powerSplitLabel}>Active draw</span>
+              <span className={styles.powerSplitValue}>{rackPowerSummary.activePowerKw.toFixed(1)} kW</span>
+              <span className={styles.powerSplitHint}>{rackPowerSummary.activeRackCount} active racks serving contracts</span>
+            </div>
+          </div>
+          <p className={styles.powerExplainer}>
+            Racks always reserve full power capacity for placement checks. Billing uses usage-aware draw:
+            idle and repairing racks pay only baseline power, while active racks pay full spec draw.
+          </p>
+        </section>
+      )}
 
       {/* ── Bottom row: opex + sparkline ── */}
       <div className={styles.bottom}>

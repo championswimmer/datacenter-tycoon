@@ -17,7 +17,10 @@ export {
   selectMarket,
   selectLedger,
   selectCapacity,
+  selectDatacenterRackActivityViews,
+  selectDatacenterRackPowerSummary,
   selectOpexBreakdown,
+  selectRackPowerSummary,
   selectResourceUsage,
   selectMonthlyPnl,
   selectFreeCapacity,
@@ -26,6 +29,7 @@ export {
 export type {
   AggregateCapacity,
   AggregateOpex,
+  AggregateRackPowerSummary,
   AggregateResourceUsage,
   MonthlyPnl,
 } from "./selectors.js";

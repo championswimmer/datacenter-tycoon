@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { DATACENTER_CATALOG, newGame, reduce } from "@datacenter-tycoon/game-logic";
+import { DATACENTER_CATALOG, RACK_CATALOG, newGame, reduce } from "@datacenter-tycoon/game-logic";
 import type { GameState } from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "../../store/gameStore.js";
 import { StoreProvider } from "../../store/storeContext.js";
-import { nextDcId } from "../../store/ids.js";
+import { nextDcId, nextRackPlacementId } from "../../store/ids.js";
 import { DatacenterView } from "./DatacenterView.js";
 
 function buildState(): { state: GameState; dcId: ReturnType<typeof nextDcId> } {
@@ -32,6 +32,25 @@ function renderView(state: GameState, dcId: ReturnType<typeof nextDcId>) {
 }
 
 describe("DatacenterView maintenance staffing controls", () => {
+  it("shows rack activity and billed-vs-reserved power summary badges", () => {
+    const { state: builtState, dcId } = buildState();
+    const state = reduce(builtState, {
+      type: "PlaceRack",
+      dcId,
+      specId: RACK_CATALOG.C1!.id,
+      row: 0,
+      position: 0,
+      placementId: nextRackPlacementId(),
+    });
+
+    renderView(state, dcId);
+
+    expect(screen.getByText(/ACTIVE\s+0/)).toBeTruthy();
+    expect(screen.getByText(/IDLE\s+1/)).toBeTruthy();
+    expect(screen.getByText(/BILLED/)).toBeTruthy();
+    expect(screen.getByText(/RESERVED/)).toBeTruthy();
+  });
+
   it("increases and decreases maintenance staffing from the stepper", () => {
     const { state, dcId } = buildState();
     const regionWage = state.map.regions.find((region) => region.id === state.datacenters[0]!.regionId)!.staffWage;
