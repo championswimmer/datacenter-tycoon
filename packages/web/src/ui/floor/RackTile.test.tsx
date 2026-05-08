@@ -153,7 +153,33 @@ describe("RackTile", () => {
     );
 
     expect(screen.getByText("HEALTHY")).toBeTruthy();
+    expect(screen.getByText("IDLE BASELINE")).toBeTruthy();
     expect(screen.getByText("AGE 9 MO")).toBeTruthy();
+  });
+
+  it("shows ACTIVE LOAD when rack activity reports active", () => {
+    const spec = RACK_CATALOG["C1"]!;
+    render(
+      <RackTile
+        placement={makePlacement("C1")}
+        maintenanceView={makeMaintenanceView({ status: "healthy" })}
+        rackActivity={{
+          placementId: makePlacement("C1").id,
+          specId: spec.id,
+          kind: spec.kind,
+          status: "active",
+          reservedPowerKw: spec.powerDrawKw,
+          billedPowerKw: spec.powerDrawKw,
+        }}
+        spec={spec}
+        hasActiveContract={false}
+        hasFault={false}
+        onDecommission={vi.fn()}
+        onMove={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("ACTIVE LOAD")).toBeTruthy();
   });
 
   it("renders repair progress and eta for repairing racks", () => {
@@ -176,6 +202,7 @@ describe("RackTile", () => {
     );
 
     expect(screen.getByText("REPAIRING")).toBeTruthy();
+    expect(screen.getByText("UNAVAILABLE")).toBeTruthy();
     expect(screen.getByText("50% • ETA 2 mo")).toBeTruthy();
   });
 

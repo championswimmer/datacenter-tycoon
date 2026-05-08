@@ -411,6 +411,15 @@ describe("selectOpexBreakdown", () => {
 });
 
 describe("selectRackPowerSummary", () => {
+  it("returns zeroed totals for empty states", () => {
+    const summary = selectRackPowerSummary(freshState());
+
+    expect(summary.perDc).toHaveLength(0);
+    expect(summary.total.totalRackCount).toBe(0);
+    expect(summary.total.reservedPowerKw).toBe(0);
+    expect(summary.total.billedPowerKw).toBe(0);
+  });
+
   it("exposes reserved and billed power separately for idle fleets", () => {
     const summary = selectRackPowerSummary(stateWithDcAndRack());
 

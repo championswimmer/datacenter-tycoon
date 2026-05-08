@@ -3,6 +3,7 @@ import {
   RELIABILITY_BASELINE_SCORE,
   datacenterMaintenanceSummary,
   datacenterCapacity,
+  datacenterRackActivityView,
   datacenterRackPowerSummary,
   datacenterUsage,
   rackAgeMonths,
@@ -23,6 +24,7 @@ import type {
   LedgerEntry,
   Money,
   OpexTickResult,
+  RackActivityView,
   RackHealthStatus,
   RackPlacementId,
   RackPowerSummary,
@@ -266,6 +268,38 @@ export function selectDatacenterRackMaintenanceViews(
 export function selectActiveContracts(state: GameState): Contract[] {
   return state.activeContracts.filter(
     (c) => c.status === "active" || c.status === "breached",
+  );
+}
+
+export function selectDatacenterRackActivityViews(
+  state: GameState,
+  id: DatacenterId,
+): RackActivityView[] {
+  const datacenter = selectDatacenter(state, id);
+  if (!datacenter) {
+    return [];
+  }
+
+  const activeContracts = selectActiveContracts(state);
+  return datacenterRackActivityView(
+    datacenter,
+    assignedDemandForDatacenter(activeContracts, datacenter.id),
+  );
+}
+
+export function selectDatacenterRackPowerSummary(
+  state: GameState,
+  id: DatacenterId,
+): RackPowerSummary | undefined {
+  const datacenter = selectDatacenter(state, id);
+  if (!datacenter) {
+    return undefined;
+  }
+
+  const activeContracts = selectActiveContracts(state);
+  return datacenterRackPowerSummary(
+    datacenter,
+    assignedDemandForDatacenter(activeContracts, datacenter.id),
   );
 }
 

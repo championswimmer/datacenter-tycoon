@@ -1,6 +1,7 @@
 import { RACK_CATALOG } from "@datacenter-tycoon/game-logic";
 import type {
   Datacenter,
+  RackActivityView,
   RackPlacement,
   RackPlacementId,
 } from "@datacenter-tycoon/game-logic";
@@ -12,6 +13,7 @@ import styles from "./Grid.module.css";
 export interface GridProps {
   datacenter:        Datacenter;
   rackMaintenanceByPlacementId: Map<RackPlacementId, RackMaintenanceView>;
+  rackActivityByPlacementId: Map<RackPlacementId, RackActivityView>;
   hasActiveContract: boolean;
   hasFault:          boolean;
   onSlotClick:       (row: number, position: number) => void;
@@ -22,6 +24,7 @@ export interface GridProps {
 export function Grid({
   datacenter,
   rackMaintenanceByPlacementId,
+  rackActivityByPlacementId,
   hasActiveContract,
   hasFault,
   onSlotClick,
@@ -59,6 +62,9 @@ export function Grid({
                 const maintenanceView = placement
                   ? rackMaintenanceByPlacementId.get(placement.id)
                   : undefined;
+                const rackActivityView = placement
+                  ? rackActivityByPlacementId.get(placement.id)
+                  : undefined;
 
                 return (
                   <div key={p} className={styles.mobileSlotCard}>
@@ -69,6 +75,7 @@ export function Grid({
                       placement={placement}
                       spec={spec}
                       maintenanceView={maintenanceView}
+                      rackActivityView={rackActivityView}
                       hasActiveContract={hasActiveContract}
                       hasFault={hasFault}
                       onOpenPicker={onSlotClick}
@@ -119,6 +126,9 @@ export function Grid({
               const maintenanceView = placement
                 ? rackMaintenanceByPlacementId.get(placement.id)
                 : undefined;
+              const rackActivityView = placement
+                ? rackActivityByPlacementId.get(placement.id)
+                : undefined;
               return (
                 <Slot
                   key={p}
@@ -127,6 +137,7 @@ export function Grid({
                   placement={placement}
                   spec={spec}
                   maintenanceView={maintenanceView}
+                  rackActivityView={rackActivityView}
                   hasActiveContract={hasActiveContract}
                   hasFault={hasFault}
                   onOpenPicker={onSlotClick}

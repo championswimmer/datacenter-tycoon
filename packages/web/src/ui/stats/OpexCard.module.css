@@ -38,6 +38,14 @@
   margin-left: 2px;
 }
 
+.copy {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  color: var(--fg-3);
+}
+
 /* Stacked bar */
 .stackBar {
   display: flex;

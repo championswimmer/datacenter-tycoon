@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { RackPlacement, RackSpec } from "@datacenter-tycoon/game-logic";
+import type { RackActivityView, RackPlacement, RackSpec } from "@datacenter-tycoon/game-logic";
 import type { RackMaintenanceView } from "../../store/selectors.js";
 import { LedSegment } from "../../theme/primitives/index.js";
 import styles from "./RackTile.module.css";
@@ -7,8 +7,9 @@ import styles from "./RackTile.module.css";
 export interface RackTileProps {
   placement:         RackPlacement;
   maintenanceView:   RackMaintenanceView;
+  rackActivity?:     RackActivityView;
   spec:              RackSpec;
-  /** True when at least one active (non-breached) contract is running on this DC. */
+  /** Fallback signal when per-rack activity is unavailable. */
   hasActiveContract: boolean;
   /** True when at least one contract assigned to this DC is breached. */
   hasFault:          boolean;
@@ -30,6 +31,7 @@ const BLADE_COUNT = 6;
 export function RackTile({
   placement,
   maintenanceView,
+  rackActivity,
   spec,
   hasActiveContract,
   hasFault,
@@ -42,6 +44,14 @@ export function RackTile({
   const repairProgressLabel = maintenanceView.status === "repairing"
     ? `${maintenanceView.repairCompletionPercent}% • ETA ${maintenanceView.repairEtaTicks} mo`
     : undefined;
+  const activityStatus = rackActivity?.status
+    ?? (maintenanceView.status === "repairing" ? "repairing" : hasActiveContract ? "active" : "idle");
+  const activityLabel = activityStatus === "active"
+    ? "ACTIVE LOAD"
+    : activityStatus === "repairing"
+      ? "UNAVAILABLE"
+      : "IDLE BASELINE";
+  const billedPowerKw = rackActivity?.billedPowerKw ?? spec.powerDrawKw;
 
   if (confirming) {
     return (
@@ -74,7 +84,7 @@ export function RackTile({
           styles[`kind-${spec.kind}`],
           maintenanceView.status === "repairing" ? styles.tileRepairing : "",
         ].join(" ")}
-      title={`${spec.name} — Tier ${spec.tier}\nAge: ${maintenanceView.ageMonths} mo\nStatus: ${repairStatusLabel}${repairProgressLabel ? `\nRepair: ${repairProgressLabel}` : ""}\nCapex: $${spec.capexCost.toLocaleString()}\nPower: ${spec.powerDrawKw} kW/mo`}
+      title={`${spec.name} — Tier ${spec.tier}\nAge: ${maintenanceView.ageMonths} mo\nStatus: ${repairStatusLabel}${repairProgressLabel ? `\nRepair: ${repairProgressLabel}` : ""}\nActivity: ${activityLabel}\nBilled Power: ${billedPowerKw.toFixed(1)} kW\nCapex: $${spec.capexCost.toLocaleString()}\nReserved Power: ${spec.powerDrawKw} kW`}
     >
       {/* ── Bezel ── */}
       <div className={styles.bezel}>
@@ -96,8 +106,8 @@ export function RackTile({
       {/* ── LED row + kind badge ── */}
       <div className={styles.ledRow}>
         <LedSegment color="cyan"                                      size={5} />
-        <LedSegment color={hasActiveContract ? "lime" : "off"}
-                    blink={hasActiveContract}                          size={5} />
+        <LedSegment color={activityStatus === "active" ? "lime" : "off"}
+                    blink={activityStatus === "active"}               size={5} />
         <LedSegment color={hasFault ? "red" : "off"}                  size={5} />
         <span className={styles.kindBadge}>{KIND_LABEL[spec.kind]}</span>
       </div>
@@ -110,6 +120,18 @@ export function RackTile({
           ].join(" ")}
         >
           {repairStatusLabel}
+        </span>
+        <span
+          className={[
+            styles.activityBadge,
+            activityStatus === "active"
+              ? styles.activityActive
+              : activityStatus === "repairing"
+                ? styles.activityRepairing
+                : styles.activityIdle,
+          ].join(" ")}
+        >
+          {activityLabel}
         </span>
         <span className={styles.ageText}>AGE {maintenanceView.ageMonths} MO</span>
       </div>
