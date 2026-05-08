@@ -1,6 +1,6 @@
 import type { GameState } from "../types.js";
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export interface SaveEnvelope {
 	saveVersion: number;
@@ -21,7 +21,7 @@ export function migrate(envelope: SaveEnvelope): SaveEnvelope {
 	}
 
 	throw new Error(
-		`Outdated save version: ${envelope.saveVersion}. Saves from earlier versions must be recreated.`,
+		`Outdated save version: ${envelope.saveVersion}. Save version ${SAVE_VERSION} introduced player reliability tracking, so earlier saves must be recreated.`,
 	);
 }
 

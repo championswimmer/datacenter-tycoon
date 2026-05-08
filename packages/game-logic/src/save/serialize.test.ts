@@ -59,11 +59,30 @@ test("serialize and deserialize round-trip a non-trivial game state", () => {
 		contractId: contractId("offer-1"),
 		dcId: datacenterId("dc-1"),
 	});
+	state = {
+		...state,
+		player: {
+			...state.player,
+			reliability: {
+				score: 58,
+				lastDelta: 3,
+				recentOutcomes: [
+					{
+						contractId: contractId("offer-1"),
+						contractName: "Starter Contract",
+						tick: 1,
+						kind: "fulfilled",
+					},
+				],
+			},
+		},
+	};
 	state = reduce(state, { type: "Tick" });
 
 	const restored = deserialize(serialize(state));
 
 	assert.deepEqual(restored, state);
+	assert.deepEqual(restored.player.reliability, state.player.reliability);
 });
 
 test("migrate is a no-op for current-version envelopes", () => {
