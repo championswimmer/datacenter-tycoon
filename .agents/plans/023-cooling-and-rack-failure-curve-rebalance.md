@@ -9,9 +9,9 @@ owner: game-logic
 
 ## Progress
 
-- [ ] **Phase 1 — Balance targets and constants**
+- [x] **Phase 1 — Balance targets and constants**
   - [x] 1.1 Define the new rack-failure curve anchors and tunable exponent in `packages/game-logic/src/balance/maintenance.ts`
-  - [ ] 1.2 Capture cooling rebalance expectations in catalog/capacity tests before or alongside catalog edits
+  - [x] 1.2 Capture cooling rebalance expectations in catalog/capacity tests before or alongside catalog edits
 - [ ] **Phase 2 — Datacenter cooling rebalance**
   - [ ] 2.1 Raise `coolingCapacityBtuPerHr` across the starter datacenter blueprints in `packages/game-logic/src/catalog/datacenters.ts`
   - [ ] 2.2 Update catalog and placement tests to lock in the new cooling headroom
