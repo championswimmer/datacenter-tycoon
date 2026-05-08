@@ -139,6 +139,33 @@ test("reduce handles PlaceRack and rejects invalid placement attempts", () => {
 	);
 });
 
+test("reduce keeps placement power-cap checks strict even with no active demand", () => {
+	const constrainedDatacenter: Datacenter = {
+		...makeDatacenter("dc-1", [placement("rack-1", "C1", 0, 0)]),
+		spec: {
+			...DATACENTER_CATALOG.garage,
+			powerCapacityKw: RACK_CATALOG.C1.powerDrawKw + 0.1,
+		},
+	};
+	const state = {
+		...newGame(42, { startingCash: 3_000_000 }),
+		datacenters: [constrainedDatacenter],
+	};
+
+	assert.throws(
+		() =>
+			reduce(state, {
+				type: "PlaceRack",
+				dcId: datacenterId("dc-1"),
+				specId: RACK_CATALOG.C1.id,
+				row: 0,
+				position: 1,
+				placementId: rackPlacementId("rack-2"),
+			}),
+		{ message: /Cannot place rack: insufficient_power/ },
+	);
+});
+
 test("reduce handles RemoveRack and rejects missing placements", () => {
 	const stateWithRack = {
 		...newGame(42, { startingCash: 3_000_000 }),

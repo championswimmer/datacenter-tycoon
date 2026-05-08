@@ -8,6 +8,7 @@ import {
 	datacenterCapacity,
 	datacenterInstalledCapacity,
 	datacenterMaintenanceSummary,
+	datacenterRackPowerSummary,
 	datacenterUsage,
 	rackCapacity,
 } from "../index.js";
@@ -202,6 +203,27 @@ test("canPlaceRack rejects placements that exceed remaining power budget", () =>
 	], { powerCapacityKw: 30 });
 
 	assert.deepEqual(canPlaceRack(datacenter, RACK_CATALOG.G2, { row: 0, position: 2 }), {
+		ok: false,
+		reason: "insufficient_power",
+	});
+});
+
+test("placement still uses reserved full-draw power even when billed power is mostly idle baseline", () => {
+	const datacenter = makeDatacenter(
+		DATACENTER_CATALOG.garage,
+		[placement("rack-1", "C2", 0, 0)],
+		{ powerCapacityKw: RACK_CATALOG.C2.powerDrawKw + 0.1 },
+	);
+
+	const powerSummary = datacenterRackPowerSummary(datacenter, {
+		vCpu: 0,
+		ramGb: 0,
+		storageTb: 0,
+		gpuFlops: 0,
+	});
+	assert.ok(powerSummary.billedPowerKw < powerSummary.reservedPowerKw);
+
+	assert.deepEqual(canPlaceRack(datacenter, RACK_CATALOG.C1, { row: 0, position: 1 }), {
 		ok: false,
 		reason: "insufficient_power",
 	});

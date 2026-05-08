@@ -18,7 +18,7 @@ owner: game-logic, web
   - [x] 2.2 Derive per-rack activity, idle counts, and billed power without persisting transient state
   - [x] 2.3 Add tests for mixed idle/active fleets and rack-health interactions
 - [ ] **Phase 3 — Opex and placement integration**
-  - [ ] 3.1 Preserve placement-time power-cap checks against installed maximum draw
+  - [x] 3.1 Preserve placement-time power-cap checks against installed maximum draw
   - [ ] 3.2 Switch monthly power billing to activity-aware power usage
   - [ ] 3.3 Keep cooling/bandwidth/resource summaries coherent with the new power model
 - [ ] **Phase 4 — Web visibility and player feedback**
@@ -230,3 +230,4 @@ export interface RackPowerSummary {
 - 2026-05-08 — completed Step 2.1 by adding deterministic demand-to-rack allocation helpers and a datacenter wrapper for activity allocation.
 - 2026-05-08 — completed Step 2.2 by deriving rack activity snapshots and billed-vs-reserved power summaries from transient allocation output.
 - 2026-05-08 — completed Step 2.3 by adding deterministic mixed-fleet and repairing-rack allocation tests in `economy/rack-activity.test.ts`.
+- 2026-05-08 — completed Step 3.1 by adding explicit placement power-cap regression tests in `entities/capacity.test.ts` and `state/reduce.test.ts`.
