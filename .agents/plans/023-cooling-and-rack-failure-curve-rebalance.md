@@ -1,7 +1,7 @@
 ---
 name: Cooling Headroom & Rack Failure Curve Rebalance
 description: Increase datacenter cooling headroom and replace the linear rack-failure curve with a year-anchored supra-linear progression.
-status: started
+status: completed
 created: 2026-05-08
 updated: 2026-05-08
 owner: game-logic
@@ -19,9 +19,9 @@ owner: game-logic
   - [x] 3.1 Replace the linear `rackFailureChance()` formula in `packages/game-logic/src/sim/maintenance.ts`
   - [x] 3.2 Extend maintenance tests to verify year-1, year-6, clamp, and acceleration behavior
   - [x] 3.3 Confirm the monthly tick still uses the new curve deterministically without changing repair semantics
-- [ ] **Phase 4 — Versioning and docs**
+- [x] **Phase 4 — Versioning and docs**
   - [x] 4.1 Bump `BALANCE_VERSION` and update any balance-sensitive assertions and changelog entries
-  - [ ] 4.2 Update README/player-facing documentation to describe the new cooling headroom and failure progression
+  - [x] 4.2 Update README/player-facing documentation to describe the new cooling headroom and failure progression
 
 ## Overview
 
@@ -165,3 +165,4 @@ export function rackFailureChance(ageMonths: number): number {
 ## Changelog
 
 - 2026-05-08 — created.
+- 2026-05-08 — completed.
