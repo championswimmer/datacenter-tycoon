@@ -17,10 +17,10 @@ owner: game-logic, web
   - [x] 2.1 Add pure helpers that map contract demand onto healthy racks in stable order
   - [x] 2.2 Derive per-rack activity, idle counts, and billed power without persisting transient state
   - [x] 2.3 Add tests for mixed idle/active fleets and rack-health interactions
-- [ ] **Phase 3 — Opex and placement integration**
+- [x] **Phase 3 — Opex and placement integration**
   - [x] 3.1 Preserve placement-time power-cap checks against installed maximum draw
   - [x] 3.2 Switch monthly power billing to activity-aware power usage
-  - [ ] 3.3 Keep cooling/bandwidth/resource summaries coherent with the new power model
+  - [x] 3.3 Keep cooling/bandwidth/resource summaries coherent with the new power model
 - [ ] **Phase 4 — Web visibility and player feedback**
   - [ ] 4.1 Expose active/idle rack power summaries through selectors
   - [ ] 4.2 Update rack and datacenter views to show activity state and billed power
@@ -232,3 +232,4 @@ export interface RackPowerSummary {
 - 2026-05-08 — completed Step 2.3 by adding deterministic mixed-fleet and repairing-rack allocation tests in `economy/rack-activity.test.ts`.
 - 2026-05-08 — completed Step 3.1 by adding explicit placement power-cap regression tests in `entities/capacity.test.ts` and `state/reduce.test.ts`.
 - 2026-05-08 — completed Step 3.2 by switching `tickOpex()` to activity-aware billed power when contract context is provided from the simulation tick.
+- 2026-05-08 — completed Step 3.3 by adding reserved-vs-billed rack power selectors and wiring selector opex calculations to active contracts while preserving bandwidth/slot semantics.

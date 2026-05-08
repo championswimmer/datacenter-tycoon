@@ -3,6 +3,7 @@ import {
   RELIABILITY_BASELINE_SCORE,
   datacenterMaintenanceSummary,
   datacenterCapacity,
+  datacenterRackPowerSummary,
   datacenterUsage,
   rackAgeMonths,
   reliabilityBandForScore,
@@ -13,6 +14,7 @@ import {
 import type {
   Capacity,
   Contract,
+  ContractRequirements,
   ContractSlaOutcome,
   DatacenterId,
   Datacenter,
@@ -23,6 +25,7 @@ import type {
   OpexTickResult,
   RackHealthStatus,
   RackPlacementId,
+  RackPowerSummary,
   ReliabilityBand,
   Tick,
 } from "@datacenter-tycoon/game-logic";
@@ -312,11 +315,36 @@ export interface AggregateOpex {
   perDc: Array<{ dcId: DatacenterId; result: OpexTickResult }>;
 }
 
+function assignedDemandForDatacenter(
+  contracts: readonly Contract[],
+  dcId: DatacenterId,
+): ContractRequirements {
+  return contracts.reduce<ContractRequirements>((acc, contract) => {
+    if (contract.assignedDcId !== dcId) {
+      return acc;
+    }
+
+    return {
+      vCpu: acc.vCpu + contract.requirements.vCpu,
+      ramGb: acc.ramGb + contract.requirements.ramGb,
+      storageTb: acc.storageTb + contract.requirements.storageTb,
+      gpuFlops: acc.gpuFlops + contract.requirements.gpuFlops,
+    };
+  }, {
+    vCpu: 0,
+    ramGb: 0,
+    storageTb: 0,
+    gpuFlops: 0,
+  });
+}
+
 /**
  * Monthly opex across all datacenters, broken down per DC.
  * Uses `tickOpex` from game-logic — never recomputes economy here.
  */
 export function selectOpexBreakdown(state: GameState): AggregateOpex {
+  const activeContracts = selectActiveContracts(state);
+
   const perDc = state.datacenters.map((dc) => {
     const region = state.map.regions.find((r) => r.id === dc.regionId);
     // Fallback to a default region if not found (should not happen in normal gameplay)
@@ -325,7 +353,7 @@ export function selectOpexBreakdown(state: GameState): AggregateOpex {
     }
     return {
       dcId: dc.id,
-      result: tickOpex(dc, region),
+      result: tickOpex(dc, region, activeContracts),
     };
   });
 
@@ -341,6 +369,48 @@ export interface AggregateResourceUsage {
   total: DatacenterResourceUsage;
   /** Per-datacenter usage */
   perDc: Array<{ dcId: DatacenterId; usage: DatacenterResourceUsage }>;
+}
+
+export interface AggregateRackPowerSummary {
+  total: RackPowerSummary;
+  perDc: Array<{ dcId: DatacenterId; summary: RackPowerSummary }>;
+}
+
+/**
+ * Reserved-vs-billed rack power derived from game-logic activity allocation.
+ * Reserved power reflects placement headroom usage, billed power reflects this month's active workload.
+ */
+export function selectRackPowerSummary(state: GameState): AggregateRackPowerSummary {
+  const activeContracts = selectActiveContracts(state);
+  const perDc = state.datacenters.map((dc) => ({
+    dcId: dc.id,
+    summary: datacenterRackPowerSummary(dc, assignedDemandForDatacenter(activeContracts, dc.id)),
+  }));
+
+  const total = perDc.reduce<RackPowerSummary>(
+    (acc, { summary }) => ({
+      reservedPowerKw: acc.reservedPowerKw + summary.reservedPowerKw,
+      idleBaselinePowerKw: acc.idleBaselinePowerKw + summary.idleBaselinePowerKw,
+      activePowerKw: acc.activePowerKw + summary.activePowerKw,
+      billedPowerKw: acc.billedPowerKw + summary.billedPowerKw,
+      activeRackCount: acc.activeRackCount + summary.activeRackCount,
+      idleRackCount: acc.idleRackCount + summary.idleRackCount,
+      repairingRackCount: acc.repairingRackCount + summary.repairingRackCount,
+      totalRackCount: acc.totalRackCount + summary.totalRackCount,
+    }),
+    {
+      reservedPowerKw: 0,
+      idleBaselinePowerKw: 0,
+      activePowerKw: 0,
+      billedPowerKw: 0,
+      activeRackCount: 0,
+      idleRackCount: 0,
+      repairingRackCount: 0,
+      totalRackCount: 0,
+    },
+  );
+
+  return { total, perDc };
 }
 
 /** Real-time resource usage (power, cooling, bandwidth, slots). */

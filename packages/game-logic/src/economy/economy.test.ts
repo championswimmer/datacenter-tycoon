@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
+import { COOLING_OVERHEAD_RATIO } from "./constants.js";
 import { applyCapex, tickOpex, tickRevenue } from "../index.js";
 import type {
 	Contract,
@@ -321,4 +322,50 @@ test("tickRevenue breaches all overcommitted contracts on the same datacenter", 
 		result.updatedContracts.map((contract) => contract.status),
 		["breached", "breached", "breached"],
 	);
+});
+
+test("tickOpex keeps non-power cost components stable across active vs idle billing modes", () => {
+	const datacenter = makeDatacenter("warehouse-1", DATACENTER_CATALOG.warehouse, [
+		placement("rack-1", "C2", 0, 0),
+		placement("rack-2", "M1", 0, 1),
+	]);
+	const contract = makeContract("contract-compute", datacenter, {
+		requirements: {
+			vCpu: 100,
+			ramGb: 0,
+			storageTb: 0,
+			gpuFlops: 0,
+		},
+		assignedDcId: datacenter.id,
+	});
+
+	const idleOpex = tickOpex(datacenter, TEST_REGION, []);
+	const activeOpex = tickOpex(datacenter, TEST_REGION, [contract]);
+
+	assert.equal(idleOpex.breakdown.staff, activeOpex.breakdown.staff);
+	assert.equal(idleOpex.breakdown.bandwidth, activeOpex.breakdown.bandwidth);
+	assert.equal(idleOpex.breakdown.maintenance, activeOpex.breakdown.maintenance);
+	assert.equal(idleOpex.breakdown.tax, activeOpex.breakdown.tax);
+	assert.ok(idleOpex.breakdown.power < activeOpex.breakdown.power);
+	assert.ok(idleOpex.breakdown.cooling < activeOpex.breakdown.cooling);
+});
+
+test("tickOpex cooling remains proportional to billed power under activity-aware billing", () => {
+	const datacenter = makeDatacenter("warehouse-1", DATACENTER_CATALOG.warehouse, [
+		placement("rack-1", "C2", 0, 0),
+		placement("rack-2", "M1", 0, 1),
+	]);
+	const contract = makeContract("contract-compute", datacenter, {
+		requirements: {
+			vCpu: 100,
+			ramGb: 0,
+			storageTb: 0,
+			gpuFlops: 0,
+		},
+		assignedDcId: datacenter.id,
+	});
+
+	const opex = tickOpex(datacenter, TEST_REGION, [contract]);
+	const expectedCooling = Number((opex.breakdown.power * COOLING_OVERHEAD_RATIO).toFixed(2));
+	assert.equal(opex.breakdown.cooling, expectedCooling);
 });
