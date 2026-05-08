@@ -1,5 +1,5 @@
 import { datacenterCapacity } from "../entities/datacenter.js";
-import type { Contract, Datacenter } from "../types.js";
+import type { Contract, ContractSlaOutcomeKind, Datacenter } from "../types.js";
 
 export type ContractEvaluationResult = "fulfilled" | "breached";
 
@@ -13,6 +13,33 @@ export function evaluateContract(datacenter: Datacenter, contract: Contract): Co
 		capacity.gpuFlops >= requirements.gpuFlops
 		? "fulfilled"
 		: "breached";
+}
+
+export function classifyContractSlaOutcomeKind(
+	previousContract: Pick<Contract, "status">,
+	nextContract: Pick<Contract, "status">,
+): ContractSlaOutcomeKind | undefined {
+	if (
+		previousContract.status === "completed" ||
+		previousContract.status === "cancelled" ||
+		nextContract.status === "offered"
+	) {
+		return undefined;
+	}
+
+	if (nextContract.status === "active" || nextContract.status === "completed") {
+		return "fulfilled";
+	}
+
+	if (nextContract.status === "breached") {
+		return "breached";
+	}
+
+	if (nextContract.status === "cancelled") {
+		return "cancelled";
+	}
+
+	return undefined;
 }
 
 export function advanceContract(

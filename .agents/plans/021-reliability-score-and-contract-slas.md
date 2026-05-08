@@ -14,7 +14,7 @@ owner: game-logic, web
   - [x] 1.2 Centralize reliability balance constants and recovery/decay rules
   - [x] 1.3 Update save/versioned public surfaces for the new reliability data
 - [ ] **Phase 2 — SLA evaluation and reliability scoring**
-  - [ ] 2.1 Add pure helpers that classify monthly contract outcomes and compute reliability deltas
+  - [x] 2.1 Add pure helpers that classify monthly contract outcomes and compute reliability deltas
   - [ ] 2.2 Wire reliability updates into the monthly tick without breaking deterministic contract flow
   - [ ] 2.3 Add tests for streaks, baseline clamps, and fulfilled vs breached score changes
 - [ ] **Phase 3 — Reliability-aware contract market shaping**
