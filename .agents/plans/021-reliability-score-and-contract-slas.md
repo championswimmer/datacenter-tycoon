@@ -22,7 +22,7 @@ owner: game-logic, web
   - [x] 3.2 Bias generated contract terms toward longer or shorter durations from reliability
   - [x] 3.3 Keep market difficulty and seeded RNG behavior deterministic under the new policy
 - [ ] **Phase 4 — Player-facing UI and feedback**
-  - [ ] 4.1 Expose reliability summaries and recent SLA outcomes through selectors
+  - [x] 4.1 Expose reliability summaries and recent SLA outcomes through selectors
   - [ ] 4.2 Surface reliability score, trend, and contract-market effects in the web UI
   - [ ] 4.3 Highlight SLA consequences on active/breached contracts and offer cards
 - [ ] **Phase 5 — Regression coverage and docs**

@@ -10,6 +10,12 @@ import {
   selectTick,
   selectCash,
   selectPlayerName,
+  selectReliabilityScore,
+  selectReliabilityBand,
+  selectReliabilityDelta,
+  selectRecentSlaOutcomes,
+  selectReliabilitySummary,
+  selectReliabilityMarketEffectSummary,
   selectAllDatacenters,
   selectDatacenter,
   selectDatacenterMaintenanceView,
@@ -67,6 +73,22 @@ function stateWithDcAndRack(): GameState {
   return state;
 }
 
+function withReliability(
+  state: GameState,
+  overrides: Partial<GameState["player"]["reliability"]>,
+): GameState {
+  return {
+    ...state,
+    player: {
+      ...state.player,
+      reliability: {
+        ...state.player.reliability,
+        ...overrides,
+      },
+    },
+  };
+}
+
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
 describe("selectTick", () => {
@@ -95,6 +117,88 @@ describe("selectCash", () => {
 describe("selectPlayerName", () => {
   it("returns the player name from options", () => {
     expect(selectPlayerName(freshState())).toBe("Test Player");
+  });
+});
+
+describe("reliability selectors", () => {
+  it("returns baseline reliability summaries on a fresh game", () => {
+    const state = freshState();
+
+    expect(selectReliabilityScore(state)).toBe(50);
+    expect(selectReliabilityBand(state)).toBe("baseline");
+    expect(selectReliabilityDelta(state)).toBe(0);
+    expect(selectRecentSlaOutcomes(state)).toEqual([]);
+    expect(selectReliabilitySummary(state)).toEqual({
+      score: 50,
+      band: "baseline",
+      lastDelta: 0,
+      trend: "steady",
+      recentOutcomes: [],
+    });
+    expect(selectReliabilityMarketEffectSummary(state)).toMatchObject({
+      band: "baseline",
+      offerCount: 6,
+      offerDeltaFromBaseline: 0,
+      supplyLabel: expect.stringContaining("standard market offers"),
+    });
+  });
+
+  it("returns improving reliability summaries after fulfilled SLA outcomes", () => {
+    const state = withReliability(freshState(), {
+      score: 77,
+      lastDelta: 3,
+      recentOutcomes: [
+        {
+          contractId: "contract-good" as GameState["player"]["reliability"]["recentOutcomes"][number]["contractId"],
+          contractName: "Trusted Anchor",
+          tick: 3,
+          kind: "fulfilled",
+        },
+      ],
+    });
+
+    expect(selectReliabilityBand(state)).toBe("trusted");
+    expect(selectReliabilitySummary(state)).toMatchObject({
+      score: 77,
+      band: "trusted",
+      lastDelta: 3,
+      trend: "up",
+    });
+    expect(selectReliabilityMarketEffectSummary(state)).toMatchObject({
+      band: "trusted",
+      offerCount: 8,
+      offerDeltaFromBaseline: 2,
+      termLabel: expect.stringContaining("Longer anchor contracts"),
+    });
+  });
+
+  it("returns at-risk market warnings after breaches and cancellations", () => {
+    const state = withReliability(freshState(), {
+      score: 20,
+      lastDelta: -12,
+      recentOutcomes: [
+        {
+          contractId: "contract-bad" as GameState["player"]["reliability"]["recentOutcomes"][number]["contractId"],
+          contractName: "Lost Customer",
+          tick: 4,
+          kind: "cancelled",
+        },
+      ],
+    });
+
+    expect(selectReliabilityBand(state)).toBe("at-risk");
+    expect(selectReliabilitySummary(state)).toMatchObject({
+      score: 20,
+      band: "at-risk",
+      lastDelta: -12,
+      trend: "down",
+    });
+    expect(selectReliabilityMarketEffectSummary(state)).toMatchObject({
+      band: "at-risk",
+      offerCount: 4,
+      offerDeltaFromBaseline: -2,
+      summary: expect.stringContaining("Breaches shrink the market"),
+    });
   });
 });
 
