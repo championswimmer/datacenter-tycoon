@@ -146,7 +146,7 @@ test("starter datacenter blueprints reserve the rebalanced cooling headroom", ()
 });
 
 test("economy constants are positive and within expected ranges", () => {
-	assert.equal(BALANCE_VERSION, 1);
+	assert.equal(BALANCE_VERSION, 2);
 	assert.equal(HOURS_PER_MONTH, 730);
 	assert.ok(BANDWIDTH_USD_PER_GBPS_MONTH > 0);
 	assert.ok(COOLING_OVERHEAD_RATIO > 0 && COOLING_OVERHEAD_RATIO < 1);

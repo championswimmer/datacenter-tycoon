@@ -20,7 +20,7 @@ owner: game-logic
   - [x] 3.2 Extend maintenance tests to verify year-1, year-6, clamp, and acceleration behavior
   - [x] 3.3 Confirm the monthly tick still uses the new curve deterministically without changing repair semantics
 - [ ] **Phase 4 — Versioning and docs**
-  - [ ] 4.1 Bump `BALANCE_VERSION` and update any balance-sensitive assertions and changelog entries
+  - [x] 4.1 Bump `BALANCE_VERSION` and update any balance-sensitive assertions and changelog entries
   - [ ] 4.2 Update README/player-facing documentation to describe the new cooling headroom and failure progression
 
 ## Overview
