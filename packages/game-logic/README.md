@@ -75,6 +75,7 @@ Main exports from `src/index.ts`:
 - `REGION_CATALOG`
 - `generateMap(seed)` — deterministic world map generator
 - maintenance balance constants such as `RACK_FAILURE_MAX_CHANCE`, `BASE_REPAIR_DAYS`, and `DAYS_PER_TICK`
+- reliability balance helpers such as `RELIABILITY_BASELINE_SCORE`, `RELIABILITY_MARKET_OFFER_COUNT`, and `reliabilityBandForScore()`
 - all public domain types from `types.ts`
 
 ## Rack health & maintenance scaffolding
@@ -108,6 +109,27 @@ interface Datacenter {
 ```
 
 Repair timing constants are exported so consumers can display or reason about the monthly-tick / daily-repair bridge without duplicating numbers.
+
+## Player reliability scaffolding
+
+The player profile now includes a persisted reliability score that future contract-market systems can use without inventing UI-local state:
+
+```ts
+interface PlayerReliability {
+  score: number;
+  lastDelta?: number;
+  recentOutcomes: ContractSlaOutcome[];
+}
+
+interface ContractSlaOutcome {
+  contractId: ContractId;
+  contractName: string;
+  tick: Tick;
+  kind: "fulfilled" | "breached" | "cancelled";
+}
+```
+
+The current save policy remains **destructive on incompatible format changes**. Version `4` added this reliability shape, so older saves are intentionally rejected rather than migrated.
 
 ## Action reference
 
@@ -156,6 +178,11 @@ interface GameState {
     id: string;
     name: string;
     cash: number;
+    reliability: {
+      score: number;
+      lastDelta?: number;
+      recentOutcomes: ContractSlaOutcome[];
+    };
   };
   datacenters: Datacenter[];
   contractMarket: Contract[];
@@ -213,7 +240,7 @@ interface MapState {
 
 ```json
 {
-  "saveVersion": 3,
+  "saveVersion": 4,
   "state": {
     "tick": 0,
     "seed": 42,
@@ -221,7 +248,11 @@ interface MapState {
     "player": {
       "id": "player-1",
       "name": "Player",
-      "cash": 2500000
+      "cash": 2500000,
+      "reliability": {
+        "score": 50,
+        "recentOutcomes": []
+      }
     },
     "datacenters": [],
     "contractMarket": [],
@@ -234,4 +265,4 @@ interface MapState {
 }
 ```
 
-Use `deserialize(json)` to restore a saved game. Saves from earlier versions are intentionally rejected and must be recreated after incompatible updates.
+Use `deserialize(json)` to restore a saved game. Saves from earlier versions are intentionally rejected and must be recreated after incompatible updates; the current incompatible boundary is `saveVersion: 4`, which introduced persisted player reliability.
