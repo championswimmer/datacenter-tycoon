@@ -123,15 +123,16 @@ describe("MarketList", () => {
     expect(screen.getByText(/Platinum reliability is helping surface longer-term offers like this/i)).toBeTruthy();
   });
 
-  it("requires datacenter selection and confirmation before accepting", () => {
+  it("accepts a contract directly when a fitting datacenter is clicked", () => {
     const store = renderMarket();
     const dcName = store.getState().datacenters[0]!.name;
 
     fireEvent.click(screen.getByText("ACCEPT CONTRACT"));
-    fireEvent.click(screen.getByText(dcName));
 
-    expect(screen.getByText("CONFIRM ACCEPT")).toBeTruthy();
-    fireEvent.click(screen.getByText("CONFIRM ACCEPT"));
+    expect(screen.getByText(/Click a datacenter to accept this contract/i)).toBeTruthy();
+    expect(screen.queryByText("CONFIRM ACCEPT")).toBeNull();
+
+    fireEvent.click(screen.getByText(dcName));
 
     expect(store.getState().contractMarket).toHaveLength(MARKET_REFRESH_SIZE);
     expect(store.getState().activeContracts).toHaveLength(1);

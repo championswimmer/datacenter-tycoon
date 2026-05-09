@@ -14,9 +14,9 @@ owner: web
   - [x] 1.2 Build the banner-based start screen with Play / Load Game / New Game actions
   - [x] 1.3 Delay first-time tutorial opening until the player starts a session
   - [x] 1.4 Add start-flow tests for fresh and saved sessions
-- [ ] **Phase 2 — Contract assignment click-to-confirm**
+- [x] **Phase 2 — Contract assignment click-to-confirm**
   - [x] 2.1 Remove the extra post-datacenter confirm state from `MarketList`
-  - [ ] 2.2 Update contract assignment copy, styling, and tests for two-click acceptance
+  - [x] 2.2 Update contract assignment copy, styling, and tests for two-click acceptance
 - [ ] **Phase 3 — Rack picker click-to-place**
   - [ ] 3.1 Remove selected-rack/install-button state and place directly from rack cards
   - [ ] 3.2 Preserve affordability and failure feedback without a second confirm step

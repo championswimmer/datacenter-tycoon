@@ -276,8 +276,16 @@
   transition: box-shadow var(--duration-fast), background var(--duration-fast);
   align-self: flex-start;
 }
-.acceptBtn:hover:not(:disabled) { background: rgba(155,255,90,.08); box-shadow: var(--glow-lime); }
-.acceptBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.acceptBtn:hover:not(:disabled) {
+  background: rgba(155,255,90,.08);
+  box-shadow: var(--glow-lime);
+}
+
+.acceptBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
 
 /* ── DC Selector ──────────────────────────────────────────── */
 
@@ -294,7 +302,13 @@
 .dcSelectorLabel {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
-  color: var(--fg-2);
+  color: var(--fg-1);
+}
+
+.dcSelectorHelp {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--fg-3);
 }
 
 .dcList {
@@ -315,14 +329,18 @@
   align-items: flex-start;
   gap: 2px;
   background: transparent;
-  transition: box-shadow var(--duration-fast), background var(--duration-fast);
+  transition: box-shadow var(--duration-fast), background var(--duration-fast), border-color var(--duration-fast);
 }
 
 .dcBtnOk {
   color: var(--neon-cyan);
   border-color: rgba(94,240,255,.4);
 }
-.dcBtnOk:hover { background: rgba(94,240,255,.08); box-shadow: var(--glow-sm-cyan); }
+
+.dcBtnOk:hover {
+  background: rgba(94,240,255,.08);
+  box-shadow: var(--glow-sm-cyan);
+}
 
 .dcBtnNo {
   color: var(--fg-3);
@@ -337,67 +355,30 @@
   font-weight: 600;
 }
 
-.confirmSummary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-2);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--fg-0);
-}
-
-.confirmActions {
-  display: flex;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.confirmAcceptBtn,
-.confirmBackBtn,
 .dcCancelBtn {
+  align-self: flex-start;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
+  color: var(--fg-2);
+  background: transparent;
+  border: 1px solid var(--grid);
   border-radius: var(--radius-sm);
   padding: 4px 8px;
   cursor: pointer;
 }
 
-.confirmAcceptBtn {
-  color: var(--neon-lime);
-  background: rgba(155,255,90,.08);
-  border: 1px solid rgba(155,255,90,.35);
+.dcCancelBtn:hover {
+  color: var(--fg-0);
 }
-
-.confirmBackBtn {
-  color: var(--neon-cyan);
-  background: transparent;
-  border: 1px solid rgba(94,240,255,.25);
-}
-
-.dcCancelBtn {
-  color: var(--fg-2);
-  background: transparent;
-  border: 1px solid var(--grid);
-}
-
-.confirmAcceptBtn:hover { box-shadow: var(--glow-lime); }
-.confirmBackBtn:hover { box-shadow: var(--glow-sm-cyan); }
-.dcCancelBtn:hover { color: var(--fg-0); }
 
 @media (pointer: coarse), (max-width: 767px) {
   .acceptBtn,
   .dcBtn,
-  .confirmAcceptBtn,
-  .confirmBackBtn,
   .dcCancelBtn {
     min-height: var(--touch-target-min);
   }
 
   .acceptBtn,
-  .confirmAcceptBtn,
-  .confirmBackBtn,
   .dcCancelBtn {
     padding: var(--space-2) var(--space-4);
   }
@@ -418,15 +399,16 @@
     flex-wrap: wrap;
   }
 
-  .dcList,
-  .confirmActions {
+  .dcList {
     flex-direction: column;
   }
 
   .dcBtn,
-  .confirmAcceptBtn,
-  .confirmBackBtn,
   .dcCancelBtn {
     width: 100%;
+  }
+
+  .dcCancelBtn {
+    align-self: stretch;
   }
 }
