@@ -15,6 +15,8 @@ import {
   writeCommandResult,
 } from "./common.js";
 
+// ── ls (router) ───────────────────────────────────────────────────────────────
+
 export async function runLsCommand(parsed: ParsedArgv): Promise<void> {
   const subCommand = parsed.positionals[0];
 
@@ -38,6 +40,13 @@ export async function runLsCommand(parsed: ParsedArgv): Promise<void> {
         "  catalog        List all rack and datacenter specs",
     );
   }
+}
+
+/**
+ * Exported alias used by the top-level `dct contracts` command.
+ */
+export async function runLsContractsCommand(parsed: ParsedArgv): Promise<void> {
+  return listContracts(parsed);
 }
 
 // ── saves ────────────────────────────────────────────────────────────────────
@@ -100,7 +109,6 @@ async function listContracts(parsed: ParsedArgv): Promise<void> {
 
     const market = marketResult.kind === "market-contracts" ? marketResult.items : [];
     const active = activeResult.kind === "active-contracts" ? activeResult.items : [];
-    const all = [...market, ...active];
 
     if (isJson) {
       writeCommandResult(parsed, "", { market, active });
@@ -113,18 +121,14 @@ async function listContracts(parsed: ParsedArgv): Promise<void> {
       lines.push("=== Market Contracts ===");
       for (const c of market) {
         const req = c.requirements;
+        lines.push(`  [${c.id}]`);
         lines.push(
-          `  [${c.id}]`,
-        );
-        lines.push(
-          `    ${c.name} | $${c.monthlyPayment.toLocaleString()}/mo | ${c.termMonths}mo | ${c.urgency} | Tier ${c.tier} | Expires tick ${(c as unknown as Record<string,unknown>)['expiresAtTick'] ?? '?'}`,
+          `    ${c.name} | $${c.monthlyPayment.toLocaleString()}/mo | ${c.termMonths}mo | ${c.urgency} | Tier ${c.tier} | Expires tick ${(c as unknown as Record<string, unknown>)["expiresAtTick"] ?? "?"}`,
         );
         lines.push(
           `    Reqs: vCPU=${req.vCpu}, RAM=${req.ramGb}GB, Storage=${req.storageTb}TB, GPU=${req.gpuFlops}`,
         );
-        lines.push(
-          `    Penalty: $${c.penaltyPerMonth.toLocaleString()}/mo`,
-        );
+        lines.push(`    Penalty: $${c.penaltyPerMonth.toLocaleString()}/mo`);
       }
     } else {
       lines.push("No contracts available in market.");
@@ -136,10 +140,10 @@ async function listContracts(parsed: ParsedArgv): Promise<void> {
       lines.push("=== Active Contracts ===");
       for (const c of active) {
         const req = c.requirements;
-        const dc = (c as unknown as Record<string,unknown>)['datacenterId'];
+        const dc = (c as unknown as Record<string, unknown>)["datacenterId"];
         lines.push(`  [${c.id}]`);
         lines.push(
-          `    ${c.name} | $${c.monthlyPayment.toLocaleString()}/mo | DC: ${dc ?? 'unassigned'} | Tier ${c.tier}`,
+          `    ${c.name} | $${c.monthlyPayment.toLocaleString()}/mo | DC: ${dc ?? "unassigned"} | Tier ${c.tier}`,
         );
         lines.push(
           `    Reqs: vCPU=${req.vCpu}, RAM=${req.ramGb}GB, Storage=${req.storageTb}TB, GPU=${req.gpuFlops}`,
@@ -173,7 +177,9 @@ async function listDatacenters(parsed: ParsedArgv): Promise<void> {
     }
 
     if (items.length === 0) {
-      writeCommandResult(parsed, "No datacenters built yet. Use 'dct build-dc' to get started.", { datacenters: [] });
+      writeCommandResult(parsed, "No datacenters built yet. Use 'dct build-dc' to get started.", {
+        datacenters: [],
+      });
       return;
     }
 
@@ -212,8 +218,7 @@ async function listRacks(parsed: ParsedArgv): Promise<void> {
       dcId,
     })) as ListResult;
 
-    const items =
-      result.kind === "racks" ? (result.items as RackListItem[]) : [];
+    const items = result.kind === "racks" ? (result.items as RackListItem[]) : [];
 
     if (isJson) {
       writeCommandResult(parsed, "", { dcId, racks: items });
@@ -227,9 +232,9 @@ async function listRacks(parsed: ParsedArgv): Promise<void> {
 
     const lines: string[] = [`=== Racks in ${dcId} ===`];
     for (const item of items) {
-      const age = (item as unknown as Record<string,unknown>)['installedAtTick'];
+      const age = (item as unknown as Record<string, unknown>)["installedAtTick"];
       lines.push(
-        `  ${item.placementId} | ${item.spec.id} (${item.spec.kind} T${item.spec.tier}) | Row ${item.row}, Pos ${item.position} | Installed: tick ${age ?? '?'}`,
+        `  ${item.placementId} | ${item.spec.id} (${item.spec.kind} T${item.spec.tier}) | Row ${item.row}, Pos ${item.position} | Installed: tick ${age ?? "?"}`,
       );
       lines.push(
         `    vCPU=${item.spec.vCpu}, RAM=${item.spec.ramGb}GB, Storage=${item.spec.storageTb}TB, GPU=${item.spec.gpuFlops} | Power: ${item.spec.powerDrawKw}kW`,
@@ -246,8 +251,14 @@ async function listCatalog(parsed: ParsedArgv): Promise<void> {
   const isJson = hasBooleanFlag(parsed, "--json");
 
   await withClient(parsed, async (client) => {
-    const rackResult = (await client.query({ kind: "catalog", target: "racks" })) as CatalogResult;
-    const dcResult = (await client.query({ kind: "catalog", target: "datacenters" })) as CatalogResult;
+    const rackResult = (await client.query({
+      kind: "catalog",
+      target: "racks",
+    })) as CatalogResult;
+    const dcResult = (await client.query({
+      kind: "catalog",
+      target: "datacenters",
+    })) as CatalogResult;
 
     const racks = rackResult.kind === "racks" ? rackResult.items : [];
     const dcs = dcResult.kind === "datacenters" ? dcResult.items : [];
