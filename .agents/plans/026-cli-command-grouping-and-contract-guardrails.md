@@ -1,7 +1,7 @@
 ---
 name: CLI Command Grouping and Contract Guardrails
 description: Reject over-capacity contract acceptance, normalize contract payment field naming, and regroup CLI commands under noun-first namespaces with consistent JSON output.
-status: created
+status: completed
 created: 2026-05-09
 updated: 2026-05-09
 owner: cli
