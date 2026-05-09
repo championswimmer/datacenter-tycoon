@@ -105,16 +105,16 @@ test("runContractDetailsCommand returns snapshot-backed contract details as json
 	const parsed = JSON.parse(logged[0] ?? "{}") as {
 		ok: boolean;
 		data: {
-			bucket: string;
-			contract: { id: string; status: string; assignedDcId?: string };
+			contract: { id: string; status: string; assignedDcId: string | null; bucket: string; monthlyPayment: number };
 			recentOutcomes: Array<{ contractId: string; kind: string; tick: number }>;
 		};
 	};
 	assert.equal(parsed.ok, true);
-	assert.equal(parsed.data.bucket, "activeContracts");
+	assert.equal(parsed.data.contract.bucket, "active");
 	assert.equal(parsed.data.contract.id, targetContractId);
 	assert.equal(parsed.data.contract.status, "breached");
 	assert.equal(parsed.data.contract.assignedDcId, "dc-1");
+	assert.equal(typeof parsed.data.contract.monthlyPayment, "number");
 	assert.equal(parsed.data.recentOutcomes.length, 1);
 	assert.equal(parsed.data.recentOutcomes[0]?.kind, "breached");
 	assert.equal(parsed.data.recentOutcomes[0]?.tick, 4);

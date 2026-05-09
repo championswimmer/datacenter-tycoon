@@ -14,6 +14,7 @@ import {
   withClient,
   writeCommandResult,
 } from "./common.js";
+import { formatContractRequirements, presentContracts } from "./contracts-view.js";
 
 // ── ls (router) ───────────────────────────────────────────────────────────────
 
@@ -107,8 +108,10 @@ async function listContracts(parsed: ParsedArgv): Promise<void> {
       target: "active-contracts",
     })) as ListResult;
 
-    const market = marketResult.kind === "market-contracts" ? marketResult.items : [];
-    const active = activeResult.kind === "active-contracts" ? activeResult.items : [];
+    const marketContracts = marketResult.kind === "market-contracts" ? marketResult.items : [];
+    const activeContracts = activeResult.kind === "active-contracts" ? activeResult.items : [];
+    const market = presentContracts(marketContracts, "market");
+    const active = presentContracts(activeContracts, "active");
 
     if (isJson) {
       writeCommandResult(parsed, "", { market, active });
@@ -120,14 +123,11 @@ async function listContracts(parsed: ParsedArgv): Promise<void> {
     if (market.length > 0) {
       lines.push("=== Market Contracts ===");
       for (const c of market) {
-        const req = c.requirements;
         lines.push(`  [${c.id}]`);
         lines.push(
-          `    ${c.name} | $${c.monthlyPayment.toLocaleString()}/mo | ${c.termMonths}mo | ${c.urgency} | Tier ${c.tier} | Expires tick ${(c as unknown as Record<string, unknown>)["expiresAtTick"] ?? "?"}`,
+          `    ${c.name} | $${c.monthlyPayment.toLocaleString()}/mo | ${c.termMonths}mo | ${c.urgency} | Tier ${c.tier} | Expires tick ${c.expiresAtTick}`,
         );
-        lines.push(
-          `    Reqs: vCPU=${req.vCpu}, RAM=${req.ramGb}GB, Storage=${req.storageTb}TB, GPU=${req.gpuFlops}`,
-        );
+        lines.push(`    Reqs: ${formatContractRequirements(c)}`);
         lines.push(`    Penalty: $${c.penaltyPerMonth.toLocaleString()}/mo`);
       }
     } else {
@@ -139,15 +139,11 @@ async function listContracts(parsed: ParsedArgv): Promise<void> {
     if (active.length > 0) {
       lines.push("=== Active Contracts ===");
       for (const c of active) {
-        const req = c.requirements;
-        const dc = (c as unknown as Record<string, unknown>)["datacenterId"];
         lines.push(`  [${c.id}]`);
         lines.push(
-          `    ${c.name} | $${c.monthlyPayment.toLocaleString()}/mo | DC: ${dc ?? "unassigned"} | Tier ${c.tier}`,
+          `    ${c.name} | $${c.monthlyPayment.toLocaleString()}/mo | DC: ${c.assignedDcId ?? "unassigned"} | Tier ${c.tier}`,
         );
-        lines.push(
-          `    Reqs: vCPU=${req.vCpu}, RAM=${req.ramGb}GB, Storage=${req.storageTb}TB, GPU=${req.gpuFlops}`,
-        );
+        lines.push(`    Reqs: ${formatContractRequirements(c)}`);
       }
     } else {
       lines.push("No active contracts.");
