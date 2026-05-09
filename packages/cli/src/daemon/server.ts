@@ -72,7 +72,11 @@ function normalizeError(error: unknown): ServerErrorShape {
 	}
 
 	if (error instanceof Error) {
-		return errorWithCode(RpcErrorCode.RuntimeError, error.message);
+		return errorWithCode(
+			RpcErrorCode.RuntimeError,
+			error.message,
+			"data" in error ? ((error as Error & { data?: unknown }).data ?? undefined) : undefined,
+		);
 	}
 
 	return errorWithCode(RpcErrorCode.InternalError, "Unknown server error", error);

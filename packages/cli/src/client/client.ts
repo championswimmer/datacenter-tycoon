@@ -27,6 +27,18 @@ interface PendingRequest {
 	reject: (error: Error) => void;
 }
 
+export class DctRpcError extends Error {
+	readonly rpcCode: number;
+	readonly data?: unknown;
+
+	constructor(message: string, rpcCode: number, data?: unknown) {
+		super(message);
+		this.name = "DctRpcError";
+		this.rpcCode = rpcCode;
+		this.data = data;
+	}
+}
+
 export interface DctClientOptions {
 	socketPath: string;
 	savePath?: string;
@@ -280,7 +292,7 @@ export class DctClient {
 			}
 			this.pendingRequests.delete(message.id);
 			if (message.error) {
-				pendingRequest.reject(new Error(message.error.message));
+				pendingRequest.reject(new DctRpcError(message.error.message, message.error.code, message.error.data));
 				continue;
 			}
 			pendingRequest.resolve(message.result);

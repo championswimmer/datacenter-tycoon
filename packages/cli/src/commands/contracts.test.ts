@@ -121,6 +121,41 @@ test("runContractDetailsCommand returns snapshot-backed contract details as json
 	assert.equal(parsed.data.recentOutcomes[0]?.contractId, targetContractId);
 });
 
+test("runAcceptContractCommand preserves structured capacity errors from the daemon", async () => {
+	const required = { vCpu: 10, ramGb: 20, storageTb: 30, gpuFlops: 40 };
+	const available = { vCpu: 1, ramGb: 2, storageTb: 3, gpuFlops: 4 };
+
+	await assert.rejects(
+		() =>
+			runAcceptContractCommand(
+				parseArgv(["accept-contract", "offer-1", "dc-1", "--json"]),
+				() => ({
+					...createFakeClient([]),
+					dispatch: async () => {
+						throw Object.assign(new Error("Datacenter dc-1 lacks available capacity for this contract"), {
+							data: {
+								code: "insufficient_capacity",
+								dcId: "dc-1",
+								required,
+								available,
+							},
+						});
+					},
+				}),
+			),
+		(error: unknown) => {
+			assert.ok(error instanceof Error);
+			assert.deepEqual((error as Error & { data?: unknown }).data, {
+				code: "insufficient_capacity",
+				dcId: "dc-1",
+				required,
+				available,
+			});
+			return true;
+		},
+	);
+});
+
 test("runContractsCommand rejects bare command and points users to ls contracts", async () => {
 	await assert.rejects(() => runContractsCommand(parseArgv(["contracts"])), /To list all contracts, use: dct ls contracts/);
 });

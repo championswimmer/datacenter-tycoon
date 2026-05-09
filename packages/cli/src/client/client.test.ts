@@ -6,7 +6,7 @@ import path from "node:path";
 import test from "node:test";
 import { once } from "node:events";
 
-import { DctClient } from "./client.js";
+import { DctClient, DctRpcError } from "./client.js";
 
 function createSocketPath(): string {
 	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "dct-cli-client-"));
@@ -222,6 +222,52 @@ test("DctClient rejects incompatible daemon major versions during handshake", as
 	const client = new DctClient({ socketPath, clientVersion: "1.0.0" });
 	await client.connect();
 	await assert.rejects(() => client.handshake(), /incompatible with client 1.0.0/);
+
+	await client.close();
+	server.close();
+	await once(server, "close");
+});
+
+test("DctClient preserves structured rpc error data on rejected requests", async () => {
+	const socketPath = createSocketPath();
+	const server = net.createServer((socket) => {
+		socket.on("data", (chunk) => {
+			const line = chunk.toString().trim();
+			if (!line) {
+				return;
+			}
+			const request = JSON.parse(line) as { id: number; method: string };
+			if (request.method === "hello") {
+				socket.write(`{"jsonrpc":"2.0","id":${request.id},"result":{"daemonVersion":"0.1.0","saveVersion":1,"tick":0}}\n`);
+				return;
+			}
+			if (request.method === "dispatch") {
+				socket.write(
+					`{"jsonrpc":"2.0","id":${request.id},"error":{"code":-32000,"message":"Datacenter dc-1 lacks available capacity for this contract","data":{"code":"insufficient_capacity","dcId":"dc-1","required":{"vCpu":10,"ramGb":20,"storageTb":30,"gpuFlops":40},"available":{"vCpu":1,"ramGb":2,"storageTb":3,"gpuFlops":4}}}}\n`,
+				);
+			}
+		});
+	});
+	server.listen(socketPath);
+	await once(server, "listening");
+
+	const client = new DctClient({ socketPath });
+	await client.connect();
+
+	await assert.rejects(
+		() => client.dispatch({ type: "Tick" }),
+		(error: unknown) => {
+			assert.ok(error instanceof DctRpcError);
+			assert.equal(error.rpcCode, -32000);
+			assert.deepEqual(error.data, {
+				code: "insufficient_capacity",
+				dcId: "dc-1",
+				required: { vCpu: 10, ramGb: 20, storageTb: 30, gpuFlops: 40 },
+				available: { vCpu: 1, ramGb: 2, storageTb: 3, gpuFlops: 4 },
+			});
+			return true;
+		},
+	);
 
 	await client.close();
 	server.close();
