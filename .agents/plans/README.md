@@ -14,6 +14,7 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 - [`021-reliability-score-and-contract-slas.md`](./021-reliability-score-and-contract-slas.md) — player reliability scoring, SLA-driven reputation changes, and reliability-shaped contract frequency and term length. _status: completed_
 - [`022-rack-usage-based-billing.md`](./022-rack-usage-based-billing.md) — split rack power reservation from active-vs-idle power billing with deterministic rack activity allocation. _status: completed_
 - [`024-web-start-screen-and-one-click-actions.md`](./024-web-start-screen-and-one-click-actions.md) — banner-first start screen plus click-to-confirm contract assignment and rack placement. _status: created_
+- [`026-cli-command-grouping-and-contract-guardrails.md`](./026-cli-command-grouping-and-contract-guardrails.md) — enforce contract-fit rejection, unify contract JSON naming, make `--json` universal, and replace flat CLI verbs with grouped resource commands. _status: created_
 
 ## Related plan guidance
 
