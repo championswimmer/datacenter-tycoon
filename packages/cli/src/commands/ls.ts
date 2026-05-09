@@ -179,10 +179,10 @@ async function listDatacenters(parsed: ParsedArgv, clientFactory: CommandClientF
 			for (const item of items) {
 				const dc = item.datacenter;
 				lines.push(
-					`  ${dc.id} | ${dc.spec.id} | Region: ${dc.regionId} | Slots: ${item.slotsUsed}/${item.totalSlots}`,
+					`  ${dc.id} | ${dc.spec.id} | Region: ${dc.regionId} | Slots: ${item.slotsUsed}/${item.totalSlots} | Layout: ${formatDatacenterLayout(dc.spec)}`,
 				);
 				lines.push(
-					`    Power: ${item.powerKw.toFixed(1)}/${item.powerCapacityKw}kW | Cooling: ${Math.round(item.heatOutputBtuPerHr)}/${item.coolingCapacityBtuPerHr} BTU/hr | BW: ${item.bandwidthGbps}/${item.bandwidthCapacityGbps}Gbps`,
+					`    Bounds: rows 0-${dc.spec.rows - 1}, cols 0-${dc.spec.positionsPerRow - 1} | Power: ${item.powerKw.toFixed(1)}/${item.powerCapacityKw}kW | Cooling: ${Math.round(item.heatOutputBtuPerHr)}/${item.coolingCapacityBtuPerHr} BTU/hr | BW: ${item.bandwidthGbps}/${item.bandwidthCapacityGbps}Gbps`,
 				);
 				lines.push(
 					`    Capacity: vCPU=${item.capacity.vCpu}, RAM=${item.capacity.ramGb}GB, Storage=${item.capacity.storageTb}TB, GPU=${item.capacity.gpuFlops}`,

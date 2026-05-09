@@ -575,7 +575,16 @@ test("reduce handles MoveRack rejects invalid target slot", () => {
 				row: 99,
 				position: 99,
 			}),
-		{ message: /Cannot place rack: out_of_bounds/ },
+		(error: unknown) => {
+			assert.match((error as Error).message, /Cannot place rack: out_of_bounds/);
+			assert.deepEqual((error as Error & { data?: unknown }).data, {
+				code: "out_of_bounds",
+				dcId: "dc-2",
+				rows: DATACENTER_CATALOG.garage.rows,
+				positionsPerRow: DATACENTER_CATALOG.garage.positionsPerRow,
+			});
+			return true;
+		},
 	);
 });
 
