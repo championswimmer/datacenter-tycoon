@@ -147,7 +147,7 @@ test("tick advances time, applies opex and revenue, and refreshes the contract m
 	assert.equal(nextState.contractMarket[0]?.offeredAtTick, 1);
 });
 
-test("tick cancels breached contracts when their term ends and records penalties", () => {
+test("tick expires breached contracts when their term ends and records penalties", () => {
 	const weakDatacenter = makeDatacenter("dc-1", [placement("rack-1", "C1", 0, 0)]);
 	const expiringContract = makeContract("contract-1", weakDatacenter, {
 		requirements: { vCpu: 200, ramGb: 3_000, storageTb: 400, gpuFlops: 200 },
@@ -164,7 +164,7 @@ test("tick cancels breached contracts when their term ends and records penalties
 
 	const nextState = tick(state);
 
-	assert.equal(nextState.activeContracts[0]?.status, "cancelled");
+	assert.equal(nextState.activeContracts[0]?.status, "expired");
 	assert.equal(nextState.player.cash, state.player.cash - opex - expiringContract.penaltyPerMonth);
 	assert.deepEqual(
 		nextState.ledger.map((entry) => ({ type: entry.type, amount: entry.amount })),
@@ -196,7 +196,7 @@ test("tick is deterministic across multiple months for the same seed and startin
 	assert.deepEqual(firstRun.player.reliability, secondRun.player.reliability);
 });
 
-test("tick auto-cancels a previously breached contract after one penalty tick", () => {
+test("tick keeps a previously breached contract breached while it remains live", () => {
 	const weakDatacenter = makeDatacenter("dc-1", [placement("rack-1", "C1", 0, 0)]);
 	const breachedContract = makeContract("contract-1", weakDatacenter, {
 		status: "breached",
@@ -214,7 +214,7 @@ test("tick auto-cancels a previously breached contract after one penalty tick", 
 
 	const nextState = tick(state);
 
-	assert.equal(nextState.activeContracts[0]?.status, "cancelled");
+	assert.equal(nextState.activeContracts[0]?.status, "breached");
 	assert.equal(nextState.player.cash, state.player.cash - opex - breachedContract.penaltyPerMonth);
 });
 
@@ -381,7 +381,7 @@ test("tick increases reliability and records fulfilled SLA outcomes for healthy 
 	]);
 });
 
-test("tick lowers reliability for breached and cancelled SLA months", () => {
+test("tick lowers reliability for repeated breached SLA months without auto-cancelling", () => {
 	const weakDatacenter = makeDatacenter("dc-1", [placement("rack-1", "C1", 0, 0)]);
 	const breachedContract = makeContract("contract-1", weakDatacenter, {
 		requirements: { vCpu: 500, ramGb: 5_000, storageTb: 500, gpuFlops: 500 },
@@ -400,13 +400,13 @@ test("tick lowers reliability for breached and cancelled SLA months", () => {
 	assert.equal(afterBreach.player.reliability.lastDelta, -8);
 	assert.equal(afterBreach.player.reliability.recentOutcomes.at(-1)?.kind, "breached");
 
-	const afterCancellation = tick(afterBreach);
+	const afterSecondBreach = tick(afterBreach);
 
-	assert.equal(afterCancellation.activeContracts[0]?.status, "cancelled");
-	assert.equal(afterCancellation.player.reliability.score, 30);
-	assert.equal(afterCancellation.player.reliability.lastDelta, -12);
-	assert.equal(afterCancellation.player.reliability.recentOutcomes.at(-1)?.kind, "cancelled");
-	assert.equal(reliabilityBandForScore(afterCancellation.player.reliability.score), "silver");
+	assert.equal(afterSecondBreach.activeContracts[0]?.status, "breached");
+	assert.equal(afterSecondBreach.player.reliability.score, 34);
+	assert.equal(afterSecondBreach.player.reliability.lastDelta, -8);
+	assert.equal(afterSecondBreach.player.reliability.recentOutcomes.at(-1)?.kind, "breached");
+	assert.equal(reliabilityBandForScore(afterSecondBreach.player.reliability.score), "silver");
 });
 
 test("fulfilled streaks and clamp edges behave deterministically across repeated ticks", () => {

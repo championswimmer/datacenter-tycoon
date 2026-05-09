@@ -27,8 +27,12 @@ export function classifyContractSlaOutcomeKind(
 		return undefined;
 	}
 
-	if (nextContract.status === "active" || nextContract.status === "expired") {
+	if (nextContract.status === "active") {
 		return "fulfilled";
+	}
+
+	if (nextContract.status === "expired") {
+		return previousContract.status === "breached" ? undefined : "fulfilled";
 	}
 
 	if (nextContract.status === "breached") {
@@ -58,14 +62,11 @@ export function advanceContract(
 	if (hasTermEnded) {
 		return {
 			...contract,
-			status: evaluation === "fulfilled" ? "expired" : "cancelled",
+			status: "expired",
 		};
 	}
 
 	if (evaluation === "breached") {
-		if (contract.status === "breached") {
-			return { ...contract, status: "cancelled" };
-		}
 		return { ...contract, status: "breached" };
 	}
 
