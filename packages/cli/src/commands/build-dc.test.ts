@@ -79,7 +79,7 @@ test("runMoveRackCommand throws on missing arguments", async () => {
 	const actions: Action[] = [];
 	await assert.rejects(
 		() => runMoveRackCommand(parseArgv(["move-rack", "dc-1", "rp-1", "--quiet"]), () => createFakeClient(actions)),
-		{ message: /move-rack <dcId> <placementId> <targetDcId> <row> <position>/ },
+		{ message: /racks move <dcId> <placementId> <targetDcId> <row> <position>/ },
 	);
 });
 

@@ -14,7 +14,7 @@ test("splitCommandLine splits whitespace and keeps quoted arguments together", (
 test("autocompletePaletteInput completes unique command names", () => {
 	assert.equal(autocompletePaletteInput("sta"), "status ");
 	assert.equal(autocompletePaletteInput("s"), "s"); // matches status, save, speed - no unique match
-	assert.equal(autocompletePaletteInput("dc build garage"), "dc build garage"); // already has space, ignores
+	assert.equal(autocompletePaletteInput("racks add dc-1"), "racks add dc-1"); // already has space, ignores
 	assert.equal(autocompletePaletteInput("  dc"), "  dc "); // preserves leading spaces but completes
 	assert.equal(autocompletePaletteInput("does-not-exist"), "does-not-exist");
 });

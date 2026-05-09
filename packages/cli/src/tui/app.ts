@@ -245,17 +245,17 @@ export async function runTui(): Promise<void> {
 			if (activeTab === "datacenters" && key.name === "r") {
 				const selectedDc = snapshot?.datacenters[selectedDatacenterIndex]?.id ?? "";
 				paletteOpen = true;
-				paletteInput = selectedDc ? `add-rack ${selectedDc} ` : "add-rack ";
+				paletteInput = selectedDc ? `racks add ${selectedDc} ` : "racks add ";
 			}
 			if (activeTab === "datacenters" && key.name === "x") {
 				const selectedDc = snapshot?.datacenters[selectedDatacenterIndex]?.id ?? "";
 				paletteOpen = true;
-				paletteInput = selectedDc ? `remove-rack ${selectedDc} ` : "remove-rack ";
+				paletteInput = selectedDc ? `racks decom ${selectedDc} ` : "racks decom ";
 			}
 			if (activeTab === "datacenters" && key.name === "m") {
 				const selectedDc = snapshot?.datacenters[selectedDatacenterIndex]?.id ?? "";
 				paletteOpen = true;
-				paletteInput = selectedDc ? `move-rack ${selectedDc} ` : "move-rack ";
+				paletteInput = selectedDc ? `racks move ${selectedDc} ` : "racks move ";
 			}
 			if (activeTab === "contracts" && key.name === "a") {
 				paletteOpen = true;

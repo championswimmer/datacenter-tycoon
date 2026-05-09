@@ -4,9 +4,9 @@ import { formatHelp, getFlagValue, hasHelpFlag, parseArgv, type CommandDefinitio
 import { runStatusCommand } from "./commands/status.js";
 import { runLoadCommand, runNewCommand, runQuitCommand, runSaveCommand } from "./commands/new-load.js";
 import { runLsCommand } from "./commands/ls.js";
-import { runAddRackCommand, runMoveRackCommand, runRemoveRackCommand } from "./commands/build-dc.js";
 import { runContractsCommand } from "./commands/contracts.js";
 import { runDcCommand } from "./commands/dc.js";
+import { runRacksCommand } from "./commands/racks.js";
 import { runQueryCommand } from "./commands/query.js";
 import { formatJsonError, formatTextError } from "./commands/common.js";
 import { runPauseCommand, runResumeCommand, runSpeedCommand } from "./commands/control.js";
@@ -134,9 +134,7 @@ const COMMANDS: CommandHandler[] = [
 	{ name: "dc", summary: "Datacenter subcommands (build, decom)", run: async ({ parsed }) => runDcCommand(parsed) },
 	{ name: "contracts", summary: "Contract subcommands (accept, cancel, details)", run: async ({ parsed }) => runContractsCommand(parsed) },
 	{ name: "ls", summary: "List datacenters, racks, contracts, or catalog data", run: async ({ parsed }) => runLsCommand(parsed) },
-	{ name: "add-rack", summary: "Add a rack to a datacenter", run: async ({ parsed }) => runAddRackCommand(parsed) },
-	{ name: "remove-rack", summary: "Remove a rack placement", run: async ({ parsed }) => runRemoveRackCommand(parsed) },
-	{ name: "move-rack", summary: "Move a rack to another datacenter", run: async ({ parsed }) => runMoveRackCommand(parsed) },
+	{ name: "racks", summary: "Rack subcommands (add, decom, move)", run: async ({ parsed }) => runRacksCommand(parsed) },
 	{ name: "query", summary: "Execute a raw protocol query (JSON)", run: async ({ parsed }) => runQueryCommand(parsed) },
 	{ name: "tick", summary: "Advance one or more ticks", run: async ({ parsed }) => runTickCommand(parsed) },
 	{ name: "pause", summary: "Pause the daemon tick loop", run: async ({ parsed }) => runPauseCommand(parsed) },
