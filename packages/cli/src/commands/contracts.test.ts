@@ -128,6 +128,49 @@ test("runContractDetailsCommand returns snapshot-backed contract details as json
 	assert.equal(parsed.data.recentOutcomes[0]?.contractId, targetContractId);
 });
 
+test("runContractDetailsCommand text output shows the assigned datacenter", async () => {
+	const snapshot = createSnapshot();
+	const targetContractId = snapshot.activeContracts[0]!.id;
+	const actions: Action[] = [];
+	const logged: string[] = [];
+	const originalLog = console.log;
+	console.log = (message?: unknown) => {
+		logged.push(String(message ?? ""));
+	};
+
+	try {
+		await runContractCommand(parseArgv(["contract", "details", targetContractId]), () => createFakeClient(actions, snapshot));
+	} finally {
+		console.log = originalLog;
+	}
+
+	assert.equal(actions.length, 0);
+	assert.equal(logged.length, 1);
+	assert.match(logged[0] ?? "", /Assigned DC: dc-1/);
+	assert.doesNotMatch(logged[0] ?? "", /Assigned DC: unassigned/);
+});
+
+test("contract list text output shows the assigned datacenter", async () => {
+	const snapshot = createSnapshot();
+	const actions: Action[] = [];
+	const logged: string[] = [];
+	const originalLog = console.log;
+	console.log = (message?: unknown) => {
+		logged.push(String(message ?? ""));
+	};
+
+	try {
+		await runLsCommand(parseArgv(["ls", "contracts"]), () => createFakeClient(actions, snapshot));
+	} finally {
+		console.log = originalLog;
+	}
+
+	assert.equal(actions.length, 0);
+	assert.equal(logged.length, 1);
+	assert.match(logged[0] ?? "", /DC: dc-1/);
+	assert.doesNotMatch(logged[0] ?? "", /DC: unassigned/);
+});
+
 test("contract list and details json use the same canonical monthlyPayment schema", async () => {
 	const snapshot = createSnapshot();
 	const targetContractId = snapshot.activeContracts[0]!.id;
@@ -165,6 +208,8 @@ test("contract list and details json use the same canonical monthlyPayment schem
 	assert.equal(typeof listPayload.data.market[0]?.monthlyPayment, "number");
 	assert.equal(typeof listPayload.data.active[0]?.monthlyPayment, "number");
 	assert.equal(typeof detailPayload.data.contract.monthlyPayment, "number");
+	assert.equal(listPayload.data.active[0]?.assignedDcId, "dc-1");
+	assert.equal(detailPayload.data.contract.assignedDcId, "dc-1");
 	assert.deepEqual(
 		Object.keys(detailPayload.data.contract).sort(),
 		Object.keys(listPayload.data.active[0] ?? {}).sort(),

@@ -26,3 +26,17 @@ test("presentContracts applies the same DTO schema to each contract", () => {
 	assert.deepEqual(Object.keys(views[0] ?? {}), Object.keys(views[1] ?? {}));
 	assert.ok(views.every((view) => view.bucket === "market"));
 });
+
+test("presentContract preserves assignedDcId for active contracts", () => {
+	const contract = {
+		...newGame(7).contractMarket[0]!,
+		status: "active" as const,
+		startedAtTick: 2,
+		assignedDcId: "dc-1" as const,
+	};
+	const view = presentContract(contract, "active");
+
+	assert.equal(view.bucket, "active");
+	assert.equal(view.assignedDcId, "dc-1");
+	assert.equal(view.startedAtTick, 2);
+});
