@@ -48,8 +48,6 @@ export function StartScreen({
       <div className={styles.overlay} />
 
       <section className={styles.panel} aria-label="Start Datacenter Tycoon">
-        <div className={styles.kicker}>Neon infrastructure strategy</div>
-        <h1 className={styles.title}>Datacenter Tycoon</h1>
         <p className={styles.description}>
           Build facilities, scale capacity, and outbid the grid while you chase the
           most profitable contracts on the map.
