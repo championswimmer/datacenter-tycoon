@@ -2,7 +2,7 @@ import type { GameState } from "@datacenter-tycoon/game-logic";
 
 export function renderDatacentersTab(snapshot: GameState, selectedIndex: number): string[] {
 	if (snapshot.datacenters.length === 0) {
-		return ["Datacenters", "", "No datacenters yet.", "Use :build-dc <specId> or press n later to create one."];
+		return ["Datacenters", "", "No datacenters yet.", "Use :dc build <specId> or press n later to create one."];
 	}
 
 	const selected = snapshot.datacenters[Math.max(0, Math.min(selectedIndex, snapshot.datacenters.length - 1))];

@@ -48,7 +48,7 @@ test("cli integration flow can create, mutate, tick, and save a game", async () 
 
 	await runCli(scoped(["new", "--yes", "--seed", "7"]));
 	await runCli(scoped(["pause"]));
-	await runCli(scoped(["build-dc", "garage", "--id", "dc-1"]));
+	await runCli(scoped(["dc", "build", "garage", "--id", "dc-1"]));
 	await runCli(scoped(["add-rack", "dc-1", "0", "0", "C1", "--id", "rp-1"]));
 	await runCli(scoped(["tick", "10"]));
 	const statusResult = await runCli(scoped(["status"]));

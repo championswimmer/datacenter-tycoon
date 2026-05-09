@@ -4,8 +4,9 @@ import { formatHelp, getFlagValue, hasHelpFlag, parseArgv, type CommandDefinitio
 import { runStatusCommand } from "./commands/status.js";
 import { runLoadCommand, runNewCommand, runQuitCommand, runSaveCommand } from "./commands/new-load.js";
 import { runLsCommand } from "./commands/ls.js";
-import { runAddRackCommand, runBuildDatacenterCommand, runMoveRackCommand, runRemoveRackCommand } from "./commands/build-dc.js";
-import { runAcceptContractCommand, runCancelContractCommand, runContractsCommand } from "./commands/contracts.js";
+import { runAddRackCommand, runMoveRackCommand, runRemoveRackCommand } from "./commands/build-dc.js";
+import { runContractsCommand } from "./commands/contracts.js";
+import { runDcCommand } from "./commands/dc.js";
 import { runQueryCommand } from "./commands/query.js";
 import { formatJsonError, formatTextError } from "./commands/common.js";
 import { runPauseCommand, runResumeCommand, runSpeedCommand } from "./commands/control.js";
@@ -130,14 +131,12 @@ const COMMANDS: CommandHandler[] = [
 	{ name: "load", summary: "Load a savefile into the daemon state", run: async ({ parsed }) => runLoadCommand(parsed) },
 	{ name: "save", summary: "Force-save the current game", run: async ({ parsed }) => runSaveCommand(parsed) },
 	{ name: "quit", summary: "Flush state and shut down the daemon", run: async ({ parsed }) => runQuitCommand(parsed) },
+	{ name: "dc", summary: "Datacenter subcommands (build, decom)", run: async ({ parsed }) => runDcCommand(parsed) },
 	{ name: "contracts", summary: "Contract subcommands (accept, cancel, details)", run: async ({ parsed }) => runContractsCommand(parsed) },
 	{ name: "ls", summary: "List datacenters, racks, contracts, or catalog data", run: async ({ parsed }) => runLsCommand(parsed) },
-	{ name: "build-dc", summary: "Build a datacenter", run: async ({ parsed }) => runBuildDatacenterCommand(parsed) },
 	{ name: "add-rack", summary: "Add a rack to a datacenter", run: async ({ parsed }) => runAddRackCommand(parsed) },
 	{ name: "remove-rack", summary: "Remove a rack placement", run: async ({ parsed }) => runRemoveRackCommand(parsed) },
 	{ name: "move-rack", summary: "Move a rack to another datacenter", run: async ({ parsed }) => runMoveRackCommand(parsed) },
-	{ name: "accept-contract", summary: "Accept a contract", run: async ({ parsed }) => runAcceptContractCommand(parsed) },
-	{ name: "cancel-contract", summary: "Cancel an active contract", run: async ({ parsed }) => runCancelContractCommand(parsed) },
 	{ name: "query", summary: "Execute a raw protocol query (JSON)", run: async ({ parsed }) => runQueryCommand(parsed) },
 	{ name: "tick", summary: "Advance one or more ticks", run: async ({ parsed }) => runTickCommand(parsed) },
 	{ name: "pause", summary: "Pause the daemon tick loop", run: async ({ parsed }) => runPauseCommand(parsed) },

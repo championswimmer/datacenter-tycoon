@@ -240,7 +240,7 @@ export async function runTui(): Promise<void> {
 			}
 			if (activeTab === "datacenters" && key.name === "n") {
 				paletteOpen = true;
-				paletteInput = "build-dc ";
+				paletteInput = "dc build ";
 			}
 			if (activeTab === "datacenters" && key.name === "r") {
 				const selectedDc = snapshot?.datacenters[selectedDatacenterIndex]?.id ?? "";
