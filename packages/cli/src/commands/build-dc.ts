@@ -28,7 +28,7 @@ export async function runBuildDatacenterCommand(
 	parsed: ParsedArgv,
 	clientFactory: CommandClientFactory = (options) => new DctClient(options),
 ): Promise<void> {
-	const specId = requirePositional(parsed, 0, "dct build-dc <specId> [--id <dcId>] [--region <regionId>]");
+	const specId = requirePositional(parsed, 0, "dct dc build <specId> [--id <dcId>] [--region <regionId>]");
 	const dcId = getOptionalStringFlag(parsed, "--id") ?? createShortId("dc");
 	const region = getOptionalStringFlag(parsed, "--region") ?? FIRST_REGION_ID;
 	await withClient(

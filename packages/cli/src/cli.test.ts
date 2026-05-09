@@ -32,6 +32,6 @@ test("dct --help prints the command list", async () => {
 	assert.match(stdout, /Datacenter Tycoon CLI/);
 	assert.match(stdout, /status\s+Print a game summary/);
 	assert.match(stdout, /contracts\s+Contract subcommands \(accept, cancel, details\)/);
-	assert.match(stdout, /build-dc\s+Build a datacenter/);
+	assert.match(stdout, /dc\s+Datacenter subcommands \(build, decom\)/);
 	assert.match(stdout, /--json/);
 });

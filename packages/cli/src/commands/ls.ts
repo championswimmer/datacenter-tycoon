@@ -184,7 +184,7 @@ async function listDatacenters(parsed: ParsedArgv, clientFactory: CommandClientF
 			}
 
 			if (items.length === 0) {
-				writeCommandResult(parsed, "No datacenters built yet. Use 'dct build-dc' to get started.", {
+				writeCommandResult(parsed, "No datacenters built yet. Use 'dct dc build' to get started.", {
 					datacenters: [],
 				});
 				return;
