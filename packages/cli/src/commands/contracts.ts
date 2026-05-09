@@ -19,8 +19,8 @@ export async function runAcceptContractCommand(
 	parsed: ParsedArgv,
 	clientFactory: CommandClientFactory = (options) => new DctClient(options),
 ): Promise<void> {
-	const offeredContractId = requirePositional(parsed, 0, "dct accept-contract <contractId> <dcId>");
-	const dcId = requirePositional(parsed, 1, "dct accept-contract <contractId> <dcId>");
+	const offeredContractId = requirePositional(parsed, 0, "dct contract accept <contractId> <dcId>");
+	const dcId = requirePositional(parsed, 1, "dct contract accept <contractId> <dcId>");
 
 	await withClient(
 		parsed,
@@ -41,7 +41,7 @@ export async function runCancelContractCommand(
 	parsed: ParsedArgv,
 	clientFactory: CommandClientFactory = (options) => new DctClient(options),
 ): Promise<void> {
-	const activeContractId = requirePositional(parsed, 0, "dct cancel-contract <contractId>");
+	const activeContractId = requirePositional(parsed, 0, "dct contract cancel <contractId>");
 
 	await withClient(
 		parsed,
@@ -58,7 +58,7 @@ export async function runContractDetailsCommand(
 	parsed: ParsedArgv,
 	clientFactory: CommandClientFactory = (options) => new DctClient(options),
 ): Promise<void> {
-	const targetContractId = requirePositional(parsed, 0, "dct contracts details <contractId>");
+	const targetContractId = requirePositional(parsed, 0, "dct contract details <contractId>");
 
 	const result = await withClient(
 		parsed,
@@ -105,7 +105,7 @@ export async function runContractDetailsCommand(
 	writeCommandResult(parsed, lines.join("\n"), result);
 }
 
-export async function runContractsCommand(
+export async function runContractCommand(
 	parsed: ParsedArgv,
 	clientFactory: CommandClientFactory = (options) => new DctClient(options),
 ): Promise<void> {
@@ -128,7 +128,7 @@ export async function runContractsCommand(
 	}
 
 	throw new Error(
-		"Usage: dct contracts <subcommand>\n\n" +
+		"Usage: dct contract <subcommand>\n\n" +
 			"Subcommands:\n" +
 			"  accept <contractId> <dcId>   Accept a market contract onto a datacenter\n" +
 			"  cancel <contractId>          Cancel an active contract\n" +

@@ -50,16 +50,6 @@ export async function runLsCommand(
 	}
 }
 
-/**
- * Exported alias used by the top-level `dct contracts` command.
- */
-export async function runLsContractsCommand(
-	parsed: ParsedArgv,
-	clientFactory: CommandClientFactory = (options) => new DctClient(options),
-): Promise<void> {
-	return listContracts(parsed, clientFactory);
-}
-
 // ── saves ────────────────────────────────────────────────────────────────────
 
 async function listSaves(parsed: ParsedArgv): Promise<void> {

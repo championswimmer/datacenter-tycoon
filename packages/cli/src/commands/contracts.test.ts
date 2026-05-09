@@ -5,7 +5,7 @@ import { newGame, type Action, type GameState } from "@datacenter-tycoon/game-lo
 
 import { parseArgv } from "../argv.js";
 import type { CommandClient } from "./common.js";
-import { runAcceptContractCommand, runCancelContractCommand, runContractDetailsCommand, runContractsCommand } from "./contracts.js";
+import { runAcceptContractCommand, runCancelContractCommand, runContractCommand, runContractDetailsCommand } from "./contracts.js";
 import { runLsCommand } from "./ls.js";
 
 function createSnapshot(): GameState {
@@ -77,16 +77,16 @@ test("runCancelContractCommand dispatches CancelContract", async () => {
 	assert.deepEqual(actions, [{ type: "CancelContract", contractId: "offer-1" }]);
 });
 
-test("runContractsCommand routes accept subcommand", async () => {
+test("runContractCommand routes accept subcommand", async () => {
 	const actions: Action[] = [];
-	await runContractsCommand(parseArgv(["contracts", "accept", "offer-1", "dc-1", "--quiet"]), () => createFakeClient(actions));
+	await runContractCommand(parseArgv(["contract", "accept", "offer-1", "dc-1", "--quiet"]), () => createFakeClient(actions));
 
 	assert.deepEqual(actions, [{ type: "AcceptContract", contractId: "offer-1", dcId: "dc-1" }]);
 });
 
-test("runContractsCommand routes cancel subcommand", async () => {
+test("runContractCommand routes cancel subcommand", async () => {
 	const actions: Action[] = [];
-	await runContractsCommand(parseArgv(["contracts", "cancel", "offer-1", "--quiet"]), () => createFakeClient(actions));
+	await runContractCommand(parseArgv(["contract", "cancel", "offer-1", "--quiet"]), () => createFakeClient(actions));
 
 	assert.deepEqual(actions, [{ type: "CancelContract", contractId: "offer-1" }]);
 });
@@ -102,7 +102,7 @@ test("runContractDetailsCommand returns snapshot-backed contract details as json
 	};
 
 	try {
-		await runContractsCommand(parseArgv(["contracts", "details", targetContractId, "--json"]), () => createFakeClient(actions, snapshot));
+		await runContractCommand(parseArgv(["contract", "details", targetContractId, "--json"]), () => createFakeClient(actions, snapshot));
 	} finally {
 		console.log = originalLog;
 	}
@@ -140,7 +140,7 @@ test("contract list and details json use the same canonical monthlyPayment schem
 
 	try {
 		await runLsCommand(parseArgv(["ls", "contracts", "--json"]), () => createFakeClient(actions, snapshot));
-		await runContractsCommand(parseArgv(["contracts", "details", targetContractId, "--json"]), () => createFakeClient(actions, snapshot));
+		await runContractCommand(parseArgv(["contract", "details", targetContractId, "--json"]), () => createFakeClient(actions, snapshot));
 	} finally {
 		console.log = originalLog;
 	}
@@ -206,6 +206,6 @@ test("runAcceptContractCommand preserves structured capacity errors from the dae
 	);
 });
 
-test("runContractsCommand rejects bare command and points users to ls contracts", async () => {
-	await assert.rejects(() => runContractsCommand(parseArgv(["contracts"])), /To list all contracts, use: dct ls contracts/);
+test("runContractCommand rejects bare command and points users to ls contracts", async () => {
+	await assert.rejects(() => runContractCommand(parseArgv(["contract"])), /To list all contracts, use: dct ls contracts/);
 });

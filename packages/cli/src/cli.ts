@@ -4,7 +4,7 @@ import { formatHelp, getFlagValue, hasHelpFlag, parseArgv, type CommandDefinitio
 import { runStatusCommand } from "./commands/status.js";
 import { runLoadCommand, runNewCommand, runQuitCommand, runSaveCommand } from "./commands/new-load.js";
 import { runLsCommand } from "./commands/ls.js";
-import { runContractsCommand } from "./commands/contracts.js";
+import { runContractCommand } from "./commands/contracts.js";
 import { runDcCommand } from "./commands/dc.js";
 import { runRacksCommand } from "./commands/racks.js";
 import { runQueryCommand } from "./commands/query.js";
@@ -132,7 +132,7 @@ const COMMANDS: CommandHandler[] = [
 	{ name: "save", summary: "Force-save the current game", run: async ({ parsed }) => runSaveCommand(parsed) },
 	{ name: "quit", summary: "Flush state and shut down the daemon", run: async ({ parsed }) => runQuitCommand(parsed) },
 	{ name: "dc", summary: "Datacenter subcommands (build, decom)", run: async ({ parsed }) => runDcCommand(parsed) },
-	{ name: "contracts", summary: "Contract subcommands (accept, cancel, details)", run: async ({ parsed }) => runContractsCommand(parsed) },
+	{ name: "contract", summary: "Contract subcommands (accept, cancel, details)", run: async ({ parsed }) => runContractCommand(parsed) },
 	{ name: "ls", summary: "List datacenters, racks, contracts, or catalog data", run: async ({ parsed }) => runLsCommand(parsed) },
 	{ name: "racks", summary: "Rack subcommands (add, decom, move)", run: async ({ parsed }) => runRacksCommand(parsed) },
 	{ name: "query", summary: "Execute a raw protocol query (JSON)", run: async ({ parsed }) => runQueryCommand(parsed) },

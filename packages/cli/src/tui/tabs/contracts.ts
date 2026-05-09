@@ -25,6 +25,6 @@ export function renderContractsTab(snapshot: GameState): string[] {
 		);
 	}
 
-	lines.push("", "Use :accept-contract <contractId> <dcId> or :cancel-contract <contractId>.");
+	lines.push("", "Use :contract accept <contractId> <dcId> or :contract cancel <contractId>.");
 	return lines;
 }
