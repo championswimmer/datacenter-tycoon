@@ -259,11 +259,11 @@ export async function runTui(): Promise<void> {
 			}
 			if (activeTab === "contracts" && key.name === "a") {
 				paletteOpen = true;
-				paletteInput = "accept-contract ";
+				paletteInput = "contract accept ";
 			}
 			if (activeTab === "contracts" && key.name === "c") {
 				paletteOpen = true;
-				paletteInput = "cancel-contract ";
+				paletteInput = "contract cancel ";
 			}
 			render();
 		};

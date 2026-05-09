@@ -20,11 +20,11 @@ owner: cli
   - [x] 3.1 Audit every command handler for structured JSON success/error output
   - [x] 3.2 Centralize JSON/text envelope helpers so command outputs stop drifting
   - [x] 3.3 Add regression tests for representative read/write commands in `--json` mode
-- [ ] **Phase 4 — Group CLI commands by resource noun**
+- [x] **Phase 4 — Group CLI commands by resource noun**
   - [x] 4.1 Introduce `dct dc ...` routing with `dc build` as the datacenter command surface
   - [x] 4.2 Introduce `dct racks add|decom|move` as the rack command surface
-  - [ ] 4.3 Introduce `dct contract accept|cancel|details` as the contract command surface
-  - [ ] 4.4 Remove legacy flat commands and old pluralized routing from help, parser, and tests
+  - [x] 4.3 Introduce `dct contract accept|cancel|details` as the contract command surface
+  - [x] 4.4 Remove legacy flat commands and old pluralized routing from help, parser, and tests
 - [ ] **Phase 5 — Update tests, docs, and agent guidance**
   - [ ] 5.1 Update CLI tests and help text to reflect the new command taxonomy
   - [ ] 5.2 Update `packages/cli/README.md` and `packages/cli/AGENTS.md`
