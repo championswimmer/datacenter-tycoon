@@ -32,6 +32,14 @@ export function getSaveIndex(): SaveInfo[] {
   }
 }
 
+export function getLatestSaveInfo(): SaveInfo | null {
+  return getSaveIndex()[0] ?? null;
+}
+
+export function hasAnySaves(): boolean {
+  return getLatestSaveInfo() !== null;
+}
+
 function updateSaveIndex(state: GameState): void {
   const index = getSaveIndex();
   const existingIndex = index.findIndex(s => s.gameId === state.gameId);
@@ -62,9 +70,7 @@ function updateSaveIndex(state: GameState): void {
 }
 
 export function getCurrentGameId(): string | null {
-  const index = getSaveIndex();
-  const first = index[0];
-  return first ? first.gameId : null;
+  return getLatestSaveInfo()?.gameId ?? null;
 }
 
 /** The number of Tick actions between automatic saves. */
@@ -153,6 +159,50 @@ export function attachAutosave(
 
 // ── Bootstrap helper ───────────────────────────────────────────────────────────
 
+export interface StoreSession {
+  store: GameStore;
+  stopAutosave: () => void;
+  isFreshStart: boolean;
+}
+
+function createStoreSession(initial: GameState, isFreshStart: boolean): StoreSession {
+  const store = createGameStore(initial);
+  const stopAutosave = attachAutosave(store);
+  const stopAudioEvents = attachAudioEvents(store);
+
+  return {
+    store,
+    stopAutosave: () => {
+      stopAutosave();
+      stopAudioEvents();
+    },
+    isFreshStart,
+  };
+}
+
+function loadSavedState(gameId?: string): GameState | null {
+  if (gameId) {
+    return loadSave(getSaveKey(gameId));
+  }
+
+  const latestSave = getLatestSaveInfo();
+  if (latestSave) {
+    return loadSave(getSaveKey(latestSave.gameId));
+  }
+
+  // Compatibility with old save key
+  return loadSave("datacenter-tycoon:save-v1");
+}
+
+export function createFreshSession(): StoreSession {
+  return createStoreSession(newGame(Math.floor(Math.random() * 2 ** 31)), true);
+}
+
+export function createLoadedSession(gameId?: string): StoreSession | null {
+  const saved = loadSavedState(gameId);
+  return saved ? createStoreSession(saved, false) : null;
+}
+
 /**
  * Create (or restore) the single global GameStore:
  *  1. Try loading a saved game from localStorage.
@@ -161,39 +211,6 @@ export function attachAutosave(
  *
  * Returns the ready-to-use store and the autosave unsubscribe fn.
  */
-export function bootstrapStore(gameId?: string): {
-  store: GameStore;
-  stopAutosave: () => void;
-  isFreshStart: boolean;
-} {
-  let saved: GameState | null = null;
-  
-  if (gameId) {
-    saved = loadSave(getSaveKey(gameId));
-  } else {
-    // Try to load the most recent save if none specified
-    const index = getSaveIndex();
-    if (index.length > 0 && index[0]) {
-      saved = loadSave(getSaveKey(index[0].gameId));
-    } else {
-      // Compatibility with old save key
-      saved = loadSave("datacenter-tycoon:save-v1");
-    }
-  }
-
-  const isFreshStart = saved === null;
-  const initial = saved ?? newGame(Math.floor(Math.random() * 2 ** 31));
-
-  const store = createGameStore(initial);
-  const stopAutosave = attachAutosave(store);
-  const stopAudioEvents = attachAudioEvents(store);
-
-  return { 
-    store, 
-    stopAutosave: () => {
-      stopAutosave();
-      stopAudioEvents();
-    }, 
-    isFreshStart 
-  };
+export function bootstrapStore(gameId?: string): StoreSession {
+  return createLoadedSession(gameId) ?? createFreshSession();
 }
