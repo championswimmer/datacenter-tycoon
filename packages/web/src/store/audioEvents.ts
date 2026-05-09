@@ -84,13 +84,13 @@ export function attachAudioEvents(store: GameStore): () => void {
           }
         }
 
-        // Detect completed/cancelled (newly inactive)
+        // Detect expired/cancelled (newly inactive)
         for (const prev of prevActive) {
           if (!currActiveIds.has(prev.id)) {
             const updated = state.activeContracts.find((c) => c.id === prev.id);
             if (updated?.status === "cancelled") {
               playSound("error", false);
-            } else if (updated?.status === "completed") {
+            } else if (updated?.status === "expired") {
               playSound("success", false);
             } else {
               playSound("error", false);

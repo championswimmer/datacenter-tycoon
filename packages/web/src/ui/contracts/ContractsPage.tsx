@@ -14,7 +14,7 @@ import {
 import { contractDealScore, canFulfill, dcFreeCapacity } from "./contractUtils.js";
 import styles from "./ContractsPage.module.css";
 
-type ContractsTab = "market" | "active" | "completed";
+type ContractsTab = "market" | "active" | "history";
 type SortKey = "payment" | "term" | "expiry" | "score";
 type FilterKey = "all" | "fits" | "highValue" | "rush" | "anchor";
 
@@ -45,7 +45,7 @@ export function ContractsPage() {
   const reliability = useSelector(selectReliabilitySummary);
   const reliabilityFx = useSelector(selectReliabilityMarketEffectSummary);
   const activeAll = useSelector((s: import("@datacenter-tycoon/game-logic").GameState) =>
-    s.activeContracts.filter(c => c.status === "completed" || c.status === "cancelled")
+    s.activeContracts.filter(c => c.status === "expired" || c.status === "cancelled")
   );
 
   const handleSort = (key: SortKey) => {
@@ -147,11 +147,11 @@ export function ContractsPage() {
         </button>
         <button
           role="tab"
-          aria-selected={tab === "completed"}
-          className={[styles.tab, tab === "completed" ? styles.tabActive : ""].join(" ")}
-          onClick={() => setTab("completed")}
+          aria-selected={tab === "history"}
+          className={[styles.tab, tab === "history" ? styles.tabActive : ""].join(" ")}
+          onClick={() => setTab("history")}
         >
-          COMPLETED
+          HISTORY
           <span className={styles.badge}>{activeAll.length}</span>
         </button>
       </div>
@@ -189,7 +189,7 @@ export function ContractsPage() {
       <div className={styles.content} role="tabpanel">
         {tab === "market" && <MarketList contracts={filteredAndSorted} />}
         {tab === "active" && <ActiveList />}
-        {tab === "completed" && <CompletedList />}
+        {tab === "history" && <CompletedList />}
       </div>
     </div>
   );

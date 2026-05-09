@@ -23,7 +23,7 @@ function fmt(n: number): string {
 const STATUS_LABEL: Record<ContractStatus, string> = {
   active:    "ACTIVE",
   breached:  "BREACHED",
-  completed: "COMPLETED",
+  expired:   "EXPIRED",
   cancelled: "CANCELLED",
   offered:   "OFFERED",
 };
@@ -48,7 +48,7 @@ export function ActiveList() {
 
   const sorted = [...contracts].sort((a, b) => {
     const order: Record<ContractStatus, number> = {
-      breached: 0, active: 1, offered: 2, completed: 3, cancelled: 4,
+      breached: 0, active: 1, offered: 2, expired: 3, cancelled: 4,
     };
     return order[a.status] - order[b.status];
   });
@@ -133,7 +133,7 @@ export function ActiveList() {
                 value={progress * 100}
                 max={100}
                 segments={c.termMonths}
-                color={c.status === "breached" ? "red" : c.status === "completed" ? "cyan" : "lime"}
+                color={c.status === "breached" ? "red" : c.status === "expired" ? "cyan" : "lime"}
                 showLabel
                 height={6}
                 label={`Contract progress: ${Math.round(progress * 100)}%`}
