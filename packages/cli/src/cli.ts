@@ -6,6 +6,7 @@ import { runLoadCommand, runNewCommand, runQuitCommand, runSaveCommand } from ".
 import { runLsCommand } from "./commands/ls.js";
 import { runAddRackCommand, runBuildDatacenterCommand, runMoveRackCommand, runRemoveRackCommand } from "./commands/build-dc.js";
 import { runAcceptContractCommand, runCancelContractCommand } from "./commands/contracts.js";
+import { runQueryCommand } from "./commands/query.js";
 import { formatJsonError } from "./commands/common.js";
 import { runPauseCommand, runResumeCommand, runSpeedCommand } from "./commands/control.js";
 import { runTickCommand } from "./commands/tick.js";
@@ -135,6 +136,7 @@ const COMMANDS: CommandHandler[] = [
 	{ name: "move-rack", summary: "Move a rack to another datacenter", run: async ({ parsed }) => runMoveRackCommand(parsed) },
 	{ name: "accept-contract", summary: "Accept a contract", run: async ({ parsed }) => runAcceptContractCommand(parsed) },
 	{ name: "cancel-contract", summary: "Cancel an active contract", run: async ({ parsed }) => runCancelContractCommand(parsed) },
+	{ name: "query", summary: "Execute a raw protocol query (JSON)", run: async ({ parsed }) => runQueryCommand(parsed) },
 	{ name: "tick", summary: "Advance one or more ticks", run: async ({ parsed }) => runTickCommand(parsed) },
 	{ name: "pause", summary: "Pause the daemon tick loop", run: async ({ parsed }) => runPauseCommand(parsed) },
 	{ name: "resume", summary: "Resume the daemon tick loop", run: async ({ parsed }) => runResumeCommand(parsed) },
