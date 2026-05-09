@@ -31,6 +31,36 @@ test("runPauseCommand sends pause and queries status", async () => {
 	assert.deepEqual(log, ["connect", "control:pause", "query:status", "close"]);
 });
 
+test("runPauseCommand prints json output when --json is set", async () => {
+	const log: string[] = [];
+	const printed: string[] = [];
+	const originalConsoleLog = console.log;
+	console.log = (message?: unknown) => {
+		printed.push(String(message ?? ""));
+	};
+
+	try {
+		await runPauseCommand(parseArgv(["pause", "--json"]), () => createFakeClient(log));
+	} finally {
+		console.log = originalConsoleLog;
+	}
+
+	assert.deepEqual(log, ["connect", "control:pause", "query:status", "close"]);
+	assert.deepEqual(JSON.parse(printed[0] ?? "{}"), {
+		ok: true,
+		data: {
+			tick: 3,
+			paused: false,
+			speedTps: 4,
+			cash: 100,
+			datacenterCount: 1,
+			rackCount: 1,
+			activeContractCount: 0,
+			marketContractCount: 2,
+		},
+	});
+});
+
 test("runResumeCommand sends resume and queries status", async () => {
 	const log: string[] = [];
 	await runResumeCommand(parseArgv(["resume", "--quiet"]), () => createFakeClient(log));

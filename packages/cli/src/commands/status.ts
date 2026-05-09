@@ -1,7 +1,7 @@
 import type { ParsedArgv } from "../argv.js";
 import { DctClient, type DctClientOptions } from "../client/client.js";
-import { resolvePaths } from "../paths.js";
 import type { QueryResult, StatusView } from "../protocol/messages.js";
+import { createCommandClientOptions, formatJsonResult, writeCommandResult } from "./common.js";
 
 export interface StatusClient {
 	connect(): Promise<void>;
@@ -10,15 +10,6 @@ export interface StatusClient {
 }
 
 export type StatusClientFactory = (options: DctClientOptions) => StatusClient;
-
-function getStringFlag(parsed: ParsedArgv, flag: string): string | undefined {
-	const value = parsed.flags[flag];
-	return typeof value === "string" ? value : undefined;
-}
-
-function hasBooleanFlag(parsed: ParsedArgv, flag: string): boolean {
-	return parsed.flags[flag] === true;
-}
 
 function formatMoney(amount: number): string {
 	return `$${new Intl.NumberFormat("en-US", {
@@ -41,35 +32,20 @@ export function formatStatusLine(status: StatusView): string {
 }
 
 export function formatStatusJson(status: StatusView): string {
-	return JSON.stringify(
-		{
-			ok: true,
-			data: status,
-		},
-		null,
-		2,
-	);
+	return formatJsonResult(status);
 }
 
 export async function runStatusCommand(
 	parsed: ParsedArgv,
 	clientFactory: StatusClientFactory = (options) => new DctClient(options),
 ): Promise<void> {
-	const paths = resolvePaths({
-		saveOverride: getStringFlag(parsed, "--save"),
-		socketOverride: getStringFlag(parsed, "--socket"),
-	});
-	const client = clientFactory({
-		socketPath: paths.socketPath,
-		savePath: paths.savePath,
-		noDaemon: hasBooleanFlag(parsed, "--no-daemon"),
-	});
+	const client = clientFactory(createCommandClientOptions(parsed));
 
 	try {
 		await client.connect();
 		const result = await client.query({ kind: "status" });
 		const status = result as StatusView;
-		console.log(hasBooleanFlag(parsed, "--json") ? formatStatusJson(status) : formatStatusLine(status));
+		writeCommandResult(parsed, formatStatusLine(status), status);
 	} finally {
 		await client.close();
 	}

@@ -16,10 +16,10 @@ owner: cli
 - [x] **Phase 2 — Normalize contract/payment naming**
   - [x] 2.1 Choose canonical contract DTO field names and shared presenters
   - [x] 2.2 Make list/detail JSON output use the same payment field name everywhere
-- [ ] **Phase 3 — Make `--json` universally available for one-shot commands**
-  - [ ] 3.1 Audit every command handler for structured JSON success/error output
-  - [ ] 3.2 Centralize JSON/text envelope helpers so command outputs stop drifting
-  - [ ] 3.3 Add regression tests for representative read/write commands in `--json` mode
+- [x] **Phase 3 — Make `--json` universally available for one-shot commands**
+  - [x] 3.1 Audit every command handler for structured JSON success/error output
+  - [x] 3.2 Centralize JSON/text envelope helpers so command outputs stop drifting
+  - [x] 3.3 Add regression tests for representative read/write commands in `--json` mode
 - [ ] **Phase 4 — Group CLI commands by resource noun**
   - [ ] 4.1 Introduce `dct dc ...` routing with `dc build` as the datacenter command surface
   - [ ] 4.2 Introduce `dct racks add|decom|move` as the rack command surface
