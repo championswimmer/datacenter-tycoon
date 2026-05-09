@@ -11,7 +11,7 @@ import type {
 	ListResult,
 	RackListItem,
 } from "../protocol/messages.js";
-import type { GameState } from "@datacenter-tycoon/game-logic";
+import type { DatacenterSpec, GameState } from "@datacenter-tycoon/game-logic";
 import {
 	hasBooleanFlag,
 	resolveCommandPaths,
@@ -49,6 +49,11 @@ export async function runLsCommand(
 				"  catalog        List all rack and datacenter specs",
 		);
 	}
+}
+
+function formatDatacenterLayout(spec: Pick<DatacenterSpec, "rows" | "positionsPerRow">): string {
+	const slots = spec.rows * spec.positionsPerRow;
+	return `${spec.rows} rows × ${spec.positionsPerRow} cols (${slots} slots)`;
 }
 
 // ── saves ────────────────────────────────────────────────────────────────────
@@ -277,13 +282,12 @@ async function listCatalog(parsed: ParsedArgv, clientFactory: CommandClientFacto
 			lines.push("");
 			lines.push("=== Datacenter Specs ===");
 			lines.push(
-				"  ID          | Slots   | Power(kW) | Cooling(BTU)  | BW(Gbps) | Capex($)     | Staff | Cooling",
+				"  ID          | Layout                     | Power(kW) | Cooling(BTU)  | BW(Gbps) | Capex($)     | Staff | Cooling",
 			);
-			lines.push("  " + "-".repeat(100));
+			lines.push("  " + "-".repeat(123));
 			for (const dc of dcs) {
-				const slots = dc.rows * dc.positionsPerRow;
 				lines.push(
-					`  ${dc.id.padEnd(11)} | ${String(slots).padStart(7)} | ${String(dc.powerCapacityKw).padStart(9)} | ${String(dc.coolingCapacityBtuPerHr).padStart(13)} | ${String(dc.bandwidthGbps).padStart(8)} | ${String(dc.capexCost).padStart(12)} | ${String(dc.staffCount).padStart(5)} | ${dc.coolingType}`,
+					`  ${dc.id.padEnd(11)} | ${formatDatacenterLayout(dc).padEnd(26)} | ${String(dc.powerCapacityKw).padStart(9)} | ${String(dc.coolingCapacityBtuPerHr).padStart(13)} | ${String(dc.bandwidthGbps).padStart(8)} | ${String(dc.capexCost).padStart(12)} | ${String(dc.staffCount).padStart(5)} | ${dc.coolingType}`,
 				);
 			}
 

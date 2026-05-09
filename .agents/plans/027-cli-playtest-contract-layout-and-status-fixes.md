@@ -13,7 +13,7 @@ owner: cli
   - [x] 1.1 Add a regression that reproduces assigned contracts rendering as unassigned
   - [x] 1.2 Fix the shared contract presentation path so assigned DC IDs survive list/detail rendering
 - [ ] **Phase 2 — Make datacenter row/column layout discoverable**
-  - [ ] 2.1 Surface row/column geometry in `dct ls catalog`
+  - [x] 2.1 Surface row/column geometry in `dct ls catalog`
   - [ ] 2.2 Thread layout bounds into player-facing datacenter/rack output
 - [ ] **Phase 3 — Simplify contract end states to `breached`, `cancelled`, and `expired`**
   - [ ] 3.1 Replace `completed` with `expired` in game-logic contract lifecycle
