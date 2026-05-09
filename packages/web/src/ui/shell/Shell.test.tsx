@@ -1,8 +1,9 @@
-import { newGame } from "@datacenter-tycoon/game-logic";
+import { DATACENTER_CATALOG, newGame, reduce } from "@datacenter-tycoon/game-logic";
 import type { GameState } from "@datacenter-tycoon/game-logic";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createGameStore } from "../../store/gameStore.js";
+import { nextDcId } from "../../store/ids.js";
 import { StoreProvider } from "../../store/storeContext.js";
 import { markTutorialSeen, resetTutorialSeen } from "../../store/tutorialPersist.js";
 import { Shell } from "./Shell.js";
@@ -15,6 +16,16 @@ function setViewportWidth(width: number) {
   });
 
   window.dispatchEvent(new Event("resize"));
+}
+
+function stateWithGarageDatacenter(): GameState {
+  const base = newGame(42, { playerName: "Acme Corp" });
+  return reduce(base, {
+    type: "BuildDatacenter",
+    specId: DATACENTER_CATALOG.garage!.id,
+    dcId: nextDcId(),
+    regionId: base.map.regions[0]!.id,
+  });
 }
 
 function Wrapper({
@@ -72,6 +83,42 @@ describe("Shell tutorial flow", () => {
     );
 
     expect(screen.queryByRole("dialog", { name: "HOW TO PLAY" })).toBeNull();
+  });
+});
+
+describe("Shell route recovery", () => {
+  it("redirects a stale datacenter route to the first available datacenter", async () => {
+    const state = stateWithGarageDatacenter();
+    window.location.hash = "#/dc/missing-dc/floor";
+
+    render(
+      <Wrapper state={state}>
+        <Shell />
+      </Wrapper>,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(window.location.hash).toBe(`#/dc/${state.datacenters[0]!.id}/floor`);
+  });
+
+  it("returns to home when the route points at a datacenter but the session has none", async () => {
+    window.location.hash = "#/dc/missing-dc/floor";
+
+    render(
+      <Wrapper>
+        <Shell />
+      </Wrapper>,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(window.location.hash).toBe("#/");
+    expect(screen.getByText("NO FACILITIES ONLINE")).toBeTruthy();
   });
 });
 

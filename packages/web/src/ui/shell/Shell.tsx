@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef, type SetStateAction } from "react";
 import { useSelector, useTickDriver, useGameDispatch } from "../../store/storeContext.js";
 import { selectAllDatacenters } from "../../store/selectors.js";
-import { useRoute, navigateToDc, navigateToMap } from "../../router/hashRouter.js";
+import { useRoute, navigate, navigateToDc, navigateToMap } from "../../router/hashRouter.js";
 import type { Speed } from "../../store/tickDriver.js";
 import { hasSeenTutorial } from "../../store/tutorialPersist.js";
 import { useIsPhoneViewport } from "../responsive.js";
@@ -43,12 +43,27 @@ export function Shell({ shouldAutoOpenTutorial = false }: ShellProps) {
   const datacenters = useSelector(selectAllDatacenters);
   const routeKey = route.view === "dc" ? `${route.view}:${route.dcId}:${route.tab}` : route.view;
 
-  // Auto-redirect "/" → first DC when one exists
+  // Keep the current route valid as sessions change.
   useEffect(() => {
-    if (route.view === "home" && datacenters.length > 0) {
-      navigateToDc(datacenters[0]!.id);
+    if (route.view === "home") {
+      if (datacenters.length > 0) {
+        navigateToDc(datacenters[0]!.id);
+      }
+      return;
     }
-  }, [route.view, datacenters]);
+
+    if (route.view === "dc") {
+      if (datacenters.length === 0) {
+        navigate({ view: "home" });
+        return;
+      }
+
+      const hasActiveDatacenter = datacenters.some((dc) => dc.id === route.dcId);
+      if (!hasActiveDatacenter) {
+        navigateToDc(datacenters[0]!.id, route.tab);
+      }
+    }
+  }, [route, datacenters]);
 
   // Auto-open tutorial only after the player has started a fresh session.
   useEffect(() => {
