@@ -3,7 +3,7 @@ import type { ContractId, DatacenterId, GameState } from "@datacenter-tycoon/gam
 import { DctClient } from "../client/client.js";
 import type { ParsedArgv } from "../argv.js";
 import { requirePositional, withClient, writeCommandResult, type CommandClientFactory } from "./common.js";
-import { formatContractRequirements, presentContract } from "./contracts-view.js";
+import { formatContractRequirements, presentContractById } from "./contracts-view.js";
 
 const contractId = (value: string): ContractId => value as ContractId;
 const datacenterId = (value: string): DatacenterId => value as DatacenterId;
@@ -64,9 +64,7 @@ export async function runContractDetailsCommand(
 		parsed,
 		async (client) => {
 			const snapshot = (await client.query({ kind: "snapshot" })) as GameState;
-			const marketContract = snapshot.contractMarket.find((contract) => contract.id === targetContractId);
-			const activeContract = snapshot.activeContracts.find((contract) => contract.id === targetContractId);
-			const contract = activeContract ?? marketContract;
+			const contract = presentContractById(snapshot, targetContractId);
 			if (!contract) {
 				throw new Error(`Unknown contract: ${targetContractId}`);
 			}
@@ -76,7 +74,7 @@ export async function runContractDetailsCommand(
 			);
 
 			return {
-				contract: presentContract(contract, activeContract ? "active" : "market"),
+				contract,
 				recentOutcomes,
 			};
 		},
@@ -84,7 +82,7 @@ export async function runContractDetailsCommand(
 	);
 
 	const { contract, recentOutcomes } = result as {
-		contract: ReturnType<typeof presentContract>;
+		contract: NonNullable<ReturnType<typeof presentContractById>>;
 		recentOutcomes: GameState["player"]["reliability"]["recentOutcomes"];
 	};
 

@@ -11,6 +11,7 @@ import type {
 	ListResult,
 	RackListItem,
 } from "../protocol/messages.js";
+import type { GameState } from "@datacenter-tycoon/game-logic";
 import {
 	hasBooleanFlag,
 	resolveCommandPaths,
@@ -18,7 +19,7 @@ import {
 	writeCommandResult,
 	type CommandClientFactory,
 } from "./common.js";
-import { formatContractRequirements, presentContracts } from "./contracts-view.js";
+import { formatContractRequirements, presentContractBuckets } from "./contracts-view.js";
 
 // ── ls (router) ───────────────────────────────────────────────────────────────
 
@@ -97,19 +98,8 @@ async function listContracts(parsed: ParsedArgv, clientFactory: CommandClientFac
 	await withClient(
 		parsed,
 		async (client) => {
-			const marketResult = (await client.query({
-				kind: "list",
-				target: "market-contracts",
-			})) as ListResult;
-			const activeResult = (await client.query({
-				kind: "list",
-				target: "active-contracts",
-			})) as ListResult;
-
-			const marketContracts = marketResult.kind === "market-contracts" ? marketResult.items : [];
-			const activeContracts = activeResult.kind === "active-contracts" ? activeResult.items : [];
-			const market = presentContracts(marketContracts, "market");
-			const active = presentContracts(activeContracts, "active");
+			const snapshot = (await client.query({ kind: "snapshot" })) as GameState;
+			const { market, active } = presentContractBuckets(snapshot);
 
 			if (isJson) {
 				writeCommandResult(parsed, "", { market, active });
