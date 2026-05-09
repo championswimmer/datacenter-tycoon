@@ -29,6 +29,27 @@ test("runBuildDatacenterCommand dispatches BuildDatacenter and honors --id", asy
 	assert.deepEqual(actions, [{ type: "BuildDatacenter", specId: "garage", dcId: "dc-custom", regionId: FIRST_REGION_ID }]);
 });
 
+test("runBuildDatacenterCommand prints json output when --json is set", async () => {
+	const actions: Action[] = [];
+	const printed: string[] = [];
+	const originalConsoleLog = console.log;
+	console.log = (message?: unknown) => {
+		printed.push(String(message ?? ""));
+	};
+
+	try {
+		await runBuildDatacenterCommand(parseArgv(["build-dc", "garage", "--id", "dc-custom", "--json"]), () => createFakeClient(actions));
+	} finally {
+		console.log = originalConsoleLog;
+	}
+
+	assert.deepEqual(actions, [{ type: "BuildDatacenter", specId: "garage", dcId: "dc-custom", regionId: FIRST_REGION_ID }]);
+	assert.deepEqual(JSON.parse(printed[0] ?? "{}"), {
+		ok: true,
+		data: { dcId: "dc-custom", specId: "garage", region: FIRST_REGION_ID },
+	});
+});
+
 test("runAddRackCommand dispatches PlaceRack with numeric coordinates", async () => {
 	const actions: Action[] = [];
 	await runAddRackCommand(parseArgv(["add-rack", "dc-1", "0", "2", "C1", "--id", "rp-1", "--quiet"]), () => createFakeClient(actions));

@@ -103,6 +103,36 @@ test("runSaveCommand forces save-now and exports a copy when requested", async (
 	assert.equal(fs.readFileSync(exportPath, "utf8"), fs.readFileSync(savePath, "utf8"));
 });
 
+test("runSaveCommand prints json output when --json is set", async () => {
+	const { savePath, socketPath, exportPath } = createTempPaths();
+	const log: string[] = [];
+	const printed: string[] = [];
+	const originalConsoleLog = console.log;
+	console.log = (message?: unknown) => {
+		printed.push(String(message ?? ""));
+	};
+	fs.writeFileSync(savePath, serialize(newGame(7)), "utf8");
+
+	try {
+		await runSaveCommand(
+			parseArgv(["save", exportPath, "--save", savePath, "--socket", socketPath, "--json"]),
+			() => createFakeClient(log, 12),
+		);
+	} finally {
+		console.log = originalConsoleLog;
+	}
+
+	assert.deepEqual(log, ["connect", "control:save-now", "query:snapshot", "close"]);
+	assert.deepEqual(JSON.parse(printed[0] ?? "{}"), {
+		ok: true,
+		data: {
+			savePath,
+			exportPath,
+			snapshot: { tick: 12 },
+		},
+	});
+});
+
 test("runQuitCommand sends shutdown to the daemon", async () => {
 	const { savePath, socketPath } = createTempPaths();
 	const log: string[] = [];
