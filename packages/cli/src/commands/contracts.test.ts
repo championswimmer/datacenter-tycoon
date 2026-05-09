@@ -6,6 +6,7 @@ import { newGame, type Action, type GameState } from "@datacenter-tycoon/game-lo
 import { parseArgv } from "../argv.js";
 import type { CommandClient } from "./common.js";
 import { runAcceptContractCommand, runCancelContractCommand, runContractDetailsCommand, runContractsCommand } from "./contracts.js";
+import { runLsCommand } from "./ls.js";
 
 function createSnapshot(): GameState {
 	const snapshot = newGame(7);
@@ -48,6 +49,12 @@ function createFakeClient(actions: Action[], snapshot: GameState = createSnapsho
 		query: async (params) => {
 			if (params.kind === "snapshot") {
 				return snapshot;
+			}
+			if (params.kind === "list" && params.target === "market-contracts") {
+				return { kind: "market-contracts", items: snapshot.contractMarket };
+			}
+			if (params.kind === "list" && params.target === "active-contracts") {
+				return { kind: "active-contracts", items: snapshot.activeContracts };
 			}
 			return { tick: 0 };
 		},
@@ -119,6 +126,49 @@ test("runContractDetailsCommand returns snapshot-backed contract details as json
 	assert.equal(parsed.data.recentOutcomes[0]?.kind, "breached");
 	assert.equal(parsed.data.recentOutcomes[0]?.tick, 4);
 	assert.equal(parsed.data.recentOutcomes[0]?.contractId, targetContractId);
+});
+
+test("contract list and details json use the same canonical monthlyPayment schema", async () => {
+	const snapshot = createSnapshot();
+	const targetContractId = snapshot.activeContracts[0]!.id;
+	const actions: Action[] = [];
+	const logged: string[] = [];
+	const originalLog = console.log;
+	console.log = (message?: unknown) => {
+		logged.push(String(message ?? ""));
+	};
+
+	try {
+		await runLsCommand(parseArgv(["ls", "contracts", "--json"]), () => createFakeClient(actions, snapshot));
+		await runContractsCommand(parseArgv(["contracts", "details", targetContractId, "--json"]), () => createFakeClient(actions, snapshot));
+	} finally {
+		console.log = originalLog;
+	}
+
+	const listPayload = JSON.parse(logged[0] ?? "{}") as {
+		data: {
+			market: Array<Record<string, unknown>>;
+			active: Array<Record<string, unknown>>;
+		};
+	};
+	const detailPayload = JSON.parse(logged[1] ?? "{}") as {
+		data: {
+			contract: Record<string, unknown>;
+		};
+	};
+
+	assert.ok(listPayload.data.market[0]);
+	assert.ok(listPayload.data.active[0]);
+	assert.ok(detailPayload.data.contract);
+	assert.equal("paymentPerMonth" in listPayload.data.market[0]!, false);
+	assert.equal("paymentPerMonth" in detailPayload.data.contract, false);
+	assert.equal(typeof listPayload.data.market[0]?.monthlyPayment, "number");
+	assert.equal(typeof listPayload.data.active[0]?.monthlyPayment, "number");
+	assert.equal(typeof detailPayload.data.contract.monthlyPayment, "number");
+	assert.deepEqual(
+		Object.keys(detailPayload.data.contract).sort(),
+		Object.keys(listPayload.data.active[0] ?? {}).sort(),
+	);
 });
 
 test("runAcceptContractCommand preserves structured capacity errors from the daemon", async () => {
