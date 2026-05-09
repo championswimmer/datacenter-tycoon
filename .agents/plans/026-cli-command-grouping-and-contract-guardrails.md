@@ -10,7 +10,7 @@ owner: cli
 ## Progress
 
 - [ ] **Phase 1 — Enforce contract-fit guardrails in game logic**
-  - [ ] 1.1 Add a derived per-datacenter committed/available-capacity helper
+  - [x] 1.1 Add a derived per-datacenter committed/available-capacity helper
   - [ ] 1.2 Reject contract acceptance when the target DC cannot satisfy the contract right now
   - [ ] 1.3 Surface the rejection as a real CLI/daemon error
 - [ ] **Phase 2 — Normalize contract/payment naming**

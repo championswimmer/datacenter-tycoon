@@ -9,6 +9,7 @@ import { rackAgeMonths } from "../sim/maintenance.js";
 import type {
 	CanPlaceRackResult,
 	Capacity,
+	Contract,
 	ContractRequirements,
 	Datacenter,
 	DatacenterResourceUsage,
@@ -34,6 +35,24 @@ const EMPTY_DATACENTER_USAGE: DatacenterResourceUsage = {
 	bandwidthGbps: 0,
 	slotsUsed: 0,
 };
+
+function addCapacity(total: Capacity, delta: Capacity): Capacity {
+	return {
+		vCpu: total.vCpu + delta.vCpu,
+		ramGb: total.ramGb + delta.ramGb,
+		storageTb: total.storageTb + delta.storageTb,
+		gpuFlops: total.gpuFlops + delta.gpuFlops,
+	};
+}
+
+function subtractCapacity(total: Capacity, reserved: Capacity): Capacity {
+	return {
+		vCpu: Math.max(0, total.vCpu - reserved.vCpu),
+		ramGb: Math.max(0, total.ramGb - reserved.ramGb),
+		storageTb: Math.max(0, total.storageTb - reserved.storageTb),
+		gpuFlops: Math.max(0, total.gpuFlops - reserved.gpuFlops),
+	};
+}
 
 function getRackSpec(placement: RackPlacement): RackSpec {
 	const spec = RACK_CATALOG[placement.specId];
@@ -88,13 +107,49 @@ export function datacenterCapacity(datacenter: Datacenter): Capacity {
 export function datacenterInstalledCapacity(datacenter: Datacenter): Capacity {
 	return datacenter.placements.reduce<Capacity>((capacity, placement) => {
 		const placementCapacity = rackCapacity(getRackSpec(placement));
-		return {
-			vCpu: capacity.vCpu + placementCapacity.vCpu,
-			ramGb: capacity.ramGb + placementCapacity.ramGb,
-			storageTb: capacity.storageTb + placementCapacity.storageTb,
-			gpuFlops: capacity.gpuFlops + placementCapacity.gpuFlops,
-		};
+		return addCapacity(capacity, placementCapacity);
 	}, EMPTY_CAPACITY);
+}
+
+function isCapacityCommittedContract(contract: Pick<Contract, "status">): boolean {
+	return contract.status === "active" || contract.status === "breached";
+}
+
+export function datacenterCommittedContractDemand(
+	datacenter: Datacenter,
+	activeContracts: readonly Pick<Contract, "assignedDcId" | "status" | "requirements">[],
+): ContractRequirements {
+	return activeContracts.reduce<ContractRequirements>((committed, contract) => {
+		if (contract.assignedDcId !== datacenter.id || !isCapacityCommittedContract(contract)) {
+			return committed;
+		}
+
+		return addCapacity(committed, contract.requirements);
+	}, EMPTY_CAPACITY);
+}
+
+export interface DatacenterContractCapacitySummary {
+	installed: Capacity;
+	usable: Capacity;
+	committed: ContractRequirements;
+	available: Capacity;
+}
+
+export function datacenterContractCapacitySummary(
+	datacenter: Datacenter,
+	activeContracts: readonly Pick<Contract, "assignedDcId" | "status" | "requirements">[],
+): DatacenterContractCapacitySummary {
+	const installed = datacenterInstalledCapacity(datacenter);
+	const usable = datacenterCapacity(datacenter);
+	const committed = datacenterCommittedContractDemand(datacenter, activeContracts);
+	const available = subtractCapacity(usable, committed);
+
+	return {
+		installed,
+		usable,
+		committed,
+		available,
+	};
 }
 
 function serviceUnitsForRackKind(spec: RackSpec): number {
