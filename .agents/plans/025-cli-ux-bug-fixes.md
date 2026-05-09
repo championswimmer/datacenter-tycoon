@@ -10,12 +10,12 @@ updated: 2026-05-09
 
 - [x] **Phase 1 — Stop the clock on new game**
   - [x] 1.1 Pause daemon immediately after `dct new`
-- [ ] **Phase 2 — Fix `dct ls` sub-commands**
-  - [ ] 2.1 Implement `dct ls contracts` (market + active)
-  - [ ] 2.2 Implement `dct ls datacenters`
-  - [ ] 2.3 Implement `dct ls racks <dcId>`
-  - [ ] 2.4 Implement `dct ls catalog`
-  - [ ] 2.5 Fix help text to match what actually works
+- [x] **Phase 2 — Fix `dct ls` sub-commands**
+  - [x] 2.1 Implement `dct ls contracts` (market + active)
+  - [x] 2.2 Implement `dct ls datacenters`
+  - [x] 2.3 Implement `dct ls racks <dcId>`
+  - [x] 2.4 Implement `dct ls catalog`
+  - [x] 2.5 Fix help text to match what actually works
 - [ ] **Phase 3 — Add `dct contracts` command**
   - [ ] 3.1 Add top-level `dct contracts` command (alias for `dct ls contracts`)
 - [x] **Phase 4 — Fix `dct status` / save-file tick mismatch**
