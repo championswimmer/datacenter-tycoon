@@ -57,7 +57,7 @@ test("runNewCommand recreates the save and reconnects to the daemon", async () =
 	await runNewCommand(parseArgv(["new", "--yes", "--seed", "42", "--save", savePath, "--socket", socketPath, "--quiet"]), () => client);
 
 	assert.equal(fs.existsSync(savePath), true);
-	assert.deepEqual(log, ["connect", "control:shutdown", "close", "connect", "query:status", "close"]);
+	assert.deepEqual(log, ["connect", "control:shutdown", "close", "connect", "control:pause", "control:save-now", "query:status", "close"]);
 	assert.match(fs.readFileSync(savePath, "utf8"), /"seed":42/);
 });
 
