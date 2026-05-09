@@ -9,9 +9,9 @@ owner: cli
 
 ## Progress
 
-- [ ] **Phase 1 — Fix contract assignment visibility in CLI listings**
+- [x] **Phase 1 — Fix contract assignment visibility in CLI listings**
   - [x] 1.1 Add a regression that reproduces assigned contracts rendering as unassigned
-  - [ ] 1.2 Fix the shared contract presentation path so assigned DC IDs survive list/detail rendering
+  - [x] 1.2 Fix the shared contract presentation path so assigned DC IDs survive list/detail rendering
 - [ ] **Phase 2 — Make datacenter row/column layout discoverable**
   - [ ] 2.1 Surface row/column geometry in `dct ls catalog`
   - [ ] 2.2 Thread layout bounds into player-facing datacenter/rack output

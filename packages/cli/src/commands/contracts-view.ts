@@ -1,4 +1,4 @@
-import type { Contract } from "@datacenter-tycoon/game-logic";
+import type { Contract, GameState } from "@datacenter-tycoon/game-logic";
 
 export type ContractListBucket = "market" | "active";
 
@@ -40,6 +40,31 @@ export function presentContract(contract: Contract, bucket: ContractListBucket):
 
 export function presentContracts(contracts: readonly Contract[], bucket: ContractListBucket): CliContractView[] {
 	return contracts.map((contract) => presentContract(contract, bucket));
+}
+
+export function presentContractBuckets(
+	snapshot: Pick<GameState, "contractMarket" | "activeContracts">,
+): {
+	market: CliContractView[];
+	active: CliContractView[];
+} {
+	return {
+		market: presentContracts(snapshot.contractMarket, "market"),
+		active: presentContracts(snapshot.activeContracts, "active"),
+	};
+}
+
+export function presentContractById(
+	snapshot: Pick<GameState, "contractMarket" | "activeContracts">,
+	contractId: string,
+): CliContractView | undefined {
+	const activeContract = snapshot.activeContracts.find((contract) => contract.id === contractId);
+	if (activeContract) {
+		return presentContract(activeContract, "active");
+	}
+
+	const marketContract = snapshot.contractMarket.find((contract) => contract.id === contractId);
+	return marketContract ? presentContract(marketContract, "market") : undefined;
 }
 
 export function formatContractRequirements(contract: Pick<CliContractView, "requirements">): string {
