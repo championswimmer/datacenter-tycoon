@@ -12,7 +12,7 @@ owner: web
 - [ ] **Phase 1 — Start gate and session bootstrap**
   - [x] 1.1 Add a save-aware app boot/session model
   - [x] 1.2 Build the banner-based start screen with Play / Load Game / New Game actions
-  - [ ] 1.3 Delay first-time tutorial opening until the player starts a session
+  - [x] 1.3 Delay first-time tutorial opening until the player starts a session
   - [ ] 1.4 Add start-flow tests for fresh and saved sessions
 - [ ] **Phase 2 — Contract assignment click-to-confirm**
   - [ ] 2.1 Remove the extra post-datacenter confirm state from `MarketList`

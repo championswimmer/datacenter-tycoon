@@ -97,7 +97,7 @@ export default function App() {
 
   return (
     <StoreProvider store={session.store}>
-      <Shell isFreshStart={session.isFreshStart} />
+      <Shell shouldAutoOpenTutorial={session.isFreshStart} />
     </StoreProvider>
   );
 }
