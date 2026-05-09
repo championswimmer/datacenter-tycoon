@@ -1,7 +1,7 @@
 ---
 name: CLI UX Bug Fixes (Play-test findings)
 description: Fix critical user-experience issues found during hands-on CLI play-testing — broken commands, silent auto-ticking, missing contract visibility, and undiscoverable query API.
-status: started
+status: completed
 created: 2026-05-09
 updated: 2026-05-09
 ---
@@ -20,8 +20,8 @@ updated: 2026-05-09
   - [x] 3.1 Add top-level `dct contracts` command (alias for `dct ls contracts`)
 - [x] **Phase 4 — Fix `dct status` / save-file tick mismatch**
   - [x] 4.1 Ensure `dct ls saves` reads the same tick value as `dct status --json`
-- [ ] **Phase 5 — Make daemon auto-start visible**
-  - [ ] 5.1 Print a one-line notice when the daemon is spawned automatically
+- [x] **Phase 5 — Make daemon auto-start visible**
+  - [x] 5.1 Print a one-line notice when the daemon is spawned automatically
 
 ## Overview
 

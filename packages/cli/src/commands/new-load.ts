@@ -41,6 +41,8 @@ export async function runNewCommand(
 		async (client) => {
 			// Pause immediately so the clock doesn't tick while the player plans
 			await client.control({ op: "pause" });
+			// Persist the paused state so it survives daemon restarts
+			await client.control({ op: "save-now" });
 			await client.query({ kind: "status" });
 		},
 		clientFactory,
