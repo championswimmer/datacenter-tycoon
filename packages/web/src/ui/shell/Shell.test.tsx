@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createGameStore } from "../../store/gameStore.js";
 import { StoreProvider } from "../../store/storeContext.js";
+import { markTutorialSeen, resetTutorialSeen } from "../../store/tutorialPersist.js";
 import { Shell } from "./Shell.js";
 
 function setViewportWidth(width: number) {
@@ -29,6 +30,7 @@ function Wrapper({
 
 beforeEach(() => {
   window.location.hash = "#/";
+  resetTutorialSeen();
 });
 
 afterEach(() => {
@@ -36,6 +38,41 @@ afterEach(() => {
     setViewportWidth(1280);
   });
   window.location.hash = "#/";
+  resetTutorialSeen();
+});
+
+describe("Shell tutorial flow", () => {
+  it("auto-opens the tutorial when a fresh session starts", () => {
+    render(
+      <Wrapper>
+        <Shell shouldAutoOpenTutorial />
+      </Wrapper>,
+    );
+
+    expect(screen.getByRole("dialog", { name: "HOW TO PLAY" })).toBeTruthy();
+  });
+
+  it("does not auto-open the tutorial when the session start is not fresh", () => {
+    render(
+      <Wrapper>
+        <Shell shouldAutoOpenTutorial={false} />
+      </Wrapper>,
+    );
+
+    expect(screen.queryByRole("dialog", { name: "HOW TO PLAY" })).toBeNull();
+  });
+
+  it("does not auto-open the tutorial when it was already seen", () => {
+    markTutorialSeen();
+
+    render(
+      <Wrapper>
+        <Shell shouldAutoOpenTutorial />
+      </Wrapper>,
+    );
+
+    expect(screen.queryByRole("dialog", { name: "HOW TO PLAY" })).toBeNull();
+  });
 });
 
 describe("Shell mobile drawers", () => {

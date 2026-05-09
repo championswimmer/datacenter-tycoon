@@ -8,7 +8,11 @@ import {
   attachAutosave,
   bootstrapStore,
   AUTOSAVE_EVERY_TICKS,
+  createFreshSession,
+  createLoadedSession,
+  getLatestSaveInfo,
   getSaveKey,
+  hasAnySaves,
 } from "./persist.js";
 import { createGameStore } from "./gameStore.js";
 
@@ -106,15 +110,33 @@ describe("clearAllSaves", () => {
     const s2 = newGame(2);
     writeSave(s1);
     writeSave(s2);
-    
+
     expect(loadSave(s1.gameId)).not.toBeNull();
     expect(loadSave(s2.gameId)).not.toBeNull();
-    
+
     clearAllSaves();
-    
+
     expect(loadSave(s1.gameId)).toBeNull();
     expect(loadSave(s2.gameId)).toBeNull();
     expect(localStorage.getItem("datacenter-tycoon:save-index")).toBeNull();
+  });
+});
+
+describe("save index helpers", () => {
+  it("reports when saves exist and returns the latest save info", () => {
+    const older = reduce(newGame(1), { type: "Tick" });
+    const latest = reduce(newGame(2), { type: "Tick" });
+
+    writeSave(older);
+    writeSave(latest);
+
+    expect(hasAnySaves()).toBe(true);
+    expect(getLatestSaveInfo()?.gameId).toBe(latest.gameId);
+  });
+
+  it("returns false/null when no saves exist", () => {
+    expect(hasAnySaves()).toBe(false);
+    expect(getLatestSaveInfo()).toBeNull();
   });
 });
 
@@ -178,6 +200,29 @@ describe("attachAutosave", () => {
 });
 
 // ── bootstrapStore ────────────────────────────────────────────────────────────
+
+describe("session creation helpers", () => {
+  it("creates a fresh session when requested", () => {
+    const session = createFreshSession();
+
+    expect(session.isFreshStart).toBe(true);
+    expect(session.store.getState().tick).toBe(0);
+  });
+
+  it("restores a loaded session when a save exists", () => {
+    const state = reduce(newGame(77), { type: "Tick" });
+    writeSave(state);
+
+    const session = createLoadedSession(state.gameId);
+    expect(session?.isFreshStart).toBe(false);
+    expect(session?.store.getState().tick).toBe(1);
+    expect(session?.store.getState().seed).toBe(77);
+  });
+
+  it("returns null when no saved session exists", () => {
+    expect(createLoadedSession("missing-save")).toBeNull();
+  });
+});
 
 describe("bootstrapStore", () => {
   it("creates a fresh store when no save exists", () => {
