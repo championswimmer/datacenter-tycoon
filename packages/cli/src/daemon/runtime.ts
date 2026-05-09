@@ -254,6 +254,7 @@ export class GameRuntime extends EventEmitter<GameRuntimeEventMap> {
 
 	pause(): RuntimeStatus {
 		this.paused = true;
+		this.state = { ...this.state, game: { ...this.state.game, paused: true } };
 		this.syncTimer();
 		return this.emitStatus();
 	}
@@ -263,6 +264,7 @@ export class GameRuntime extends EventEmitter<GameRuntimeEventMap> {
 			this.speedTps = this.lastActiveSpeedTps;
 		}
 		this.paused = false;
+		this.state = { ...this.state, game: { ...this.state.game, paused: false } };
 		this.syncTimer();
 		return this.emitStatus();
 	}

@@ -82,6 +82,11 @@ export async function autoSpawnDaemon(options: AutoSpawnOptions): Promise<ChildP
 		throw new Error(`No daemon running at socket ${options.socketPath}`);
 	}
 
+	process.stderr.write(
+		"⚡ Daemon not running — starting it now.\n" +
+		"   Game clock will tick automatically. Run 'dct pause' to stop it.\n",
+	);
+
 	const child = spawnDaemon(options);
 	await waitForSocket(options.socketPath, options.waitForSocketTimeoutMs);
 	return child;

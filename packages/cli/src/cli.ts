@@ -51,7 +51,8 @@ async function runDaemon(parsed: ReturnType<typeof parseArgv>): Promise<void> {
 		socketOverride: getStringFlag(parsed, "--socket"),
 	});
 	const persistence = new GamePersistence({ savePath: paths.savePath });
-	const runtime = new GameRuntime({ state: loadOrInit(paths.savePath, getNumericFlag(parsed, "--seed", 1)) });
+	const initialState = loadOrInit(paths.savePath, getNumericFlag(parsed, "--seed", 1));
+	const runtime = new GameRuntime({ state: initialState, paused: initialState.game.paused });
 	const transport = new DaemonTransport({ socketPath: paths.socketPath });
 	const server = new GameDaemonServer({
 		transport,
