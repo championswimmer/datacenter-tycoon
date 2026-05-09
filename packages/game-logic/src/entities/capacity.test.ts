@@ -6,6 +6,7 @@ import { RACK_CATALOG } from "../catalog/racks.js";
 import {
 	canPlaceRack,
 	datacenterCapacity,
+	datacenterContractCapacitySummary,
 	datacenterInstalledCapacity,
 	datacenterMaintenanceSummary,
 	datacenterRackPowerSummary,
@@ -13,6 +14,8 @@ import {
 	rackCapacity,
 } from "../index.js";
 import type {
+	Contract,
+	ContractId,
 	Datacenter,
 	DatacenterId,
 	DatacenterSpec,
@@ -21,6 +24,7 @@ import type {
 	Tick,
 } from "../types.js";
 
+const contractId = (value: string): ContractId => value as ContractId;
 const datacenterId = (value: string): DatacenterId => value as DatacenterId;
 const rackPlacementId = (value: string): RackPlacementId => value as RackPlacementId;
 const tick = (value: number): Tick => value as Tick;
@@ -55,6 +59,30 @@ function makeDatacenter(
 		builtAtTick: tick(0),
 		regionId: "us_west" as import("../types.js").RegionId,
 		maintenanceStaff: 0,
+	};
+}
+
+function makeContract(id: string, dcId: DatacenterId, overrides: Partial<Contract> = {}): Contract {
+	return {
+		id: contractId(id),
+		name: `Contract ${id}`,
+		requirements: {
+			vCpu: 32,
+			ramGb: 128,
+			storageTb: 10,
+			gpuFlops: 0,
+		},
+		monthlyPayment: 5_000,
+		penaltyPerMonth: 1_500,
+		termMonths: 6,
+		status: "active",
+		urgency: "standard",
+		tier: 1,
+		offeredAtTick: tick(0),
+		expiresAtTick: tick(6),
+		startedAtTick: tick(1),
+		assignedDcId: dcId,
+		...overrides,
 	};
 }
 
@@ -156,6 +184,74 @@ test("datacenterMaintenanceSummary reports rack counts and average age", () => {
 		healthyRackCount: 1,
 		repairingRackCount: 1,
 		averageRackAgeMonths: 7.5,
+	});
+});
+
+test("datacenterContractCapacitySummary reports empty committed demand for an unused datacenter", () => {
+	const datacenter = makeDatacenter(DATACENTER_CATALOG.garage, [placement("rack-1", "C1", 0, 0)]);
+
+	assert.deepEqual(datacenterContractCapacitySummary(datacenter, []), {
+		installed: { vCpu: 128, ramGb: 512, storageTb: 16, gpuFlops: 0 },
+		usable: { vCpu: 128, ramGb: 512, storageTb: 16, gpuFlops: 0 },
+		committed: { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 },
+		available: { vCpu: 128, ramGb: 512, storageTb: 16, gpuFlops: 0 },
+	});
+});
+
+test("datacenterContractCapacitySummary subtracts active and breached demand from usable capacity", () => {
+	const datacenter = makeDatacenter(DATACENTER_CATALOG.warehouse, [
+		placement("rack-1", "C2", 0, 0),
+		placement("rack-2", "M2", 0, 1),
+		placement("rack-3", "S2", 0, 2),
+		placement("rack-4", "G1", 0, 3),
+	]);
+
+	const summary = datacenterContractCapacitySummary(datacenter, [
+		makeContract("active-1", datacenter.id, {
+			requirements: { vCpu: 128, ramGb: 2_048, storageTb: 200, gpuFlops: 100 },
+		}),
+		makeContract("breach-1", datacenter.id, {
+			status: "breached",
+			requirements: { vCpu: 64, ramGb: 512, storageTb: 50, gpuFlops: 0 },
+		}),
+		makeContract("elsewhere", datacenterId("dc-other"), {
+			requirements: { vCpu: 999, ramGb: 999, storageTb: 999, gpuFlops: 999 },
+		}),
+		makeContract("cancelled", datacenter.id, {
+			status: "cancelled",
+			requirements: { vCpu: 999, ramGb: 999, storageTb: 999, gpuFlops: 999 },
+		}),
+	]);
+
+	assert.deepEqual(summary, {
+		installed: { vCpu: 416, ramGb: 6_272, storageTb: 1_276, gpuFlops: 500 },
+		usable: { vCpu: 416, ramGb: 6_272, storageTb: 1_276, gpuFlops: 500 },
+		committed: { vCpu: 192, ramGb: 2_560, storageTb: 250, gpuFlops: 100 },
+		available: { vCpu: 224, ramGb: 3_712, storageTb: 1_026, gpuFlops: 400 },
+	});
+});
+
+test("datacenterContractCapacitySummary floors negative availability at zero and tracks repairing racks", () => {
+	const datacenter = makeDatacenter(DATACENTER_CATALOG.garage, [
+		placement("rack-1", "C1", 0, 0),
+		{
+			...placement("rack-2", "G1", 0, 1),
+			health: "repairing",
+			repairProgressDays: 8,
+		},
+	]);
+
+	const summary = datacenterContractCapacitySummary(datacenter, [
+		makeContract("overbooked", datacenter.id, {
+			requirements: { vCpu: 200, ramGb: 1_500, storageTb: 40, gpuFlops: 600 },
+		}),
+	]);
+
+	assert.deepEqual(summary, {
+		installed: { vCpu: 192, ramGb: 1_536, storageTb: 40, gpuFlops: 500 },
+		usable: { vCpu: 128, ramGb: 512, storageTb: 16, gpuFlops: 0 },
+		committed: { vCpu: 200, ramGb: 1_500, storageTb: 40, gpuFlops: 600 },
+		available: { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 },
 	});
 });
 
