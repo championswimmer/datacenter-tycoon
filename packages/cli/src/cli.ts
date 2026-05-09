@@ -3,7 +3,7 @@ import net from "node:net";
 import { formatHelp, getFlagValue, hasHelpFlag, parseArgv, type CommandDefinition } from "./argv.js";
 import { runStatusCommand } from "./commands/status.js";
 import { runLoadCommand, runNewCommand, runQuitCommand, runSaveCommand } from "./commands/new-load.js";
-import { runLsCommand } from "./commands/ls.js";
+import { runLsCommand, runLsContractsCommand } from "./commands/ls.js";
 import { runAddRackCommand, runBuildDatacenterCommand, runMoveRackCommand, runRemoveRackCommand } from "./commands/build-dc.js";
 import { runAcceptContractCommand, runCancelContractCommand } from "./commands/contracts.js";
 import { runQueryCommand } from "./commands/query.js";
@@ -129,6 +129,7 @@ const COMMANDS: CommandHandler[] = [
 	{ name: "load", summary: "Load a savefile into the daemon state", run: async ({ parsed }) => runLoadCommand(parsed) },
 	{ name: "save", summary: "Force-save the current game", run: async ({ parsed }) => runSaveCommand(parsed) },
 	{ name: "quit", summary: "Flush state and shut down the daemon", run: async ({ parsed }) => runQuitCommand(parsed) },
+	{ name: "contracts", summary: "List market and active contracts with requirements", run: async ({ parsed }) => runLsContractsCommand(parsed) },
 	{ name: "ls", summary: "List datacenters, racks, contracts, or catalog data", run: async ({ parsed }) => runLsCommand(parsed) },
 	{ name: "build-dc", summary: "Build a datacenter", run: async ({ parsed }) => runBuildDatacenterCommand(parsed) },
 	{ name: "add-rack", summary: "Add a rack to a datacenter", run: async ({ parsed }) => runAddRackCommand(parsed) },

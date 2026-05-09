@@ -16,8 +16,8 @@ updated: 2026-05-09
   - [x] 2.3 Implement `dct ls racks <dcId>`
   - [x] 2.4 Implement `dct ls catalog`
   - [x] 2.5 Fix help text to match what actually works
-- [ ] **Phase 3 — Add `dct contracts` command**
-  - [ ] 3.1 Add top-level `dct contracts` command (alias for `dct ls contracts`)
+- [x] **Phase 3 — Add `dct contracts` command**
+  - [x] 3.1 Add top-level `dct contracts` command (alias for `dct ls contracts`)
 - [x] **Phase 4 — Fix `dct status` / save-file tick mismatch**
   - [x] 4.1 Ensure `dct ls saves` reads the same tick value as `dct status --json`
 - [ ] **Phase 5 — Make daemon auto-start visible**
