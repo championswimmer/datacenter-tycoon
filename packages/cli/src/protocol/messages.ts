@@ -27,6 +27,13 @@ export type ControlOp = "pause" | "resume" | "set-speed" | "save-now" | "shutdow
 export type SubscriptionEventKind = "state" | "ledger" | "tick";
 export type RpcMethod = "hello" | "dispatch" | "query" | "subscribe" | "unsubscribe" | "control";
 
+export interface ContractCapacityErrorData {
+	code: "insufficient_capacity";
+	dcId: string;
+	required: Capacity;
+	available: Capacity;
+}
+
 export interface RpcError {
 	code: RpcErrorCode;
 	message: string;

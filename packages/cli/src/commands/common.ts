@@ -74,8 +74,80 @@ export function formatJsonResult(data: unknown): string {
 	return JSON.stringify({ ok: true, data }, null, 2);
 }
 
-export function formatJsonError(message: string, code = 1): string {
-	return JSON.stringify({ ok: false, error: { code, message } }, null, 2);
+interface ErrorPayload {
+	code: string | number;
+	message: string;
+	[key: string]: unknown;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return Boolean(value && typeof value === "object");
+}
+
+function normalizeErrorPayload(errorOrMessage: unknown, fallbackCode: string | number = 1): ErrorPayload {
+	if (typeof errorOrMessage === "string") {
+		return { code: fallbackCode, message: errorOrMessage };
+	}
+
+	if (errorOrMessage instanceof Error) {
+		const data = "data" in errorOrMessage ? (errorOrMessage as Error & { data?: unknown }).data : undefined;
+		if (isRecord(data) && (typeof data.code === "string" || typeof data.code === "number")) {
+			return {
+				...data,
+				code: data.code,
+				message: errorOrMessage.message,
+			} as ErrorPayload;
+		}
+
+		const rpcCode = "rpcCode" in errorOrMessage
+			? (errorOrMessage as Error & { rpcCode?: string | number }).rpcCode
+			: undefined;
+		return {
+			code: typeof rpcCode === "string" || typeof rpcCode === "number" ? rpcCode : fallbackCode,
+			message: errorOrMessage.message,
+		};
+	}
+
+	if (isRecord(errorOrMessage) && typeof errorOrMessage.message === "string") {
+		const code =
+			typeof errorOrMessage.code === "string" || typeof errorOrMessage.code === "number"
+				? errorOrMessage.code
+				: fallbackCode;
+		return { ...errorOrMessage, code, message: errorOrMessage.message } as ErrorPayload;
+	}
+
+	return { code: fallbackCode, message: String(errorOrMessage) };
+}
+
+function formatCapacityValue(label: string, value: unknown, suffix = ""): string {
+	return `${label}=${typeof value === "number" ? value : 0}${suffix}`;
+}
+
+function formatCapacityBundle(value: unknown): string {
+	if (!isRecord(value)) {
+		return "unknown";
+	}
+
+	return [
+		formatCapacityValue("vCPU", value.vCpu),
+		formatCapacityValue("RAM", value.ramGb, "GB"),
+		formatCapacityValue("Storage", value.storageTb, "TB"),
+		formatCapacityValue("GPU", value.gpuFlops),
+	].join(", ");
+}
+
+export function formatTextError(errorOrMessage: unknown): string {
+	const payload = normalizeErrorPayload(errorOrMessage);
+	if (payload.code === "insufficient_capacity") {
+		const dcId = typeof payload.dcId === "string" ? payload.dcId : "unknown-dc";
+		return `Cannot accept contract on ${dcId}: insufficient available capacity (required: ${formatCapacityBundle(payload.required)}; available: ${formatCapacityBundle(payload.available)})`;
+	}
+
+	return payload.message;
+}
+
+export function formatJsonError(errorOrMessage: unknown, code: string | number = 1): string {
+	return JSON.stringify({ ok: false, error: normalizeErrorPayload(errorOrMessage, code) }, null, 2);
 }
 
 export function writeCommandResult(parsed: ParsedArgv, text: string, data?: unknown): void {
