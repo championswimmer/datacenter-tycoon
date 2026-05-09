@@ -14,7 +14,7 @@ owner: cli
   - [x] 1.2 Reject contract acceptance when the target DC cannot satisfy the contract right now
   - [x] 1.3 Surface the rejection as a real CLI/daemon error
 - [ ] **Phase 2 — Normalize contract/payment naming**
-  - [ ] 2.1 Choose canonical contract DTO field names and shared presenters
+  - [x] 2.1 Choose canonical contract DTO field names and shared presenters
   - [ ] 2.2 Make list/detail JSON output use the same payment field name everywhere
 - [ ] **Phase 3 — Make `--json` universally available for one-shot commands**
   - [ ] 3.1 Audit every command handler for structured JSON success/error output

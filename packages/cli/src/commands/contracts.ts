@@ -1,8 +1,9 @@
-import type { Contract, ContractId, DatacenterId, GameState } from "@datacenter-tycoon/game-logic";
+import type { ContractId, DatacenterId, GameState } from "@datacenter-tycoon/game-logic";
 
 import { DctClient } from "../client/client.js";
 import type { ParsedArgv } from "../argv.js";
 import { requirePositional, withClient, writeCommandResult, type CommandClientFactory } from "./common.js";
+import { formatContractRequirements, presentContract } from "./contracts-view.js";
 
 const contractId = (value: string): ContractId => value as ContractId;
 const datacenterId = (value: string): DatacenterId => value as DatacenterId;
@@ -12,10 +13,6 @@ function withShiftedPositionals(parsed: ParsedArgv, count: number): ParsedArgv {
 		...parsed,
 		positionals: parsed.positionals.slice(count),
 	};
-}
-
-function formatContractRequirements(contract: Contract): string {
-	return `vCPU=${contract.requirements.vCpu}, RAM=${contract.requirements.ramGb}GB, Storage=${contract.requirements.storageTb}TB, GPU=${contract.requirements.gpuFlops}`;
 }
 
 export async function runAcceptContractCommand(
@@ -79,17 +76,15 @@ export async function runContractDetailsCommand(
 			);
 
 			return {
-				contract,
-				bucket: activeContract ? "activeContracts" : "contractMarket",
+				contract: presentContract(contract, activeContract ? "active" : "market"),
 				recentOutcomes,
 			};
 		},
 		clientFactory,
 	);
 
-	const { contract, bucket, recentOutcomes } = result as {
-		contract: Contract;
-		bucket: "activeContracts" | "contractMarket";
+	const { contract, recentOutcomes } = result as {
+		contract: ReturnType<typeof presentContract>;
 		recentOutcomes: GameState["player"]["reliability"]["recentOutcomes"];
 	};
 
@@ -98,7 +93,7 @@ export async function runContractDetailsCommand(
 		`${contract.name} | status=${contract.status} | urgency=${contract.urgency} | tier=${contract.tier}`,
 		`Payment: $${contract.monthlyPayment.toLocaleString()}/mo | Penalty: $${contract.penaltyPerMonth.toLocaleString()}/mo | Term: ${contract.termMonths} months`,
 		`Requirements: ${formatContractRequirements(contract)}`,
-		`Visible in: ${bucket}`,
+		`Visible in: ${contract.bucket}`,
 		`Offered at tick ${contract.offeredAtTick} | Expires at tick ${contract.expiresAtTick}`,
 		`Started at: ${contract.startedAtTick ?? "not started"} | Assigned DC: ${contract.assignedDcId ?? "unassigned"}`,
 		"Recent SLA outcomes:",
