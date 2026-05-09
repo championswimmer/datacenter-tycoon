@@ -303,6 +303,113 @@ test("tax is applied on profitable datacenters and varies by region", () => {
 	assert.ok(state.player.cash > 700_000);
 });
 
+test("contract lifecycle preserves assignment visibility across expired, cancelled, and breached outcomes", () => {
+	let state = newGame(202, { startingCash: 1_000_000 });
+	const dcId = datacenterId("dc-lifecycle");
+	const lifecycleRegionId = regionId("us_east");
+
+	state = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId,
+		regionId: lifecycleRegionId,
+	});
+	state = reduce(state, {
+		type: "PlaceRack",
+		dcId,
+		specId: RACK_CATALOG.C1.id,
+		row: 0,
+		position: 0,
+		placementId: rackPlacementId("rack-lifecycle-c1"),
+	});
+
+	state = {
+		...state,
+		contractMarket: [
+			{
+				id: contractId("expired-contract"),
+				name: "Expires Cleanly",
+				requirements: { vCpu: 32, ramGb: 64, storageTb: 0, gpuFlops: 0 },
+				monthlyPayment: 35_000,
+				penaltyPerMonth: 6_000,
+				termMonths: 1,
+				status: "offered",
+				offeredAtTick: state.tick,
+				expiresAtTick: state.tick + 6,
+			},
+		],
+	};
+	state = reduce(state, {
+		type: "AcceptContract",
+		contractId: contractId("expired-contract"),
+		dcId,
+	});
+	assert.equal(state.activeContracts.find((contract) => contract.id === contractId("expired-contract"))?.assignedDcId, dcId);
+
+	state = reduce(state, { type: "Tick" });
+	assert.equal(state.activeContracts.find((contract) => contract.id === contractId("expired-contract"))?.status, "expired");
+
+	state = {
+		...state,
+		contractMarket: [
+			{
+				id: contractId("cancelled-contract"),
+				name: "Cancelled By Player",
+				requirements: { vCpu: 32, ramGb: 64, storageTb: 0, gpuFlops: 0 },
+				monthlyPayment: 28_000,
+				penaltyPerMonth: 5_000,
+				termMonths: 3,
+				status: "offered",
+				offeredAtTick: state.tick,
+				expiresAtTick: state.tick + 6,
+			},
+		],
+	};
+	state = reduce(state, {
+		type: "AcceptContract",
+		contractId: contractId("cancelled-contract"),
+		dcId,
+	});
+	state = reduce(state, {
+		type: "CancelContract",
+		contractId: contractId("cancelled-contract"),
+	});
+	assert.equal(state.activeContracts.find((contract) => contract.id === contractId("cancelled-contract"))?.status, "cancelled");
+
+	state = {
+		...state,
+		contractMarket: [
+			{
+				id: contractId("breached-contract-lifecycle"),
+				name: "Breaches Then Expires",
+				requirements: { vCpu: 32, ramGb: 64, storageTb: 0, gpuFlops: 0 },
+				monthlyPayment: 30_000,
+				penaltyPerMonth: 7_000,
+				termMonths: 3,
+				status: "offered",
+				offeredAtTick: state.tick,
+				expiresAtTick: state.tick + 6,
+			},
+		],
+	};
+	state = reduce(state, {
+		type: "AcceptContract",
+		contractId: contractId("breached-contract-lifecycle"),
+		dcId,
+	});
+	state = reduce(state, {
+		type: "RemoveRack",
+		dcId,
+		placementId: rackPlacementId("rack-lifecycle-c1"),
+	});
+	state = reduce(state, { type: "Tick" });
+
+	const breachedContract = state.activeContracts.find((contract) => contract.id === contractId("breached-contract-lifecycle"));
+	assert.equal(breachedContract?.assignedDcId, dcId);
+	assert.equal(breachedContract?.status, "breached");
+	assert.equal(state.player.reliability.recentOutcomes.at(-1)?.kind, "breached");
+});
+
 test("activity-aware power billing rises with active contracts and drops after contract completion", () => {
 	let state = newGame(101, { startingCash: 1_000_000 });
 	const dcId = datacenterId("dc-billing-lifecycle");

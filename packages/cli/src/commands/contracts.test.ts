@@ -39,6 +39,46 @@ function createSnapshot(): GameState {
 	};
 }
 
+function createStatusSnapshot(): GameState {
+	const snapshot = newGame(11);
+	const [breachedSource, cancelledSource, expiredSource] = snapshot.contractMarket.slice(0, 3);
+	return {
+		...snapshot,
+		activeContracts: [
+			{
+				...breachedSource!,
+				status: "breached",
+				startedAtTick: 1,
+				assignedDcId: "dc-1" as GameState["activeContracts"][number]["assignedDcId"],
+			},
+			{
+				...cancelledSource!,
+				status: "cancelled",
+				startedAtTick: 2,
+				assignedDcId: "dc-1" as GameState["activeContracts"][number]["assignedDcId"],
+			},
+			{
+				...expiredSource!,
+				status: "expired",
+				startedAtTick: 0,
+				assignedDcId: "dc-2" as GameState["activeContracts"][number]["assignedDcId"],
+			},
+		],
+		contractMarket: snapshot.contractMarket.slice(3),
+		player: {
+			...snapshot.player,
+			reliability: {
+				...snapshot.player.reliability,
+				recentOutcomes: [
+					{ contractId: breachedSource!.id, contractName: breachedSource!.name, tick: 3, kind: "breached" },
+					{ contractId: cancelledSource!.id, contractName: cancelledSource!.name, tick: 2, kind: "cancelled" },
+					{ contractId: expiredSource!.id, contractName: expiredSource!.name, tick: 1, kind: "fulfilled" },
+				],
+			},
+		},
+	};
+}
+
 function createFakeClient(actions: Action[], snapshot: GameState = createSnapshot()): CommandClient {
 	return {
 		connect: async () => undefined,
@@ -249,6 +289,35 @@ test("runAcceptContractCommand preserves structured capacity errors from the dae
 			return true;
 		},
 	);
+});
+
+test("runContractCommand preserves breached, cancelled, and expired statuses in details output", async () => {
+	const snapshot = createStatusSnapshot();
+	const actions: Action[] = [];
+	const logged: string[] = [];
+	const originalLog = console.log;
+	console.log = (message?: unknown) => {
+		logged.push(String(message ?? ""));
+	};
+
+	try {
+		await runContractCommand(parseArgv(["contract", "details", snapshot.activeContracts[0]!.id, "--json"]), () => createFakeClient(actions, snapshot));
+		await runContractCommand(parseArgv(["contract", "details", snapshot.activeContracts[1]!.id, "--json"]), () => createFakeClient(actions, snapshot));
+		await runContractCommand(parseArgv(["contract", "details", snapshot.activeContracts[2]!.id, "--json"]), () => createFakeClient(actions, snapshot));
+	} finally {
+		console.log = originalLog;
+	}
+
+	assert.equal(actions.length, 0);
+	const breachedPayload = JSON.parse(logged[0] ?? "{}") as { data: { contract: { status: string; assignedDcId: string | null } } };
+	const cancelledPayload = JSON.parse(logged[1] ?? "{}") as { data: { contract: { status: string; assignedDcId: string | null } } };
+	const expiredPayload = JSON.parse(logged[2] ?? "{}") as { data: { contract: { status: string; assignedDcId: string | null } } };
+	assert.equal(breachedPayload.data.contract.status, "breached");
+	assert.equal(breachedPayload.data.contract.assignedDcId, "dc-1");
+	assert.equal(cancelledPayload.data.contract.status, "cancelled");
+	assert.equal(cancelledPayload.data.contract.assignedDcId, "dc-1");
+	assert.equal(expiredPayload.data.contract.status, "expired");
+	assert.equal(expiredPayload.data.contract.assignedDcId, "dc-2");
 });
 
 test("runContractCommand rejects bare command and points users to ls contracts", async () => {
