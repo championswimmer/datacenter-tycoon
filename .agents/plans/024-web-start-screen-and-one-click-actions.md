@@ -1,7 +1,7 @@
 ---
 name: Web Start Screen and One-Click Actions
 description: Add a banner-first web start screen, make contract assignment confirm on datacenter click, and make rack placement confirm on rack-card click.
-status: started
+status: completed
 created: 2026-05-09
 updated: 2026-05-09
 owner: web
@@ -21,9 +21,9 @@ owner: web
   - [x] 3.1 Remove selected-rack/install-button state and place directly from rack cards
   - [x] 3.2 Preserve affordability and failure feedback without a second confirm step
   - [x] 3.3 Update rack picker tests for direct placement
-- [ ] **Phase 4 — Integration polish and regression QA**
+- [x] **Phase 4 — Integration polish and regression QA**
   - [x] 4.1 Verify responsive UX and manual end-to-end flows
-  - [ ] 4.2 Run web package typecheck, tests, and build
+  - [x] 4.2 Run web package typecheck, tests, and build
 
 ## Overview
 
