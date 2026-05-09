@@ -40,3 +40,15 @@ test("presentContract preserves assignedDcId for active contracts", () => {
 	assert.equal(view.assignedDcId, "dc-1");
 	assert.equal(view.startedAtTick, 2);
 });
+
+test("presentContract preserves expired status without remapping", () => {
+	const contract = {
+		...newGame(7).contractMarket[0]!,
+		status: "expired" as const,
+		startedAtTick: 1,
+	};
+	const view = presentContract(contract, "active");
+
+	assert.equal(view.status, "expired");
+	assert.equal(view.startedAtTick, 1);
+});
