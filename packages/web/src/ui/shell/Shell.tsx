@@ -16,12 +16,12 @@ import { MapView } from "../map/MapView.js";
 import styles from "./Shell.module.css";
 
 interface ShellProps {
-  isFreshStart?: boolean;
+  shouldAutoOpenTutorial?: boolean;
 }
 
 type MobileDrawer = "none" | "datacenters" | "log";
 
-export function Shell({ isFreshStart = false }: ShellProps) {
+export function Shell({ shouldAutoOpenTutorial = false }: ShellProps) {
   const dispatch = useGameDispatch();
   const speed = useSelector(s => s.game.speed as Speed);
   const [showTutorial, setShowTutorial] = useState(false);
@@ -50,12 +50,12 @@ export function Shell({ isFreshStart = false }: ShellProps) {
     }
   }, [route.view, datacenters]);
 
-  // Auto-open tutorial on first fresh game launch
+  // Auto-open tutorial only after the player has started a fresh session.
   useEffect(() => {
-    if (isFreshStart && !hasSeenTutorial()) {
+    if (shouldAutoOpenTutorial && !hasSeenTutorial()) {
       setShowTutorial(true);
     }
-  }, [isFreshStart]);
+  }, [shouldAutoOpenTutorial]);
 
   const focusDrawerTrigger = useCallback((drawer: MobileDrawer) => {
     if (drawer === "datacenters") {
