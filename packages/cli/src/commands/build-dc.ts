@@ -46,10 +46,10 @@ export async function runAddRackCommand(
 	parsed: ParsedArgv,
 	clientFactory: CommandClientFactory = (options) => new DctClient(options),
 ): Promise<void> {
-	const dcId = requirePositional(parsed, 0, "dct add-rack <dcId> <row> <position> <rackSpecId>");
-	const row = parseInteger(requirePositional(parsed, 1, "dct add-rack <dcId> <row> <position> <rackSpecId>"), "row");
-	const position = parseInteger(requirePositional(parsed, 2, "dct add-rack <dcId> <row> <position> <rackSpecId>"), "position");
-	const specId = requirePositional(parsed, 3, "dct add-rack <dcId> <row> <position> <rackSpecId>");
+	const dcId = requirePositional(parsed, 0, "dct racks add <dcId> <row> <position> <rackSpecId>");
+	const row = parseInteger(requirePositional(parsed, 1, "dct racks add <dcId> <row> <position> <rackSpecId>"), "row");
+	const position = parseInteger(requirePositional(parsed, 2, "dct racks add <dcId> <row> <position> <rackSpecId>"), "position");
+	const specId = requirePositional(parsed, 3, "dct racks add <dcId> <row> <position> <rackSpecId>");
 	const placementId = getOptionalStringFlag(parsed, "--id") ?? createShortId("rp");
 
 	await withClient(
@@ -74,8 +74,8 @@ export async function runRemoveRackCommand(
 	parsed: ParsedArgv,
 	clientFactory: CommandClientFactory = (options) => new DctClient(options),
 ): Promise<void> {
-	const dcId = requirePositional(parsed, 0, "dct remove-rack <dcId> <placementId>");
-	const placementId = requirePositional(parsed, 1, "dct remove-rack <dcId> <placementId>");
+	const dcId = requirePositional(parsed, 0, "dct racks decom <dcId> <placementId>");
+	const placementId = requirePositional(parsed, 1, "dct racks decom <dcId> <placementId>");
 
 	await withClient(
 		parsed,
@@ -96,11 +96,11 @@ export async function runMoveRackCommand(
 	parsed: ParsedArgv,
 	clientFactory: CommandClientFactory = (options) => new DctClient(options),
 ): Promise<void> {
-	const dcId = requirePositional(parsed, 0, "dct move-rack <dcId> <placementId> <targetDcId> <row> <position>");
-	const placementId = requirePositional(parsed, 1, "dct move-rack <dcId> <placementId> <targetDcId> <row> <position>");
-	const targetDcId = requirePositional(parsed, 2, "dct move-rack <dcId> <placementId> <targetDcId> <row> <position>");
-	const row = parseInteger(requirePositional(parsed, 3, "dct move-rack <dcId> <placementId> <targetDcId> <row> <position>"), "row");
-	const position = parseInteger(requirePositional(parsed, 4, "dct move-rack <dcId> <placementId> <targetDcId> <row> <position>"), "position");
+	const dcId = requirePositional(parsed, 0, "dct racks move <dcId> <placementId> <targetDcId> <row> <position>");
+	const placementId = requirePositional(parsed, 1, "dct racks move <dcId> <placementId> <targetDcId> <row> <position>");
+	const targetDcId = requirePositional(parsed, 2, "dct racks move <dcId> <placementId> <targetDcId> <row> <position>");
+	const row = parseInteger(requirePositional(parsed, 3, "dct racks move <dcId> <placementId> <targetDcId> <row> <position>"), "row");
+	const position = parseInteger(requirePositional(parsed, 4, "dct racks move <dcId> <placementId> <targetDcId> <row> <position>"), "position");
 
 	await withClient(
 		parsed,

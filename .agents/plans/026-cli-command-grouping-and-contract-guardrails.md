@@ -22,7 +22,7 @@ owner: cli
   - [x] 3.3 Add regression tests for representative read/write commands in `--json` mode
 - [ ] **Phase 4 — Group CLI commands by resource noun**
   - [x] 4.1 Introduce `dct dc ...` routing with `dc build` as the datacenter command surface
-  - [ ] 4.2 Introduce `dct racks add|decom|move` as the rack command surface
+  - [x] 4.2 Introduce `dct racks add|decom|move` as the rack command surface
   - [ ] 4.3 Introduce `dct contract accept|cancel|details` as the contract command surface
   - [ ] 4.4 Remove legacy flat commands and old pluralized routing from help, parser, and tests
 - [ ] **Phase 5 — Update tests, docs, and agent guidance**
