@@ -19,9 +19,9 @@ import styles from "./RackPicker.module.css";
 
 export interface RackPickerProps {
   datacenter: Datacenter;
-  row:        number;
-  position:   number;
-  onClose:    () => void;
+  row: number;
+  position: number;
+  onClose: () => void;
 }
 
 // ── Catalog helpers ────────────────────────────────────────────────────────────
@@ -29,11 +29,11 @@ export interface RackPickerProps {
 type KindFilter = "all" | RackKind;
 
 const KIND_FILTERS: { id: KindFilter; label: string }[] = [
-  { id: "all",     label: "ALL"     },
+  { id: "all", label: "ALL" },
   { id: "compute", label: "COMPUTE" },
-  { id: "memory",  label: "MEMORY"  },
+  { id: "memory", label: "MEMORY" },
   { id: "storage", label: "STORAGE" },
-  { id: "gpu",     label: "GPU"     },
+  { id: "gpu", label: "GPU" },
 ];
 
 const ALL_SPECS: RackSpec[] = Object.values(RACK_CATALOG).sort((a, b) => {
@@ -43,12 +43,12 @@ const ALL_SPECS: RackSpec[] = Object.values(RACK_CATALOG).sort((a, b) => {
 });
 
 const FAILURE_MESSAGES: Record<PlacementFailureReason, string> = {
-  slot_taken:             "Slot is already occupied",
-  out_of_bounds:          "Outside grid bounds",
-  insufficient_power:     "DC power cap exceeded",
-  insufficient_cooling:   "DC cooling cap exceeded",
+  slot_taken: "Slot is already occupied",
+  out_of_bounds: "Outside grid bounds",
+  insufficient_power: "DC power cap exceeded",
+  insufficient_cooling: "DC cooling cap exceeded",
   insufficient_bandwidth: "DC bandwidth cap exceeded",
-  cooling_type_mismatch:  "Tier 3 requires liquid cooling",
+  cooling_type_mismatch: "Tier 3 requires liquid cooling",
 };
 
 function formatMoney(n: number): string {
@@ -64,49 +64,34 @@ function rowLabel(row: number): string {
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export function RackPicker({ datacenter, row, position, onClose }: RackPickerProps) {
-  const cash         = useSelector(selectCash);
+  const cash = useSelector(selectCash);
   const audioEnabled = useSelector(selectAudioEnabled);
-  const dispatch     = useGameDispatch();
+  const dispatch = useGameDispatch();
 
   const [kindFilter, setKindFilter] = useState<KindFilter>("all");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   useDialogFocus(closeButtonRef);
 
   const visibleSpecs = kindFilter === "all"
     ? ALL_SPECS
-    : ALL_SPECS.filter(s => s.kind === kindFilter);
+    : ALL_SPECS.filter((s) => s.kind === kindFilter);
 
-  // Auto-select first installable spec
-  useEffect(() => {
-    const first = visibleSpecs.find(spec => {
-      const r = canPlaceRack(datacenter, spec, { row, position });
-      return r.ok && cash >= spec.capexCost;
-    });
-    setSelectedId(first?.id ?? null);
-  }, [kindFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleInstall = useCallback((spec: RackSpec) => {
+    const placeResult = canPlaceRack(datacenter, spec, { row, position });
+    const affordable = cash >= spec.capexCost;
+    if (!placeResult.ok || !affordable) return;
 
-  const selectedSpec = selectedId ? (RACK_CATALOG[selectedId] ?? null) : null;
-  const selectedResult = selectedSpec
-    ? canPlaceRack(datacenter, selectedSpec, { row, position })
-    : null;
-  const canInstall = !!selectedSpec &&
-    !!selectedResult?.ok &&
-    cash >= selectedSpec.capexCost;
-
-  const handleInstall = useCallback(() => {
-    if (!selectedSpec || !canInstall) return;
     dispatch({
       type: "PlaceRack",
-      dcId:        datacenter.id,
-      specId:      selectedSpec.id,
+      dcId: datacenter.id,
+      specId: spec.id,
       row,
       position,
       placementId: nextRackPlacementId(),
     });
     playSound("click", !audioEnabled);
     onClose();
-  }, [selectedSpec, canInstall, dispatch, datacenter.id, row, position, onClose, audioEnabled]);
+  }, [audioEnabled, cash, datacenter, dispatch, onClose, position, row]);
 
   // ESC closes
   useEffect(() => {
@@ -118,7 +103,7 @@ export function RackPicker({ datacenter, row, position, onClose }: RackPickerPro
   return (
     <div
       className={styles.backdrop}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="presentation"
     >
       <div className={styles.panel} role="dialog" aria-modal="true" aria-labelledby="rp-title">
@@ -135,7 +120,7 @@ export function RackPicker({ datacenter, row, position, onClose }: RackPickerPro
 
         {/* ── Kind filter chips ── */}
         <div className={styles.filterRow} role="group" aria-label="Filter by kind">
-          {KIND_FILTERS.map(kf => (
+          {KIND_FILTERS.map((kf) => (
             <button
               key={kf.id}
               className={[styles.chip, kindFilter === kf.id ? styles.chipActive : ""].join(" ")}
@@ -149,11 +134,10 @@ export function RackPicker({ datacenter, row, position, onClose }: RackPickerPro
 
         {/* ── Spec cards ── */}
         <div className={styles.cards}>
-          {visibleSpecs.map(spec => {
+          {visibleSpecs.map((spec) => {
             const placeResult = canPlaceRack(datacenter, spec, { row, position });
-            const affordable  = cash >= spec.capexCost;
-            const disabled    = !placeResult.ok || !affordable;
-            const selected    = spec.id === selectedId;
+            const affordable = cash >= spec.capexCost;
+            const disabled = !placeResult.ok || !affordable;
             return (
               <RackCard
                 key={spec.id}
@@ -162,9 +146,8 @@ export function RackPicker({ datacenter, row, position, onClose }: RackPickerPro
                 placeOk={placeResult.ok}
                 failReason={placeResult.ok ? undefined : placeResult.reason}
                 affordable={affordable}
-                selected={selected}
                 disabled={disabled}
-                onSelect={() => { if (!disabled) setSelectedId(spec.id); }}
+                onInstall={() => handleInstall(spec)}
               />
             );
           })}
@@ -172,26 +155,11 @@ export function RackPicker({ datacenter, row, position, onClose }: RackPickerPro
 
         {/* ── Footer ── */}
         <div className={styles.footer}>
-          {selectedSpec && !canInstall && !selectedResult?.ok && (
-            <span className={styles.footerError}>
-              {selectedResult && !selectedResult.ok
-                ? FAILURE_MESSAGES[selectedResult.reason]
-                : "Cannot install here"}
-            </span>
-          )}
-          {selectedSpec && !canInstall && !!selectedResult?.ok && (
-            <InsufficientFunds shortfall={selectedSpec.capexCost - cash} size="md" />
-          )}
+          <span className={styles.footerHint}>
+            Click any available rack card to place it immediately. Disabled cards explain why they cannot be installed.
+          </span>
           <div className={styles.footerBtns}>
             <button className={styles.cancelBtn} onClick={onClose}>CANCEL</button>
-            <button
-              className={styles.installBtn}
-              onClick={handleInstall}
-              disabled={!canInstall}
-              title={!canInstall && selectedSpec ? "Cannot install — check requirements" : undefined}
-            >
-              {selectedSpec ? `INSTALL — ${formatMoney(selectedSpec.capexCost)}` : "SELECT A RACK"}
-            </button>
           </div>
         </div>
       </div>
@@ -202,36 +170,34 @@ export function RackPicker({ datacenter, row, position, onClose }: RackPickerPro
 // ── Rack Card ──────────────────────────────────────────────────────────────────
 
 interface RackCardProps {
-  spec:        RackSpec;
-  cash:        number;
-  placeOk:     boolean;
+  spec: RackSpec;
+  cash: number;
+  placeOk: boolean;
   failReason?: PlacementFailureReason;
-  affordable:  boolean;
-  selected:    boolean;
-  disabled:    boolean;
-  onSelect:    () => void;
+  affordable: boolean;
+  disabled: boolean;
+  onInstall: () => void;
 }
 
 const KIND_ICON: Record<RackKind, string> = {
   compute: "⚡",
-  memory:  "🧠",
+  memory: "🧠",
   storage: "💾",
-  gpu:     "🎮",
+  gpu: "🎮",
 };
 
-function RackCard({ spec, cash, placeOk, failReason, affordable, selected, disabled, onSelect }: RackCardProps) {
+function RackCard({ spec, cash, placeOk, failReason, affordable, disabled, onInstall }: RackCardProps) {
   const primaryCapacity = getPrimaryCapacity(spec);
   return (
     <button
+      type="button"
       className={[
         styles.card,
         styles[`kind-${spec.kind}`],
-        selected  ? styles.cardSelected  : "",
-        disabled  ? styles.cardDisabled  : "",
+        disabled ? styles.cardDisabled : "",
       ].filter(Boolean).join(" ")}
-      onClick={onSelect}
-      aria-pressed={selected}
-      aria-disabled={disabled}
+      onClick={onInstall}
+      disabled={disabled}
       title={disabled && failReason ? FAILURE_MESSAGES[failReason] : undefined}
     >
       {/* Header */}
@@ -268,7 +234,7 @@ function RackCard({ spec, cash, placeOk, failReason, affordable, selected, disab
         {!placeOk && affordable && failReason && (
           <span className={styles.failBadge}>{FAILURE_MESSAGES[failReason]}</span>
         )}
-        {!disabled && <span className={styles.okBadge}>✓</span>}
+        {!disabled && <span className={styles.okBadge}>Click to install</span>}
       </div>
     </button>
   );
@@ -276,9 +242,9 @@ function RackCard({ spec, cash, placeOk, failReason, affordable, selected, disab
 
 function getPrimaryCapacity(spec: RackSpec): { value: string; unit: string } {
   switch (spec.kind) {
-    case "compute": return { value: spec.vCpu.toLocaleString(),   unit: "vCPU"   };
-    case "memory":  return { value: spec.ramGb.toLocaleString(),  unit: "GB RAM" };
-    case "storage": return { value: spec.storageTb.toString(),    unit: "TB SSD" };
-    case "gpu":     return { value: spec.gpuFlops.toLocaleString(), unit: "TFLOPS" };
+    case "compute": return { value: spec.vCpu.toLocaleString(), unit: "vCPU" };
+    case "memory": return { value: spec.ramGb.toLocaleString(), unit: "GB RAM" };
+    case "storage": return { value: spec.storageTb.toString(), unit: "TB SSD" };
+    case "gpu": return { value: spec.gpuFlops.toLocaleString(), unit: "TFLOPS" };
   }
 }
