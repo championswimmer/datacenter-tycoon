@@ -3,7 +3,7 @@
 Terminal client for Datacenter Tycoon.
 
 It provides two modes:
-- one-shot commands like `dct status`, `dct ls dc`, `dct add-rack ...`
+- one-shot commands like `dct status`, `dct ls contracts`, `dct add-rack ...`
 - an interactive terminal UI launched with just `dct`
 
 ## Architecture
@@ -25,17 +25,23 @@ dct save [path]              # force-save, optionally export a copy
 dct load <path>              # import a savefile
 dct quit                     # stop the daemon
 
-dct ls dc
+dct ls saves
+dct ls contracts
+dct ls contracts --json
+dct ls datacenters
 dct ls racks <dcId>
-dct ls market
-dct ls active
-dct ls catalog dc
-dct ls catalog rack
+dct ls catalog
 
-dct build-dc garage
+dct build-dc garage --region us_west
 dct add-rack dc-123 0 0 C1
 dct remove-rack dc-123 rp-123
+dct move-rack dc-123 rp-123 dc-456 0 1
 
+dct contracts accept offer-1 dc-123
+dct contracts cancel offer-1
+dct contracts details offer-1
+
+# legacy flat aliases still supported
 dct accept-contract offer-1 dc-123
 dct cancel-contract offer-1
 
@@ -79,9 +85,11 @@ Defaults:
 - `Enter` — run the palette command
 
 Helpful palette commands:
-- `build-dc garage`
+- `ls contracts`
+- `build-dc garage --region us_west`
 - `add-rack <dcId> <row> <position> C1`
-- `accept-contract <contractId> <dcId>`
+- `contracts details <contractId>`
+- `contracts accept <contractId> <dcId>`
 - `tick 10`
 
 ## Development
