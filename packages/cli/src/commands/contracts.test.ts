@@ -1,20 +1,56 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { Action } from "@datacenter-tycoon/game-logic";
+import { newGame, type Action, type GameState } from "@datacenter-tycoon/game-logic";
 
 import { parseArgv } from "../argv.js";
 import type { CommandClient } from "./common.js";
-import { runAcceptContractCommand, runCancelContractCommand } from "./contracts.js";
+import { runAcceptContractCommand, runCancelContractCommand, runContractDetailsCommand, runContractsCommand } from "./contracts.js";
 
-function createFakeClient(actions: Action[]): CommandClient {
+function createSnapshot(): GameState {
+	const snapshot = newGame(7);
+	const marketContract = snapshot.contractMarket[0]!;
+	return {
+		...snapshot,
+		activeContracts: [
+			{
+				...marketContract,
+				status: "breached",
+				startedAtTick: 3,
+				assignedDcId: "dc-1" as GameState["activeContracts"][number]["assignedDcId"],
+			},
+		],
+		contractMarket: snapshot.contractMarket.slice(1),
+		player: {
+			...snapshot.player,
+			reliability: {
+				...snapshot.player.reliability,
+				recentOutcomes: [
+					{
+						contractId: marketContract.id,
+						contractName: marketContract.name,
+						tick: 4,
+						kind: "breached",
+					},
+				],
+			},
+		},
+	};
+}
+
+function createFakeClient(actions: Action[], snapshot: GameState = createSnapshot()): CommandClient {
 	return {
 		connect: async () => undefined,
 		dispatch: async (action) => {
 			actions.push(action);
 			return { tick: 0 };
 		},
-		query: async () => ({ tick: 0 }),
+		query: async (params) => {
+			if (params.kind === "snapshot") {
+				return snapshot;
+			}
+			return { tick: 0 };
+		},
 		control: async () => ({ ok: true }),
 		close: async () => undefined,
 	};
@@ -32,4 +68,59 @@ test("runCancelContractCommand dispatches CancelContract", async () => {
 	await runCancelContractCommand(parseArgv(["cancel-contract", "offer-1", "--quiet"]), () => createFakeClient(actions));
 
 	assert.deepEqual(actions, [{ type: "CancelContract", contractId: "offer-1" }]);
+});
+
+test("runContractsCommand routes accept subcommand", async () => {
+	const actions: Action[] = [];
+	await runContractsCommand(parseArgv(["contracts", "accept", "offer-1", "dc-1", "--quiet"]), () => createFakeClient(actions));
+
+	assert.deepEqual(actions, [{ type: "AcceptContract", contractId: "offer-1", dcId: "dc-1" }]);
+});
+
+test("runContractsCommand routes cancel subcommand", async () => {
+	const actions: Action[] = [];
+	await runContractsCommand(parseArgv(["contracts", "cancel", "offer-1", "--quiet"]), () => createFakeClient(actions));
+
+	assert.deepEqual(actions, [{ type: "CancelContract", contractId: "offer-1" }]);
+});
+
+test("runContractDetailsCommand returns snapshot-backed contract details as json", async () => {
+	const snapshot = createSnapshot();
+	const targetContractId = snapshot.activeContracts[0]!.id;
+	const actions: Action[] = [];
+	const logged: string[] = [];
+	const originalLog = console.log;
+	console.log = (message?: unknown) => {
+		logged.push(String(message ?? ""));
+	};
+
+	try {
+		await runContractsCommand(parseArgv(["contracts", "details", targetContractId, "--json"]), () => createFakeClient(actions, snapshot));
+	} finally {
+		console.log = originalLog;
+	}
+
+	assert.equal(actions.length, 0);
+	assert.equal(logged.length, 1);
+	const parsed = JSON.parse(logged[0] ?? "{}") as {
+		ok: boolean;
+		data: {
+			bucket: string;
+			contract: { id: string; status: string; assignedDcId?: string };
+			recentOutcomes: Array<{ contractId: string; kind: string; tick: number }>;
+		};
+	};
+	assert.equal(parsed.ok, true);
+	assert.equal(parsed.data.bucket, "activeContracts");
+	assert.equal(parsed.data.contract.id, targetContractId);
+	assert.equal(parsed.data.contract.status, "breached");
+	assert.equal(parsed.data.contract.assignedDcId, "dc-1");
+	assert.equal(parsed.data.recentOutcomes.length, 1);
+	assert.equal(parsed.data.recentOutcomes[0]?.kind, "breached");
+	assert.equal(parsed.data.recentOutcomes[0]?.tick, 4);
+	assert.equal(parsed.data.recentOutcomes[0]?.contractId, targetContractId);
+});
+
+test("runContractsCommand rejects bare command and points users to ls contracts", async () => {
+	await assert.rejects(() => runContractsCommand(parseArgv(["contracts"])), /To list all contracts, use: dct ls contracts/);
 });

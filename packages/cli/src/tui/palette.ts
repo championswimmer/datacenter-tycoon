@@ -4,6 +4,7 @@ export const TUI_COMMANDS = [
 	"load",
 	"save",
 	"quit",
+	"contracts",
 	"ls",
 	"build-dc",
 	"add-rack",

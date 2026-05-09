@@ -1,437 +1,694 @@
 ---
 name: play-cli-game
-description: Use when playing or strategizing the Datacenter Tycoon CLI game — building datacenters, adding/removing racks, accepting contracts, advancing time, optimizing cashflow, or querying game state via CLI commands (dct). Triggers include phrases like "play the game", "start a new game", "build a datacenter", "accept a contract", "advance time", "check my status", or "how should I optimize".
-version: 0.1.0
+description: Use when playing or strategizing the Datacenter Tycoon CLI game — building datacenters, placing/moving/removing racks, inspecting contracts, accepting contracts onto specific datacenters, pausing/resuming time, checking cash, or querying game state via `dct`.
+version: 0.3.0
 ---
 
-# Skill: Play the Datacenter Tycoon CLI Game
+# Skill: Play Datacenter Tycoon over the CLI
 
-## Description
+Use this skill when the user wants to **play the game through `dct`**, automate play through the CLI, or reason about the best next move from terminal-visible game state.
 
-Teaches an LLM how to play the **Datacenter Tycoon** CLI game effectively. Use this skill whenever the user asks you to play the game, make strategic decisions, optimize their empire, or interact with the CLI/TUI.
-
----
-
-## 1. Game Overview
-
-Datacenter Tycoon is a tycoon-style simulation game played in the terminal. You build and operate data centers around the world, fill them with server racks, and fulfill customer contracts to generate revenue. The game runs as a background daemon with a terminal UI (TUI) and a command-line interface (CLI).
-
-**Core loop:**
-1. Build datacenters in regions
-2. Fill them with racks (compute, memory, storage, GPU)
-3. Accept contracts from the market
-4. Earn monthly revenue while paying operating costs
-5. Expand and optimize for maximum cashflow and total balance
-
-**Time model:** One tick = one month. Contracts have terms measured in months. Opex is calculated monthly. Rack failures and repairs are tracked in days (30 days = 1 tick).
+This guide is intentionally focused on **what the CLI actually supports today**.
 
 ---
 
-## 2. Key Metrics & What They Mean
+## 1. Mental model
 
-| Metric | Meaning |
-|--------|---------|
-| **Cash** | Your liquid balance. Used for capex (building DCs, buying racks). If this goes negative, you cannot make purchases. |
-| **Tick** | Current game time in months. |
-| **vCPU** | Compute capacity. Used by most contracts. |
-| **RAM (GB)** | Memory capacity. Heavy requirement for memory/database contracts. |
-| **Storage (TB)** | Disk capacity. Heavy requirement for storage contracts. |
-| **GPU FLOPS** | GPU compute. Required for AI training and rendering contracts. |
-| **Power (kW)** | Each rack draws power. Datacenters have a power capacity limit. |
-| **Cooling (BTU/hr)** | Racks generate heat. Must stay within datacenter cooling capacity. |
-| **Bandwidth (Gbps)** | Network capacity per datacenter. Sum of rack bandwidths must fit. |
-| **Slots** | Physical rack positions in a datacenter (`rows × positionsPerRow`). |
+The CLI has two faces:
 
----
+- **One-shot commands** like `dct status`, `dct build-dc ...`, `dct ls contracts`
+- **Interactive TUI** launched with just `dct`
 
-## 3. Game Dynamics & Tradeoffs
+Under the hood, `dct` talks to a local daemon that owns the game state and advances time.
 
-### 3.1 Regions (Where to Build)
+Important practical consequences:
 
-Regions have **finite** power and staff pools. Once a region's resources are consumed, you cannot build more datacenters there.
-
-| Region | Power $/kWh | Staff Wage | Tax Rate | Power Pool | Staff Pool |
-|--------|-------------|------------|----------|------------|------------|
-| Silicon Valley | $0.22 | $9,500 | 21% | 5,000 | 500 |
-| Iowa | $0.06 | $4,200 | 8% | 8,000 | 300 |
-| Iceland | $0.04 | $5,800 | 15% | 3,000 | 120 |
-| Frankfurt | $0.18 | $6,200 | 28% | 6,000 | 400 |
-| Singapore | $0.16 | $5,500 | 17% | 4,000 | 350 |
-| Mumbai | $0.09 | $2,800 | 25% | 4,500 | 600 |
-| São Paulo | $0.13 | $3,500 | 34% | 3,500 | 450 |
-| Sydney | $0.19 | $7,200 | 30% | 2,500 | 200 |
-| Dubai | $0.08 | $4,800 | 9% | 5,500 | 280 |
-| Seoul | $0.11 | $5,200 | 22% | 4,000 | 380 |
-
-**Tradeoffs:**
-- **Cheap power** (Iceland, Iowa) lowers opex but may have limited staff pools.
-- **Low taxes** (Iowa 8%, Dubai 9%) keep more profit but power may not be the cheapest.
-- **Cheap staff** (Mumbai $2,800) reduces opex but high taxes (25%) eat profits.
-- **High staff pools** (Mumbai 600, Iowa 8,000 power) allow massive expansion.
-- **Early game**: Iowa and Dubai are excellent — low power cost + low tax + decent capacity.
-- **Late game**: You may need multiple regions. Plan ahead because regions exhaust.
-
-### 3.2 Datacenter Sizes
-
-| Spec | Rows × Positions | Power | Cooling | Bandwidth | Capex | Staff |
-|------|------------------|-------|---------|-----------|-------|-------|
-| `garage` | 2 × 4 = 8 slots | 60 kW | 96,000 BTU/h | 80 Gbps | $250,000 | 2 |
-| `warehouse` | 4 × 10 = 40 slots | 320 kW | 400,000 BTU/h | 400 Gbps | $1,400,000 | 8 |
-| `hyperscale` | 8 × 25 = 200 slots | 2,500 kW | 8.5M BTU/h | 5,000 Gbps | $18,000,000 | 45 |
-
-**Tradeoffs:**
-- `garage`: Cheap entry, fast to fill, but limited scale. Good for early cashflow.
-- `warehouse`: Mid-game workhorse. Better cost-per-slot than garage.
-- `hyperscale`: Massive capex. Only build when you have steady revenue and need scale. Liquid cooling required for tier-3 racks.
-
-**Important:** Air-cooled datacenters (`garage`, `warehouse`) **cannot host tier-3 racks**. Only `hyperscale` (liquid cooling) can.
-
-### 3.3 Rack Types & Tiers
-
-There are 4 rack kinds, each with 3 tiers. Higher tiers = more capacity but exponentially higher power draw, heat, capex, and maintenance.
-
-**Compute Racks (C1–C3):** High vCPU, moderate RAM/storage. Good general-purpose.
-**Memory Racks (M1–M3):** Extreme RAM. Essential for memory-heavy contracts.
-**Storage Racks (S1–S3):** Extreme storage. Essential for storage contracts.
-**GPU Racks (G1–G3):** Extreme GPU FLOPS. Very expensive. Only buy when you have GPU contracts.
-
-**Key tradeoff:** A datacenter's capacity is the **sum of all healthy racks**. But contracts demand **all four resources simultaneously**. A datacenter with only compute racks cannot fulfill a contract that also needs RAM, storage, or GPU. You must **mix rack types** within a datacenter to match contract requirements.
-
-### 3.4 Contracts
-
-Contracts are generated procedurally with themes:
-- **AI Model Training**: Heavy GPU + RAM
-- **Realtime Analytics**: Heavy RAM + vCPU
-- **Edge Compute Burst**: Heavy vCPU
-- **Small Data Storage Startup**: Heavy storage
-- **Rendering Farm**: Heavy GPU + vCPU
-- **In-Memory Database Migration**: Heavy RAM + storage
-
-**Contract properties:**
-- `monthlyPayment`: Revenue per tick while fulfilled.
-- `penaltyPerMonth`: Charged per tick while breached.
-- `termMonths`: How long the contract lasts.
-- `urgency`: `standard` (normal), `rush` (1.4× payment, 2-tick offer window, short term), `anchor` (0.75× payment, long term, low penalty).
-- `tier`: 1, 2, or 3 — roughly maps to difficulty/resource requirements.
-
-**Critical CONTRACT RULE:**
-When a contract is assigned to a datacenter, the datacenter must provide enough **total capacity** to cover **ALL active contracts assigned to it combined**. If the sum of demands exceeds supply, **every contract on that datacenter is breached** and pays penalties. This means:
-- You cannot blindly stack contracts on one datacenter.
-- You must calculate total demand vs. total supply per datacenter.
-- Removing a rack or a rack failing can trigger mass breach.
-
-**Contract lifecycle:**
-1. `offered` → appears in market, expires after a few ticks
-2. `active` → you accepted it, revenue flows
-3. `breached` → one tick of insufficient capacity; penalty charged
-4. `cancelled` → breached for 2 consecutive ticks, or you manually cancel
-5. `completed` → term ended while active
-
-### 3.5 Opex Breakdown (Monthly Costs)
-
-For each datacenter, every tick:
-- **Power** = `totalPowerDrawKw × 730 hours × region.powerCostPerKwh`
-- **Cooling** = `power × 0.30` (30% overhead)
-- **Bandwidth** = `datacenter.bandwidthGbps × $85`
-- **Staff** = `(datacenter.staffCount + maintenanceStaff) × region.staffWage`
-- **Maintenance** = sum of all racks' `monthlyMaintenance`
-- **Tax** = `max(0, revenue − opex) × region.taxRate`
-
-**Tradeoffs:**
-- More racks = more revenue potential but higher power, cooling, and maintenance.
-- Maintenance staff (0–8 per datacenter) speeds up rack repairs but adds to staff wages.
-- Tier-3 racks draw massive power. In expensive regions (Silicon Valley, Sydney), power costs dominate.
-
-### 3.6 Rack Failures & Maintenance
-
-Racks age in months (ticks since installation). Failure chance increases linearly from 0% (new) to 50% (36 months). A failed rack enters `repairing` state and contributes **zero capacity**.
-
-- Base repair time: ~90 days (3 ticks)
-- Each maintenance staff member speeds repairs by 25% (max 8 staff = 3× speed)
-- A repairing rack can cause contract breaches if it was critical to meeting demand.
-
-**Tradeoff:** Hiring maintenance staff reduces downtime (preventing breach penalties) but increases monthly staff wages. For small garages, 0 staff may be fine. For large warehouses/hyperscales with many aging racks, 2–4 staff is often worth it.
+- If no daemon is running, `dct` will auto-start one.
+- Auto-start prints a notice to **stderr**.
+- Time may keep advancing unless you **pause** it.
+- For careful play, it is often best to:
+  1. `dct pause`
+  2. inspect contracts / catalog / datacenters
+  3. do your build actions
+  4. `dct resume` or `dct tick N`
 
 ---
 
-## 4. Optimization Goals
+## 2. The exact top-level CLI commands today
 
-Your primary objective is to **maximize cashflow and total balance** over time.
+Run `dct --help` for the current global help.
 
-### Short-term strategy (ticks 0–10):
-1. Start with $2,500,000.
-2. Build a `garage` in a cheap region (Iowa, Dubai, Iceland).
-3. Fill it with tier-1 racks that match early market contracts.
-4. Accept 1–2 small contracts you can definitely fulfill.
-5. Ensure your datacenter's total capacity covers all assigned contracts.
-
-### Mid-term strategy (ticks 10–30):
-1. Reinvest revenue into more racks or a `warehouse`.
-2. Diversify rack types so you can accept varied contracts.
-3. Monitor rack ages. Replace or add maintenance staff before failures spike.
-4. Watch contract market difficulty — it scales with ticks.
-
-### Long-term strategy (ticks 30+):
-1. Build `hyperscale` campuses in low-tax, cheap-power regions.
-2. Use tier-3 racks for density.
-3. Maintain a buffer of unused capacity per datacenter to absorb rack failures.
-4. Anchor contracts provide stable long-term revenue; rush contracts provide quick cash injections.
-
-### Key pitfalls to avoid:
-- **Overcommitting**: Accepting contracts that push your total demand to 100% of supply. One rack failure = mass breach.
-- **Wrong region**: Building in Silicon Valley or Sydney early — high power + high tax drains cash.
-- **Single rack type datacenters**: You need mixed types to fulfill most contracts.
-- **Ignoring opex**: A rack's monthly maintenance + power + cooling can exceed its share of contract revenue.
-- **Capex bankruptcy**: Spending all cash on a hyperscale leaves no money for racks or breathing room.
-
----
-
-## 5. CLI Commands Reference
-
-All commands are run via `dct <command> [args] [flags]`. The daemon auto-starts if not running.
-
-### 5.1 Game Lifecycle
+Current top-level commands:
 
 ```bash
-# Create a new game (DESTRUCTIVE — overwrites save)
+dct daemon
+dct status
+dct new
+dct load
+dct save
+dct quit
+dct contracts
+dct ls
+dct build-dc
+dct add-rack
+dct remove-rack
+dct move-rack
+dct accept-contract
+dct cancel-contract
+dct query
+dct tick
+dct pause
+dct resume
+dct speed
+```
+
+### Global flags supported today
+
+```bash
+--json
+--socket <path>
+--save <path>
+--no-daemon
+--quiet
+-h
+--help
+```
+
+Useful notes:
+
+- `--json` is ideal for LLM/tool-driven play.
+- `--quiet` suppresses normal success text.
+- `--no-daemon` makes commands fail instead of auto-starting the daemon.
+- `--save` and `--socket` are very useful when you want to isolate a test run.
+
+---
+
+## 3. `ls` subcommands that actually exist today
+
+The old docs around `dct ls` are easy to get wrong. The supported subcommands today are:
+
+```bash
+dct ls saves
+dct ls contracts
+dct ls datacenters
+dct ls dcs              # alias for datacenters
+dct ls racks <dcId>
+dct ls catalog
+```
+
+Notable corrections vs older docs:
+
+- Use `dct ls datacenters` or `dct ls dcs`, **not** `dct ls dc`
+- Use `dct ls contracts` for listing; bare `dct contracts` is not the listing command anymore
+- `dct ls catalog` prints **both** rack and datacenter specs together
+- There is no separate `dct ls market` / `dct ls active` command today
+
+---
+
+## 4. Core commands by task
+
+### 4.1 Start / stop / save a game
+
+```bash
+# start a fresh game (destructive)
 dct new --yes [--seed <number>]
 
-# Load a savefile
+# load a save file into the active state
 dct load <path>
 
-# Force-save current state
+# force-save current state; optionally export a copy
 dct save [export-path]
 
-# Print game summary
-dct status [--json]
-
-# List available save files
-dct ls saves
-
-# Shutdown daemon (saves automatically)
+# shut down the daemon cleanly
 dct quit
 ```
 
-### 5.2 Time Control
+### 4.2 Check overall status and cash
 
 ```bash
-# Advance one tick (one month)
-dct tick
+dct status
+dct status --json
+```
 
-# Advance N ticks
-dct tick <N>
+`dct status` is the fastest way to check:
 
-# Pause/resume auto-ticking daemon
+- current tick
+- current cash
+- datacenter count
+- rack count
+- active contract count
+- market contract count
+- paused state
+- speed
+
+This is your main **cash check** command.
+
+### 4.3 Pause / resume / advance time
+
+```bash
 dct pause
 dct resume
-
-# Set auto-tick speed (ticks per second)
+dct tick
+dct tick <N>
 dct speed <ticksPerSecond>
 ```
 
-### 5.3 Building & Managing Datacenters
+Recommended usage:
+
+- Use `dct pause` before planning or issuing multiple build commands
+- Use `dct resume` when you want the simulation to run normally
+- Use `dct tick N` if you want **manual, controlled advancement** while otherwise staying paused
+- `dct speed 0` also effectively pauses, but `pause` / `resume` are clearer
+
+### 4.4 Inspect/list contracts
 
 ```bash
-# Build a datacenter
-dct build-dc <specId> [--id <dcId>] [--region <regionId>]
-# Example: dct build-dc garage --id dc-1 --region iowa
-
-# Available specs: garage, warehouse, hyperscale
-# If --region omitted, defaults to first region (silicon_valley)
-# If --id omitted, auto-generates an ID
+dct ls contracts
+dct ls contracts --json
 ```
 
-**Constraints checked:**
-- Region must have enough remaining power and staff for the datacenter.
-- You must have enough cash for capex.
+This shows:
 
-### 5.4 Adding & Removing Racks
+- market contracts
+- active contracts
+- each contract's id
+- payment per month
+- term
+- urgency
+- tier
+- expiry tick (for market offers)
+- requirements
+- penalty
+- assigned datacenter for active contracts
+
+### 4.5 Contract-focused subcommands
 
 ```bash
-# Add a rack to a datacenter
+dct contracts accept <contractId> <dcId>
+dct contracts cancel <contractId>
+dct contracts details <contractId>
+dct contracts details <contractId> --json
+```
+
+Notes:
+
+- `dct contracts` by itself is **not** the list command
+- use `dct ls contracts` when you want the whole market + active list
+- `dct contracts details <contractId>` is the focused way to inspect one contract plus recent SLA outcome history
+
+### 4.6 Build datacenters
+
+```bash
+dct build-dc <specId> [--region <regionId>] [--id <dcId>]
+```
+
+Example:
+
+```bash
+dct build-dc garage --region us_west
+```
+
+Supported datacenter spec IDs today:
+
+- `garage`
+- `warehouse`
+- `hyperscale`
+
+### 4.7 Add / remove / move racks
+
+```bash
 dct add-rack <dcId> <row> <position> <rackSpecId> [--id <placementId>]
-# Example: dct add-rack dc-1 0 0 C1 --id rp-1
-
-# Remove a rack
 dct remove-rack <dcId> <placementId>
-# Example: dct remove-rack dc-1 rp-1
+dct move-rack <dcId> <placementId> <targetDcId> <row> <position>
 ```
 
-**Placement constraints checked:**
-- Row and position must be within datacenter bounds.
-- Slot must not already be occupied.
-- Total power draw must not exceed datacenter power capacity.
-- Total heat must not exceed cooling capacity.
-- Total bandwidth must not exceed datacenter bandwidth.
-- Tier-3 racks can only go in liquid-cooled datacenters (`hyperscale`).
+Supported rack spec IDs today:
 
-**Rack specs:**
 - Compute: `C1`, `C2`, `C3`
 - Memory: `M1`, `M2`, `M3`
 - Storage: `S1`, `S2`, `S3`
 - GPU: `G1`, `G2`, `G3`
 
-### 5.5 Contracts
+Examples:
 
 ```bash
-# Accept a market contract and assign it to a datacenter
-dct accept-contract <contractId> <dcId>
-# Example: dct accept-contract contract-ai-model-training-a1b2c dc-1
+dct add-rack dc-ab12cd34 0 0 C1
+dct add-rack dc-ab12cd34 0 1 M1
+dct add-rack dc-ab12cd34 0 2 S1
 
-# Cancel an active contract
+dct remove-rack dc-ab12cd34 rp-1234abcd
+
+dct move-rack dc-ab12cd34 rp-1234abcd dc-ef56gh78 0 0
+```
+
+### 4.8 Accept / cancel contracts (legacy flat commands still supported)
+
+```bash
+dct accept-contract <contractId> <dcId>
 dct cancel-contract <contractId>
 ```
 
-**Important:** When accepting, the game does NOT validate whether the datacenter can fulfill the contract. You must check capacity yourself. If total demand exceeds supply, all contracts on that datacenter breach.
+Equivalent namespaced forms:
 
-### 5.6 Global Flags
+```bash
+dct contracts accept <contractId> <dcId>
+dct contracts cancel <contractId>
+```
 
-| Flag | Effect |
-|------|--------|
-| `--json` | Output results as JSON |
-| `--quiet` | Suppress non-JSON output |
-| `--socket <path>` | Use custom daemon socket |
-| `--save <path>` | Use custom save file |
-| `--no-daemon` | Don't auto-spawn daemon |
-| `-h`, `--help` | Show help |
+Example:
+
+```bash
+dct contracts accept contract-edge-compute-burst-f2e06 dc-ab12cd34
+```
+
+### 4.9 Advanced/raw inspection
+
+```bash
+dct query '<json>'
+dct query --params '<json>'
+```
+
+Useful raw queries:
+
+```bash
+# full snapshot
+dct query '{"kind":"snapshot"}' --json
+
+# status view
+dct query '{"kind":"status"}' --json
+
+# datacenters
+dct query '{"kind":"list","target":"datacenters"}' --json
+
+# racks for one DC
+dct query '{"kind":"list","target":"racks","dcId":"dc-123"}' --json
+
+# rack catalog
+dct query '{"kind":"catalog","target":"racks"}' --json
+```
+
+For agentic play, `snapshot --json` is the richest single command because it includes:
+
+- player cash
+- contracts
+- datacenters
+- ledger
+- map/regions
 
 ---
 
-## 6. TUI (Terminal UI) Guide
+## 5. Current region IDs for `build-dc --region`
 
-Running `dct` with no arguments launches the interactive TUI.
+There is no dedicated human-friendly `dct regions` command today, so use these current region IDs:
 
-### Navigation
+| Region ID | Name | City | Power | Tax | Quick note |
+|---|---|---|---:|---:|---|
+| `us_east` | US East | Ashburn | 0.07 | 6% | strong early-game all-rounder |
+| `us_west` | US West | Boardman | 0.05 | 7% | cheapest power; excellent early choice |
+| `eu_west` | EU West | Dublin | 0.12 | 12.5% | balanced but not the cheapest |
+| `eu_central` | EU Central | Frankfurt | 0.18 | 28% | expensive; usually tougher early |
+| `ap_northeast` | AP Northeast | Tokyo | 0.15 | 22% | mid/high cost |
+| `ap_southeast` | AP Southeast | Singapore | 0.16 | 17% | workable but not cheap |
+| `sa_east` | SA East | São Paulo | 0.13 | 34% | very high tax |
+| `me_central` | ME Central | Dubai | 0.08 | 9% | another strong early option |
 
-| Key | Action |
-|-----|--------|
-| `1` | Dashboard tab |
-| `2` | Datacenters tab |
-| `3` | Contracts tab |
-| `4` | Catalog tab |
-| `:` | Open command palette (type any CLI command) |
-| `?` | Toggle help overlay |
-| `q` | Quit TUI |
+For exact machine-readable region data, use:
 
-### Datacenters Tab (`2`)
+```bash
+dct query '{"kind":"snapshot"}' --json
+```
+
+and inspect `data.map.regions`.
+
+---
+
+## 6. Best practical play loop for a human or LLM
+
+A reliable CLI play loop is:
+
+### Step 1: freeze time
+
+```bash
+dct pause
+```
+
+Even if you just created a new game, pausing explicitly is the safest workflow before planning.
+
+### Step 2: inspect the market and your budget
+
+```bash
+dct status
+dct ls contracts
+dct ls catalog
+```
+
+What to look for:
+
+- current cash
+- contract requirements you can afford to serve
+- rack specs that match those contracts
+- whether GPU is actually needed yet
+
+### Step 3: build a datacenter in a sensible region
+
+Example early-game move:
+
+```bash
+dct build-dc garage --region us_west
+```
+
+Then list datacenters to capture the generated ID:
+
+```bash
+dct ls datacenters
+```
+
+### Step 4: add racks that match a specific contract
+
+Example balanced starter build:
+
+```bash
+dct add-rack <dcId> 0 0 C1
+dct add-rack <dcId> 0 1 M1
+dct add-rack <dcId> 0 2 S1
+```
+
+If the contract is compute-heavy, bias toward more `C1`/`C2`.
+If it is storage-heavy, add `S1`/`S2`.
+Only buy GPU racks when the contract really needs GPU.
+
+### Step 5: confirm what is installed
+
+```bash
+dct ls racks <dcId>
+dct status
+```
+
+### Step 6: accept a contract onto that specific datacenter
+
+```bash
+dct contracts accept <contractId> <dcId>
+```
+
+### Step 7: let time move again
+
+Either resume real-time ticking:
+
+```bash
+dct resume
+```
+
+Or advance manually:
+
+```bash
+dct tick 1
+dct tick 3
+```
+
+### Step 8: keep checking cash and contract state
+
+```bash
+dct status
+dct ls contracts
+```
+
+If you want the most detail about cashflow events, use the TUI dashboard or the full snapshot JSON.
+
+---
+
+## 7. Cash-management guidance
+
+The game has two different money rhythms:
+
+### Immediate cash changes
+
+These hit your cash right away:
+
+- building a datacenter
+- adding a rack
+- moving a rack (move cost)
+
+### Tick-based cash changes
+
+These happen when time advances:
+
+- contract revenue
+- opex
+- penalties
+- ledger updates
+
+So a good operating habit is:
+
+```bash
+# before spending
+dct status
+
+# after building / buying racks
+dct status
+
+# after some time passes
+dct status
+```
+
+For a deeper look at money events:
+
+- open `dct` and look at the **Dashboard** tab for the ledger tail
+- or run:
+
+```bash
+dct query '{"kind":"snapshot"}' --json
+```
+
+and inspect `data.ledger`.
+
+---
+
+## 8. Contract acceptance guardrails
+
+This is the most important gameplay rule for CLI play:
+
+### The CLI does **not** validate contract fit before acceptance
+
+`dct contracts accept <contractId> <dcId>` checks that:
+
+- the datacenter exists
+- the market contract exists
+
+But it does **not** prove that the datacenter can safely satisfy the contract.
+
+You must check yourself.
+
+### What to verify before accepting
+
+- Does the datacenter have enough total vCPU?
+- enough RAM?
+- enough storage?
+- enough GPU?
+- enough headroom for already-active contracts on that same datacenter?
+
+If one datacenter is serving multiple contracts, think in terms of:
+
+- **total assigned demand** on that DC
+- **total healthy supply** on that DC
+
+Do **not** stack contracts tightly to 100% capacity.
+
+---
+
+## 9. Current placement/build constraints worth remembering
+
+When placing racks, the game enforces:
+
+- row/position must be valid
+- target slot must be empty
+- datacenter power limit must not be exceeded
+- cooling limit must not be exceeded
+- bandwidth limit must not be exceeded
+- tier-3 racks require liquid cooling, so practically `hyperscale`
+
+Practical implications:
+
+- `garage` is the easiest early-game entry point
+- `warehouse` is your main mid-game scaler
+- `hyperscale` is for later, especially tier-3 density
+
+---
+
+## 10. TUI guide
+
+Launch with:
+
+```bash
+dct
+```
+
+If multiple saves exist, the TUI first shows a save selector.
+
+### TUI keys supported today
+
+Global:
+
+- `1` — Dashboard
+- `2` — Datacenters
+- `3` — Contracts
+- `4` — Catalog
+- `:` — command palette
+- `?` — help
+- `q` — quit TUI
+
+Datacenters tab:
+
 - `↑` / `↓` — select datacenter
-- `n` — open palette with `build-dc `
-- `r` — open palette with `add-rack <selectedDc> `
-- `x` — open palette with `remove-rack <selectedDc> `
+- `n` — prefill `build-dc `
+- `r` — prefill `add-rack <selectedDc> `
+- `x` — prefill `remove-rack <selectedDc> `
+- `m` — prefill `move-rack <selectedDc> `
 
-### Contracts Tab (`3`)
-- `a` — open palette with `accept-contract `
-- `c` — open palette with `cancel-contract `
+Contracts tab:
 
-### Command Palette (`:`)
-- Type any CLI command (without the `dct` prefix)
-- `Tab` — autocomplete
-- `↑` / `↓` — browse command history
-- `Enter` — execute
+- `a` — prefill `accept-contract `
+- `c` — prefill `cancel-contract `
+
+Palette behavior:
+
+- enter commands **without** the `dct` prefix
+- `Tab` — autocomplete top-level command names
+- `↑` / `↓` — history
+- `Enter` — run
 - `Esc` — cancel
 
----
+Example palette commands:
 
-## 7. Querying Game State
-
-Use these query patterns to understand your position before making decisions:
-
-```bash
-# Full game state (JSON)
-dct status --json
-
-# In the TUI, the Dashboard tab shows:
-# - Current cash
-# - Number of datacenters
-# - Active and market contract counts
-# - Recent ledger entries (revenue, opex, penalties, capex)
-
-# The Datacenters tab shows:
-# - Each datacenter's ID, name, rack count
-# - Selected datacenter's power/cooling/bandwidth limits
-# - Rack grid visualization
-
-# The Contracts tab shows:
-# - All market contracts with ID, name, payment, term, status
-# - All active contracts with assigned datacenter
-
-# The Catalog tab shows:
-# - All datacenter specs with dimensions and capex
-# - All rack specs with kind, tier, resources, and capex
+```text
+status
+ls contracts
+build-dc garage --region us_west
+add-rack dc-123 0 0 C1
+contracts details contract-abc
+contracts accept contract-abc dc-123
+pause
+resume
+tick 3
 ```
 
 ---
 
-## 8. Decision Checklist
+## 11. Recommended opening sequence
 
-Before executing any major action, verify:
-
-**Building a datacenter:**
-- [ ] Do I have enough cash for capex + some racks?
-- [ ] Does the region have enough remaining power and staff?
-- [ ] Is the region's power cost and tax rate favorable?
-
-**Adding a rack:**
-- [ ] Does the datacenter have a free slot at that row/position?
-- [ ] Will total power draw stay under the datacenter limit?
-- [ ] Will total heat stay under cooling capacity?
-- [ ] Will total bandwidth stay under the limit?
-- [ ] Is the rack tier compatible with cooling type?
-- [ ] Do I have enough cash for the rack capex?
-
-**Accepting a contract:**
-- [ ] What are the contract's requirements (vCPU, RAM, storage, GPU)?
-- [ ] What is the total demand of ALL active contracts on the target datacenter?
-- [ ] What is the total healthy capacity of the target datacenter?
-- [ ] Is there a healthy buffer (e.g., 10–20%) above total demand?
-- [ ] Will the contract's monthly payment exceed its share of opex?
-- [ ] How many ticks remain before the offer expires?
-
-**Removing a rack:**
-- [ ] Will the remaining healthy capacity still cover all assigned contracts?
-- [ ] Is there a better rack to replace it with?
-
----
-
-## 9. Example Opening Moves
+A simple, robust CLI opening:
 
 ```bash
-# 1. Start a new game
+# 1. start fresh
 dct new --yes --seed 42
 
-# 2. Check status
+# 2. freeze time while planning
+dct pause
+
+# 3. inspect money, offers, and available hardware
+dct status
+dct ls contracts
+dct ls catalog
+
+# 4. build an early DC in a strong region
+dct build-dc garage --region us_west
+
+# 5. capture the generated DC id
+dct ls datacenters
+
+# 6. add a small balanced rack mix
+dct add-rack <dcId> 0 0 C1
+dct add-rack <dcId> 0 1 M1
+dct add-rack <dcId> 0 2 S1
+
+# 7. verify installation and remaining cash
+dct ls racks <dcId>
 dct status
 
-# 3. Build a garage in Iowa (cheap power, low tax)
-dct build-dc garage --id dc-1 --region iowa
+# 8. accept one contract that clearly fits
+dct contracts accept <contractId> <dcId>
 
-# 4. Add a compute rack
-dct add-rack dc-1 0 0 C1 --id rp-c1
-
-# 5. Add a memory rack
-dct add-rack dc-1 0 1 M1 --id rp-m1
-
-# 6. Check contracts in TUI or advance a tick to see market
-dct tick
-
-# 7. Accept a contract that matches your capacity
-dct accept-contract contract-edge-compute-burst-12345 dc-1
-
-# 8. Advance time and watch cashflow
-dct tick 3
-
-# 9. Check status to see revenue vs opex
+# 9. let time pass in a controlled way
+dct tick 1
 dct status
+dct ls contracts
+
+# 10. if things look good, resume normal ticking
+dct resume
 ```
 
 ---
 
-## 10. Advanced Tips
+## 12. High-value strategy guidance
 
-- **Capacity planning:** Keep a spreadsheet or mental model of each datacenter's `healthy capacity` vs `total assigned demand`. Recalculate after every rack addition, removal, or failure.
-- **Contract math:** A contract is profitable if `monthlyPayment > (share of opex + rack depreciation)`. Since opex is shared across all racks in a datacenter, more contracts = better amortization of fixed costs (staff, bandwidth).
-- **Rack replacement:** Old racks (30+ months) have high failure chance. Consider proactively removing them before they fail, especially if you have tight margins.
-- **Tax optimization:** If a datacenter is unprofitable (opex > revenue), it pays zero tax on that datacenter. Sometimes it's better to cancel a bad contract than to keep it.
-- **Market timing:** Contract difficulty scales with ticks. Early contracts are small and easy. Later contracts are larger and more lucrative. Don't expand too slowly or you'll miss the scaling curve.
-- **Rush contracts:** These have a 2-tick offer window. If you see one that fits your capacity, act fast — the 1.4× multiplier is excellent.
-- **Anchor contracts:** Lower payment but very long term and low penalty. Good for stable baseline revenue to cover fixed opex.
+- Prefer `us_west`, `us_east`, or `me_central` for early builds.
+- Start with a `garage` unless you already know you need `warehouse` scale.
+- Buy racks to fit **actual visible contracts**, not theoretical future demand.
+- Avoid GPU racks until a GPU contract justifies them.
+- Keep a cash buffer after capex; do not spend down to near-zero.
+- Pause before doing a burst of build/accept actions.
+- After every big decision, re-run:
+
+```bash
+dct status
+dct ls contracts
+```
+
+---
+
+## 13. Important CLI footguns / caveats
+
+### 13.1 Prefer auto-generated IDs unless you really need custom ones
+
+`build-dc` and `add-rack` both support `--id`, but the CLI also uses hidden game-targeting path logic internally.
+
+Safest advice for normal play:
+
+- let the CLI auto-generate datacenter and rack placement IDs
+- then read those IDs back via `dct ls datacenters` / `dct ls racks <dcId>`
+
+If you are scripting heavily, prefer explicit `--save` / `--socket` isolation.
+
+### 13.2 Use `dct ls contracts` for the full list
+
+Prefer:
+
+```bash
+dct ls contracts
+dct ls contracts --json
+```
+
+Use `dct contracts details <contractId>` when you want one contract and its recent SLA trail.
+
+### 13.3 Full snapshot is the best agent-facing state dump
+
+For an LLM agent, this is usually the most useful command:
+
+```bash
+dct query '{"kind":"snapshot"}' --json
+```
+
+---
+
+## 14. What to do when helping a user play
+
+When acting as the player's copilot:
+
+1. ask for or obtain current state via `dct status --json` and preferably snapshot JSON
+2. pause the game if they are about to plan or build
+3. inspect contracts
+4. compare visible contract requirements against rack catalog and cash
+5. recommend a specific DC region + rack mix
+6. name the exact commands to run next
+7. after execution, re-check cash and contract state
+
+If you need a minimal safe command bundle, use:
+
+```bash
+dct pause
+dct status
+dct ls contracts
+dct ls catalog
+dct ls datacenters
+```
+
+That is usually enough to plan the next move.
