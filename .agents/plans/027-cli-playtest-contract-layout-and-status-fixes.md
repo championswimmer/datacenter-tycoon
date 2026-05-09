@@ -163,3 +163,4 @@ export type ContractStatus =
 ## Changelog
 
 - 2026-05-09 — Created from playtest follow-up items 3.1, 3.4, and 3.5.
+- 2026-05-09 — Aligned the web contract UI with the `expired` status rename so workspace-wide typecheck remains green.

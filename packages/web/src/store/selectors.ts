@@ -263,7 +263,7 @@ export function selectDatacenterRackMaintenanceViews(
 
 /**
  * Contracts that are currently running (active or breached).
- * Does not include offered, completed, or cancelled.
+ * Does not include offered, expired, or cancelled.
  */
 export function selectActiveContracts(state: GameState): Contract[] {
   return state.activeContracts.filter(

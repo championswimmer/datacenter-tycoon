@@ -27,7 +27,7 @@
 
 .status-active    { border-left-color: var(--neon-lime);    }
 .status-breached  { border-left-color: var(--neon-red);     }
-.status-completed { border-left-color: var(--neon-cyan);    opacity: 0.7; }
+.status-expired   { border-left-color: var(--neon-cyan);    opacity: 0.7; }
 .status-cancelled { border-left-color: var(--fg-3);         opacity: 0.5; }
 
 .cardTop {
@@ -59,7 +59,7 @@
 
 .pill-active    { background: rgba(155,255,90,.15);  color: var(--neon-lime);   border: 1px solid rgba(155,255,90,.3);  }
 .pill-breached  { background: rgba(255,84,112,.15);  color: var(--neon-red);    border: 1px solid rgba(255,84,112,.3);  }
-.pill-completed { background: rgba(94,240,255,.12);  color: var(--neon-cyan);   border: 1px solid rgba(94,240,255,.25); }
+.pill-expired   { background: rgba(94,240,255,.12);  color: var(--neon-cyan);   border: 1px solid rgba(94,240,255,.25); }
 .pill-cancelled { background: rgba(255,255,255,.05); color: var(--fg-2);        border: 1px solid var(--grid);          }
 .pill-offered   { background: rgba(255,177,60,.12);  color: var(--neon-amber);  border: 1px solid rgba(255,177,60,.3);  }
 

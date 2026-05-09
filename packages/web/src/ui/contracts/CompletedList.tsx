@@ -12,7 +12,7 @@ function fmt(n: number): string {
 const STATUS_LABEL: Record<ContractStatus, string> = {
   active:    "ACTIVE",
   breached:  "BREACHED",
-  completed: "COMPLETED",
+  expired:   "EXPIRED",
   cancelled: "CANCELLED",
   offered:   "OFFERED",
 };
@@ -23,13 +23,13 @@ export function CompletedList() {
   ) as Contract[];
   const datacenters = useSelector(selectAllDatacenters);
 
-  const completed = state.filter(c => c.status === "completed" || c.status === "cancelled");
+  const completed = state.filter(c => c.status === "expired" || c.status === "cancelled");
 
   const dcName = (id: string | undefined) =>
     datacenters.find(d => d.id === id)?.name ?? "—";
 
   const totalRevenue = completed
-    .filter(c => c.status === "completed")
+    .filter(c => c.status === "expired")
     .reduce((sum, c) => {
       const months = c.termMonths;
       return sum + c.monthlyPayment * months;
@@ -40,7 +40,7 @@ export function CompletedList() {
     .reduce((sum, c) => sum + c.penaltyPerMonth, 0);
 
   if (completed.length === 0) {
-    return <p className={styles.empty}>No completed contracts yet.</p>;
+    return <p className={styles.empty}>No expired or cancelled contracts yet.</p>;
   }
 
   return (
@@ -56,7 +56,7 @@ export function CompletedList() {
               <div className={styles.dcLabel}>→ {dcName(c.assignedDcId)}</div>
             </div>
             <div className={styles.financials}>
-              {c.status === "completed" ? (
+              {c.status === "expired" ? (
                 <div className={styles.payment}>
                   {fmt(c.monthlyPayment * c.termMonths)}<span className={styles.unit}> earned</span>
                 </div>
