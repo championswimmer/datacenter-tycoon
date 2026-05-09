@@ -49,7 +49,7 @@ function finalizeContract(contract: Contract, tick: Tick): Contract {
 
 	return {
 		...contract,
-		status: contract.status === "active" ? "expired" : "cancelled",
+		status: "expired",
 	};
 }
 
@@ -130,17 +130,8 @@ export function tick(state: GameState): GameState {
 
 	const totalOpex = roundMoney(baseOpexTotal + totalTax);
 
-	const autoCancelledContracts = revenueResult.updatedContracts.map((contract): Contract => {
-		if (contract.status === "breached" && state.activeContracts.some(
-			(prev) => prev.id === contract.id && prev.status === "breached",
-		)) {
-			return { ...contract, status: "cancelled" };
-		}
-		return contract;
-	});
-
-	const finalizedContracts = autoCancelledContracts.map((contract) => finalizeContract(contract, nextTick));
-	const reliabilityOutcomes = collectContractSlaOutcomes(state.activeContracts, finalizedContracts, nextTick);
+	const finalizedContracts = revenueResult.updatedContracts.map((contract) => finalizeContract(contract, nextTick));
+	const reliabilityOutcomes = collectContractSlaOutcomes(state.activeContracts, revenueResult.updatedContracts, nextTick);
 	const nextReliability = updatePlayerReliability(state.player.reliability, reliabilityOutcomes);
 	const netCashDelta = roundMoney(revenueResult.revenue - totalOpex);
 	const ledgerEntries: LedgerEntry[] = [];

@@ -259,7 +259,7 @@ test("evaluateContract reports whether a datacenter can satisfy a contract", () 
 	assert.equal(evaluateContract(constrainedDatacenter, contract), "breached");
 });
 
-test("advanceContract transitions between active, breached, expired, and cancelled states", () => {
+test("advanceContract transitions between active, breached, and expired states", () => {
 	const datacenter = makeDatacenter("dc-1");
 	const breachedDatacenter = makeDatacenter("dc-2", [placement("rack-1", "C1", 0, 0)]);
 	const baseContract = makeContract("lifecycle-1", {
@@ -273,7 +273,7 @@ test("advanceContract transitions between active, breached, expired, and cancell
 	assert.equal(advanceContract(baseContract, datacenter, 5).status, "active");
 	assert.equal(advanceContract(baseContract, breachedDatacenter, 5).status, "breached");
 	assert.equal(advanceContract(baseContract, datacenter, 8).status, "expired");
-	assert.equal(advanceContract(baseContract, breachedDatacenter, 8).status, "cancelled");
+	assert.equal(advanceContract(baseContract, breachedDatacenter, 8).status, "expired");
 });
 
 test("refreshContractMarket adjusts offer count by reliability band while preserving retained offers", () => {
@@ -429,7 +429,7 @@ test("anchor contracts have longer term and lower penalty ratio", () => {
 	assert.ok(anchor!.termMonths >= 8, `anchor term ${anchor!.termMonths} should be >= 8`);
 });
 
-test("advanceContract auto-cancels a contract that was already breached", () => {
+test("advanceContract keeps an already breached contract breached while it remains live", () => {
 	const dc = makeDatacenter("dc-1", [placement("rack-1", "C1", 0, 0)]);
 	const contract = makeContract("breach-1", {
 		status: "breached",
@@ -440,7 +440,7 @@ test("advanceContract auto-cancels a contract that was already breached", () => 
 	});
 
 	const result = advanceContract(contract, dc, 4);
-	assert.equal(result.status, "cancelled");
+	assert.equal(result.status, "breached");
 });
 
 test("advanceContract keeps a newly-breachd contract as breached for one tick", () => {

@@ -62,18 +62,22 @@ test("classifyContractSlaOutcomeKind treats active and clean expiry months as fu
 	);
 });
 
-test("classifyContractSlaOutcomeKind distinguishes first breach from cancellation escalation", () => {
+test("classifyContractSlaOutcomeKind distinguishes repeated breaches from explicit cancellation", () => {
 	assert.equal(
 		classifyContractSlaOutcomeKind(makeContract("breach", { status: "active" }), makeContract("breach", { status: "breached" })),
 		"breached",
 	);
 	assert.equal(
-		classifyContractSlaOutcomeKind(makeContract("repeat-breach", { status: "breached" }), makeContract("repeat-breach", { status: "cancelled" })),
+		classifyContractSlaOutcomeKind(makeContract("repeat-breach", { status: "breached" }), makeContract("repeat-breach", { status: "breached" })),
+		"breached",
+	);
+	assert.equal(
+		classifyContractSlaOutcomeKind(makeContract("explicit-cancel", { status: "active" }), makeContract("explicit-cancel", { status: "cancelled" })),
 		"cancelled",
 	);
 	assert.equal(
-		classifyContractSlaOutcomeKind(makeContract("term-end-cancel", { status: "active" }), makeContract("term-end-cancel", { status: "cancelled" })),
-		"cancelled",
+		classifyContractSlaOutcomeKind(makeContract("breached-expiry", { status: "breached" }), makeContract("breached-expiry", { status: "expired" })),
+		undefined,
 	);
 });
 
@@ -84,13 +88,12 @@ test("collectContractSlaOutcomes preserves contract order and ignores contracts 
 	];
 	const nextContracts = [
 		makeContract("alpha", { status: "expired" }),
-		makeContract("beta", { status: "cancelled" }),
+		makeContract("beta", { status: "expired" }),
 		makeContract("gamma", { status: "active" }),
 	];
 
 	assert.deepEqual(collectContractSlaOutcomes(previousContracts, nextContracts, tick(7)), [
 		{ contractId: contractId("alpha"), contractName: "Contract alpha", tick: 7, kind: "fulfilled" },
-		{ contractId: contractId("beta"), contractName: "Contract beta", tick: 7, kind: "cancelled" },
 	]);
 });
 
