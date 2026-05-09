@@ -11,6 +11,7 @@ import {
 import {
 	acceptContract,
 	advanceContract,
+	ContractAcceptanceError,
 	evaluateContract,
 	generateContract,
 	marketDifficulty,
@@ -186,6 +187,64 @@ test("acceptContract rejects unknown datacenters and already active contracts", 
 	});
 	assert.throws(() => acceptContract(state, contractId("active-1"), datacenterId("dc-1")), {
 		message: /Contract already active/,
+	});
+});
+
+test("acceptContract rejects contracts that do not fit current available datacenter capacity", () => {
+	const committed = makeContract("active-1", {
+		status: "active",
+		startedAtTick: tick(1),
+		assignedDcId: datacenterId("dc-1"),
+		requirements: { vCpu: 300, ramGb: 5_000, storageTb: 1_100, gpuFlops: 450 },
+	});
+	const offeredContract = makeContract("market-1", {
+		requirements: { vCpu: 130, ramGb: 1_500, storageTb: 200, gpuFlops: 60 },
+	});
+	const state = makeState({
+		contractMarket: [offeredContract],
+		activeContracts: [committed],
+	});
+
+	assert.throws(
+		() => acceptContract(state, offeredContract.id, datacenterId("dc-1")),
+		(error: unknown) => {
+			assert.ok(error instanceof ContractAcceptanceError);
+			assert.deepEqual(error.data, {
+				code: "insufficient_capacity",
+				dcId: datacenterId("dc-1"),
+				required: offeredContract.requirements,
+				available: { vCpu: 116, ramGb: 1_272, storageTb: 176, gpuFlops: 50 },
+			});
+			return true;
+		},
+	);
+	assert.deepEqual(state.contractMarket, [offeredContract]);
+	assert.deepEqual(state.activeContracts, [committed]);
+});
+
+test("acceptContract allows an exact-fit contract on remaining available capacity", () => {
+	const committed = makeContract("active-1", {
+		status: "active",
+		startedAtTick: tick(1),
+		assignedDcId: datacenterId("dc-1"),
+		requirements: { vCpu: 300, ramGb: 5_000, storageTb: 1_100, gpuFlops: 450 },
+	});
+	const offeredContract = makeContract("market-1", {
+		requirements: { vCpu: 116, ramGb: 1_272, storageTb: 176, gpuFlops: 50 },
+	});
+	const state = makeState({
+		contractMarket: [offeredContract],
+		activeContracts: [committed],
+	});
+
+	const nextState = acceptContract(state, offeredContract.id, datacenterId("dc-1"));
+
+	assert.equal(nextState.activeContracts.length, 2);
+	assert.deepEqual(nextState.activeContracts.at(-1), {
+		...offeredContract,
+		status: "active",
+		startedAtTick: state.tick,
+		assignedDcId: datacenterId("dc-1"),
 	});
 });
 

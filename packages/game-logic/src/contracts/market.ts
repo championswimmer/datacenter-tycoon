@@ -1,7 +1,34 @@
 import { reliabilityMarketPolicyForScore } from "../balance/reliability.js";
+import { datacenterContractCapacitySummary } from "../entities/datacenter.js";
 import { rngFromState } from "../sim/rng.js";
-import type { ContractId, DatacenterId, GameState } from "../types.js";
+import type { Capacity, ContractId, ContractRequirements, DatacenterId, GameState } from "../types.js";
 import { generateContract } from "./generator.js";
+
+export interface ContractAcceptanceFailure {
+	code: "insufficient_capacity";
+	dcId: DatacenterId;
+	required: ContractRequirements;
+	available: Capacity;
+}
+
+export class ContractAcceptanceError extends Error {
+	readonly data: ContractAcceptanceFailure;
+
+	constructor(data: ContractAcceptanceFailure) {
+		super(`Datacenter ${data.dcId} lacks available capacity for this contract`);
+		this.name = "ContractAcceptanceError";
+		this.data = data;
+	}
+}
+
+function canCoverRequirements(capacity: Capacity, requirements: ContractRequirements): boolean {
+	return (
+		capacity.vCpu >= requirements.vCpu &&
+		capacity.ramGb >= requirements.ramGb &&
+		capacity.storageTb >= requirements.storageTb &&
+		capacity.gpuFlops >= requirements.gpuFlops
+	);
+}
 
 // Reliability never changes the core difficulty curve itself. It only affects how many
 // offers are backfilled and the generation policy used after this tick-based difficulty
@@ -46,8 +73,8 @@ export function acceptContract(
 	contractId: ContractId,
 	dcId: DatacenterId,
 ): GameState {
-	const datacenterExists = state.datacenters.some((datacenter) => datacenter.id === dcId);
-	if (!datacenterExists) {
+	const datacenter = state.datacenters.find((candidate) => candidate.id === dcId);
+	if (!datacenter) {
 		throw new Error(`Unknown datacenter: ${dcId}`);
 	}
 
@@ -59,6 +86,16 @@ export function acceptContract(
 	const contractToAccept = state.contractMarket.find((contract) => contract.id === contractId);
 	if (!contractToAccept) {
 		throw new Error(`Unknown market contract: ${contractId}`);
+	}
+
+	const capacitySummary = datacenterContractCapacitySummary(datacenter, state.activeContracts);
+	if (!canCoverRequirements(capacitySummary.available, contractToAccept.requirements)) {
+		throw new ContractAcceptanceError({
+			code: "insufficient_capacity",
+			dcId,
+			required: contractToAccept.requirements,
+			available: capacitySummary.available,
+		});
 	}
 
 	const remainingMarket = state.contractMarket.filter((contract) => contract.id !== contractId);

@@ -193,7 +193,7 @@ test("reduce handles RemoveRack and rejects missing placements", () => {
 test("reduce handles AcceptContract and delegates validation", () => {
 	const state = {
 		...newGame(42, { startingCash: 3_000_000 }),
-		datacenters: [makeDatacenter("dc-1")],
+		datacenters: [makeDatacenter("dc-1", [placement("rack-1", "C1", 0, 0)])],
 		contractMarket: [
 			{
 				id: contractId("offer-1"),
@@ -228,6 +228,70 @@ test("reduce handles AcceptContract and delegates validation", () => {
 				dcId: datacenterId("dc-1"),
 			}),
 		{ message: /Unknown market contract/ },
+	);
+});
+
+test("reduce rejects AcceptContract when the datacenter lacks current available capacity", () => {
+	const state = {
+		...newGame(42, { startingCash: 3_000_000 }),
+		datacenters: [makeDatacenter("dc-1", [
+			placement("rack-1", "C2", 0, 0),
+			placement("rack-2", "M2", 0, 1),
+			placement("rack-3", "S2", 0, 2),
+			placement("rack-4", "G1", 0, 3),
+		])],
+		activeContracts: [
+			{
+				id: contractId("active-1"),
+				name: "Active 1",
+				requirements: { vCpu: 300, ramGb: 5_000, storageTb: 1_100, gpuFlops: 450 },
+				monthlyPayment: 10_000,
+				penaltyPerMonth: 2_500,
+				termMonths: 6,
+				status: "active",
+				urgency: "standard",
+				tier: 1,
+				offeredAtTick: tick(0),
+				expiresAtTick: tick(6),
+				startedAtTick: tick(0),
+				assignedDcId: datacenterId("dc-1"),
+			},
+		],
+		contractMarket: [
+			{
+				id: contractId("offer-2"),
+				name: "Offer 2",
+				requirements: { vCpu: 130, ramGb: 1_500, storageTb: 200, gpuFlops: 60 },
+				monthlyPayment: 2_000,
+				penaltyPerMonth: 500,
+				termMonths: 2,
+				status: "offered",
+				urgency: "standard",
+				tier: 1,
+				offeredAtTick: tick(0),
+				expiresAtTick: tick(6),
+			},
+		],
+	};
+
+	assert.throws(
+		() =>
+			reduce(state, {
+				type: "AcceptContract",
+				contractId: contractId("offer-2"),
+				dcId: datacenterId("dc-1"),
+			}),
+		(error: unknown) => {
+			assert.ok(error instanceof Error);
+			assert.equal(error.message, "Datacenter dc-1 lacks available capacity for this contract");
+			assert.deepEqual((error as Error & { data?: unknown }).data, {
+				code: "insufficient_capacity",
+				dcId: datacenterId("dc-1"),
+				required: { vCpu: 130, ramGb: 1_500, storageTb: 200, gpuFlops: 60 },
+				available: { vCpu: 116, ramGb: 1_272, storageTb: 176, gpuFlops: 50 },
+			});
+			return true;
+		},
 	);
 });
 
