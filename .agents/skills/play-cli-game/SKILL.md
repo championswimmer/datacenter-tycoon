@@ -93,7 +93,7 @@ Notes:
 
 - Use `dct ls datacenters` or `dct ls dcs`, **not** `dct ls dc`
 - Use `dct ls contracts` for listing; bare `dct contract` is not the listing command anymore
-- `dct ls catalog` prints **both** rack and datacenter specs together
+- `dct ls catalog` prints **both** rack and datacenter specs together, including datacenter layout as `rows × cols (slots)`
 - There is no separate `dct ls market` / `dct ls active` command today
 
 ---
@@ -173,6 +173,7 @@ This shows:
 - requirements
 - penalty
 - assigned datacenter for active contracts
+- status labels where `breached` means still-live failure, `cancelled` means explicit player cancellation, and `expired` means the term ended naturally
 
 ### 4.5 Contract-focused subcommands
 
@@ -208,6 +209,7 @@ Supported datacenter spec IDs today:
 - `garage`
 - `warehouse`
 - `hyperscale`
+- `hyperscale`
 
 ### 4.7 Add / remove / move racks
 
@@ -235,6 +237,8 @@ dct racks decom dc-ab12cd34 rp-1234abcd
 
 dct racks move dc-ab12cd34 rp-1234abcd dc-ef56gh78 0 0
 ```
+
+Before placing racks, use `dct ls catalog` and `dct ls datacenters` to confirm the valid `rows` / `cols` layout and placement bounds for the target datacenter.
 
 ### 4.8 Accept / cancel contracts
 

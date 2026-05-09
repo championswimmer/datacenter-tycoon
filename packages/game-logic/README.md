@@ -130,7 +130,7 @@ interface ContractSlaOutcome {
 }
 ```
 
-The current save policy remains **destructive on incompatible format changes**. Version `4` added this reliability shape, so older saves are intentionally rejected rather than migrated.
+The current save policy remains **destructive on incompatible format changes**. Version `5` migrates legacy contract saves from `completed` to `expired`, while versions earlier than `4` are still intentionally rejected because they predate reliability tracking.
 
 ## Reliability-driven contract market
 
@@ -139,7 +139,7 @@ Reliability is now a full simulation input, not just persisted profile metadata:
 - New games start at **50** reliability (`RELIABILITY_BASELINE_SCORE`).
 - Each fulfilled month contributes **+3** reliability.
 - A breached month contributes **-8** reliability.
-- A cancellation after sustained breach contributes **-12** reliability.
+- An explicit player cancellation contributes **-12** reliability.
 - Scores are clamped to **0–100** and recent SLA history keeps the last **6** outcomes.
 
 The score maps to three bands:
@@ -216,7 +216,7 @@ Operational behavior to expect:
 - With **no active demand**, billed power is the idle baseline (`RACK_IDLE_BASELINE_POWER_KW`) multiplied by rack count.
 - With **active contracts**, a deterministic allocator marks the minimum healthy racks active for assigned demand; those racks bill full spec draw.
 - **Repairing racks** cannot absorb active workload, so healthy racks take load first; repairing/idle racks continue at baseline billing.
-- When contracts are completed, cancelled, or unassigned, billed power drops back toward baseline on the next monthly tick.
+- When contracts are expired, cancelled, or unassigned, billed power drops back toward baseline on the next monthly tick.
 
 ## `GameState` shape
 

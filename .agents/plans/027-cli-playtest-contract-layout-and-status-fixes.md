@@ -1,7 +1,7 @@
 ---
 name: CLI Playtest Contract, Layout, and Status Fixes
 description: Fix the remaining high-priority CLI playtest issues around contract assignment visibility, datacenter layout discoverability, and contract end-state naming.
-status: started
+status: completed
 created: 2026-05-09
 updated: 2026-05-09
 owner: cli
@@ -19,9 +19,9 @@ owner: cli
   - [x] 3.1 Replace `completed` with `expired` in game-logic contract lifecycle
   - [x] 3.2 Reserve `cancelled` for explicit player cancellation and stop auto-relabeling breach failures as cancelled
   - [x] 3.3 Update save migration, CLI presenters, and tests for the new status vocabulary
-- [ ] **Phase 4 — Regression coverage and docs**
+- [x] **Phase 4 — Regression coverage and docs**
   - [x] 4.1 Add end-to-end tests covering assigned, breached, cancelled, and expired contracts
-  - [ ] 4.2 Update README / agent guidance for the new CLI contract and catalog output
+  - [x] 4.2 Update README / agent guidance for the new CLI contract and catalog output
 
 ## Overview
 
