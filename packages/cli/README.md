@@ -47,6 +47,16 @@ dct resume
 dct speed 4
 ```
 
+## Contract and layout UX notes
+
+- `dct ls contracts` shows the assigned datacenter for active contracts.
+- Contract lifecycle labels now distinguish:
+  - `breached` — the contract is live but currently failing capacity/SLA checks
+  - `cancelled` — the player explicitly cancelled it
+  - `expired` — the contract term ended naturally
+- `dct ls catalog` shows datacenter geometry as `rows × cols (slots)`.
+- `dct ls datacenters` shows both the layout summary and valid row/column bounds for rack placement.
+
 ## Global flags
 
 - `--json` — print `{ ok, data }` / `{ ok, error }` envelopes for every one-shot command
