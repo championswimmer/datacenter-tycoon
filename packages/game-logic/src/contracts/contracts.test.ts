@@ -259,7 +259,7 @@ test("evaluateContract reports whether a datacenter can satisfy a contract", () 
 	assert.equal(evaluateContract(constrainedDatacenter, contract), "breached");
 });
 
-test("advanceContract transitions between active, breached, completed, and cancelled states", () => {
+test("advanceContract transitions between active, breached, expired, and cancelled states", () => {
 	const datacenter = makeDatacenter("dc-1");
 	const breachedDatacenter = makeDatacenter("dc-2", [placement("rack-1", "C1", 0, 0)]);
 	const baseContract = makeContract("lifecycle-1", {
@@ -272,7 +272,7 @@ test("advanceContract transitions between active, breached, completed, and cance
 
 	assert.equal(advanceContract(baseContract, datacenter, 5).status, "active");
 	assert.equal(advanceContract(baseContract, breachedDatacenter, 5).status, "breached");
-	assert.equal(advanceContract(baseContract, datacenter, 8).status, "completed");
+	assert.equal(advanceContract(baseContract, datacenter, 8).status, "expired");
 	assert.equal(advanceContract(baseContract, breachedDatacenter, 8).status, "cancelled");
 });
 

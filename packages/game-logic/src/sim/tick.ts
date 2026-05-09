@@ -49,7 +49,7 @@ function finalizeContract(contract: Contract, tick: Tick): Contract {
 
 	return {
 		...contract,
-		status: contract.status === "active" ? "completed" : "cancelled",
+		status: contract.status === "active" ? "expired" : "cancelled",
 	};
 }
 
