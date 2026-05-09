@@ -253,7 +253,7 @@ function cancelContract(state: GameState, contractId: ContractId): GameState {
 		throw new Error(`Unknown active contract: ${contractId}`);
 	}
 
-	if (contract.status === "completed" || contract.status === "cancelled") {
+	if (contract.status === "expired" || contract.status === "cancelled") {
 		throw new Error(`Contract cannot be cancelled from status: ${contract.status}`);
 	}
 

@@ -20,14 +20,14 @@ export function classifyContractSlaOutcomeKind(
 	nextContract: Pick<Contract, "status">,
 ): ContractSlaOutcomeKind | undefined {
 	if (
-		previousContract.status === "completed" ||
+		previousContract.status === "expired" ||
 		previousContract.status === "cancelled" ||
 		nextContract.status === "offered"
 	) {
 		return undefined;
 	}
 
-	if (nextContract.status === "active" || nextContract.status === "completed") {
+	if (nextContract.status === "active" || nextContract.status === "expired") {
 		return "fulfilled";
 	}
 
@@ -47,7 +47,7 @@ export function advanceContract(
 	datacenter: Datacenter,
 	currentTick: number,
 ): Contract {
-	if (contract.status === "completed" || contract.status === "cancelled") {
+	if (contract.status === "expired" || contract.status === "cancelled") {
 		return contract;
 	}
 
@@ -58,7 +58,7 @@ export function advanceContract(
 	if (hasTermEnded) {
 		return {
 			...contract,
-			status: evaluation === "fulfilled" ? "completed" : "cancelled",
+			status: evaluation === "fulfilled" ? "expired" : "cancelled",
 		};
 	}
 

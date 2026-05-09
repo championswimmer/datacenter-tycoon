@@ -86,7 +86,7 @@ test("end-to-end scripted game remains profitable over an early 3-tick run", () 
 	const contract = state.activeContracts.find((candidate) => candidate.id === contractId("warehouse-anchor-contract"));
 
 	assert.ok(contract);
-	assert.equal(contract.status, "completed");
+	assert.equal(contract.status, "expired");
 	assert.equal(state.tick, 3);
 	assert.ok(state.player.cash > cashBeforeTicks);
 	assert.ok(state.ledger.some((entry) => entry.type === "revenue"));
@@ -357,7 +357,7 @@ test("activity-aware power billing rises with active contracts and drops after c
 	const firstOpex = Math.abs(state.ledger.find((entry) => entry.type === "opex" && entry.tick === state.tick)!.amount);
 	assert.equal(
 		state.activeContracts.find((contract) => contract.id === contractId("billing-lifecycle-contract"))?.status,
-		"completed",
+		"expired",
 	);
 
 	state = reduce(state, { type: "Tick" });

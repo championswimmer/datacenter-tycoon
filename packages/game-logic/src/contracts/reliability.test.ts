@@ -51,13 +51,13 @@ function makeOutcome(index: number, kind: ContractSlaOutcome["kind"]): ContractS
 	};
 }
 
-test("classifyContractSlaOutcomeKind treats active and clean completion months as fulfilled", () => {
+test("classifyContractSlaOutcomeKind treats active and clean expiry months as fulfilled", () => {
 	assert.equal(
 		classifyContractSlaOutcomeKind(makeContract("active-month", { status: "active" }), makeContract("active-month", { status: "active" })),
 		"fulfilled",
 	);
 	assert.equal(
-		classifyContractSlaOutcomeKind(makeContract("completed-month", { status: "active" }), makeContract("completed-month", { status: "completed" })),
+		classifyContractSlaOutcomeKind(makeContract("expired-month", { status: "active" }), makeContract("expired-month", { status: "expired" })),
 		"fulfilled",
 	);
 });
@@ -83,7 +83,7 @@ test("collectContractSlaOutcomes preserves contract order and ignores contracts 
 		makeContract("beta", { status: "breached" }),
 	];
 	const nextContracts = [
-		makeContract("alpha", { status: "completed" }),
+		makeContract("alpha", { status: "expired" }),
 		makeContract("beta", { status: "cancelled" }),
 		makeContract("gamma", { status: "active" }),
 	];
