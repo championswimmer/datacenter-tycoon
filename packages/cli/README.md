@@ -3,7 +3,7 @@
 Terminal client for Datacenter Tycoon.
 
 It provides two modes:
-- one-shot commands like `dct status`, `dct ls contracts`, `dct add-rack ...`
+- one-shot commands like `dct status`, `dct ls contracts`, `dct dc build ...`, and `dct racks add ...`
 - an interactive terminal UI launched with just `dct`
 
 ## Architecture
@@ -32,18 +32,14 @@ dct ls datacenters
 dct ls racks <dcId>
 dct ls catalog
 
-dct build-dc garage --region us_west
-dct add-rack dc-123 0 0 C1
-dct remove-rack dc-123 rp-123
-dct move-rack dc-123 rp-123 dc-456 0 1
+dct dc build garage --region us_west
+dct racks add dc-123 0 0 C1
+dct racks decom dc-123 rp-123
+dct racks move dc-123 rp-123 dc-456 0 1
 
-dct contracts accept offer-1 dc-123
-dct contracts cancel offer-1
-dct contracts details offer-1
-
-# legacy flat aliases still supported
-dct accept-contract offer-1 dc-123
-dct cancel-contract offer-1
+dct contract accept offer-1 dc-123
+dct contract cancel offer-1
+dct contract details offer-1
 
 dct tick 10
 dct pause
@@ -53,7 +49,7 @@ dct speed 4
 
 ## Global flags
 
-- `--json` — print `{ ok, data }` / `{ ok, error }` envelopes
+- `--json` — print `{ ok, data }` / `{ ok, error }` envelopes for every one-shot command
 - `--save <path>` — override savefile path
 - `--socket <path>` — override local socket path
 - `--no-daemon` — fail instead of auto-spawning the daemon
@@ -86,10 +82,10 @@ Defaults:
 
 Helpful palette commands:
 - `ls contracts`
-- `build-dc garage --region us_west`
-- `add-rack <dcId> <row> <position> C1`
-- `contracts details <contractId>`
-- `contracts accept <contractId> <dcId>`
+- `dc build garage --region us_west`
+- `racks add <dcId> <row> <position> C1`
+- `contract details <contractId>`
+- `contract accept <contractId> <dcId>`
 - `tick 10`
 
 ## Development

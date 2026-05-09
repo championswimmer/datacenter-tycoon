@@ -5,7 +5,7 @@ Guidance for contributors working in `packages/cli`.
 ## Scope
 
 This package provides:
-- one-shot CLI commands (`dct status`, `dct ls`, `dct add-rack`, `dct move-rack`, ...)
+- one-shot CLI commands (`dct status`, `dct ls`, `dct dc ...`, `dct racks ...`, `dct contract ...`, ...)
 - the local daemon transport/client bridge
 - the interactive terminal UI
 
@@ -15,6 +15,7 @@ It must consume `@datacenter-tycoon/game-logic` rather than reimplementing rules
 
 - Keep daemon/game integration thin: `Action` values should flow directly into `reduce()`.
 - Keep command handlers small and script-friendly.
+- Prefer grouped noun-first command routers (`dc`, `racks`, `contract`) over adding new flat verb commands.
 - Prefer pure render helpers for TUI output so they are easy to snapshot test.
 - Respect `--json` and machine-readable envelopes for all one-shot commands.
 - TUI state should be derived from daemon snapshots and events, not from duplicate game rules.
