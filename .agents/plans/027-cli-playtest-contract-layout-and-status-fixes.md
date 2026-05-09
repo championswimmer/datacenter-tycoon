@@ -20,7 +20,7 @@ owner: cli
   - [x] 3.2 Reserve `cancelled` for explicit player cancellation and stop auto-relabeling breach failures as cancelled
   - [x] 3.3 Update save migration, CLI presenters, and tests for the new status vocabulary
 - [ ] **Phase 4 — Regression coverage and docs**
-  - [ ] 4.1 Add end-to-end tests covering assigned, breached, cancelled, and expired contracts
+  - [x] 4.1 Add end-to-end tests covering assigned, breached, cancelled, and expired contracts
   - [ ] 4.2 Update README / agent guidance for the new CLI contract and catalog output
 
 ## Overview
