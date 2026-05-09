@@ -1,7 +1,7 @@
 ---
 name: play-cli-game
 description: Use when playing or strategizing the Datacenter Tycoon CLI game — building datacenters, placing/moving/removing racks, inspecting contracts, accepting contracts onto specific datacenters, pausing/resuming time, checking cash, or querying game state via `dct`.
-version: 0.3.0
+version: 0.3.1
 ---
 
 # Skill: Play Datacenter Tycoon over the CLI
@@ -14,10 +14,7 @@ This guide is intentionally focused on **what the CLI actually supports today**.
 
 ## 1. Mental model
 
-The CLI has two faces:
-
-- **One-shot commands** like `dct status`, `dct build-dc ...`, `dct ls contracts`
-- **Interactive TUI** launched with just `dct`
+This skill assumes **non-interactive CLI play only** using one-shot commands like `dct status`, `dct build-dc ...`, and `dct ls contracts`.
 
 Under the hood, `dct` talks to a local daemon that owns the game state and advances time.
 
@@ -83,9 +80,9 @@ Useful notes:
 
 ---
 
-## 3. `ls` subcommands that actually exist today
+## 3. `ls` subcommands that exist today
 
-The old docs around `dct ls` are easy to get wrong. The supported subcommands today are:
+The supported subcommands today are:
 
 ```bash
 dct ls saves
@@ -96,7 +93,7 @@ dct ls racks <dcId>
 dct ls catalog
 ```
 
-Notable corrections vs older docs:
+Notes:
 
 - Use `dct ls datacenters` or `dct ls dcs`, **not** `dct ls dc`
 - Use `dct ls contracts` for listing; bare `dct contracts` is not the listing command anymore
@@ -412,7 +409,7 @@ dct status
 dct ls contracts
 ```
 
-If you want the most detail about cashflow events, use the TUI dashboard or the full snapshot JSON.
+If you want the most detail about cashflow events, use the full snapshot JSON.
 
 ---
 
@@ -450,10 +447,7 @@ dct status
 dct status
 ```
 
-For a deeper look at money events:
-
-- open `dct` and look at the **Dashboard** tab for the ledger tail
-- or run:
+For a deeper look at money events, run:
 
 ```bash
 dct query '{"kind":"snapshot"}' --json
@@ -514,66 +508,7 @@ Practical implications:
 
 ---
 
-## 10. TUI guide
-
-Launch with:
-
-```bash
-dct
-```
-
-If multiple saves exist, the TUI first shows a save selector.
-
-### TUI keys supported today
-
-Global:
-
-- `1` — Dashboard
-- `2` — Datacenters
-- `3` — Contracts
-- `4` — Catalog
-- `:` — command palette
-- `?` — help
-- `q` — quit TUI
-
-Datacenters tab:
-
-- `↑` / `↓` — select datacenter
-- `n` — prefill `build-dc `
-- `r` — prefill `add-rack <selectedDc> `
-- `x` — prefill `remove-rack <selectedDc> `
-- `m` — prefill `move-rack <selectedDc> `
-
-Contracts tab:
-
-- `a` — prefill `accept-contract `
-- `c` — prefill `cancel-contract `
-
-Palette behavior:
-
-- enter commands **without** the `dct` prefix
-- `Tab` — autocomplete top-level command names
-- `↑` / `↓` — history
-- `Enter` — run
-- `Esc` — cancel
-
-Example palette commands:
-
-```text
-status
-ls contracts
-build-dc garage --region us_west
-add-rack dc-123 0 0 C1
-contracts details contract-abc
-contracts accept contract-abc dc-123
-pause
-resume
-tick 3
-```
-
----
-
-## 11. Recommended opening sequence
+## 10. Recommended opening sequence
 
 A simple, robust CLI opening:
 
@@ -618,7 +553,7 @@ dct resume
 
 ---
 
-## 12. High-value strategy guidance
+## 11. High-value strategy guidance
 
 - Prefer `us_west`, `us_east`, or `me_central` for early builds.
 - Start with a `garage` unless you already know you need `warehouse` scale.
@@ -635,9 +570,9 @@ dct ls contracts
 
 ---
 
-## 13. Important CLI footguns / caveats
+## 12. Important CLI footguns / caveats
 
-### 13.1 Prefer auto-generated IDs unless you really need custom ones
+### 12.1 Prefer auto-generated IDs unless you really need custom ones
 
 `build-dc` and `add-rack` both support `--id`, but the CLI also uses hidden game-targeting path logic internally.
 
@@ -648,7 +583,7 @@ Safest advice for normal play:
 
 If you are scripting heavily, prefer explicit `--save` / `--socket` isolation.
 
-### 13.2 Use `dct ls contracts` for the full list
+### 12.2 Use `dct ls contracts` for the full list
 
 Prefer:
 
@@ -659,7 +594,7 @@ dct ls contracts --json
 
 Use `dct contracts details <contractId>` when you want one contract and its recent SLA trail.
 
-### 13.3 Full snapshot is the best agent-facing state dump
+### 12.3 Full snapshot is the best agent-facing state dump
 
 For an LLM agent, this is usually the most useful command:
 
@@ -669,7 +604,7 @@ dct query '{"kind":"snapshot"}' --json
 
 ---
 
-## 14. What to do when helping a user play
+## 13. What to do when helping a user play
 
 When acting as the player's copilot:
 
