@@ -39,12 +39,14 @@ export async function runNewCommand(
 	await withClient(
 		parsed,
 		async (client) => {
+			// Pause immediately so the clock doesn't tick while the player plans
+			await client.control({ op: "pause" });
 			await client.query({ kind: "status" });
 		},
 		clientFactory,
 	);
 
-	writeCommandResult(parsed, `Created a new game at ${paths.savePath}`, {
+	writeCommandResult(parsed, `Created a new game at ${paths.savePath} (paused). Run 'dct resume' when ready to start.`, {
 		savePath: paths.savePath,
 		seed,
 	});
