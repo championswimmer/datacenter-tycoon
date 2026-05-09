@@ -1,10 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import {
   newGame,
   reduce,
   DATACENTER_CATALOG,
 } from "@datacenter-tycoon/game-logic";
+import type { GameState } from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "../../store/gameStore.js";
 import { StoreProvider } from "../../store/storeContext.js";
 import { RackPicker } from "./RackPicker.js";
@@ -16,13 +17,13 @@ function Wrapper({
   row = 0,
   position = 0,
 }: {
-  state?: ReturnType<typeof newGame>;
+  state?: GameState;
   onClose?: () => void;
   row?: number;
   position?: number;
 }) {
   const store = createGameStore(state);
-  const dc    = state.datacenters[0]!;
+  const dc = state.datacenters[0]!;
   return (
     <StoreProvider store={store}>
       <RackPicker
@@ -37,15 +38,14 @@ function Wrapper({
 
 function stateWithGarage() {
   const base = newGame(42);
-  const dcId  = nextDcId();
+  const dcId = nextDcId();
   const firstRegionId = base.map.regions[0]!.id;
-  const state = reduce(base, {
+  return reduce(base, {
     type: "BuildDatacenter",
-    specId: DATACENTER_CATALOG["garage"]!.id,
+    specId: DATACENTER_CATALOG.garage!.id,
     dcId,
     regionId: firstRegionId,
   });
-  return state;
 }
 
 describe("RackPicker", () => {
@@ -64,7 +64,6 @@ describe("RackPicker", () => {
 
   it("shows all 12 rack cards when ALL filter is active", () => {
     render(<Wrapper state={stateWithGarage()} />);
-    // 12 cards + several buttons (chips, footer) — check for rack names
     expect(screen.getByText("C1 Compute Rack")).toBeTruthy();
     expect(screen.getByText("G3 GPU Rack")).toBeTruthy();
   });
@@ -76,39 +75,51 @@ describe("RackPicker", () => {
     expect(screen.queryByText("M1 Memory Rack")).toBeNull();
   });
 
-  it("INSTALL button is disabled with no selection", () => {
-    // Empty state has no DCs — create state carefully
+  it("places a rack and closes immediately when an enabled rack card is clicked", () => {
+    const onClose = vi.fn();
     const state = stateWithGarage();
-    // Drain cash to ensure nothing is affordable — use a fresh state trick
     const store = createGameStore(state);
     const dc = state.datacenters[0]!;
-    render(
-      <StoreProvider store={store}>
-        <RackPicker datacenter={dc} row={0} position={0} onClose={vi.fn()} />
-      </StoreProvider>,
-    );
-    // There should be an INSTALL button
-    const installBtn = screen.getByRole("button", { name: /INSTALL|SELECT/i });
-    // With starting $2.5M cash, C1 at $35K should be affordable and auto-selected
-    // so button should be enabled
-    expect(installBtn).toBeTruthy();
-  });
 
-  it("dispatches PlaceRack and calls onClose when INSTALL is clicked", () => {
-    const onClose = vi.fn();
-    const state   = stateWithGarage();
-    const store   = createGameStore(state);
-    const dc      = state.datacenters[0]!;
     render(
       <StoreProvider store={store}>
         <RackPicker datacenter={dc} row={0} position={0} onClose={onClose} />
       </StoreProvider>,
     );
-    // C1 should be auto-selected (affordable + valid)
-    const installBtn = screen.getByRole("button", { name: /INSTALL/i });
-    fireEvent.click(installBtn);
+
+    expect(screen.queryByText(/INSTALL —/i)).toBeNull();
+    fireEvent.click(screen.getByText("C1 Compute Rack"));
+
     expect(store.getState().datacenters[0]!.placements).toHaveLength(1);
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("keeps disabled racks non-interactive while showing feedback", () => {
+    const onClose = vi.fn();
+    const state = stateWithGarage();
+    state.player.cash = 0;
+    const store = createGameStore(state);
+    const dc = state.datacenters[0]!;
+
+    render(
+      <StoreProvider store={store}>
+        <RackPicker datacenter={dc} row={0} position={0} onClose={onClose} />
+      </StoreProvider>,
+    );
+
+    const rackButton = screen.getByRole("button", { name: /C1 Compute Rack/i });
+    expect(rackButton.getAttribute("disabled")).not.toBeNull();
+    expect(within(rackButton).getByText(/Need \$/i)).toBeTruthy();
+
+    fireEvent.click(rackButton);
+
+    expect(store.getState().datacenters[0]!.placements).toHaveLength(0);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("shows footer guidance for direct placement", () => {
+    render(<Wrapper state={stateWithGarage()} />);
+    expect(screen.getByText(/Click any available rack card to place it immediately/i)).toBeTruthy();
   });
 
   it("calls onClose when CANCEL is clicked", () => {
