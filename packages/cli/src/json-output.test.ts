@@ -57,6 +57,22 @@ test("formatTextError expands insufficient-capacity failures for humans", () => 
 	);
 });
 
+test("formatTextError expands out-of-bounds placement failures with valid ranges", () => {
+	const error = Object.assign(new Error("Cannot place rack: out_of_bounds"), {
+		data: {
+			code: "out_of_bounds",
+			dcId: "dc-1",
+			rows: 2,
+			positionsPerRow: 4,
+		},
+	});
+
+	assert.equal(
+		formatTextError(error),
+		"Cannot place rack in dc-1: row/col out of bounds (valid rows: 0-1, cols: 0-3)",
+	);
+});
+
 test("cli prints JSON errors when --json is set", async () => {
 	const child = spawn(process.execPath, ["--import", "tsx", "src/cli.ts", "speed", "--json"], {
 		cwd: process.cwd(),

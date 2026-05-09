@@ -141,6 +141,19 @@ function buildDatacenter(state: GameState, specId: DatacenterSpecId, dcId: Datac
 	};
 }
 
+function createRackPlacementError(datacenter: Datacenter, reason: string): Error {
+	const error = new Error(`Cannot place rack: ${reason}`) as Error & { data?: unknown };
+	if (reason === "out_of_bounds") {
+		error.data = {
+			code: "out_of_bounds",
+			dcId: datacenter.id,
+			rows: datacenter.spec.rows,
+			positionsPerRow: datacenter.spec.positionsPerRow,
+		};
+	}
+	return error;
+}
+
 function placeRack(
 	state: GameState,
 	dcId: DatacenterId,
@@ -154,7 +167,7 @@ function placeRack(
 	const spec = getRackSpec(specId);
 	const placementCheck = canPlaceRack(datacenter, spec, { row, position });
 	if (!placementCheck.ok) {
-		throw new Error(`Cannot place rack: ${placementCheck.reason}`);
+		throw createRackPlacementError(datacenter, placementCheck.reason);
 	}
 
 	const placement: RackPlacement = {
@@ -210,7 +223,7 @@ function moveRack(
 	const spec = getRackSpec(placement.specId);
 	const placementCheck = canPlaceRack(targetDc, spec, { row, position });
 	if (!placementCheck.ok) {
-		throw new Error(`Cannot place rack: ${placementCheck.reason}`);
+		throw createRackPlacementError(targetDc, placementCheck.reason);
 	}
 
 	const cost = calculateMoveCost(spec, sourceDc.regionId, targetDc.regionId);

@@ -143,6 +143,13 @@ export function formatTextError(errorOrMessage: unknown): string {
 		return `Cannot accept contract on ${dcId}: insufficient available capacity (required: ${formatCapacityBundle(payload.required)}; available: ${formatCapacityBundle(payload.available)})`;
 	}
 
+	if (payload.code === "out_of_bounds") {
+		const dcId = typeof payload.dcId === "string" ? payload.dcId : "unknown-dc";
+		const rows = typeof payload.rows === "number" ? payload.rows : 0;
+		const positionsPerRow = typeof payload.positionsPerRow === "number" ? payload.positionsPerRow : 0;
+		return `Cannot place rack in ${dcId}: row/col out of bounds (valid rows: 0-${Math.max(rows - 1, 0)}, cols: 0-${Math.max(positionsPerRow - 1, 0)})`;
+	}
+
 	return payload.message;
 }
 
