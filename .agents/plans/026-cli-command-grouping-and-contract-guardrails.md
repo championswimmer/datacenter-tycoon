@@ -25,10 +25,10 @@ owner: cli
   - [x] 4.2 Introduce `dct racks add|decom|move` as the rack command surface
   - [x] 4.3 Introduce `dct contract accept|cancel|details` as the contract command surface
   - [x] 4.4 Remove legacy flat commands and old pluralized routing from help, parser, and tests
-- [ ] **Phase 5 — Update tests, docs, and agent guidance**
+- [x] **Phase 5 — Update tests, docs, and agent guidance**
   - [x] 5.1 Update CLI tests and help text to reflect the new command taxonomy
   - [x] 5.2 Update `packages/cli/README.md` and `packages/cli/AGENTS.md`
-  - [ ] 5.3 Update `.agents/skills/play-cli-game/SKILL.md`
+  - [x] 5.3 Update `.agents/skills/play-cli-game/SKILL.md`
 
 ## Overview
 
