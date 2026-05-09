@@ -1,7 +1,7 @@
 ---
 name: play-cli-game
 description: Use when playing or strategizing the Datacenter Tycoon CLI game — building datacenters, placing/moving/removing racks, inspecting contracts, accepting contracts onto specific datacenters, pausing/resuming time, checking cash, or querying game state via `dct`.
-version: 0.3.1
+version: 0.3.2
 ---
 
 # Skill: Play Datacenter Tycoon over the CLI
@@ -14,7 +14,7 @@ This guide is intentionally focused on **what the CLI actually supports today**.
 
 ## 1. Mental model
 
-This skill assumes **non-interactive CLI play only** using one-shot commands like `dct status`, `dct build-dc ...`, and `dct ls contracts`.
+This skill assumes **non-interactive CLI play only** using one-shot commands like `dct status`, `dct dc build ...`, `dct racks add ...`, and `dct ls contracts`.
 
 Under the hood, `dct` talks to a local daemon that owns the game state and advances time.
 
@@ -44,14 +44,10 @@ dct new
 dct load
 dct save
 dct quit
-dct contracts
+dct contract
 dct ls
-dct build-dc
-dct add-rack
-dct remove-rack
-dct move-rack
-dct accept-contract
-dct cancel-contract
+dct dc
+dct racks
 dct query
 dct tick
 dct pause
@@ -96,7 +92,7 @@ dct ls catalog
 Notes:
 
 - Use `dct ls datacenters` or `dct ls dcs`, **not** `dct ls dc`
-- Use `dct ls contracts` for listing; bare `dct contracts` is not the listing command anymore
+- Use `dct ls contracts` for listing; bare `dct contract` is not the listing command anymore
 - `dct ls catalog` prints **both** rack and datacenter specs together
 - There is no separate `dct ls market` / `dct ls active` command today
 
@@ -181,28 +177,30 @@ This shows:
 ### 4.5 Contract-focused subcommands
 
 ```bash
-dct contracts accept <contractId> <dcId>
-dct contracts cancel <contractId>
-dct contracts details <contractId>
-dct contracts details <contractId> --json
+dct contract accept <contractId> <dcId>
+dct contract cancel <contractId>
+dct contract details <contractId>
+dct contract details <contractId> --json
 ```
 
 Notes:
 
-- `dct contracts` by itself is **not** the list command
+- `dct contract` by itself is **not** the list command
 - use `dct ls contracts` when you want the whole market + active list
-- `dct contracts details <contractId>` is the focused way to inspect one contract plus recent SLA outcome history
+- `dct contract details <contractId>` is the focused way to inspect one contract plus recent SLA outcome history
+- `dct contract accept <contractId> <dcId>` now fails fast if that datacenter does not currently have enough available capacity after accounting for already-assigned active contracts
+- when it fails, `--json` includes a machine-readable `insufficient_capacity` error with `required`, `available`, and `dcId` fields
 
 ### 4.6 Build datacenters
 
 ```bash
-dct build-dc <specId> [--region <regionId>] [--id <dcId>]
+dct dc build <specId> [--region <regionId>] [--id <dcId>]
 ```
 
 Example:
 
 ```bash
-dct build-dc garage --region us_west
+dct dc build garage --region us_west
 ```
 
 Supported datacenter spec IDs today:
@@ -214,9 +212,9 @@ Supported datacenter spec IDs today:
 ### 4.7 Add / remove / move racks
 
 ```bash
-dct add-rack <dcId> <row> <position> <rackSpecId> [--id <placementId>]
-dct remove-rack <dcId> <placementId>
-dct move-rack <dcId> <placementId> <targetDcId> <row> <position>
+dct racks add <dcId> <row> <position> <rackSpecId> [--id <placementId>]
+dct racks decom <dcId> <placementId>
+dct racks move <dcId> <placementId> <targetDcId> <row> <position>
 ```
 
 Supported rack spec IDs today:
@@ -229,33 +227,26 @@ Supported rack spec IDs today:
 Examples:
 
 ```bash
-dct add-rack dc-ab12cd34 0 0 C1
-dct add-rack dc-ab12cd34 0 1 M1
-dct add-rack dc-ab12cd34 0 2 S1
+dct racks add dc-ab12cd34 0 0 C1
+dct racks add dc-ab12cd34 0 1 M1
+dct racks add dc-ab12cd34 0 2 S1
 
-dct remove-rack dc-ab12cd34 rp-1234abcd
+dct racks decom dc-ab12cd34 rp-1234abcd
 
-dct move-rack dc-ab12cd34 rp-1234abcd dc-ef56gh78 0 0
+dct racks move dc-ab12cd34 rp-1234abcd dc-ef56gh78 0 0
 ```
 
-### 4.8 Accept / cancel contracts (legacy flat commands still supported)
+### 4.8 Accept / cancel contracts
 
 ```bash
-dct accept-contract <contractId> <dcId>
-dct cancel-contract <contractId>
-```
-
-Equivalent namespaced forms:
-
-```bash
-dct contracts accept <contractId> <dcId>
-dct contracts cancel <contractId>
+dct contract accept <contractId> <dcId>
+dct contract cancel <contractId>
 ```
 
 Example:
 
 ```bash
-dct contracts accept contract-edge-compute-burst-f2e06 dc-ab12cd34
+dct contract accept contract-edge-compute-burst-f2e06 dc-ab12cd34
 ```
 
 ### 4.9 Advanced/raw inspection
@@ -294,7 +285,7 @@ For agentic play, `snapshot --json` is the richest single command because it inc
 
 ---
 
-## 5. Current region IDs for `build-dc --region`
+## 5. Current region IDs for `dc build --region`
 
 There is no dedicated human-friendly `dct regions` command today, so use these current region IDs:
 
@@ -351,7 +342,7 @@ What to look for:
 Example early-game move:
 
 ```bash
-dct build-dc garage --region us_west
+dct dc build garage --region us_west
 ```
 
 Then list datacenters to capture the generated ID:
@@ -365,9 +356,9 @@ dct ls datacenters
 Example balanced starter build:
 
 ```bash
-dct add-rack <dcId> 0 0 C1
-dct add-rack <dcId> 0 1 M1
-dct add-rack <dcId> 0 2 S1
+dct racks add <dcId> 0 0 C1
+dct racks add <dcId> 0 1 M1
+dct racks add <dcId> 0 2 S1
 ```
 
 If the contract is compute-heavy, bias toward more `C1`/`C2`.
@@ -384,7 +375,7 @@ dct status
 ### Step 6: accept a contract onto that specific datacenter
 
 ```bash
-dct contracts accept <contractId> <dcId>
+dct contract accept <contractId> <dcId>
 ```
 
 ### Step 7: let time move again
@@ -461,31 +452,31 @@ and inspect `data.ledger`.
 
 This is the most important gameplay rule for CLI play:
 
-### The CLI does **not** validate contract fit before acceptance
+### The CLI **does** validate contract fit before acceptance
 
-`dct contracts accept <contractId> <dcId>` checks that:
+`dct contract accept <contractId> <dcId>` now checks that the datacenter currently has enough available capacity to take the contract **right now** after accounting for already-assigned active contracts on that same datacenter.
 
-- the datacenter exists
-- the market contract exists
-
-But it does **not** prove that the datacenter can safely satisfy the contract.
-
-You must check yourself.
+If the contract does not fit, the command fails immediately instead of silently overcommitting the datacenter.
 
 ### What to verify before accepting
 
-- Does the datacenter have enough total vCPU?
+- Does the datacenter have enough currently healthy vCPU?
 - enough RAM?
 - enough storage?
 - enough GPU?
-- enough headroom for already-active contracts on that same datacenter?
+- enough headroom after subtracting already-active contracts on that same datacenter?
 
 If one datacenter is serving multiple contracts, think in terms of:
 
 - **total assigned demand** on that DC
-- **total healthy supply** on that DC
+- **total currently available supply** on that DC
 
 Do **not** stack contracts tightly to 100% capacity.
+
+### What the failure looks like
+
+- text mode: a human-readable insufficient-capacity error naming the target datacenter and the required vs available resources
+- `--json`: a machine-readable error with `code: "insufficient_capacity"`, plus `required`, `available`, and `dcId`
 
 ---
 
@@ -525,22 +516,22 @@ dct ls contracts
 dct ls catalog
 
 # 4. build an early DC in a strong region
-dct build-dc garage --region us_west
+dct dc build garage --region us_west
 
 # 5. capture the generated DC id
 dct ls datacenters
 
 # 6. add a small balanced rack mix
-dct add-rack <dcId> 0 0 C1
-dct add-rack <dcId> 0 1 M1
-dct add-rack <dcId> 0 2 S1
+dct racks add <dcId> 0 0 C1
+dct racks add <dcId> 0 1 M1
+dct racks add <dcId> 0 2 S1
 
 # 7. verify installation and remaining cash
 dct ls racks <dcId>
 dct status
 
 # 8. accept one contract that clearly fits
-dct contracts accept <contractId> <dcId>
+dct contract accept <contractId> <dcId>
 
 # 9. let time pass in a controlled way
 dct tick 1
@@ -574,7 +565,7 @@ dct ls contracts
 
 ### 12.1 Prefer auto-generated IDs unless you really need custom ones
 
-`build-dc` and `add-rack` both support `--id`, but the CLI also uses hidden game-targeting path logic internally.
+`dct dc build` and `dct racks add` both support `--id`, but the CLI also uses hidden game-targeting path logic internally.
 
 Safest advice for normal play:
 
@@ -592,7 +583,7 @@ dct ls contracts
 dct ls contracts --json
 ```
 
-Use `dct contracts details <contractId>` when you want one contract and its recent SLA trail.
+Use `dct contract details <contractId>` when you want one contract and its recent SLA trail.
 
 ### 12.3 Full snapshot is the best agent-facing state dump
 
