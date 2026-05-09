@@ -19,7 +19,7 @@ owner: web
   - [x] 2.2 Update contract assignment copy, styling, and tests for two-click acceptance
 - [ ] **Phase 3 — Rack picker click-to-place**
   - [x] 3.1 Remove selected-rack/install-button state and place directly from rack cards
-  - [ ] 3.2 Preserve affordability and failure feedback without a second confirm step
+  - [x] 3.2 Preserve affordability and failure feedback without a second confirm step
   - [ ] 3.3 Update rack picker tests for direct placement
 - [ ] **Phase 4 — Integration polish and regression QA**
   - [ ] 4.1 Verify responsive UX and manual end-to-end flows
