@@ -3,6 +3,7 @@ export type TuiTabId = "dashboard" | "datacenters" | "contracts" | "catalog";
 export interface TuiLayoutModel {
 	tick: number;
 	cash: number;
+	difficulty: "easy" | "hard";
 	speedTps: number;
 	paused: boolean;
 	activeTab: TuiTabId;
@@ -29,7 +30,8 @@ function pad(line: string, width = 78): string {
 
 export function renderLayout(model: TuiLayoutModel): string {
 	const statusBadge = model.paused ? "PAUSED" : `speed ${model.speedTps}x`;
-	const header = pad(`Datacenter Tycoon  tick ${model.tick}  cash $${formatMoney(model.cash)}  ${statusBadge}`);
+	const difficultyBadge = `mode ${model.difficulty.toUpperCase()}`;
+	const header = pad(`Datacenter Tycoon  tick ${model.tick}  cash $${formatMoney(model.cash)}  ${difficultyBadge}  ${statusBadge}`);
 	const tabs = TAB_LABELS.map((tab) => (tab.id === model.activeTab ? `[${tab.label}]` : ` ${tab.label} `)).join("  ");
 	const reconnecting = model.reconnecting ? "  reconnecting…" : "";
 	const body = model.bodyLines.length > 0 ? model.bodyLines : ["Loading terminal UI..."];

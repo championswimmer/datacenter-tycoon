@@ -125,6 +125,7 @@ export interface RuntimeStatus {
 export interface StatusView extends RuntimeStatus {
 	tick: number;
 	cash: number;
+	difficulty: "easy" | "hard";
 	datacenterCount: number;
 	rackCount: number;
 	activeContractCount: number;
