@@ -1,3 +1,4 @@
+import { isLiveContractStatus } from "../contracts/lifecycle.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import {
 	allocateRackActivity,
@@ -112,7 +113,7 @@ export function datacenterInstalledCapacity(datacenter: Datacenter): Capacity {
 }
 
 function isCapacityCommittedContract(contract: Pick<Contract, "status">): boolean {
-	return contract.status === "active" || contract.status === "breached";
+	return isLiveContractStatus(contract.status);
 }
 
 export function datacenterCommittedContractDemand(
