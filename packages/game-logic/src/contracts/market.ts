@@ -1,8 +1,8 @@
 import { reliabilityMarketPolicyForScore } from "../balance/reliability.js";
 import { datacenterContractCapacitySummary } from "../entities/datacenter.js";
 import { rngFromState } from "../sim/rng.js";
-import type { Capacity, ContractId, ContractRequirements, DatacenterId, GameState } from "../types.js";
-import { generateContract } from "./generator.js";
+import type { Capacity, Contract, ContractId, ContractRequirements, DatacenterId, GameState } from "../types.js";
+import { contractTermBand, generateContractForTermBand, type ContractTermBand } from "./generator.js";
 import { contractsFromState, selectLiveContracts, selectOpenMarketContracts, withDerivedContractViews } from "./lifecycle.js";
 
 export interface ContractAcceptanceFailure {
@@ -42,6 +42,89 @@ export function marketDifficulty(currentTick: number, roll: number): number {
 	return Math.max(0.05, Math.min(0.85, baseline + roll * 0.35 - 0.1));
 }
 
+function desiredMarketBandMix(offerTarget: number): ContractTermBand[] {
+	const shortTarget = Math.max(1, Math.floor(offerTarget / 3));
+	const longTarget = Math.max(1, Math.floor(offerTarget / 3));
+	const standardTarget = Math.max(0, offerTarget - shortTarget - longTarget);
+	const mix: ContractTermBand[] = [];
+
+	for (let i = 0; i < offerTarget; i++) {
+		if (i % 3 === 0 && mix.filter((band) => band === "short").length < shortTarget) {
+			mix.push("short");
+			continue;
+		}
+		if (i % 3 === 1 && mix.filter((band) => band === "standard").length < standardTarget) {
+			mix.push("standard");
+			continue;
+		}
+		if (mix.filter((band) => band === "long").length < longTarget) {
+			mix.push("long");
+			continue;
+		}
+		if (mix.filter((band) => band === "short").length < shortTarget) {
+			mix.push("short");
+			continue;
+		}
+		mix.push("standard");
+	}
+
+	return mix;
+}
+
+function nextDesiredMarketBand(existingOffers: readonly { termMonths: number }[], offerTarget: number): ContractTermBand {
+	const desiredMix = desiredMarketBandMix(offerTarget);
+	const currentCounts = new Map<ContractTermBand, number>([
+		["short", 0],
+		["standard", 0],
+		["long", 0],
+	]);
+
+	for (const offer of existingOffers) {
+		const band = contractTermBand(offer.termMonths);
+		currentCounts.set(band, (currentCounts.get(band) ?? 0) + 1);
+	}
+
+	const desiredCounts = new Map<ContractTermBand, number>([
+		["short", desiredMix.filter((band) => band === "short").length],
+		["standard", desiredMix.filter((band) => band === "standard").length],
+		["long", desiredMix.filter((band) => band === "long").length],
+	]);
+
+	for (const band of ["short", "long", "standard"] as const) {
+		if ((currentCounts.get(band) ?? 0) < (desiredCounts.get(band) ?? 0)) {
+			return band;
+		}
+	}
+
+	return desiredMix[existingOffers.length % desiredMix.length] ?? "standard";
+}
+
+function fillMarketOffers(
+	existingOffers: readonly Contract[],
+	state: GameState,
+	rngState: number,
+): { offers: Contract[]; rngState: number } {
+	const rng = rngFromState(rngState);
+	const marketPolicy = reliabilityMarketPolicyForScore(state.player.reliability.score);
+	const offerTarget = marketPolicy.offerCount;
+	const offers = [...existingOffers].slice(0, offerTarget);
+
+	while (offers.length < offerTarget) {
+		const difficulty = marketDifficulty(state.tick, rng.next());
+		const desiredBand = nextDesiredMarketBand(offers, offerTarget);
+		const generatedContract = generateContractForTermBand(rng, difficulty, desiredBand, marketPolicy);
+		offers.push({
+			...generatedContract,
+			offeredAtTick: state.tick,
+			expiresAtTick: state.tick + generatedContract.expiresAtTick,
+			lifecycleState: "market_open",
+			status: "offered",
+		});
+	}
+
+	return { offers, rngState: rng.state() };
+}
+
 export function refreshContractMarket(state: GameState): GameState {
 	const contracts = contractsFromState(state);
 	const contractsWithExpiredOffers = contracts.map((contract) =>
@@ -54,31 +137,16 @@ export function refreshContractMarket(state: GameState): GameState {
 				}
 			: contract,
 	);
-	const rng = rngFromState(state.rngState);
-	const marketPolicy = reliabilityMarketPolicyForScore(state.player.reliability.score);
-	const offerTarget = marketPolicy.offerCount;
-	const retainedOffers = selectOpenMarketContracts(contractsWithExpiredOffers).slice(0, offerTarget);
-	const refreshedOffers = [...retainedOffers];
-
-	while (refreshedOffers.length < offerTarget) {
-		const difficulty = marketDifficulty(state.tick, rng.next());
-		const generatedContract = generateContract(rng, difficulty, marketPolicy);
-		refreshedOffers.push({
-			...generatedContract,
-			offeredAtTick: state.tick,
-			expiresAtTick: state.tick + generatedContract.expiresAtTick,
-			lifecycleState: "market_open",
-			status: "offered",
-		});
-	}
+	const retainedOffers = selectOpenMarketContracts(contractsWithExpiredOffers);
+	const filledMarket = fillMarketOffers(retainedOffers, state, state.rngState);
 
 	return withDerivedContractViews({
 		...state,
 		contracts: [
 			...contractsWithExpiredOffers.filter((contract) => contract.lifecycleState !== "market_open"),
-			...refreshedOffers,
+			...filledMarket.offers,
 		],
-		rngState: rng.state(),
+		rngState: filledMarket.rngState,
 	});
 }
 
@@ -126,28 +194,14 @@ export function acceptContract(
 	);
 	const remainingMarket = selectOpenMarketContracts(contractsWithAccepted);
 
-	const rng = rngFromState(state.rngState);
-	const backfilledMarket = [...remainingMarket];
-	const marketPolicy = reliabilityMarketPolicyForScore(state.player.reliability.score);
-	const offerTarget = marketPolicy.offerCount;
-	while (backfilledMarket.length < offerTarget) {
-		const difficulty = marketDifficulty(state.tick, rng.next());
-		const generatedContract = generateContract(rng, difficulty, marketPolicy);
-		backfilledMarket.push({
-			...generatedContract,
-			offeredAtTick: state.tick,
-			expiresAtTick: state.tick + generatedContract.expiresAtTick,
-			lifecycleState: "market_open",
-			status: "offered",
-		});
-	}
+	const filledMarket = fillMarketOffers(remainingMarket, state, state.rngState);
 
 	return withDerivedContractViews({
 		...state,
 		contracts: [
 			...contractsWithAccepted.filter((contract) => contract.lifecycleState !== "market_open"),
-			...backfilledMarket,
+			...filledMarket.offers,
 		],
-		rngState: rng.state(),
+		rngState: filledMarket.rngState,
 	});
 }
