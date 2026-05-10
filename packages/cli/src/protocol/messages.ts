@@ -6,6 +6,7 @@ import type {
 	DatacenterSpec,
 	GameState,
 	LedgerEntry,
+	RackHealthStatus,
 	RackSpec,
 } from "@datacenter-tycoon/game-logic";
 
@@ -150,6 +151,15 @@ export interface RackListItem {
 	row: number;
 	position: number;
 	installedAtTick: number;
+	/** Current health state of the rack. */
+	health: RackHealthStatus;
+	/** Rack age in months (ticks since installation). */
+	ageMonths: number;
+	/**
+	 * Monthly failure probability in [0, 1].
+	 * Always 0 for repairing racks.
+	 */
+	failureProbability: number;
 }
 
 export type ListResult =

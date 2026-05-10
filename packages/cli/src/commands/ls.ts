@@ -239,9 +239,15 @@ async function listRacks(parsed: ParsedArgv, clientFactory: CommandClientFactory
 
 			const lines: string[] = [`=== Racks in ${dcId} ===`];
 			for (const item of items) {
-				const age = (item as unknown as Record<string, unknown>)["installedAtTick"];
+				const healthLabel = item.health === "repairing" ? "REPAIRING" : "HEALTHY";
+				const riskLabel = item.health === "repairing"
+					? "UNDER REPAIR"
+					: `${(item.failureProbability * 100).toFixed(1)}%/mo`;
 				lines.push(
-					`  ${item.placementId} | ${item.spec.id} (${item.spec.kind} T${item.spec.tier}) | Row ${item.row}, Pos ${item.position} | Installed: tick ${age ?? "?"}`,
+					`  ${item.placementId} | ${item.spec.id} (${item.spec.kind} T${item.spec.tier}) | Row ${item.row}, Pos ${item.position} | Installed: tick ${item.installedAtTick}`,
+				);
+				lines.push(
+					`    Health: ${healthLabel} | Fail risk: ${riskLabel} | Age: ${item.ageMonths} mo`,
 				);
 				lines.push(
 					`    vCPU=${item.spec.vCpu}, RAM=${item.spec.ramGb}GB, Storage=${item.spec.storageTb}TB, GPU=${item.spec.gpuFlops} | Power: ${item.spec.powerDrawKw}kW`,
