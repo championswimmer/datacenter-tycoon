@@ -112,7 +112,7 @@ Tick boxes (`[x]`) as work completes. A phase is only checked once **all** its s
 
 ### 4. Architecture
 
-Explain the design. Include at least one **Mermaid diagram** when the plan introduces new modules, data flow, state machines, or entity relationships.
+Explain the design. Include at least one **Mermaid diagram** when the plan introduces new modules, data flow, state machines, or entity relationships. If it helps clarify the proposal, add Mermaid diagrams for architecture, flow, or timing/sequence diagrams of the new changes being proposed.
 
 ````markdown
 ## Architecture
