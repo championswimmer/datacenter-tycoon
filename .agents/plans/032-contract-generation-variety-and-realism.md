@@ -1,7 +1,7 @@
 ---
 name: Contract Generation Variety and Realism
 description: Improve contract generation by introducing real-world enterprise/hyperscale workload profiles, varied durations, and realistic nomenclature.
-status: started
+status: completed
 created: 2026-05-10
 updated: 2026-05-10
 ---
@@ -14,8 +14,8 @@ updated: 2026-05-10
 - [x] **Phase 2 — Variable Contract Durations and Urgency**
   - [x] 2.1 Refactor generated contract terms to use workload-specific duration ranges instead of a single default offer profile.
   - [x] 2.2 Rebalance payout scaling to account for variable durations so long-term contracts trade peak monthly yield for stability.
-- [ ] **Phase 3 — Integration and Market Refresh**
-  - [ ] 3.1 Update market generation/tests so the refreshed offer pool surfaces a deliberate mix of short-term and long-term contracts with the new naming variety.
+- [x] **Phase 3 — Integration and Market Refresh**
+  - [x] 3.1 Update market generation/tests so the refreshed offer pool surfaces a deliberate mix of short-term and long-term contracts with the new naming variety.
 
 ## Overview
 
@@ -97,3 +97,4 @@ interface WorkloadTheme {
 
 - 2026-05-10 — created.
 - 2026-05-10 — corrected the progress checklist and step breakdown before implementation; the original draft had been pre-marked complete without matching code changes.
+- 2026-05-10 — completed Phase 3 with deterministic market term-band mixing and regression coverage for mixed offer pools.

@@ -13,7 +13,9 @@ import {
 	advanceContract,
 	ContractAcceptanceError,
 	evaluateContract,
+	contractTermBand,
 	generateContract,
+	generateContractForTermBand,
 	marketDifficulty,
 	monthlyRateMultiplierForTerm,
 	refreshContractMarket,
@@ -468,6 +470,34 @@ test("monthlyRateMultiplierForTerm discounts longer commitments", () => {
 	assert.equal(monthlyRateMultiplierForTerm(CONTRACT_TERM_DISCOUNT_BASELINE_MONTHS), 1);
 	assert.ok(monthlyRateMultiplierForTerm(12) < monthlyRateMultiplierForTerm(8));
 	assert.equal(monthlyRateMultiplierForTerm(48), CONTRACT_TERM_DISCOUNT_FLOOR);
+});
+
+test("generateContractForTermBand can intentionally target short and long offers", () => {
+	const policy = reliabilityMarketPolicyForScore(RELIABILITY_BASELINE_SCORE);
+	const shortContract = generateContractForTermBand(createRng(101), 0.55, "short", policy);
+	const longContract = generateContractForTermBand(createRng(202), 0.55, "long", policy);
+
+	assert.equal(contractTermBand(shortContract.termMonths), "short");
+	assert.equal(contractTermBand(longContract.termMonths), "long");
+	assert.ok(shortContract.name.split(" ").length >= 4);
+	assert.ok(longContract.name.split(" ").length >= 4);
+});
+
+test("refreshContractMarket deliberately mixes short and long offers", () => {
+	const state = makeState({
+		tick: tick(10),
+		rngState: 777,
+		contractMarket: [],
+	});
+
+	const refreshed = refreshContractMarket(state);
+	const bands = refreshed.contractMarket.map((contract) => contractTermBand(contract.termMonths));
+	const uniqueNames = new Set(refreshed.contractMarket.map((contract) => contract.name));
+
+	assert.ok(bands.includes("short"), `expected short-term offers, got ${bands.join(", ")}`);
+	assert.ok(bands.includes("long"), `expected long-term offers, got ${bands.join(", ")}`);
+	assert.ok(uniqueNames.size >= 3, `expected naming variety, got ${Array.from(uniqueNames).join(", ")}`);
+	assert.deepEqual(refreshContractMarket(state), refreshed);
 });
 
 test("generateContract produces rush, anchor, and standard urgency types over a large sample", () => {

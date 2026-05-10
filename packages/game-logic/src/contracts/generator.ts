@@ -13,6 +13,8 @@ import type { Rng } from "../sim/rng.js";
 
 type TermRange = readonly [minMonths: number, maxMonths: number];
 
+export type ContractTermBand = "short" | "standard" | "long";
+
 interface ContractTheme {
 	id: string;
 	label: string;
@@ -149,6 +151,9 @@ export const PRICING_WEIGHTS = {
 } as const;
 
 export const OFFER_DURATION_TICKS = 6;
+export const SHORT_TERM_MAX_MONTHS = 6;
+export const LONG_TERM_MIN_MONTHS = 12;
+export const MARKET_BAND_GENERATION_ATTEMPTS = 6;
 
 export interface ContractGenerationPolicy extends Pick<ReliabilityMarketPolicy, "longTermBias" | "shortTermBias"> {}
 
@@ -201,6 +206,16 @@ export function monthlyRateMultiplierForTerm(termMonths: number): number {
 		CONTRACT_TERM_DISCOUNT_FLOOR,
 		1 - extraMonths * CONTRACT_TERM_DISCOUNT_PER_EXTRA_MONTH,
 	);
+}
+
+export function contractTermBand(termMonths: number): ContractTermBand {
+	if (termMonths <= SHORT_TERM_MAX_MONTHS) {
+		return "short";
+	}
+	if (termMonths >= LONG_TERM_MIN_MONTHS) {
+		return "long";
+	}
+	return "standard";
 }
 
 function generateRequirement(rng: Rng, unit: number, weight: number, difficulty: number, multiple: number): number {
@@ -332,4 +347,26 @@ export function generateContract(
 		offeredAtTick: 0,
 		expiresAtTick: offerDuration,
 	};
+}
+
+export function generateContractForTermBand(
+	rng: Rng,
+	difficulty: number,
+	desiredBand: ContractTermBand,
+	policy: ContractGenerationPolicy = BASELINE_CONTRACT_GENERATION_POLICY,
+): Contract {
+	let fallback = generateContract(rng, difficulty, policy);
+	if (contractTermBand(fallback.termMonths) === desiredBand) {
+		return fallback;
+	}
+
+	for (let attempt = 1; attempt < MARKET_BAND_GENERATION_ATTEMPTS; attempt++) {
+		const candidate = generateContract(rng, difficulty, policy);
+		fallback = candidate;
+		if (contractTermBand(candidate.termMonths) === desiredBand) {
+			return candidate;
+		}
+	}
+
+	return fallback;
 }
