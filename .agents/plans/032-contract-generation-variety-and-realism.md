@@ -8,9 +8,9 @@ updated: 2026-05-10
 
 ## Progress
 
-- [ ] **Phase 1 — Expanded Workload Profiles and Naming**
+- [x] **Phase 1 — Expanded Workload Profiles and Naming**
   - [x] 1.1 Update workload themes in `generator.ts` to reflect modern real-world segments and rebalance resource weights.
-  - [ ] 1.2 Implement a larger, more realistic dictionary of company names and project codenames for generative contract naming.
+  - [x] 1.2 Implement a larger, more realistic dictionary of company names and project codenames for generative contract naming.
 - [ ] **Phase 2 — Variable Contract Durations and Urgency**
   - [ ] 2.1 Refactor generated contract terms to use workload-specific duration ranges instead of a single default offer profile.
   - [ ] 2.2 Rebalance payout scaling to account for variable durations so long-term contracts trade peak monthly yield for stability.

@@ -121,8 +121,44 @@ test("generateContract is deterministic for the same seed and difficulty", () =>
 
 	assert.deepEqual(first, second);
 	assert.equal(first.status, "offered");
+	assert.equal(first.name, "Global Cloud Orion Streaming Encode Farm");
 	assert.ok(first.monthlyPayment > first.penaltyPerMonth);
 	assert.ok(first.requirements.vCpu > 0 || first.requirements.ramGb > 0 || first.requirements.storageTb > 0);
+});
+
+const MODERN_CONTRACT_NAME_SUFFIXES = [
+	"LLM Cluster",
+	"Foundation Model Pod",
+	"Training Fabric",
+	"Inference Mesh",
+	"Serving Fleet",
+	"Vector Gateway",
+	"Simulation Grid",
+	"Compute Sweep",
+	"Monte Carlo Farm",
+	"OLTP Failover Ring",
+	"Transactional Core",
+	"Business Continuity Stack",
+	"Archive Vault",
+	"Compliance Repository",
+	"Deep Backup Lake",
+	"Edge POP Rollout",
+	"Caching Mesh",
+	"Regional Delivery Grid",
+	"Render Pipeline",
+	"Transcode Swarm",
+	"Streaming Encode Farm",
+] as const;
+
+test("generateContract names use expanded enterprise nomenclature", () => {
+	const names = Array.from({ length: 20 }, (_, i) => generateContract(createRng(2_000 + i), 0.6).name);
+
+	assert.ok(names.every((name) => name.split(" ").length >= 4));
+	assert.ok(
+		names.some((name) => MODERN_CONTRACT_NAME_SUFFIXES.some((suffix) => name.endsWith(suffix))),
+		`expected at least one generated name to use the new deliverable vocabulary: ${names.join(", ")}`,
+	);
+	assert.ok(names.every((name) => !["AI Training", "AI Inference", "HPC Simulation"].includes(name)));
 });
 
 test("refreshContractMarket is deterministic, removes expired offers, and tops up to the configured size", () => {
