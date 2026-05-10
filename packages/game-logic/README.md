@@ -212,6 +212,28 @@ export type Action =
   - increases monthly wage opex,
   - consumes more of the region's finite labor pool.
 
+### Reading live rack failure probability
+
+Use `rackFailureRiskView()` to get the current failure probability for a single rack placement. This is the canonical, client-facing helper — both CLI and web consumers should call this instead of composing `rackAgeMonths()` + `rackFailureChance()` themselves.
+
+```ts
+import {
+  rackFailureRiskView,
+  type RackFailureRiskView,
+} from "@datacenter-tycoon/game-logic";
+
+const view: RackFailureRiskView = rackFailureRiskView(gameState.tick, placement);
+// view.ageMonths          — how old the rack is (in monthly ticks)
+// view.health             — "healthy" | "repairing"
+// view.failureProbability — monthly failure probability in [0, 1]
+//                           Always 0 for repairing racks (already failed).
+```
+
+Policy notes:
+- **Healthy racks** return the age-curve derived probability (`rackFailureChance(ageMonths)`).
+- **Repairing racks** always return `0` — they have already failed and cannot newly fail while under repair.
+- The probability is clamped to `RACK_FAILURE_MAX_CHANCE` once a rack exceeds `RACK_FAILURE_MAX_AGE_MONTHS`.
+
 ## Starter datacenter cooling headroom
 
 Starter datacenters now ship with slightly more thermal budget for normal expansion:

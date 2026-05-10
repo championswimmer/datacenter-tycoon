@@ -10,7 +10,7 @@ import {
 	RACK_FAILURE_YEAR_ONE_CHANCE,
 	REPAIR_SPEED_BONUS_PER_MAINTENANCE_STAFF,
 } from "../balance/index.js";
-import type { Rack, RackPlacement, Tick } from "../types.js";
+import type { Rack, RackPlacement, RackHealthStatus, RackPlacementId, Tick } from "../types.js";
 
 function clamp(value: number, min: number, max: number): number {
 	return Math.min(max, Math.max(min, value));
@@ -44,6 +44,55 @@ export function repairSpeedMultiplier(maintenanceStaff: number): number {
 
 export function repairProgressPerTick(maintenanceStaff: number): number {
 	return DAYS_PER_TICK * repairSpeedMultiplier(maintenanceStaff);
+}
+
+// ── Rack failure-risk view ───────────────────────────────────────────────────
+
+/**
+ * A derived, read-only snapshot of a single rack's current age and failure risk.
+ * Clients should import this type and `rackFailureRiskView()` instead of
+ * composing `rackAgeMonths()` + `rackFailureChance()` by hand — the canonical
+ * policy (e.g. how repairing racks are represented) lives here.
+ */
+export interface RackFailureRiskView {
+	/** The rack placement id this view is derived from. */
+	placementId: RackPlacementId;
+	/** Age of the rack in months (ticks since installation). */
+	ageMonths: number;
+	/** Current health status from the placement record. */
+	health: RackHealthStatus;
+	/**
+	 * Monthly failure probability in the range [0, 1].
+	 * Returns 0 for racks that are currently `repairing` — they have already
+	 * failed and cannot newly fail while under repair.
+	 */
+	failureProbability: number;
+}
+
+/**
+ * Derive a rack's current failure-risk view from the game state.
+ *
+ * Use this as the single canonical way to read rack age and monthly failure
+ * probability from game state — both CLI and web consumers should call this
+ * instead of composing maintenance helpers ad-hoc.
+ *
+ * @param currentTick - The current game tick (= months elapsed).
+ * @param rack        - The rack placement (or any object with the required fields).
+ * @returns A stable, serializable `RackFailureRiskView`.
+ */
+export function rackFailureRiskView(
+	currentTick: Tick,
+	rack: Pick<Rack, "id" | "installedAtTick" | "health">,
+): RackFailureRiskView {
+	const ageMonths = rackAgeMonths(currentTick, rack);
+	return {
+		placementId: rack.id,
+		ageMonths,
+		health: rack.health,
+		// Repairing racks have already failed — they cannot newly fail while
+		// under repair, so we return 0 rather than the age-curve value.
+		failureProbability: rack.health === "repairing" ? 0 : rackFailureChance(ageMonths),
+	};
 }
 
 export function advanceRackRepair(rack: RackPlacement, maintenanceStaff: number): RackPlacement {

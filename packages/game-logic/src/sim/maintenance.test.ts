@@ -14,6 +14,7 @@ import {
 	advanceRackRepair,
 	rackAgeMonths,
 	rackFailureChance,
+	rackFailureRiskView,
 	repairProgressPerTick,
 	repairSpeedMultiplier,
 } from "./maintenance.js";
@@ -77,4 +78,53 @@ test("advanceRackRepair uses current staffing and clears repair progress when co
 test("advanceRackRepair leaves healthy racks unchanged", () => {
 	const { repairProgressDays: _repairProgressDays, ...healthyRack } = repairingRack({ health: "healthy" });
 	assert.deepEqual(advanceRackRepair(healthyRack, 8), healthyRack);
+});
+
+test("rackFailureRiskView: healthy rack returns age-curve probability", () => {
+	const rack = {
+		id: rackPlacementId("rack-rv-1"),
+		installedAtTick: tick(0),
+		health: "healthy" as const,
+	};
+	const view = rackFailureRiskView(tick(12), rack);
+	assert.equal(view.placementId, rack.id);
+	assert.equal(view.ageMonths, 12);
+	assert.equal(view.health, "healthy");
+	assert.equal(view.failureProbability, rackFailureChance(12));
+});
+
+test("rackFailureRiskView: repairing rack returns probability 0", () => {
+	const rack = {
+		id: rackPlacementId("rack-rv-2"),
+		installedAtTick: tick(0),
+		health: "repairing" as const,
+	};
+	const view = rackFailureRiskView(tick(48), rack);
+	assert.equal(view.placementId, rack.id);
+	assert.equal(view.ageMonths, 48);
+	assert.equal(view.health, "repairing");
+	assert.equal(view.failureProbability, 0);
+});
+
+test("rackFailureRiskView: probability clamps at max-age cap for very old racks", () => {
+	const rack = {
+		id: rackPlacementId("rack-rv-3"),
+		installedAtTick: tick(0),
+		health: "healthy" as const,
+	};
+	const viewAtCap = rackFailureRiskView(tick(RACK_FAILURE_MAX_AGE_MONTHS), rack);
+	const viewBeyondCap = rackFailureRiskView(tick(RACK_FAILURE_MAX_AGE_MONTHS + 24), rack);
+	assert.equal(viewAtCap.failureProbability, RACK_FAILURE_MAX_CHANCE);
+	assert.equal(viewBeyondCap.failureProbability, RACK_FAILURE_MAX_CHANCE);
+});
+
+test("rackFailureRiskView: young rack has near-zero failure probability", () => {
+	const rack = {
+		id: rackPlacementId("rack-rv-4"),
+		installedAtTick: tick(0),
+		health: "healthy" as const,
+	};
+	const view = rackFailureRiskView(tick(1), rack);
+	assert.ok(view.failureProbability > 0);
+	assert.ok(view.failureProbability < 0.01);
 });

@@ -1,7 +1,7 @@
 ---
 name: Rack Failure Probability Surfacing
 description: Expose per-rack failure probability from game-logic and surface it in CLI `dct ls racks` output and the web rack UI.
-status: created
+status: started
 created: 2026-05-10
 updated: 2026-05-10
 owner: game-logic
@@ -9,9 +9,9 @@ owner: game-logic
 
 ## Progress
 
-- [ ] **Phase 1 — Canonicalize rack failure-risk data in game-logic**
-  - [ ] 1.1 Add a public game-logic helper/view that derives rack age and current failure probability
-  - [ ] 1.2 Add regression tests and README docs for the new rack-risk helper
+- [x] **Phase 1 — Canonicalize rack failure-risk data in game-logic**
+  - [x] 1.1 Add a public game-logic helper/view that derives rack age and current failure probability
+  - [x] 1.2 Add regression tests and README docs for the new rack-risk helper
 - [ ] **Phase 2 — Surface failure probability in CLI rack listings**
   - [ ] 2.1 Extend CLI rack list protocol/runtime payloads with rack health and failure probability fields
   - [ ] 2.2 Update `dct ls racks` text and JSON output to show current health and monthly failure probability
