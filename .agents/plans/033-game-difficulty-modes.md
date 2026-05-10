@@ -1,7 +1,7 @@
 ---
 name: Game Difficulty Modes
 description: Introduce Easy and Hard difficulty modes to alter starting cash, penalties, repair times, and hardware failure rates.
-status: started
+status: completed
 created: 2026-05-10
 updated: 2026-05-10
 ---
@@ -17,10 +17,10 @@ updated: 2026-05-10
   - [x] 2.3 Apply difficulty multipliers to rack repair times
   - [x] 2.4 Apply difficulty multipliers to contract breach penalties
   - [x] 2.5 Update tests to cover both difficulty modes
-- [ ] **Phase 3 — Interface Updates**
+- [x] **Phase 3 — Interface Updates**
   - [x] 3.1 Update CLI `new-game` command to prompt for difficulty
   - [x] 3.2 Display current difficulty in CLI HUD/status
-  - [ ] 3.3 Update web frontend game creation and HUD (if applicable)
+  - [x] 3.3 Update web frontend game creation and HUD (if applicable)
 
 ## Overview
 

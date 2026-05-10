@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import {
   selectCash,
+  selectDifficulty,
   selectPlayerName,
   selectTick,
   selectMonthlyPnl,
@@ -42,6 +43,7 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
   const fraction        = useTickFraction();
   const dispatch        = useGameDispatch();
   const playerName      = useSelector(selectPlayerName);
+  const difficulty      = useSelector(selectDifficulty);
   const cash            = useSelector(selectCash);
   const tick            = useSelector(selectTick);
   const pnl             = useSelector(selectMonthlyPnl);
@@ -85,6 +87,7 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
       <div className={styles.left}>
         <span className={styles.logo}>DCT</span>
         <span className={styles.company}>{playerName}</span>
+        <span className={styles.difficultyBadge}>{difficulty.toUpperCase()}</span>
         {isDesktop && <span className={styles.desktopBadge}>DESKTOP</span>}
       </div>
 

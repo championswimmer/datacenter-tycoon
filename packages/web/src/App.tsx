@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import type { Difficulty } from "@datacenter-tycoon/game-logic";
 import type { SaveInfo } from "./store/persist.js";
 import {
   createFreshSession,
@@ -17,18 +18,20 @@ const ThemePlayground = lazy(
 
 type StartChoice = "load" | "new";
 
-function createAppSession(choice: StartChoice): StoreSession {
+function createAppSession(choice: StartChoice, difficulty: Difficulty): StoreSession {
   if (choice === "load") {
-    return createLoadedSession() ?? createFreshSession();
+    return createLoadedSession() ?? createFreshSession(difficulty);
   }
 
-  return createFreshSession();
+  return createFreshSession(difficulty);
 }
 
 interface AppSessionController {
   session: StoreSession | null;
   hasSavedGame: boolean;
   latestSave: SaveInfo | null;
+  selectedDifficulty: Difficulty;
+  selectDifficulty: (difficulty: Difficulty) => void;
   startNewGame: () => void;
   loadLatestGame: () => void;
 }
@@ -36,6 +39,7 @@ interface AppSessionController {
 function useAppSession(): AppSessionController {
   const [session, setSession] = useState<StoreSession | null>(null);
   const [latestSave, setLatestSave] = useState<SaveInfo | null>(() => getLatestSaveInfo());
+  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>("hard");
   const sessionRef = useRef<StoreSession | null>(null);
 
   useEffect(() => {
@@ -49,17 +53,19 @@ function useAppSession(): AppSessionController {
   }, []);
 
   const replaceSession = useCallback((choice: StartChoice) => {
-    const nextSession = createAppSession(choice);
+    const nextSession = createAppSession(choice, selectedDifficulty);
     sessionRef.current?.stopAutosave();
     sessionRef.current = nextSession;
     setSession(nextSession);
     setLatestSave(getLatestSaveInfo());
-  }, []);
+  }, [selectedDifficulty]);
 
   return {
     session,
     hasSavedGame: latestSave !== null,
     latestSave,
+    selectedDifficulty,
+    selectDifficulty: setSelectedDifficulty,
     startNewGame: () => replaceSession("new"),
     loadLatestGame: () => replaceSession("load"),
   };
@@ -70,6 +76,8 @@ export default function App() {
     session,
     hasSavedGame,
     latestSave,
+    selectedDifficulty,
+    selectDifficulty,
     startNewGame,
     loadLatestGame,
   } = useAppSession();
@@ -88,6 +96,8 @@ export default function App() {
       <StartScreen
         hasSavedGame={hasSavedGame}
         latestSave={latestSave}
+        selectedDifficulty={selectedDifficulty}
+        onSelectDifficulty={selectDifficulty}
         onPlay={startNewGame}
         onLoadGame={loadLatestGame}
         onNewGame={startNewGame}

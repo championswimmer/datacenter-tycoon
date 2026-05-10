@@ -1,3 +1,4 @@
+import type { Difficulty } from "@datacenter-tycoon/game-logic";
 import { formatGameDateShort, tickToGameDate } from "../../store/gameTime.js";
 import type { SaveInfo } from "../../store/persist.js";
 import gameBannerUrl from "@assets/images/game-banner-001.jpg";
@@ -6,6 +7,8 @@ import styles from "./StartScreen.module.css";
 interface StartScreenProps {
   hasSavedGame: boolean;
   latestSave: SaveInfo | null;
+  selectedDifficulty: Difficulty;
+  onSelectDifficulty: (difficulty: Difficulty) => void;
   onPlay: () => void;
   onLoadGame: () => void;
   onNewGame: () => void;
@@ -25,6 +28,8 @@ const timestampFormatter = new Intl.DateTimeFormat(undefined, {
 export function StartScreen({
   hasSavedGame,
   latestSave,
+  selectedDifficulty,
+  onSelectDifficulty,
   onPlay,
   onLoadGame,
   onNewGame,
@@ -52,6 +57,32 @@ export function StartScreen({
           Build facilities, scale capacity, and outbid the grid while you chase the
           most profitable contracts on the map.
         </p>
+
+        <div className={styles.difficultySection}>
+          <div className={styles.saveSummaryLabel}>Difficulty</div>
+          <div className={styles.difficultyOptions} role="radiogroup" aria-label="Difficulty">
+            {(["easy", "hard"] as Difficulty[]).map((difficulty) => (
+              <button
+                key={difficulty}
+                type="button"
+                role="radio"
+                aria-checked={selectedDifficulty === difficulty}
+                className={[
+                  styles.difficultyOption,
+                  selectedDifficulty === difficulty ? styles.difficultyOptionActive : "",
+                ].join(" ")}
+                onClick={() => onSelectDifficulty(difficulty)}
+              >
+                {difficulty.toUpperCase()}
+              </button>
+            ))}
+          </div>
+          <p className={styles.difficultyHint}>
+            {selectedDifficulty === "easy"
+              ? "Easy starts with extra cash and gentler failure, repair, and penalty rules."
+              : "Hard matches the default economy with tougher failures, repairs, and breach penalties."}
+          </p>
+        </div>
 
         {hasSavedGame ? (
           <>

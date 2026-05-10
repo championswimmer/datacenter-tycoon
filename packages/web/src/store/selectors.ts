@@ -21,6 +21,7 @@ import type {
   DatacenterId,
   Datacenter,
   DatacenterResourceUsage,
+  Difficulty,
   GameState,
   LedgerEntry,
   Money,
@@ -41,6 +42,10 @@ export function selectTick(state: GameState): Tick {
 
 export function selectCash(state: GameState): Money {
   return state.player.cash;
+}
+
+export function selectDifficulty(state: GameState): Difficulty {
+  return state.difficulty;
 }
 
 export function selectPlayerName(state: GameState): string {

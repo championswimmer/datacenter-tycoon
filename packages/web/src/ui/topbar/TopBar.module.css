@@ -44,6 +44,18 @@
   max-width: 160px;
 }
 
+.difficultyBadge {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--neon-cyan);
+  border: 1px solid var(--neon-cyan);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  box-shadow: var(--glow-sm-cyan);
+}
+
 .desktopBadge {
   font-family: var(--font-mono);
   font-size: 0.6rem;
