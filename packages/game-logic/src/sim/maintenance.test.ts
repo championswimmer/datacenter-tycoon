@@ -12,6 +12,7 @@ import {
 	rackAgeMonths,
 	rackFailureChance,
 	rackFailureRiskView,
+	repairDurationDays,
 	repairProgressPerTick,
 	repairSpeedMultiplier,
 } from "./maintenance.js";
@@ -67,6 +68,16 @@ test("advanceRackRepair uses current staffing and clears repair progress when co
 	const completed = advanceRackRepair(repairingRack({ repairProgressDays: BASE_REPAIR_DAYS - 10 }), 1);
 	assert.equal(completed.health, "healthy");
 	assert.equal("repairProgressDays" in completed, false);
+});
+
+test("repairDurationDays halves the repair target in easy mode", () => {
+	assert.equal(repairDurationDays("hard"), BASE_REPAIR_DAYS);
+	assert.equal(repairDurationDays("easy"), BASE_REPAIR_DAYS * DIFFICULTY_CONFIG.easy.repairTimeMultiplier);
+
+	const easyRepair = advanceRackRepair(repairingRack({ repairProgressDays: 10 }), 1, "easy");
+	const hardRepair = advanceRackRepair(repairingRack({ repairProgressDays: 10 }), 1, "hard");
+	assert.equal(easyRepair.health, "healthy");
+	assert.equal(hardRepair.health, "repairing");
 });
 
 test("advanceRackRepair leaves healthy racks unchanged", () => {
