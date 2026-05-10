@@ -189,16 +189,24 @@ Links to: relevant `AGENTS.md` sections, external docs, prior art, GitHub issues
 
 ## How to Execute a Plan
 
-1. **Read the entire plan file** first — frontmatter, progress, architecture, all phases.
-2. **Find the first unchecked step** in the lowest unchecked phase.
-3. **Implement that single step**, respecting its acceptance criteria.
-4. **Update the plan**:
-   - Tick the step's checkbox: `- [ ]` → `- [x]`.
-   - If all steps in the phase are now ticked, tick the phase too.
-   - If status was `created`, change it to `started`.
-   - If every phase is complete, change status to `completed`.
-   - Bump `updated` to today's date.
-5. **Commit** logically (one step per commit is a fine default; one phase per commit is also fine).
+1. **Prepare the workspace**:
+   - **Read the entire plan file** first — frontmatter, progress, architecture, all phases.
+   - **Branching**: If currently on the `main` branch, checkout a new branch (e.g., `feature/plan-NNN`).
+2. **Execute phase-by-phase and step-by-step**:
+   - Find the first unchecked step in the lowest unchecked phase.
+   - **Implement that single step**, respecting its acceptance criteria.
+3. **Update and Commit**:
+   - Update the plan file:
+     - Tick the step's checkbox: `- [ ]` → `- [x]`.
+     - Bump `updated` to today's date.
+     - Change `status` to `started` if it was `created`.
+   - **Commit and Push**: Commit the change and push it to the remote branch after each step is completed.
+4. **Finalize Phase**:
+   - If all steps in a phase are complete, tick the phase checkbox.
+   - **Context Management**: After completing a phase, use the `context_prune` tool (if it exists) to prune the session context.
+5. **Complete the Plan**:
+   - If every phase is complete, change `status` to `completed`.
+   - **Pull Request**: Raise a pull request once the entire plan is completely implemented.
 6. **Stop and report progress** unless the user said to keep going.
 
 If a step turns out to be wrong or insufficient, **edit the plan first** (add/split/remove steps, note rationale in a `## Changelog` section at the bottom), then resume. Plans are living documents.
