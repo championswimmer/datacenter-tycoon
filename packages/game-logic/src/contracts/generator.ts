@@ -205,6 +205,7 @@ export function generateContract(
 		monthlyPayment,
 		penaltyPerMonth,
 		termMonths,
+		lifecycleState: "market_open",
 		status: "offered",
 		urgency,
 		tier,

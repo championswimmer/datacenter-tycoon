@@ -1,7 +1,7 @@
 ---
 name: Contract Lifecycle State Model Refactor
 description: Simplify contract state to one lifecycle enum, one canonical contracts collection, and update game-logic, CLI, and web to handle all six states correctly.
-status: created
+status: started
 created: 2026-05-10
 updated: 2026-05-10
 owner: game-logic
@@ -10,7 +10,7 @@ owner: game-logic
 ## Progress
 
 - [ ] **Phase 1 — Simplify the contract model in game-logic**
-  - [ ] 1.1 Introduce `ContractLifecycleState` and supporting metadata
+  - [x] 1.1 Introduce `ContractLifecycleState` and supporting metadata
   - [ ] 1.2 Replace `contractMarket` + `activeContracts` with one canonical `contracts` collection
   - [ ] 1.3 Add save migration and reusable test fixtures
 - [ ] **Phase 2 — Rebuild contract transitions and simulation rules**

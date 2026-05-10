@@ -57,6 +57,7 @@ export function refreshContractMarket(state: GameState): GameState {
 			...generatedContract,
 			offeredAtTick: state.tick,
 			expiresAtTick: state.tick + generatedContract.expiresAtTick,
+			lifecycleState: "market_open",
 			status: "offered",
 		});
 	}
@@ -111,6 +112,7 @@ export function acceptContract(
 			...generatedContract,
 			offeredAtTick: state.tick,
 			expiresAtTick: state.tick + generatedContract.expiresAtTick,
+			lifecycleState: "market_open",
 			status: "offered",
 		});
 	}
@@ -123,8 +125,10 @@ export function acceptContract(
 			...state.activeContracts,
 			{
 				...contractToAccept,
+				lifecycleState: "serving",
 				status: "active",
 				startedAtTick: state.tick,
+				acceptedAtTick: state.tick,
 				assignedDcId: dcId,
 			},
 		],

@@ -49,7 +49,9 @@ function finalizeContract(contract: Contract, tick: Tick): Contract {
 
 	return {
 		...contract,
+		lifecycleState: "completed",
 		status: "expired",
+		closedAtTick: tick,
 	};
 }
 

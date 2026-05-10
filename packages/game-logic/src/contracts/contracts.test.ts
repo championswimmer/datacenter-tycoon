@@ -162,8 +162,10 @@ test("acceptContract moves an offered contract into the active list with assignm
 	assert.equal(nextState.activeContracts.length, 1);
 	assert.deepEqual(nextState.activeContracts[0], {
 		...offeredContract,
+		lifecycleState: "serving",
 		status: "active",
 		startedAtTick: state.tick,
+		acceptedAtTick: state.tick,
 		assignedDcId: state.datacenters[0]!.id,
 	});
 });
@@ -242,8 +244,10 @@ test("acceptContract allows an exact-fit contract on remaining available capacit
 	assert.equal(nextState.activeContracts.length, 2);
 	assert.deepEqual(nextState.activeContracts.at(-1), {
 		...offeredContract,
+		lifecycleState: "serving",
 		status: "active",
 		startedAtTick: state.tick,
+		acceptedAtTick: state.tick,
 		assignedDcId: datacenterId("dc-1"),
 	});
 });
