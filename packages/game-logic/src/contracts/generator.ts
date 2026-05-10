@@ -9,6 +9,7 @@ import type { Rng } from "../sim/rng.js";
 interface ContractTheme {
 	id: string;
 	label: string;
+	deliverables: readonly string[];
 	weights: {
 		vCpu: number;
 		ramGb: number;
@@ -17,40 +18,87 @@ interface ContractTheme {
 	};
 }
 
+const COMPANY_PREFIXES = [
+	"Apex",
+	"Blue",
+	"Cobalt",
+	"Global",
+	"Helix",
+	"Nimbus",
+	"Northstar",
+	"Nova",
+	"Orbital",
+	"Quantum",
+	"Vertex",
+] as const;
+
+const COMPANY_SUFFIXES = [
+	"Cloud",
+	"Compute",
+	"Dynamics",
+	"Industries",
+	"Labs",
+	"Networks",
+	"Platforms",
+	"Systems",
+	"Technologies",
+	"Works",
+] as const;
+
+const PROJECT_CODENAMES = [
+	"Atlas",
+	"Aurora",
+	"Beacon",
+	"Catalyst",
+	"Helios",
+	"Meridian",
+	"Nova",
+	"Orion",
+	"Signal",
+	"Vector",
+] as const;
+
 const CONTRACT_THEMES: readonly ContractTheme[] = [
 	{
 		id: "ai_training",
 		label: "AI Training",
+		deliverables: ["LLM Cluster", "Foundation Model Pod", "Training Fabric"],
 		weights: { vCpu: 0.2, ramGb: 0.45, storageTb: 0.15, gpuFlops: 1 },
 	},
 	{
 		id: "ai_inference",
 		label: "AI Inference",
+		deliverables: ["Inference Mesh", "Serving Fleet", "Vector Gateway"],
 		weights: { vCpu: 0.45, ramGb: 0.4, storageTb: 0.15, gpuFlops: 0.55 },
 	},
 	{
 		id: "hpc_simulation",
 		label: "HPC Simulation",
+		deliverables: ["Simulation Grid", "Compute Sweep", "Monte Carlo Farm"],
 		weights: { vCpu: 1, ramGb: 0.7, storageTb: 0.2, gpuFlops: 0.3 },
 	},
 	{
 		id: "enterprise_db",
 		label: "Enterprise OLTP",
+		deliverables: ["OLTP Failover Ring", "Transactional Core", "Business Continuity Stack"],
 		weights: { vCpu: 0.55, ramGb: 1, storageTb: 0.45, gpuFlops: 0 },
 	},
 	{
 		id: "cold_storage",
 		label: "Cold Storage",
+		deliverables: ["Archive Vault", "Compliance Repository", "Deep Backup Lake"],
 		weights: { vCpu: 0.05, ramGb: 0.08, storageTb: 1, gpuFlops: 0 },
 	},
 	{
 		id: "cdn_edge",
 		label: "CDN Edge",
+		deliverables: ["Edge POP Rollout", "Caching Mesh", "Regional Delivery Grid"],
 		weights: { vCpu: 0.8, ramGb: 0.3, storageTb: 0.55, gpuFlops: 0 },
 	},
 	{
 		id: "video_render",
 		label: "Video Transcoding",
+		deliverables: ["Render Pipeline", "Transcode Swarm", "Streaming Encode Farm"],
 		weights: { vCpu: 0.45, ramGb: 0.35, storageTb: 0.25, gpuFlops: 0.7 },
 	},
 ];
@@ -95,6 +143,13 @@ function availableThemes(difficulty: number): readonly ContractTheme[] {
 		return CONTRACT_THEMES.filter((t) => t.weights.gpuFlops === 0);
 	}
 	return CONTRACT_THEMES;
+}
+
+function generateContractName(rng: Rng, theme: ContractTheme): string {
+	const company = `${pickOne(rng, COMPANY_PREFIXES)} ${pickOne(rng, COMPANY_SUFFIXES)}`;
+	const codename = pickOne(rng, PROJECT_CODENAMES);
+	const deliverable = pickOne(rng, theme.deliverables);
+	return `${company} ${codename} ${deliverable}`;
 }
 
 function roundToMultiple(value: number, multiple: number): number {
@@ -169,6 +224,7 @@ export function generateContract(
 	const normalizedDifficulty = clampDifficulty(difficulty);
 	const theme = pickOne(rng, availableThemes(normalizedDifficulty));
 	const requirements = createRequirements(rng, theme, normalizedDifficulty);
+	const contractName = generateContractName(rng, theme);
 	const weightedValue = contractValue(requirements);
 
 	const urgencyRoll = rng.next();
@@ -212,7 +268,7 @@ export function generateContract(
 
 	return {
 		id: contractId(`contract-${theme.id}-${idSuffix}`),
-		name: theme.label,
+		name: contractName,
 		requirements,
 		monthlyPayment,
 		penaltyPerMonth,
