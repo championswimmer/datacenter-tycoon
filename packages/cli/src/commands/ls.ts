@@ -104,10 +104,10 @@ async function listContracts(parsed: ParsedArgv, clientFactory: CommandClientFac
 		parsed,
 		async (client) => {
 			const snapshot = (await client.query({ kind: "snapshot" })) as GameState;
-			const { market, active } = presentContractBuckets(snapshot);
+			const { market, active, history } = presentContractBuckets(snapshot);
 
 			if (isJson) {
-				writeCommandResult(parsed, "", { market, active });
+				writeCommandResult(parsed, "", { market, active, history });
 				return;
 			}
 
@@ -142,7 +142,18 @@ async function listContracts(parsed: ParsedArgv, clientFactory: CommandClientFac
 				lines.push("No active contracts.");
 			}
 
-			writeCommandResult(parsed, lines.join("\n"), { market, active });
+			if (history.length > 0) {
+				lines.push("");
+				lines.push("=== Contract History ===");
+				for (const contract of history) {
+					lines.push(`  [${contract.id}]`);
+					lines.push(
+						`    ${contract.name} | ${contract.status.toUpperCase()} | DC: ${contract.assignedDcId ?? "unassigned"} | Tier ${contract.tier}`,
+					);
+				}
+			}
+
+			writeCommandResult(parsed, lines.join("\n"), { market, active, history });
 		},
 		clientFactory,
 	);

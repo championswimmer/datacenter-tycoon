@@ -14,7 +14,7 @@ owner: cli
   - [x] 1.2 Add focused game-logic regression coverage proving expired contracts no longer commit capacity
 - [ ] **Phase 2 — Fix CLI daemon status and one-shot contract views**
   - [x] 2.1 Make daemon/runtime status counts use only live contracts
-  - [ ] 2.2 Split CLI contract presentation into live vs history buckets
+  - [x] 2.2 Split CLI contract presentation into live vs history buckets
   - [ ] 2.3 Keep contract details available for historical contracts without labeling them active
 - [ ] **Phase 3 — Fix TUI surfaces and lock in regressions**
   - [ ] 3.1 Update dashboard and contracts tab to distinguish live vs historical accepted contracts
