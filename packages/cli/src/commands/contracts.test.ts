@@ -323,3 +323,39 @@ test("runContractCommand preserves breached, cancelled, and expired statuses in 
 test("runContractCommand rejects bare command and points users to ls contracts", async () => {
 	await assert.rejects(() => runContractCommand(parseArgv(["contract"])), /To list all contracts, use: dct ls contracts/);
 });
+
+test("runContractDetailsCommand text output labels expired contract as HISTORICAL, not live", async () => {
+	const snapshot = createStatusSnapshot();
+	// snapshot.activeContracts[2] is expired
+	const expiredContractId = snapshot.activeContracts[2]!.id;
+	const actions: Action[] = [];
+	const logged: string[] = [];
+	const originalLog = console.log;
+	console.log = (message?: unknown) => { logged.push(String(message ?? "")); };
+	try {
+		await runContractCommand(parseArgv(["contract", "details", expiredContractId]), () => createFakeClient(actions, snapshot));
+	} finally {
+		console.log = originalLog;
+	}
+	const output = logged[0] ?? "";
+	assert.match(output, /HISTORICAL/, "expired contract should be labeled HISTORICAL in details output");
+	assert.ok(!output.includes("currently commits capacity"), "expired contract must not say it commits capacity");
+});
+
+test("runContractDetailsCommand text output labels active/breached contract as LIVE", async () => {
+	const snapshot = createStatusSnapshot();
+	// snapshot.activeContracts[0] is breached (live)
+	const breachedContractId = snapshot.activeContracts[0]!.id;
+	const actions: Action[] = [];
+	const logged: string[] = [];
+	const originalLog = console.log;
+	console.log = (message?: unknown) => { logged.push(String(message ?? "")); };
+	try {
+		await runContractCommand(parseArgv(["contract", "details", breachedContractId]), () => createFakeClient(actions, snapshot));
+	} finally {
+		console.log = originalLog;
+	}
+	const output = logged[0] ?? "";
+	assert.match(output, /LIVE/, "breached contract should be labeled LIVE in details output");
+	assert.match(output, /currently commits capacity/);
+});
