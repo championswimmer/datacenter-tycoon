@@ -218,7 +218,35 @@ Supported datacenter spec IDs today:
 - `hyperscale`
 - `hyperscale`
 
-### 4.7 Add / remove / move racks
+### 4.7a Inspect and adjust maintenance staffing
+
+Each datacenter has a pool of extra maintenance engineers that speed up rack repairs. More staff means faster repairs but higher monthly wage costs. Regional labor capacity limits how many engineers you can hire across all datacenters in a region.
+
+```bash
+dct dc maint <dcId>                  # show current staffing, repair speed, wage impact, spare regional staff
+dct dc maint inc <dcId> [--by <n>]  # hire 1 (or n) more maintenance engineers
+dct dc maint dec <dcId> [--by <n>]  # fire 1 (or n) maintenance engineers
+dct dc maint set <dcId> <count>     # set an absolute maintenance staff level
+```
+
+All `dc maint` commands support `--json` for structured output. After any mutation, the updated staffing view is printed automatically.
+
+Key points:
+- `canIncrease: false` means either the `maxStaff` cap is reached or the region's labor pool is exhausted.
+- `repairSpeedDaysPerTick` increases with more staff — more engineers means fewer months per repair.
+- `extraWagesMonthly` is the additional monthly opex charge on top of baseline datacenter wages.
+- `averageRackAgeMonths` and `repairingRackCount` in the view help you judge whether more staffing is worth the cost.
+
+### 4.7b View maintenance summary in rack listings
+
+`dct ls racks <dcId>` now shows each rack's health status, current monthly failure probability, and age.
+
+```bash
+dct ls racks dc-1
+# output includes:
+#   Health: HEALTHY | Fail risk: 2.5%/mo | Age: 12 mo
+#   Health: REPAIRING | Fail risk: UNDER REPAIR
+```
 
 ```bash
 dct racks add <dcId> <row> <position> <rackSpecId> [--id <placementId>]

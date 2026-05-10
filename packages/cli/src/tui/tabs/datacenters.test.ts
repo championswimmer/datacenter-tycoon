@@ -29,3 +29,61 @@ test("renderDatacentersTab shows the list and rack grid for the selected datacen
 	assert.match(rendered, /Rack grid/);
 	assert.match(rendered, /\[C1\]/);
 });
+
+test("renderDatacentersTab shows maintenance staffing summary for selected datacenter", () => {
+	let snapshot = newGame(1, { startingCash: 3_000_000 });
+	const firstRegionId = snapshot.map.regions[0]!.id;
+	snapshot = reduce(snapshot, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: "dc-1" as never,
+		regionId: firstRegionId,
+	});
+
+	const rendered = renderDatacentersTab(snapshot, 0).join("\n");
+	assert.match(rendered, /Maintenance:/, "should show maintenance summary");
+	assert.match(rendered, /staff/, "should show staff count");
+	assert.match(rendered, /Repair speed/, "should show repair speed");
+	assert.match(rendered, /Repairing:/, "should show repairing rack count");
+	assert.match(rendered, /Avg age/, "should show average rack age");
+});
+
+test("renderDatacentersTab shows updated maintenance staff count after SetMaintenanceStaff", () => {
+	let snapshot = newGame(1, { startingCash: 3_000_000 });
+	const firstRegionId = snapshot.map.regions[0]!.id;
+	snapshot = reduce(snapshot, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: "dc-1" as never,
+		regionId: firstRegionId,
+	});
+	snapshot = reduce(snapshot, {
+		type: "SetMaintenanceStaff",
+		dcId: "dc-1" as never,
+		maintenanceStaff: 3,
+	});
+
+	const rendered = renderDatacentersTab(snapshot, 0).join("\n");
+	assert.match(rendered, /3\/\d+ staff/, "should show updated staff count");
+});
+
+test("renderDatacentersTab shows hire/fire keybind hints", () => {
+	let snapshot = newGame(1, { startingCash: 3_000_000 });
+	const firstRegionId = snapshot.map.regions[0]!.id;
+	snapshot = reduce(snapshot, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: "dc-1" as never,
+		regionId: firstRegionId,
+	});
+
+	const rendered = renderDatacentersTab(snapshot, 0).join("\n");
+	assert.match(rendered, /\+ hire maint/, "should show + hire hint");
+	assert.match(rendered, /- fire maint/, "should show - fire hint");
+});
+
+test("renderDatacentersTab with no datacenters shows empty message", () => {
+	const snapshot = newGame(1, { startingCash: 3_000_000 });
+	const rendered = renderDatacentersTab(snapshot, 0).join("\n");
+	assert.match(rendered, /No datacenters yet/);
+});

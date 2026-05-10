@@ -1,7 +1,7 @@
 ---
 name: CLI Maintenance Staffing Surfacing and Controls
 description: Surface maintenance staffing in the CLI, show its repair-speed and wage effects, and add CLI/TUI controls for increasing or decreasing maintenance staff per datacenter.
-status: started
+status: completed
 created: 2026-05-10
 updated: 2026-05-10
 owner: cli
@@ -17,10 +17,10 @@ owner: cli
   - [x] 2.2 Show maintenance staffing summary in `dct ls datacenters`
   - [x] 2.3 Add `dct dc maint` commands to inspect, increase, decrease, and set maintenance staff
   - [x] 2.4 Add CLI regression coverage for text and `--json` maintenance flows
-- [ ] **Phase 3 — Add TUI maintenance staffing visibility and controls**
-  - [ ] 3.1 Surface maintenance staffing, wage cost, repair speed, and regional spare staff in the Datacenters tab
-  - [ ] 3.2 Add TUI controls and palette affordances for increasing/decreasing selected datacenter maintenance staff
-  - [ ] 3.3 Add TUI regression tests and update CLI docs/help text
+- [x] **Phase 3 — Add TUI maintenance staffing visibility and controls**
+  - [x] 3.1 Surface maintenance staffing, wage cost, repair speed, and regional spare staff in the Datacenters tab
+  - [x] 3.2 Add TUI controls and palette affordances for increasing/decreasing selected datacenter maintenance staff
+  - [x] 3.3 Add TUI regression tests and update CLI docs/help text
 
 ## Overview
 

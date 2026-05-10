@@ -96,9 +96,22 @@ Defaults:
 - `Esc` — close the palette
 - `Enter` — run the palette command
 
+Datacenters tab shortcuts:
+
+- `n` — pre-fill `dc build` to create a new datacenter
+- `r` — pre-fill `racks add <selectedDcId>` to add a rack
+- `x` — pre-fill `racks decom <selectedDcId>` to remove a rack
+- `m` — pre-fill `racks move <selectedDcId>` to move a rack
+- `+` — pre-fill `dc maint inc <selectedDcId>` to hire a maintenance engineer
+- `-` — pre-fill `dc maint dec <selectedDcId>` to fire a maintenance engineer
+
 Helpful palette commands:
 - `ls contracts`
 - `dc build garage --region us_west`
+- `dc maint <dcId>` — inspect maintenance staffing
+- `dc maint inc <dcId>` — hire a maintenance engineer
+- `dc maint dec <dcId>` — fire a maintenance engineer
+- `dc maint set <dcId> <count>` — set absolute maintenance staff level
 - `racks add <dcId> <row> <position> C1`
 - `contract details <contractId>`
 - `contract accept <contractId> <dcId>`
