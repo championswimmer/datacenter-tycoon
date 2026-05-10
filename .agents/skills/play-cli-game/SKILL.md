@@ -173,7 +173,14 @@ This shows:
 - requirements
 - penalty
 - assigned datacenter for active contracts
-- status labels where `breached` means still-live failure, `cancelled` means explicit player cancellation, and `expired` means the term ended naturally
+- status labels:
+  - `active` — live, capacity committed, SLA checks passing
+  - `breached` — live, capacity committed, SLA checks currently failing
+  - `cancelled` — **historical**, player cancelled; capacity already released
+  - `expired` — **historical**, term ended naturally; capacity already released
+- `dct ls contracts` splits accepted contracts into **Active** (live: active + breached) and **History** (expired + cancelled) sections; only live contracts count toward `active=N` in `dct status`
+- `dct contract details <id>` works for both live and historical contracts; historical ones are labeled `HISTORICAL — no longer live, capacity already released`
+- `GameState.activeContracts` is the full accepted-contract **history** (live + historical combined); never assume its `.length` equals live contract count
 
 ### 4.5 Contract-focused subcommands
 
@@ -458,7 +465,7 @@ This is the most important gameplay rule for CLI play:
 
 ### The CLI **does** validate contract fit before acceptance
 
-`dct contract accept <contractId> <dcId>` now checks that the datacenter currently has enough available capacity to take the contract **right now** after accounting for already-assigned active contracts on that same datacenter.
+`dct contract accept <contractId> <dcId>` now checks that the datacenter currently has enough available capacity to take the contract **right now** after accounting for already-assigned **live** (active + breached) contracts on that same datacenter. Historical (expired + cancelled) contracts are excluded from this check because their capacity has already been released.
 
 If the contract does not fit, the command fails immediately instead of silently overcommitting the datacenter.
 

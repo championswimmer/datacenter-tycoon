@@ -1,7 +1,7 @@
 ---
 name: CLI Live vs Historical Contract Reporting
 description: Fix the CLI/TUI bug where expired or cancelled contracts are still reported as active/capacity-holding, even though game-logic has already released their committed capacity.
-status: started
+status: completed
 created: 2026-05-10
 updated: 2026-05-10
 owner: cli
@@ -16,10 +16,10 @@ owner: cli
   - [x] 2.1 Make daemon/runtime status counts use only live contracts
   - [x] 2.2 Split CLI contract presentation into live vs history buckets
   - [x] 2.3 Keep contract details available for historical contracts without labeling them active
-- [ ] **Phase 3 — Fix TUI surfaces and lock in regressions**
+- [x] **Phase 3 — Fix TUI surfaces and lock in regressions**
   - [x] 3.1 Update dashboard and contracts tab to distinguish live vs historical accepted contracts
   - [x] 3.2 Add CLI/TUI regression tests for the expired-contract repro
-  - [ ] 3.3 Update README / agent guidance to document the live-vs-history distinction
+  - [x] 3.3 Update README / agent guidance to document the live-vs-history distinction
 
 ## Overview
 

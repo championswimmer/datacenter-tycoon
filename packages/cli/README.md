@@ -50,10 +50,16 @@ dct speed 4
 ## Contract and layout UX notes
 
 - `dct ls contracts` shows the assigned datacenter for active contracts.
-- Contract lifecycle labels now distinguish:
-  - `breached` — the contract is live but currently failing capacity/SLA checks
-  - `cancelled` — the player explicitly cancelled it
-  - `expired` — the contract term ended naturally
+- Accepted contracts are split into two buckets — **live** and **history**:
+  - **Live** (`active` + `breached`): contracts that still commit capacity and can pay revenue or levy penalties. Shown in the "Active Contracts" section of `dct ls contracts` and counted in `dct status` (`active=N`).
+  - **History** (`expired` + `cancelled`): contracts whose term has ended or were cancelled. No longer commit capacity. Shown in a separate "Contract History" section in `dct ls contracts` and not counted as active.
+- `dct contract details <id>` resolves both live and historical contracts. Historical contracts are clearly labeled `HISTORICAL — no longer live, capacity already released`.
+- Contract lifecycle labels:
+  - `active` — live, capacity committed, currently fulfilling SLA checks
+  - `breached` — live, capacity committed, currently failing SLA checks
+  - `cancelled` — historical, player cancelled it; capacity already released
+  - `expired` — historical, term ended naturally; capacity already released
+- `GameState.activeContracts` is the full history of accepted contracts (live + historical). Only filter on `active`/`breached` to find capacity-consuming contracts; use the shared `isLiveContractStatus()` helper from `@datacenter-tycoon/game-logic` for this.
 - `dct ls catalog` shows datacenter geometry as `rows × cols (slots)`.
 - `dct ls datacenters` shows both the layout summary and valid row/column bounds for rack placement.
 
