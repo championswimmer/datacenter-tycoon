@@ -1,7 +1,7 @@
 ---
 name: Contract Lifecycle State Model Refactor
 description: Simplify contract state to one lifecycle enum, one canonical contracts collection, and update game-logic, CLI, and web to handle all six states correctly.
-status: started
+status: completed
 created: 2026-05-10
 updated: 2026-05-10
 owner: game-logic
@@ -9,22 +9,22 @@ owner: game-logic
 
 ## Progress
 
-- [ ] **Phase 1 — Simplify the contract model in game-logic**
+- [x] **Phase 1 — Simplify the contract model in game-logic**
   - [x] 1.1 Introduce `ContractLifecycleState` and supporting metadata
-  - [ ] 1.2 Replace `contractMarket` + `activeContracts` with one canonical `contracts` collection
-  - [ ] 1.3 Add save migration and reusable test fixtures
-- [ ] **Phase 2 — Rebuild contract transitions and simulation rules**
-  - [ ] 2.1 Preserve market-expired offers and refactor accept/serve/breach/complete transitions
-  - [ ] 2.2 Add breach streak tracking and auto-cancel after prolonged SLA failure
-  - [ ] 2.3 Rebuild capacity, revenue, and reliability logic on lifecycle selectors
-- [ ] **Phase 3 — Update CLI to use the new lifecycle model**
-  - [ ] 3.1 Expose lifecycle-aware contract buckets from daemon/protocol code
-  - [ ] 3.2 Update one-shot CLI commands and JSON output for all six states
-  - [ ] 3.3 Update TUI contracts/dashboard surfaces and CLI regression tests
-- [ ] **Phase 4 — Update web UI, docs, and cross-package regression coverage**
-  - [ ] 4.1 Replace web ad hoc filters with lifecycle-aware selectors
-  - [ ] 4.2 Update web contract pages and auxiliary UI for all six states
-  - [ ] 4.3 Add cross-workspace regression tests and update docs / older plans
+  - [x] 1.2 Replace `contractMarket` + `activeContracts` with one canonical `contracts` collection
+  - [x] 1.3 Bump save version, reject incompatible old saves, and update reusable fixtures
+- [x] **Phase 2 — Rebuild contract transitions and simulation rules**
+  - [x] 2.1 Preserve market-expired offers and refactor accept/serve/breach/complete transitions
+  - [x] 2.2 Add breach streak tracking and auto-cancel after prolonged SLA failure
+  - [x] 2.3 Rebuild capacity, revenue, and reliability logic on lifecycle selectors
+- [x] **Phase 3 — Update CLI to use the new lifecycle model**
+  - [x] 3.1 Expose lifecycle-aware contract buckets from daemon/protocol code
+  - [x] 3.2 Update one-shot CLI commands and JSON output for all six states
+  - [x] 3.3 Update TUI contracts/dashboard surfaces and CLI regression tests
+- [x] **Phase 4 — Update web UI, docs, and cross-package regression coverage**
+  - [x] 4.1 Replace web ad hoc filters with lifecycle-aware selectors
+  - [x] 4.2 Update web contract pages and auxiliary UI for all six states
+  - [x] 4.3 Add cross-workspace regression tests and update docs / older plans
 
 ## Overview
 
@@ -144,19 +144,13 @@ export function isHistoricalContract(contract: Contract): boolean {
 - Remove assumptions that `activeContracts` means either “live” or “accepted history”.
 - Acceptance: every contract lives in exactly one canonical collection, and market/live/history groupings are derived from selectors rather than storage shape.
 
-### Step 1.3 — Add save migration and reusable test fixtures
+### Step 1.3 — Bump save version, reject incompatible old saves, and update reusable fixtures
 
 - Files: `packages/game-logic/src/save/serialize.ts`, `packages/game-logic/src/save/serialize.test.ts`, contract fixture helpers under `packages/game-logic/src/contracts/`
-- Bump the save version and migrate legacy saves into the new model.
-- Map legacy statuses as follows:
-  - `offered` → `market_open`
-  - `active` → `serving`
-  - `breached` → `breached`
-  - accepted `expired` → `completed`
-  - accepted `cancelled` → `cancelled`
-- Document that previously dropped market-expired offers cannot be reconstructed during migration; only newly expired offers will be retained going forward.
+- Bump the save version and reject older saves instead of migrating them.
+- Document that incompatible saves must be recreated.
 - Add reusable fixtures/builders for all six states.
-- Acceptance: old saves load into a valid new model, and later tests can build each lifecycle state from shared fixtures.
+- Acceptance: current saves load into the new model, old saves fail clearly, and later tests can build each lifecycle state from shared fixtures.
 
 ## Phase 2 — Rebuild contract transitions and simulation rules
 
@@ -299,3 +293,4 @@ export function isHistoricalContract(contract: Contract): boolean {
 
 - 2026-05-10 — Created to redesign contract lifecycle state around six explicit user-facing states and thread the new model through game-logic, CLI, save migration, and web UI.
 - 2026-05-10 — Simplified the plan to use one authoritative `ContractLifecycleState` enum, one canonical `contracts` collection, and a smaller set of clearer phases/steps.
+- 2026-05-10 — Implemented the lifecycle refactor, canonical `contracts` storage, lifecycle selectors, market-expired retention, breach streak cancellation, and cross-workspace fixture updates. Per user direction, old save migration was dropped; incompatible saves are rejected and can be recreated.

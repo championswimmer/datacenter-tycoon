@@ -1,4 +1,5 @@
 import { RELIABILITY_BASELINE_SCORE } from "../balance/reliability.js";
+import { withDerivedContractViews } from "../contracts/lifecycle.js";
 import { refreshContractMarket } from "../contracts/market.js";
 import { STARTING_CASH } from "../economy/constants.js";
 import { generateMap } from "../sim/mapgen.js";
@@ -44,6 +45,7 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 			},
 		},
 		datacenters: [],
+		contracts: [],
 		contractMarket: [],
 		activeContracts: [],
 		ledger: [],
@@ -58,5 +60,5 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 		map: generateMap(effectiveSeed),
 	};
 
-	return refreshContractMarket(initialState);
+	return withDerivedContractViews(refreshContractMarket(initialState));
 }

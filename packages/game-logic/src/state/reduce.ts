@@ -1,5 +1,6 @@
 import { DEFAULT_MAINTENANCE_STAFF, MAX_MAINTENANCE_STAFF } from "../balance/maintenance.js";
 import { acceptContract } from "../contracts/market.js";
+import { contractsFromState, isLiveContract, withDerivedContractViews } from "../contracts/lifecycle.js";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { applyCapex } from "../economy/capex.js";
@@ -248,23 +249,29 @@ function moveRack(
 }
 
 function cancelContract(state: GameState, contractId: ContractId): GameState {
-	const contract = state.activeContracts.find((candidate) => candidate.id === contractId);
+	const contracts = contractsFromState(state);
+	const contract = contracts.find((candidate) => candidate.id === contractId);
 	if (!contract) {
 		throw new Error(`Unknown active contract: ${contractId}`);
 	}
 
-	if (contract.status === "expired" || contract.status === "cancelled") {
-		throw new Error(`Contract cannot be cancelled from status: ${contract.status}`);
+	if (!isLiveContract(contract)) {
+		throw new Error(`Contract cannot be cancelled from lifecycle state: ${contract.lifecycleState}`);
 	}
 
-	return {
+	return withDerivedContractViews({
 		...state,
-		activeContracts: state.activeContracts.map((candidate) =>
+		contracts: contracts.map((candidate) =>
 			candidate.id === contractId
-				? { ...candidate, lifecycleState: "cancelled", status: "cancelled", closedAtTick: state.tick }
+				? {
+						...candidate,
+						lifecycleState: "cancelled",
+						status: "cancelled",
+						closedAtTick: state.tick,
+				  }
 				: candidate,
 		),
-	};
+	});
 }
 
 function clampMaintenanceStaff(maintenanceStaff: number): number {

@@ -3,6 +3,7 @@ import { datacenterContractCapacitySummary } from "../entities/datacenter.js";
 import { rngFromState } from "../sim/rng.js";
 import type { Capacity, ContractId, ContractRequirements, DatacenterId, GameState } from "../types.js";
 import { generateContract } from "./generator.js";
+import { contractsFromState, selectLiveContracts, selectOpenMarketContracts, withDerivedContractViews } from "./lifecycle.js";
 
 export interface ContractAcceptanceFailure {
 	code: "insufficient_capacity";
@@ -42,13 +43,22 @@ export function marketDifficulty(currentTick: number, roll: number): number {
 }
 
 export function refreshContractMarket(state: GameState): GameState {
-	const retainedOffers = state.contractMarket.filter(
-		(contract) => contract.status === "offered" && contract.expiresAtTick > state.tick,
+	const contracts = contractsFromState(state);
+	const contractsWithExpiredOffers = contracts.map((contract) =>
+		contract.lifecycleState === "market_open" && contract.expiresAtTick <= state.tick
+			? {
+					...contract,
+					lifecycleState: "market_expired" as const,
+					status: "expired" as const,
+					closedAtTick: state.tick,
+				}
+			: contract,
 	);
 	const rng = rngFromState(state.rngState);
-	const refreshedOffers = [...retainedOffers];
 	const marketPolicy = reliabilityMarketPolicyForScore(state.player.reliability.score);
 	const offerTarget = marketPolicy.offerCount;
+	const retainedOffers = selectOpenMarketContracts(contractsWithExpiredOffers).slice(0, offerTarget);
+	const refreshedOffers = [...retainedOffers];
 
 	while (refreshedOffers.length < offerTarget) {
 		const difficulty = marketDifficulty(state.tick, rng.next());
@@ -62,11 +72,14 @@ export function refreshContractMarket(state: GameState): GameState {
 		});
 	}
 
-	return {
+	return withDerivedContractViews({
 		...state,
-		contractMarket: refreshedOffers,
+		contracts: [
+			...contractsWithExpiredOffers.filter((contract) => contract.lifecycleState !== "market_open"),
+			...refreshedOffers,
+		],
 		rngState: rng.state(),
-	};
+	});
 }
 
 export function acceptContract(
@@ -79,17 +92,18 @@ export function acceptContract(
 		throw new Error(`Unknown datacenter: ${dcId}`);
 	}
 
-	const existingContract = state.activeContracts.find((contract) => contract.id === contractId);
-	if (existingContract) {
+	const contracts = contractsFromState(state);
+	const existingLiveContract = selectLiveContracts(contracts).find((contract) => contract.id === contractId);
+	if (existingLiveContract) {
 		throw new Error(`Contract already active: ${contractId}`);
 	}
 
-	const contractToAccept = state.contractMarket.find((contract) => contract.id === contractId);
+	const contractToAccept = selectOpenMarketContracts(contracts).find((contract) => contract.id === contractId);
 	if (!contractToAccept) {
 		throw new Error(`Unknown market contract: ${contractId}`);
 	}
 
-	const capacitySummary = datacenterContractCapacitySummary(datacenter, state.activeContracts);
+	const capacitySummary = datacenterContractCapacitySummary(datacenter, selectLiveContracts(contracts));
 	if (!canCoverRequirements(capacitySummary.available, contractToAccept.requirements)) {
 		throw new ContractAcceptanceError({
 			code: "insufficient_capacity",
@@ -99,7 +113,18 @@ export function acceptContract(
 		});
 	}
 
-	const remainingMarket = state.contractMarket.filter((contract) => contract.id !== contractId);
+	const acceptedContract = {
+		...contractToAccept,
+		lifecycleState: "serving" as const,
+		status: "active" as const,
+		startedAtTick: state.tick,
+		acceptedAtTick: state.tick,
+		assignedDcId: dcId,
+	};
+	const contractsWithAccepted = contracts.map((contract) =>
+		contract.id === contractId ? acceptedContract : contract,
+	);
+	const remainingMarket = selectOpenMarketContracts(contractsWithAccepted);
 
 	const rng = rngFromState(state.rngState);
 	const backfilledMarket = [...remainingMarket];
@@ -117,20 +142,12 @@ export function acceptContract(
 		});
 	}
 
-	return {
+	return withDerivedContractViews({
 		...state,
-		contractMarket: backfilledMarket,
-		rngState: rng.state(),
-		activeContracts: [
-			...state.activeContracts,
-			{
-				...contractToAccept,
-				lifecycleState: "serving",
-				status: "active",
-				startedAtTick: state.tick,
-				acceptedAtTick: state.tick,
-				assignedDcId: dcId,
-			},
+		contracts: [
+			...contractsWithAccepted.filter((contract) => contract.lifecycleState !== "market_open"),
+			...backfilledMarket,
 		],
-	};
+		rngState: rng.state(),
+	});
 }

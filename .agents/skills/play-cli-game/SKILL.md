@@ -174,13 +174,14 @@ This shows:
 - penalty
 - assigned datacenter for active contracts
 - status labels:
-  - `active` — live, capacity committed, SLA checks passing
+  - `serving` — live, capacity committed, SLA checks passing
   - `breached` — live, capacity committed, SLA checks currently failing
   - `cancelled` — **historical**, player cancelled; capacity already released
-  - `expired` — **historical**, term ended naturally; capacity already released
+  - `completed` — **historical**, term ended successfully; capacity already released
+  - `market_expired` — **historical**, offer expired before acceptance
 - `dct ls contracts` splits accepted contracts into **Active** (live: active + breached) and **History** (expired + cancelled) sections; only live contracts count toward `active=N` in `dct status`
 - `dct contract details <id>` works for both live and historical contracts; historical ones are labeled `HISTORICAL — no longer live, capacity already released`
-- `GameState.activeContracts` is the full accepted-contract **history** (live + historical combined); never assume its `.length` equals live contract count
+- `GameState.contracts` is the canonical contract collection; `activeContracts` is a deprecated compatibility view and its `.length` must not be treated as live contract count
 
 ### 4.5 Contract-focused subcommands
 

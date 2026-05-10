@@ -1,4 +1,4 @@
-import { isLiveContractStatus } from "../contracts/lifecycle.js";
+import { isLiveContract } from "../contracts/lifecycle.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import {
 	allocateRackActivity,
@@ -117,16 +117,12 @@ export function datacenterInstalledCapacity(datacenter: Datacenter): Capacity {
 	}, EMPTY_CAPACITY);
 }
 
-function isCapacityCommittedContract(contract: Pick<Contract, "status">): boolean {
-	return isLiveContractStatus(contract.status);
-}
-
 export function datacenterCommittedContractDemand(
 	datacenter: Datacenter,
-	activeContracts: readonly Pick<Contract, "assignedDcId" | "status" | "requirements">[],
+	contracts: readonly Pick<Contract, "assignedDcId" | "lifecycleState" | "requirements">[],
 ): ContractRequirements {
-	return activeContracts.reduce<ContractRequirements>((committed, contract) => {
-		if (contract.assignedDcId !== datacenter.id || !isCapacityCommittedContract(contract)) {
+	return contracts.reduce<ContractRequirements>((committed, contract) => {
+		if (contract.assignedDcId !== datacenter.id || !isLiveContract(contract)) {
 			return committed;
 		}
 
@@ -143,11 +139,11 @@ export interface DatacenterContractCapacitySummary {
 
 export function datacenterContractCapacitySummary(
 	datacenter: Datacenter,
-	activeContracts: readonly Pick<Contract, "assignedDcId" | "status" | "requirements">[],
+	contracts: readonly Pick<Contract, "assignedDcId" | "lifecycleState" | "requirements">[],
 ): DatacenterContractCapacitySummary {
 	const installed = datacenterInstalledCapacity(datacenter);
 	const usable = datacenterCapacity(datacenter);
-	const committed = datacenterCommittedContractDemand(datacenter, activeContracts);
+	const committed = datacenterCommittedContractDemand(datacenter, contracts);
 	const available = subtractCapacity(usable, committed);
 
 	return {

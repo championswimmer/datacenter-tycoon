@@ -176,6 +176,7 @@ describe("createGameStore", () => {
           monthlyPayment: 40_000,
           penaltyPerMonth: 6_000,
           termMonths: 1,
+          lifecycleState: "market_open",
           status: "offered",
           urgency: "standard",
           tier: 1,

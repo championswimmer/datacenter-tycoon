@@ -130,7 +130,7 @@ interface ContractSlaOutcome {
 }
 ```
 
-The current save policy remains **destructive on incompatible format changes**. Version `5` migrates legacy contract saves from `completed` to `expired`, while versions earlier than `4` are still intentionally rejected because they predate reliability tracking.
+The current save policy is **destructive on incompatible format changes**. Version `6` introduced canonical contract lifecycle storage; older save versions are intentionally rejected and should be recreated.
 
 ## Contract lifecycle
 
@@ -154,19 +154,19 @@ The lifecycle invariants are:
 - `assignedDcId` and `acceptedAtTick` are set once an offer is accepted
 - `breachStreakMonths` tracks consecutive breached months when breach cancellation is enabled
 
-During the lifecycle refactor, `Contract.status` remains as a deprecated compatibility bridge for existing game-logic, CLI, and web consumers. New code should read `lifecycleState`; later migration steps will remove the split market/live storage shape and the old status vocabulary.
+`Contract.status` remains as a deprecated compatibility bridge for existing game-logic, CLI, and web consumers. New code should read `lifecycleState`.
 
-`GameState.activeContracts` is currently the **full accepted-contract history**, not just currently live contracts. Contracts persist in this list after they complete or are cancelled so that post-mortem inspection and SLA history remain available. Future refactor steps replace `contractMarket` and `activeContracts` with one canonical `contracts` collection and derive market/live/history buckets from lifecycle selectors.
+`GameState.contracts` is the canonical contract collection. `contractMarket` and `activeContracts` are deprecated derived compatibility views; new code should derive market, live, and history buckets from lifecycle selectors.
 
 Only `serving` and `breached` contracts are **live**: they still commit capacity, pay revenue, and can levy penalties. `market_expired`, `cancelled`, and `completed` contracts are **historical**: their committed capacity has already been released and they no longer affect game-logic calculations.
 
 Always use the exported helper to classify liveness — never open-code the status check:
 
 ```ts
-import { isLiveContractLifecycleState } from "@datacenter-tycoon/game-logic";
+import { selectLiveContracts } from "@datacenter-tycoon/game-logic";
 
 // Count only live contracts
-const liveCount = state.activeContracts.filter((c) => isLiveContractLifecycleState(c.lifecycleState)).length;
+const liveCount = selectLiveContracts(state.contracts).length;
 
 // Check if a specific contract still commits capacity
 if (isLiveContractLifecycleState(contract.lifecycleState)) {
@@ -341,8 +341,9 @@ interface GameState {
     };
   };
   datacenters: Datacenter[];
-  contractMarket: Contract[];
-  activeContracts: Contract[]; // accepted-contract history during lifecycle migration; filter with lifecycle helpers
+  contracts: Contract[];
+  contractMarket: Contract[]; // deprecated derived compatibility view
+  activeContracts: Contract[]; // deprecated derived compatibility view
   ledger: LedgerEntry[];
   audioEnabled: boolean;
   audioSettings: AudioSettings;
@@ -411,6 +412,7 @@ interface MapState {
       }
     },
     "datacenters": [],
+    "contracts": [],
     "contractMarket": [],
     "activeContracts": [],
     "ledger": [],

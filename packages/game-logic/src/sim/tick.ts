@@ -1,4 +1,11 @@
 import { collectContractSlaOutcomes, updatePlayerReliability } from "../contracts/reliability.js";
+import {
+	CONTRACT_BREACH_AUTO_CANCEL_MONTHS,
+	contractsFromState,
+	isLiveContract,
+	selectLiveContracts,
+	withDerivedContractViews,
+} from "../contracts/lifecycle.js";
 import { refreshContractMarket } from "../contracts/market.js";
 import { tickOpex, tickRevenue } from "../economy/opex.js";
 import { advanceRackRepair, rackAgeMonths, rackFailureChance } from "./maintenance.js";
@@ -38,8 +45,17 @@ function createLedgerEntry(
 }
 
 function finalizeContract(contract: Contract, tick: Tick): Contract {
-	if ((contract.status !== "active" && contract.status !== "breached") || contract.startedAtTick === undefined) {
+	if (!isLiveContract(contract) || contract.startedAtTick === undefined) {
 		return contract;
+	}
+
+	if (contract.lifecycleState === "breached" && (contract.breachStreakMonths ?? 0) >= CONTRACT_BREACH_AUTO_CANCEL_MONTHS) {
+		return {
+			...contract,
+			lifecycleState: "cancelled",
+			status: "cancelled",
+			closedAtTick: tick,
+		};
 	}
 
 	const hasTermEnded = tick >= contract.startedAtTick + contract.termMonths;
@@ -51,6 +67,7 @@ function finalizeContract(contract: Contract, tick: Tick): Contract {
 		...contract,
 		lifecycleState: "completed",
 		status: "expired",
+		breachStreakMonths: 0,
 		closedAtTick: tick,
 	};
 }
@@ -97,6 +114,7 @@ export function tick(state: GameState): GameState {
 		tick: nextTick,
 		rngState: rng.state(),
 		datacenters: datacentersAfterMaintenance,
+		contracts: contractsFromState(state),
 	};
 
 	// Calculate base opex per datacenter
@@ -107,7 +125,7 @@ export function tick(state: GameState): GameState {
 		if (!region) {
 			throw new Error(`Region not found for datacenter: ${datacenter.regionId}`);
 		}
-		const opex = tickOpex(datacenter, region, maintenanceState.activeContracts);
+		const opex = tickOpex(datacenter, region, selectLiveContracts(contractsFromState(maintenanceState)));
 		perDcOpex.set(datacenter.id, opex);
 		baseOpexTotal += opex.total;
 	}
@@ -133,7 +151,8 @@ export function tick(state: GameState): GameState {
 	const totalOpex = roundMoney(baseOpexTotal + totalTax);
 
 	const finalizedContracts = revenueResult.updatedContracts.map((contract) => finalizeContract(contract, nextTick));
-	const reliabilityOutcomes = collectContractSlaOutcomes(state.activeContracts, revenueResult.updatedContracts, nextTick);
+	const previousLiveContracts = selectLiveContracts(contractsFromState(state));
+	const reliabilityOutcomes = collectContractSlaOutcomes(previousLiveContracts, finalizedContracts, nextTick);
 	const nextReliability = updatePlayerReliability(state.player.reliability, reliabilityOutcomes);
 	const netCashDelta = roundMoney(revenueResult.revenue - totalOpex);
 	const ledgerEntries: LedgerEntry[] = [];
@@ -175,9 +194,9 @@ export function tick(state: GameState): GameState {
 			cash: roundMoney(state.player.cash + netCashDelta),
 			reliability: nextReliability,
 		},
-		activeContracts: finalizedContracts,
+		contracts: finalizedContracts,
 		ledger: [...state.ledger, ...ledgerEntries],
 	};
 
-	return refreshContractMarket(advancedState);
+	return refreshContractMarket(withDerivedContractViews(advancedState));
 }
