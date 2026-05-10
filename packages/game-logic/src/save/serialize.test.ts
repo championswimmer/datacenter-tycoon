@@ -122,24 +122,12 @@ test("migrate is a no-op for current-version envelopes", () => {
 	assert.deepEqual(migrate(envelope), envelope);
 });
 
-test("migrate upgrades v4 saves by renaming completed contracts to expired", () => {
-	const state = {
-		...newGame(7),
-		activeContracts: [
-			{
-				...newGame(7).contractMarket[0]!,
-				status: "completed" as const,
-				startedAtTick: 1,
-				assignedDcId: datacenterId("dc-1"),
-			},
-		],
-	};
+test("migrate rejects v4 saves after the contract lifecycle storage refactor", () => {
+	const state = newGame(7);
 
-	const migrated = migrate({ saveVersion: 4, state });
-
-	assert.equal(migrated.saveVersion, SAVE_VERSION);
-	assert.equal(migrated.state.activeContracts[0]?.status, "expired");
-	assert.equal(migrated.state.contractMarket[0]?.status, "offered");
+	assert.throws(() => migrate({ saveVersion: 4, state }), {
+		message: /Outdated save version/,
+	});
 });
 
 test("migrate rejects outdated saves that require destructive recreation", () => {

@@ -39,6 +39,7 @@ function buildMarketState(): GameState {
     monthlyPayment: 12000,
     penaltyPerMonth: 4000,
     termMonths: 3,
+    lifecycleState: "market_open",
     status: "offered",
     urgency: "standard",
     tier: 1,

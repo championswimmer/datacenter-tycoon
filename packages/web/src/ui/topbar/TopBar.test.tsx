@@ -148,6 +148,7 @@ describe("TopBar", () => {
         monthlyPayment: 1000,
         penaltyPerMonth: 100,
         termMonths: 1,
+        lifecycleState: "market_open",
         status: "offered",
         urgency: "standard",
         tier: 1,

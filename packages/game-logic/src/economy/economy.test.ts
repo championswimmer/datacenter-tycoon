@@ -276,10 +276,12 @@ test("tickRevenue pays fulfilled contracts and recovers previously breached cont
 		updatedContracts: [
 			{
 				...state.activeContracts[0],
+				lifecycleState: "serving",
 				status: "active",
 			},
 			{
 				...state.activeContracts[1],
+				lifecycleState: "serving",
 				status: "active",
 			},
 		],

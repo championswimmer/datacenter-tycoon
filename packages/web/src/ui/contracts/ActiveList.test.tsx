@@ -38,6 +38,7 @@ function buildActiveState(): GameState {
     monthlyPayment: 12000,
     penaltyPerMonth: 4000,
     termMonths: 3,
+    lifecycleState: "serving",
     status: "active",
     urgency: "standard",
     tier: 1,

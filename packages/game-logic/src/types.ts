@@ -260,7 +260,10 @@ export interface GameState {
 	rngState: number;
 	player: Player;
 	datacenters: Datacenter[];
+	contracts: Contract[];
+	/** @deprecated Use lifecycle selectors over `contracts`. */
 	contractMarket: Contract[];
+	/** @deprecated Use lifecycle selectors over `contracts`. */
 	activeContracts: Contract[];
 	ledger: LedgerEntry[];
 	audioEnabled: boolean;

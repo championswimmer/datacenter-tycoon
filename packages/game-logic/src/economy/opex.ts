@@ -1,4 +1,5 @@
 import { RACK_CATALOG } from "../catalog/racks.js";
+import { contractsFromState, isLiveContract, selectLiveContracts } from "../contracts/lifecycle.js";
 import { datacenterCapacity, datacenterRackPowerSummary, datacenterUsage } from "../entities/datacenter.js";
 import type {
 	Capacity,
@@ -47,12 +48,9 @@ function canCoverRequirements(capacity: Capacity, requirements: ContractRequirem
 	);
 }
 
-function getAssignedDemand(activeContracts: Contract[], datacenterId: DatacenterId): ContractRequirements {
-	return activeContracts.reduce<ContractRequirements>((total, contract) => {
-		if (
-			contract.assignedDcId !== datacenterId ||
-			(contract.status !== "active" && contract.status !== "breached")
-		) {
+function getAssignedDemand(contracts: readonly Contract[], datacenterId: DatacenterId): ContractRequirements {
+	return contracts.reduce<ContractRequirements>((total, contract) => {
+		if (contract.assignedDcId !== datacenterId || !isLiveContract(contract)) {
 			return total;
 		}
 
@@ -66,7 +64,7 @@ export function tickOpex(
 	activeContracts?: readonly Contract[],
 ): OpexTickResult {
 	const usage = datacenterUsage(datacenter);
-	const assignedDemand = activeContracts ? getAssignedDemand([...activeContracts], datacenter.id) : EMPTY_CAPACITY;
+	const assignedDemand = activeContracts ? getAssignedDemand(activeContracts, datacenter.id) : EMPTY_CAPACITY;
 	const billedPowerKw = activeContracts
 		? datacenterRackPowerSummary(datacenter, assignedDemand).billedPowerKw
 		: usage.powerKw;
@@ -110,8 +108,10 @@ export function tickRevenue(state: GameState): RevenueTickResult {
 	let revenue = 0;
 	const perDcRevenue: Record<DatacenterId, Money> = {};
 
-	const updatedContracts = state.activeContracts.map((contract): Contract => {
-		if ((contract.status !== "active" && contract.status !== "breached") || !contract.assignedDcId) {
+	const contracts = contractsFromState(state);
+	const liveContracts = selectLiveContracts(contracts);
+	const updatedLiveContracts = liveContracts.map((contract): Contract => {
+		if (!contract.assignedDcId) {
 			return contract;
 		}
 
@@ -121,18 +121,22 @@ export function tickRevenue(state: GameState): RevenueTickResult {
 			perDcRevenue[contract.assignedDcId] = (perDcRevenue[contract.assignedDcId] ?? 0) - contract.penaltyPerMonth;
 			return {
 				...contract,
+				lifecycleState: "breached",
 				status: "breached",
+				breachStreakMonths: (contract.breachStreakMonths ?? 0) + 1,
 			};
 		}
 
-		const datacenterDemand = getAssignedDemand(state.activeContracts, datacenter.id);
+		const datacenterDemand = getAssignedDemand(liveContracts, datacenter.id);
 		const datacenterSupply = datacenterCapacity(datacenter);
 		if (!canCoverRequirements(datacenterSupply, datacenterDemand)) {
 			revenue -= contract.penaltyPerMonth;
 			perDcRevenue[datacenter.id] = (perDcRevenue[datacenter.id] ?? 0) - contract.penaltyPerMonth;
 			return {
 				...contract,
+				lifecycleState: "breached",
 				status: "breached",
+				breachStreakMonths: (contract.breachStreakMonths ?? 0) + 1,
 			};
 		}
 
@@ -140,9 +144,12 @@ export function tickRevenue(state: GameState): RevenueTickResult {
 		perDcRevenue[datacenter.id] = (perDcRevenue[datacenter.id] ?? 0) + contract.monthlyPayment;
 		return {
 			...contract,
+			lifecycleState: "serving",
 			status: "active",
 		};
 	});
+	const updatedContractsById = new Map(updatedLiveContracts.map((contract) => [contract.id, contract]));
+	const updatedContracts = contracts.map((contract) => updatedContractsById.get(contract.id) ?? contract);
 
 	return {
 		revenue: roundMoney(revenue),
