@@ -44,6 +44,7 @@ function renderFrame(
 	return renderLayout({
 		tick: status?.tick ?? snapshot?.tick ?? 0,
 		cash: status?.cash ?? snapshot?.player.cash ?? 0,
+		difficulty: status?.difficulty ?? snapshot?.difficulty ?? "hard",
 		speedTps: status?.speedTps ?? 0,
 		paused: status?.paused ?? true,
 		activeTab,

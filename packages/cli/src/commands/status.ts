@@ -22,6 +22,7 @@ export function formatStatusLine(status: StatusView): string {
 	return [
 		`tick=${status.tick}`,
 		`cash=${formatMoney(status.cash)}`,
+		`difficulty=${status.difficulty}`,
 		`dcs=${status.datacenterCount}`,
 		`racks=${status.rackCount}`,
 		`active=${status.activeContractCount}`,

@@ -8,6 +8,7 @@ test("renderLayout prints the shell with header, tabs, body, and status line", (
 	const rendered = renderLayout({
 		tick: 42,
 		cash: 125000,
+		difficulty: "easy",
 		speedTps: 4,
 		paused: false,
 		activeTab: "dashboard",
@@ -16,7 +17,7 @@ test("renderLayout prints the shell with header, tabs, body, and status line", (
 		showHelp: false,
 	});
 
-	assert.match(rendered, /Datacenter Tycoon  tick 42  cash \$125,000  speed 4x/);
+	assert.match(rendered, /Datacenter Tycoon  tick 42  cash \$125,000  mode EASY  speed 4x/);
 	assert.match(rendered, /\[1 Dashboard\]/);
 	assert.match(rendered, /2 DCs/);
 	assert.match(rendered, /Overview/);

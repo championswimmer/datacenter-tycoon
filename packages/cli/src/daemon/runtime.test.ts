@@ -84,6 +84,7 @@ test("GameRuntime dispatching Tick advances state and emits runtime events", () 
 	assert.deepEqual(ledgerEventCounts, [1]);
 	assert.equal(runtime.getSnapshot().tick, 1);
 	assert.equal(runtime.getStatus().rackCount, 1);
+	assert.equal(runtime.getStatus().difficulty, "hard");
 });
 
 test("GameRuntime setSpeed reschedules the tick loop and interval callbacks tick the game", () => {
@@ -129,6 +130,7 @@ test("GameRuntime query returns status, catalogs, and derived listings", () => {
 	assert.equal(status.datacenterCount, 1);
 	assert.equal(status.rackCount, 1);
 	assert.equal(status.paused, true);
+	assert.equal(status.difficulty, "hard");
 
 	const datacenters = runtime.query({ kind: "list", target: "datacenters" });
 	assert.equal(datacenters.kind, "datacenters");

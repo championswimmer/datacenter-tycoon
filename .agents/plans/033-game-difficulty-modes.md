@@ -19,7 +19,7 @@ updated: 2026-05-10
   - [x] 2.5 Update tests to cover both difficulty modes
 - [ ] **Phase 3 — Interface Updates**
   - [x] 3.1 Update CLI `new-game` command to prompt for difficulty
-  - [ ] 3.2 Display current difficulty in CLI HUD/status
+  - [x] 3.2 Display current difficulty in CLI HUD/status
   - [ ] 3.3 Update web frontend game creation and HUD (if applicable)
 
 ## Overview

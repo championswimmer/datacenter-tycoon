@@ -8,6 +8,7 @@ import { formatStatusJson, formatStatusLine, runStatusCommand, type StatusClient
 const sampleStatus: StatusView = {
 	tick: 1284,
 	cash: 42310,
+	difficulty: "easy",
 	datacenterCount: 2,
 	rackCount: 8,
 	activeContractCount: 3,
@@ -19,7 +20,7 @@ const sampleStatus: StatusView = {
 test("formatStatusLine renders the expected status summary", () => {
 	assert.equal(
 		formatStatusLine(sampleStatus),
-		"tick=1284 cash=$42,310 dcs=2 racks=8 active=3 market=4 paused=false speed=4",
+		"tick=1284 cash=$42,310 difficulty=easy dcs=2 racks=8 active=3 market=4 paused=false speed=4",
 	);
 });
 
@@ -59,7 +60,7 @@ test("runStatusCommand prints text output and closes the client", async () => {
 			console.log = originalConsoleLog;
 		}
 
-		assert.deepEqual(printed, ["tick=1284 cash=$42,310 dcs=2 racks=8 active=3 market=4 paused=false speed=4"]);
+		assert.deepEqual(printed, ["tick=1284 cash=$42,310 difficulty=easy dcs=2 racks=8 active=3 market=4 paused=false speed=4"]);
 		assert.equal(closed, true);
 });
 
@@ -92,6 +93,7 @@ test("runStatusCommand prints json output when --json is set", async () => {
 const expiredOnlyStatus: StatusView = {
 	tick: 42,
 	cash: 100_000,
+	difficulty: "hard",
 	datacenterCount: 1,
 	rackCount: 2,
 	activeContractCount: 0, // fixed: was incorrectly 1 before plan-028

@@ -70,6 +70,7 @@ function createStatusView(state: GameState, runtimeStatus: RuntimeStatus): Statu
 	return {
 		tick: state.tick,
 		cash: state.player.cash,
+		difficulty: state.difficulty,
 		datacenterCount: state.datacenters.length,
 		rackCount: totalRackCount(state.datacenters),
 		activeContractCount: state.activeContracts.filter((c) => isLiveContractStatus(c.status)).length,
