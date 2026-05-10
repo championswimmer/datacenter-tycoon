@@ -32,6 +32,7 @@ export type LedgerEntryType = "capex" | "opex" | "revenue" | "penalty" | "adjust
 export type RackHealthStatus = "healthy" | "repairing";
 export type ReliabilityBand = "bronze" | "silver" | "gold" | "platinum" | "diamond";
 export type ContractSlaOutcomeKind = "fulfilled" | "breached" | "cancelled";
+export type Difficulty = "easy" | "hard";
 
 export interface Capacity {
 	vCpu: number;
@@ -258,6 +259,7 @@ export interface GameState {
 	tick: Tick;
 	seed: number;
 	rngState: number;
+	difficulty: Difficulty;
 	player: Player;
 	datacenters: Datacenter[];
 	contracts: Contract[];
