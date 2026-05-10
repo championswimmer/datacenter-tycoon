@@ -36,6 +36,10 @@ export function repairProgressPerTick(maintenanceStaff: number): number {
 	return DAYS_PER_TICK * repairSpeedMultiplier(maintenanceStaff);
 }
 
+export function repairDurationDays(difficulty: Difficulty = DEFAULT_DIFFICULTY): number {
+	return BASE_REPAIR_DAYS * DIFFICULTY_CONFIG[difficulty].repairTimeMultiplier;
+}
+
 // ── Rack failure-risk view ───────────────────────────────────────────────────
 
 /**
@@ -86,13 +90,17 @@ export function rackFailureRiskView(
 	};
 }
 
-export function advanceRackRepair(rack: RackPlacement, maintenanceStaff: number): RackPlacement {
+export function advanceRackRepair(
+	rack: RackPlacement,
+	maintenanceStaff: number,
+	difficulty: Difficulty = DEFAULT_DIFFICULTY,
+): RackPlacement {
 	if (rack.health !== "repairing") {
 		return rack;
 	}
 
 	const nextRepairProgressDays = (rack.repairProgressDays ?? 0) + repairProgressPerTick(maintenanceStaff);
-	if (nextRepairProgressDays < BASE_REPAIR_DAYS) {
+	if (nextRepairProgressDays < repairDurationDays(difficulty)) {
 		return {
 			...rack,
 			repairProgressDays: nextRepairProgressDays,

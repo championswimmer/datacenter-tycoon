@@ -86,7 +86,7 @@ function processRackMaintenance(
 ): Datacenter {
 	const placements = datacenter.placements.map((placement): RackPlacement => {
 		if (placement.health === "repairing") {
-			return advanceRackRepair(placement, datacenter.maintenanceStaff);
+			return advanceRackRepair(placement, datacenter.maintenanceStaff, difficulty);
 		}
 
 		const failureChance = rackFailureChance(rackAgeMonths(currentTick, placement), difficulty);
