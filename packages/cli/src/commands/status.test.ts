@@ -84,3 +84,44 @@ test("runStatusCommand prints json output when --json is set", async () => {
 
 		assert.deepEqual(printed, [formatStatusJson(sampleStatus)]);
 });
+
+// --- Cross-surface regression: expired contracts must not appear as live anywhere ---
+
+// Shared repro fixture: one expired contract in activeContracts, nothing else.
+// This is the exact failure mode reported in the bug investigation.
+const expiredOnlyStatus: StatusView = {
+	tick: 42,
+	cash: 100_000,
+	datacenterCount: 1,
+	rackCount: 2,
+	activeContractCount: 0, // fixed: was incorrectly 1 before plan-028
+	marketContractCount: 0,
+	paused: true,
+	speedTps: 1,
+};
+
+test("formatStatusLine shows zero active contracts when status reports none", () => {
+	assert.match(formatStatusLine(expiredOnlyStatus), /active=0/);
+	assert.ok(!formatStatusLine(expiredOnlyStatus).includes("active=1"), "must not show 1 expired contract as active");
+});
+
+test("runStatusCommand json output reports zero activeContractCount for expired-only state", async () => {
+	const printed: string[] = [];
+	const originalConsoleLog = console.log;
+	console.log = (message?: unknown) => { printed.push(String(message)); };
+
+	const fakeClient: StatusClient = {
+		connect: async () => undefined,
+		query: async () => expiredOnlyStatus,
+		close: async () => undefined,
+	};
+
+	try {
+		await runStatusCommand(parseArgv(["status", "--json"]), () => fakeClient);
+	} finally {
+		console.log = originalConsoleLog;
+	}
+
+	const parsed = JSON.parse(printed[0] ?? "{}") as { data: { activeContractCount: number } };
+	assert.equal(parsed.data.activeContractCount, 0, "expired-only state must report zero active contracts");
+});
