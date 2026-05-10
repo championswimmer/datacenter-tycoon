@@ -7,6 +7,7 @@ import {
   datacenterRackPowerSummary,
   datacenterUsage,
   rackAgeMonths,
+  rackFailureRiskView,
   reliabilityBandForScore,
   reliabilityMarketPolicyForScore,
   repairProgressPerTick,
@@ -231,6 +232,11 @@ export interface RackMaintenanceView {
   repairProgressDays: number;
   repairCompletionPercent: number;
   repairEtaTicks: number;
+  /**
+   * Monthly failure probability in [0, 1], derived from `rackFailureRiskView()`.
+   * Always 0 for racks that are currently `repairing`.
+   */
+  failureProbability: number;
 }
 
 export function selectDatacenterRackMaintenanceViews(
@@ -247,16 +253,18 @@ export function selectDatacenterRackMaintenanceViews(
   return datacenter.placements.map((placement) => {
     const repairProgressDays = placement.repairProgressDays ?? 0;
     const remainingRepairDays = Math.max(0, BASE_REPAIR_DAYS - repairProgressDays);
+    const riskView = rackFailureRiskView(state.tick, placement);
 
     return {
       placementId: placement.id,
-      ageMonths: rackAgeMonths(state.tick, placement),
+      ageMonths: riskView.ageMonths,
       status: placement.health,
       repairProgressDays,
       repairCompletionPercent: Math.round((Math.min(repairProgressDays, BASE_REPAIR_DAYS) / BASE_REPAIR_DAYS) * 100),
       repairEtaTicks: placement.health === "repairing"
         ? Math.ceil(remainingRepairDays / repairProgressDaysPerTick)
         : 0,
+      failureProbability: riskView.failureProbability,
     };
   });
 }
