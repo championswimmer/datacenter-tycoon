@@ -1,16 +1,13 @@
 import {
 	BASE_REPAIR_DAYS,
 	BASE_REPAIR_SPEED_MULTIPLIER,
+	DEFAULT_DIFFICULTY,
 	DAYS_PER_TICK,
+	DIFFICULTY_CONFIG,
 	MAX_REPAIR_SPEED_MULTIPLIER,
-	RACK_FAILURE_CURVE_EXPONENT,
-	RACK_FAILURE_MAX_AGE_MONTHS,
-	RACK_FAILURE_MAX_CHANCE,
-	RACK_FAILURE_YEAR_ONE_AGE_MONTHS,
-	RACK_FAILURE_YEAR_ONE_CHANCE,
 	REPAIR_SPEED_BONUS_PER_MAINTENANCE_STAFF,
 } from "../balance/index.js";
-import type { Rack, RackPlacement, RackHealthStatus, RackPlacementId, Tick } from "../types.js";
+import type { Difficulty, Rack, RackPlacement, RackHealthStatus, RackPlacementId, Tick } from "../types.js";
 
 function clamp(value: number, min: number, max: number): number {
 	return Math.min(max, Math.max(min, value));
@@ -20,17 +17,10 @@ export function rackAgeMonths(currentTick: Tick, rack: Pick<Rack, "installedAtTi
 	return Math.max(0, currentTick - rack.installedAtTick);
 }
 
-export function rackFailureChance(ageMonths: number): number {
-	const clampedAge = clamp(ageMonths, 0, RACK_FAILURE_MAX_AGE_MONTHS);
-	if (clampedAge <= RACK_FAILURE_YEAR_ONE_AGE_MONTHS) {
-		return (clampedAge / RACK_FAILURE_YEAR_ONE_AGE_MONTHS) * RACK_FAILURE_YEAR_ONE_CHANCE;
-	}
-
-	const normalizedLateLifeAge =
-		(clampedAge - RACK_FAILURE_YEAR_ONE_AGE_MONTHS) /
-		(RACK_FAILURE_MAX_AGE_MONTHS - RACK_FAILURE_YEAR_ONE_AGE_MONTHS);
-	return RACK_FAILURE_YEAR_ONE_CHANCE
-		+ Math.pow(normalizedLateLifeAge, RACK_FAILURE_CURVE_EXPONENT) * (RACK_FAILURE_MAX_CHANCE - RACK_FAILURE_YEAR_ONE_CHANCE);
+export function rackFailureChance(ageMonths: number, difficulty: Difficulty = DEFAULT_DIFFICULTY): number {
+	const failureCurve = DIFFICULTY_CONFIG[difficulty].failureCurvePct;
+	const clampedYearIndex = clamp(Math.floor(Math.max(0, ageMonths) / 12), 0, failureCurve.length - 1);
+	return failureCurve[clampedYearIndex]! / 100;
 }
 
 export function repairSpeedMultiplier(maintenanceStaff: number): number {
@@ -83,6 +73,7 @@ export interface RackFailureRiskView {
 export function rackFailureRiskView(
 	currentTick: Tick,
 	rack: Pick<Rack, "id" | "installedAtTick" | "health">,
+	difficulty: Difficulty = DEFAULT_DIFFICULTY,
 ): RackFailureRiskView {
 	const ageMonths = rackAgeMonths(currentTick, rack);
 	return {
@@ -91,7 +82,7 @@ export function rackFailureRiskView(
 		health: rack.health,
 		// Repairing racks have already failed — they cannot newly fail while
 		// under repair, so we return 0 rather than the age-curve value.
-		failureProbability: rack.health === "repairing" ? 0 : rackFailureChance(ageMonths),
+		failureProbability: rack.health === "repairing" ? 0 : rackFailureChance(ageMonths, difficulty),
 	};
 }
 

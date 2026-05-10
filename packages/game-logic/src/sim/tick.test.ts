@@ -226,7 +226,7 @@ test("tick rolls deterministic late-life failures for healthy racks", () => {
 		},
 	]);
 	const state = makeState({
-		tick: tickValue(47),
+		tick: tickValue(59),
 		rngState: 99,
 		datacenters: [agedDatacenter],
 	});
@@ -236,7 +236,7 @@ test("tick rolls deterministic late-life failures for healthy racks", () => {
 
 	assert.equal(failedRack?.health, "repairing");
 	assert.equal(failedRack?.repairProgressDays, 0);
-	assert.equal(failedRack?.lastFailureAtTick, 48);
+	assert.equal(failedRack?.lastFailureAtTick, 60);
 	assert.notEqual(nextState.rngState, state.rngState);
 });
 
@@ -287,10 +287,10 @@ test("a late-life rack failure can breach an overcommitted contract in the same 
 		monthlyPayment: 5_000,
 		penaltyPerMonth: 2_000,
 		termMonths: 12,
-		startedAtTick: tickValue(47),
+		startedAtTick: tickValue(59),
 	});
 	const state = makeState({
-		tick: tickValue(47),
+		tick: tickValue(59),
 		rngState: 99,
 		datacenters: [datacenter],
 		activeContracts: [contract],
