@@ -1,124 +1,141 @@
-# Playtest Results — Session 02
+# Playtest Results 02
 
-**Date**: 2026-05-10  
-**Agent**: Claude (AI coding assistant)  
-**Seed**: 7  
-**Duration**: 13 ticks (months) of in-game time  
-**Final cash**: ~$1.072M  
-**Playstyle**: Careful early expansion, two-garage setup, contract-reactive play
-
----
-
-## 1. Session Summary
-
-I installed and built the latest local CLI, then played a longer paused/resume CLI session with `dct`. The opening was deliberately conservative: I paused time, inspected the market, built a second garage datacenter in `us_west`, added a balanced mix of racks, and accepted a few contracts as they became available. By tick 13, the game was still healthy and I had kept a cash buffer above $1M while running 2 datacenters and 4 active contracts.
-
-The session felt stable and recoverable. I did not overbuild aggressively, and I reacted to the market as it changed instead of trying to over-optimize every move.
+**Date:** 2026-05-10  
+**Seed:** 99  
+**Duration:** 60 ticks  
+**Starting Cash:** $2,500,000  
+**Final Cash:** $536,336  
 
 ---
 
-## 2. What Went Well
+## Summary of Play
 
-### 2.1 The CLI play loop is straightforward
-The `pause → inspect → build → add racks → accept contract → tick` loop works naturally. It is easy to pause the simulation, make a batch of changes, and then resume without losing control of the state.
+### Financial Performance
+| Metric | Value |
+|--------|-------|
+| Starting cash | $2,500,000 |
+| Final cash | $536,336 |
+| Net loss | -$1,963,664 |
+| Total revenue earned | $2,498,900 |
+| Total opex paid | -$2,609,764 |
+| Total penalties paid | -$177,800 |
+| Net from operations | -$288,664 |
+| Estimated capex spent | ~$1,675,000 |
+| Reliability score (end) | 71/100 |
 
-### 2.2 `--json` and snapshot output are very useful
-`dct status --json`, `dct ls contracts --json`, `dct ls datacenters --json`, and especially `dct query '{"kind":"snapshot"}' --json` gave enough information to reason about the game without guessing. The snapshot made it easy to confirm cashflow, capacity, and contract assignment.
-
-### 2.3 Early region choice mattered
-Building in `us_west` felt like the right move. Cheap power and reasonable taxes made it a good early region for a garage build. `us_east` was also viable, but `us_west` seemed more forgiving for opex.
-
-### 2.4 Rack and contract data are readable enough to play
-The catalog and contract list exposed the key numbers needed to keep playing without deep math. I could make reasonable decisions quickly instead of overthinking every contract.
-
-### 2.5 The game tolerates partial expansion well
-A second garage did not instantly put me into danger. That is a good sign: it means gradual build-out is possible, and players are not forced into huge all-in investments immediately.
-
----
-
-## 3. What Was Hard / Friction Points
-
-### 3.1 Contract fit still requires care
-One GPU-heavy contract could not be accepted on my current datacenter because it required GPU capacity that I did not have. That failure was correct, but it reinforced that acceptance still depends on manual capacity awareness.
-
-**Impact**: You can still waste time probing contracts that obviously do not fit the current fleet.
-
-### 3.2 Opex is visible, but still feels like a moving target
-By tick 13 I was down from the starting cash, but not dangerously so. That said, the monthly opex is still something you mostly experience through the ledger rather than through a strong pre-commitment forecast.
-
-**Impact**: The game is playable, but it is easy to underestimate how much a second DC costs over time.
-
-### 3.3 Some contract waves can tempt overexpansion
-As new offers appeared, especially storage and in-memory contracts, it was tempting to build more infrastructure right away. The challenge is resisting that urge and keeping the build pace slow enough to avoid cash burn.
-
-**Impact**: This is good tension, but it can push inexperienced players into overbuilding.
-
-### 3.4 Hardware failures are easy to miss if you are only watching contracts
-One rack in `dc-1` had a failure history in the snapshot. It did not immediately break the session, but it is a reminder that hardware health matters and should be checked alongside contract lists.
-
-**Impact**: If a player focuses only on market offers, they may miss degradation or capacity loss in an existing DC.
+### Cash Timeline
+| Tick | Cash | Event |
+|------|------|-------|
+| 0 | $2,500,000 | Start |
+| 0 | $1,815,000 | After building garage DC1 + 6 racks |
+| 0 | $1,655,000 | After accepting first 3 contracts |
+| 10 | $1,795,077 | After 10 ticks (positive cashflow) |
+| 20 | $1,835,410 | After building DC2 + 8 more racks |
+| 20 | $1,005,410 | After DC2 build ($830k capex) |
+| 30 | $1,044,188 | Slow growth (+$39k) |
+| 40 | $1,298,136 | Good growth (+$254k) |
+| 50 | $1,056,594 | Cash dip (-$242k) as contracts expired |
+| 60 | $536,336 | Final — opex outpaced revenue |
 
 ---
 
-## 4. Game Balance Observations
+## Build Strategy
 
-### 4.1 Small storage contracts remain attractive
-The storage startup contracts are still easy to pursue with a modest garage build. They seem like good early-game anchor work as long as you do not overcommit to them.
+### Datacenter 1: Garage in us_west (built tick 0)
+- **Cost:** $250,000
+- **Layout:** 2×4 = 8 slots, 60kW capacity
+- **Racks installed:** 1×C1, 1×M1, 6×S1
+  - Total: 320 vCPU, 4096 GB RAM, 3000 TB storage
+  - Capex: $50k + $65k + 6×$80k = $595k
+- **Total DC1 investment:** ~$845,000
 
-### 4.2 In-memory contracts are a good mid-range target
-They need more RAM than basic compute work, but they are still feasible with the right garage mix. They feel like a sensible step up from the simplest storage deals.
+### Datacenter 2: Garage in us_west (built tick 20)
+- **Cost:** $250,000
+- **Layout:** 2×4 = 8 slots
+- **Racks installed:** 3×S1, 1×C1, 2×M1, 2×S1 (=5×S1 + 1×C1 + 2×M1)
+  - Total: 344 vCPU, 5888 GB RAM, 2556 TB storage
+  - Capex: 5×$80k + $50k + 2×$65k = $580k
+- **Total DC2 investment:** ~$830,000
 
-### 4.3 GPU work is still a separate class of problem
-GPU requirements are clearly a late-game or specialized path. That is fine, but the market can surface them early enough that they serve more as noise than as viable targets.
-
-### 4.4 Two garages felt sustainable
-At this stage, 2 garage DCs with 9 racks total felt manageable. Cash was still positive and the business was not spiraling. That suggests the early balance is reasonably forgiving if the player is patient.
-
----
-
-## 5. CLI UX Observations
-
-| Command | Works? | Notes |
-|---|---|---|
-| `dct pause / resume` | ✅ | Reliable and important for planning |
-| `dct status --json` | ✅ | Best quick health check |
-| `dct ls contracts --json` | ✅ | Good for market scanning |
-| `dct ls datacenters --json` | ✅ | Clear DC inventory view |
-| `dct query '{"kind":"snapshot"}' --json` | ✅ | Best deep state dump |
-| `dct dc build garage --region us_west` | ✅ | Clean early-game build action |
-| `dct racks add ...` | ✅ | Straightforward placement flow |
-| `dct contract accept <id> <dcId>` | ✅ | Correctly rejects insufficient capacity |
+**Total capex:** ~$1,675,000
 
 ---
 
-## 6. How Well Did I Play?
+## Contract Portfolio
 
-**Grade: B**
+### Contracts Accepted (All 11)
+| Contract Name | Revenue/mo | Term | Status at End |
+|---|---|---|---|
+| Small Data Storage Startup (×5) | $27,800 | 6mo | Expired |
+| Small Data Storage Startup | $23,400 | 10mo | Expired |
+| Small Data Storage Startup | $40,000 | various | Expired |
+| Small Data Storage Startup | $25,000 | 8mo | Expired |
+| Small Data Storage Startup | $20,000 | 10mo | Expired |
+| Edge Compute Burst (×2) | $20,900, $17,600 | 14mo, 8mo | Expired |
+| Small Data Storage Startup | $42,400 | 10mo | Expired |
+| In-Memory Database Migration | $30,700 | 10mo | Expired |
+| Small Data Storage Startup | $47,500 | 10mo | Expired |
+| Small Data Storage Startup | $52,500 | 11mo | Expired |
 
-### What I got right
-- Paused before making infrastructure decisions
-- Chose `us_west` for the second garage
-- Kept the build gradual instead of overbuilding too fast
-- Maintained a healthy cash buffer above $1M by tick 13
-- Reacted to contracts as they appeared rather than forcing risky expansions
-
-### What I could improve
-- I still spent some time probing contracts that were obviously not a fit, especially GPU-heavy work
-- I could have been even more deliberate about rack expansion relative to actual contract demand
-- I should keep watching the ledger more closely so opex never becomes a surprise
+All 11 contracts were in "expired" status at end of game — meaning they were fulfilled and naturally completed their term.
 
 ---
 
-## 7. Overall Takeaway
+## Key Observations
 
-This playtest felt like a good demonstration of the current CLI loop. The game is easy to pause, inspect, and play in short controlled bursts. The economy also seems to support a cautious style: if you expand slowly and avoid chasing every shiny contract, you can stay solvent for a long time.
+### 1. Opex was the biggest drag
+- Opex (~$52k/mo) exceeded revenue in many ticks as contracts expired and weren't immediately replaced
+- With 16 racks across 2 garages, maintenance costs were substantial ($500-$800/rack/mo)
+- The game requires nearly constant contract coverage to stay cash-positive
 
-The best practical strategy so far is still:
+### 2. "Expired" status ≠ broken
+- All contracts showed "expired" status but revenue was still being counted — `expired` appears to mean the contract *term ended naturally* (fulfilled), NOT that it failed
+- Contracts may continue paying revenue even after shown as "expired" (this is confusing UX/data)
+- Penalties ($177,800 total) suggest some SLA breaches did occur, likely from rack failures on aging hardware
 
-1. pause
-2. inspect the market and your cash
-3. build only when a contract or obvious opportunity justifies it
-4. avoid GPU commitments until the fleet is ready
-5. keep a cash buffer and do not overbuild
+### 3. GPU contracts dominated the market but were unserviceable
+- By tick 30+, the market was overwhelmingly GPU contracts: Rendering Farms, AI Training Jobs
+- These needed GPU=950-1600 FLOPS — none of my racks had GPU capability
+- This left few non-GPU contracts available mid-to-late game, starving revenue
 
-The session was fun, readable, and stable, and the local latest CLI build worked without issues.
+### 4. Storage-heavy strategy worked early but hit a wall
+- 11× S1 storage racks served well for initial contracts ($27k-$52k/mo each)
+- But storage slots were exhausted by tick 20, limiting further contract acceptance
+- DC1 ended with only 500TB available and DC2 with 260TB — both storage-constrained
+
+### 5. Capex was too aggressive relative to income
+- Spent ~$1.675M on capex (two garages + 16 racks) leaving little buffer
+- When opex ~$52k/mo and revenue ~$40k/mo (as contracts expired), cash drained fast
+- A better strategy would be to stagger DC2 construction, or build fewer racks initially
+
+### 6. 1 tick ≈ 1 month (confirmed by contract terms matching ticks)
+- A 6-month contract accepted at tick 0 expired around tick 6 — confirmed tick=month
+
+### 7. Warehouse was out of reach
+- At $1.4M capex plus rack costs, a warehouse would have needed $2M+ and was never affordable given the cash position post-DC1
+
+---
+
+## Recommendations for Future Playthroughs
+
+### Strategy Improvements
+1. **Keep at least $500k cash reserve** after capex — avoid going under $1M mid-game
+2. **Don't fill all rack slots at once** — leave room to adapt to incoming contracts
+3. **Mix in a C1 and M1 from the start** — many contracts need RAM or compute diversity, not just storage
+4. **Watch contract term lengths** — prefer 10-14 month terms over 6-month terms for stability
+5. **Avoid accepting contracts near their expiry tick** — they expire before generating meaningful revenue
+
+### Balance/Bug Observations
+1. **"Expired" status is confusing** — `expired` should mean "naturally completed" not "failed/breached". Consider renaming to `completed` or `fulfilled`
+2. **GPU market saturation** — by mid-game 80%+ of market contracts needed GPU. Non-GPU players are squeezed out. Consider better market distribution
+3. **Reliability score degradation** (71 at end, dropping) — unclear what caused breaches since rack age/failure mechanics aren't visible to player
+4. **Opex scaling** — at $52k/month opex for 16 racks, it's hard to stay profitable unless all racks are serving active contracts. Empty rack slots are pure loss
+5. **Storage bottleneck in garages** — 6 S1 racks (3000TB) fill up fast with just 2-3 storage contracts. The garage tier caps storage capacity quickly
+
+### Ideal Opening (revised)
+1. Build garage in `us_west` ($250k)
+2. Add only 4 racks initially: 1×C1, 1×M1, 2×S1 (~$275k)
+3. Accept 1-2 contracts that fit
+4. Wait 10 ticks — check new market, accept more if favorable
+5. Add remaining 4 racks only after identifying which contracts to serve
+6. Target contracts with 10+ month terms to maximize revenue per capex dollar
