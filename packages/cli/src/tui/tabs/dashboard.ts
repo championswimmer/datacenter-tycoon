@@ -1,11 +1,13 @@
+import { isLiveContractStatus } from "@datacenter-tycoon/game-logic";
 import type { GameState } from "@datacenter-tycoon/game-logic";
 
 export function renderDashboardTab(snapshot: GameState): string[] {
 	const ledgerTail = snapshot.ledger.slice(-10).map((entry) => `  ${entry.tick.toString().padStart(4)}  ${entry.type.padEnd(10)}  ${entry.amount.toString().padStart(8)}  ${entry.reason}`);
+	const liveContractCount = snapshot.activeContracts.filter((c) => isLiveContractStatus(c.status)).length;
 	const headline = [
 		`Cash: $${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(snapshot.player.cash)}`,
 		`Datacenters: ${snapshot.datacenters.length}`,
-		`Active contracts: ${snapshot.activeContracts.length}`,
+		`Active contracts: ${liveContractCount}`,
 		`Market contracts: ${snapshot.contractMarket.length}`,
 	];
 

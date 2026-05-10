@@ -17,7 +17,7 @@ owner: cli
   - [x] 2.2 Split CLI contract presentation into live vs history buckets
   - [x] 2.3 Keep contract details available for historical contracts without labeling them active
 - [ ] **Phase 3 — Fix TUI surfaces and lock in regressions**
-  - [ ] 3.1 Update dashboard and contracts tab to distinguish live vs historical accepted contracts
+  - [x] 3.1 Update dashboard and contracts tab to distinguish live vs historical accepted contracts
   - [ ] 3.2 Add CLI/TUI regression tests for the expired-contract repro
   - [ ] 3.3 Update README / agent guidance to document the live-vs-history distinction
 
