@@ -91,7 +91,9 @@ export async function runContractDetailsCommand(
 		`${contract.name} | status=${contract.status} | urgency=${contract.urgency} | tier=${contract.tier}`,
 		`Payment: $${contract.monthlyPayment.toLocaleString()}/mo | Penalty: $${contract.penaltyPerMonth.toLocaleString()}/mo | Term: ${contract.termMonths} months`,
 		`Requirements: ${formatContractRequirements(contract)}`,
-		`Visible in: ${contract.bucket}`,
+		contract.bucket === "history"
+			? `Status: HISTORICAL (${contract.status}) — no longer live, capacity already released`
+			: `Status: LIVE (${contract.status}) — currently commits capacity`,
 		`Offered at tick ${contract.offeredAtTick} | Expires at tick ${contract.expiresAtTick}`,
 		`Started at: ${contract.startedAtTick ?? "not started"} | Assigned DC: ${contract.assignedDcId ?? "unassigned"}`,
 		"Recent SLA outcomes:",
