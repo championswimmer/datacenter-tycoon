@@ -7,7 +7,8 @@ import type { Contract, ContractId, ContractRequirements, ContractTier, Contract
 import type { Rng } from "../sim/rng.js";
 
 interface ContractTheme {
-	name: string;
+	id: string;
+	label: string;
 	weights: {
 		vCpu: number;
 		ramGb: number;
@@ -18,28 +19,39 @@ interface ContractTheme {
 
 const CONTRACT_THEMES: readonly ContractTheme[] = [
 	{
-		name: "AI Model Training Job",
-		weights: { vCpu: 0.45, ramGb: 0.65, storageTb: 0.2, gpuFlops: 1 },
+		id: "ai_training",
+		label: "AI Training",
+		weights: { vCpu: 0.2, ramGb: 0.45, storageTb: 0.15, gpuFlops: 1 },
 	},
 	{
-		name: "Realtime Analytics Cluster",
-		weights: { vCpu: 0.4, ramGb: 1, storageTb: 0.2, gpuFlops: 0.1 },
+		id: "ai_inference",
+		label: "AI Inference",
+		weights: { vCpu: 0.45, ramGb: 0.4, storageTb: 0.15, gpuFlops: 0.55 },
 	},
 	{
-		name: "Edge Compute Burst",
-		weights: { vCpu: 1, ramGb: 0.35, storageTb: 0.1, gpuFlops: 0 },
+		id: "hpc_simulation",
+		label: "HPC Simulation",
+		weights: { vCpu: 1, ramGb: 0.7, storageTb: 0.2, gpuFlops: 0.3 },
 	},
 	{
-		name: "Small Data Storage Startup",
-		weights: { vCpu: 0.1, ramGb: 0.15, storageTb: 1, gpuFlops: 0 },
+		id: "enterprise_db",
+		label: "Enterprise OLTP",
+		weights: { vCpu: 0.55, ramGb: 1, storageTb: 0.45, gpuFlops: 0 },
 	},
 	{
-		name: "Rendering Farm",
-		weights: { vCpu: 0.5, ramGb: 0.4, storageTb: 0.2, gpuFlops: 0.8 },
+		id: "cold_storage",
+		label: "Cold Storage",
+		weights: { vCpu: 0.05, ramGb: 0.08, storageTb: 1, gpuFlops: 0 },
 	},
 	{
-		name: "In-Memory Database Migration",
-		weights: { vCpu: 0.35, ramGb: 0.8, storageTb: 0.35, gpuFlops: 0 },
+		id: "cdn_edge",
+		label: "CDN Edge",
+		weights: { vCpu: 0.8, ramGb: 0.3, storageTb: 0.55, gpuFlops: 0 },
+	},
+	{
+		id: "video_render",
+		label: "Video Transcoding",
+		weights: { vCpu: 0.45, ramGb: 0.35, storageTb: 0.25, gpuFlops: 0.7 },
 	},
 ];
 
@@ -199,8 +211,8 @@ export function generateContract(
 		.padStart(5, "0");
 
 	return {
-		id: contractId(`contract-${theme.name.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}-${idSuffix}`),
-		name: theme.name,
+		id: contractId(`contract-${theme.id}-${idSuffix}`),
+		name: theme.label,
 		requirements,
 		monthlyPayment,
 		penaltyPerMonth,

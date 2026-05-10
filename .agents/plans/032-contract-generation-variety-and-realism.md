@@ -1,23 +1,21 @@
 ---
 name: Contract Generation Variety and Realism
 description: Improve contract generation by introducing real-world enterprise/hyperscale workload profiles, varied durations, and realistic nomenclature.
-status: completed
+status: started
 created: 2026-05-10
 updated: 2026-05-10
 ---
 
 ## Progress
 
-- [x] **Phase 1 — Expanded Workload Profiles and Naming**
-  - [x] 1.1 Update workload themes in `generator.ts` to reflect modern real-world segments (e.g., AI Training, AI Inference, HPC, Enterprise OLTP, Cold Storage, CDN, Video Transcoding).
-  - [x] 1.2 Implement a larger, more realistic dictionary of company names and project codenames for generative contract naming.
-  - [x] 1.3 Adjust resource weights (vCPU, RAM, Storage, GPU) per theme to accurately reflect the resource bottlenecks of each workload.
-- [x] **Phase 2 — Variable Contract Durations and Urgency**
-  - [x] 2.1 Refactor contract duration from a fixed value (e.g., 6 ticks) to a randomized range based on workload type (short burst jobs vs. long-term multi-year enterprise commitments).
-  - [x] 2.2 Rebalance payout scaling to account for variable durations (long-term contracts offer lower per-tick revenue but higher stability).
-- [x] **Phase 3 — Integration and Market Refresh**
-  - [x] 3.1 Update the market generation logic to spawn an appropriate mix of short-term and long-term contracts.
-  - [x] 3.2 Ensure tests pass and the contract market correctly surfaces the new variations and names.
+- [ ] **Phase 1 — Expanded Workload Profiles and Naming**
+  - [x] 1.1 Update workload themes in `generator.ts` to reflect modern real-world segments and rebalance resource weights.
+  - [ ] 1.2 Implement a larger, more realistic dictionary of company names and project codenames for generative contract naming.
+- [ ] **Phase 2 — Variable Contract Durations and Urgency**
+  - [ ] 2.1 Refactor generated contract terms to use workload-specific duration ranges instead of a single default offer profile.
+  - [ ] 2.2 Rebalance payout scaling to account for variable durations so long-term contracts trade peak monthly yield for stability.
+- [ ] **Phase 3 — Integration and Market Refresh**
+  - [ ] 3.1 Update market generation/tests so the refreshed offer pool surfaces a deliberate mix of short-term and long-term contracts with the new naming variety.
 
 ## Overview
 
@@ -50,42 +48,45 @@ interface WorkloadTheme {
 ### Step 1.1 — Update workload themes and resource weights
 
 - File: `packages/game-logic/src/contracts/generator.ts`
-- Replace existing generic themes with specific industry equivalents: `ai_training`, `ai_inference`, `hpc_simulation`, `enterprise_db`, `cold_storage`, `cdn_edge`, `video_render`.
-- Assign realistic resource weights to each (e.g., `ai_training` = 90% GPU, `cold_storage` = 95% Storage, 5% CPU).
-- Acceptance: Themes are updated, and type checks pass.
+- Replace the generic workload themes with modern datacenter demand segments such as `ai_training`, `ai_inference`, `hpc_simulation`, `enterprise_db`, `cold_storage`, `cdn_edge`, and `video_render`.
+- Rebalance resource weights so each theme clearly emphasizes its real bottleneck (for example, GPU-heavy training versus storage-dominant archive work).
+- Acceptance: `npm run typecheck -w @datacenter-tycoon/game-logic` passes and generated contracts use the new theme vocabulary.
 
 ### Step 1.2 — Expand generative nomenclature
 
-- File: `packages/game-logic/src/contracts/generator.ts`
-- Add realistic corporate prefixes (e.g., "Apex", "Global", "Quantum") and project suffixes (e.g., "Data Lake", "LLM Cluster", "Failover Array").
-- Update the name generation logic to use these arrays.
-- Acceptance: Generated names look like "Quantum LLM Cluster" rather than generic names.
+- File: `packages/game-logic/src/contracts/generator.ts`, `packages/game-logic/src/contracts/contracts.test.ts`
+- Add realistic corporate prefixes plus project codenames and delivery nouns (for example, "Quantum Atlas LLM Cluster").
+- Update name generation to build varied enterprise-sounding contract titles instead of reusing the theme label as the public name.
+- Acceptance: tests prove generated names draw from the expanded dictionary and remain deterministic.
 
 ## Phase 2 — Variable Contract Durations and Urgency
 
-**Goal**: Move away from fixed-duration contracts to a system with short bursts and long commitments.
+**Goal**: Move away from one-size-fits-all offers to a system with short bursts and long commitments.
 
-### Step 2.1 — Implement variable duration generation
+### Step 2.1 — Implement workload-specific duration ranges
 
-- File: `packages/game-logic/src/contracts/generator.ts`
-- Update `generateContract` to randomize duration based on the selected theme's `durationRange` instead of a hardcoded 6 ticks.
-- Acceptance: Calling `generateContract` yields contracts with varying `duration` properties.
+- File: `packages/game-logic/src/contracts/generator.ts`, `packages/game-logic/src/contracts/contracts.test.ts`
+- Add per-theme duration metadata and use it to derive `termMonths`, while preserving deterministic urgency rolls and offer-expiry behavior.
+- Ensure short-lived workloads (for example, render jobs) stay brief while enterprise database or archive work can stretch into long commitments.
+- Acceptance: seeded generator tests show varied term lengths and keep low-difficulty GPU gating intact.
 
-### Step 2.2 — Rebalance payout formulas
+### Step 2.2 — Rebalance payout formulas for longer terms
 
-- File: `packages/game-logic/src/contracts/generator.ts`
-- Adjust the pricing logic. Longer duration contracts should apply a "bulk discount" to the per-tick revenue, making them safer but slightly less profitable per-tick than short-term rush jobs.
-- Acceptance: Financial output of generator tests reflects the discount curve.
+- File: `packages/game-logic/src/contracts/generator.ts`, `packages/game-logic/src/contracts/contracts.test.ts`, `packages/game-logic/src/economy/constants.ts`, `packages/game-logic/src/catalog/catalog.test.ts`, `CHANGELOG.md`
+- Adjust pricing so long-duration contracts earn a lower monthly rate than comparable short-term work while still remaining attractive in total value.
+- Bump balance metadata/documentation for the new economic curve.
+- Acceptance: tests capture the new duration discount and `npm run test -w @datacenter-tycoon/game-logic` passes.
 
 ## Phase 3 — Integration and Market Refresh
 
-**Goal**: Ensure the rest of the game logic and test suite respects the new generator rules.
+**Goal**: Ensure the contract market actually surfaces the new variety instead of leaving it to chance.
 
-### Step 3.1 — Update tests
+### Step 3.1 — Shape refreshed offer pools and lock in regression coverage
 
-- File: `packages/game-logic/src/contracts/contracts.test.ts`
-- Fix any tests that hardcode expectations about contract names, exact durations (like expecting exactly 6 ticks), or specific theme IDs.
-- Acceptance: `npm run test -w @datacenter-tycoon/game-logic` passes completely.
+- File: `packages/game-logic/src/contracts/generator.ts`, `packages/game-logic/src/contracts/market.ts`, `packages/game-logic/src/contracts/contracts.test.ts`, `.agents/plans/032-contract-generation-variety-and-realism.md`
+- Add a deterministic market-mix helper so refreshes intentionally include a blend of shorter and longer commitments across the available offer slots.
+- Update/add tests that cover varied names, duration bands, and stable market refresh behavior.
+- Acceptance: `npm run test -w @datacenter-tycoon/game-logic` passes and market samples consistently expose both short- and long-term offers.
 
 ## References
 
@@ -95,3 +96,4 @@ interface WorkloadTheme {
 ## Changelog
 
 - 2026-05-10 — created.
+- 2026-05-10 — corrected the progress checklist and step breakdown before implementation; the original draft had been pre-marked complete without matching code changes.
