@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { DATACENTER_CATALOG, RACK_CATALOG, newGame, reduce, type DatacenterId, type RackPlacementId } from "@datacenter-tycoon/game-logic";
+import { DATACENTER_CATALOG, RACK_CATALOG, newGame, reduce, type Contract, type ContractId, type DatacenterId, type RackPlacementId } from "@datacenter-tycoon/game-logic";
 
 import { GameRuntime, type IntervalScheduler } from "./runtime.js";
 
@@ -142,4 +142,75 @@ test("GameRuntime query returns status, catalogs, and derived listings", () => {
 	const catalog = runtime.query({ kind: "catalog", target: "racks" });
 	assert.equal(catalog.kind, "racks");
 	assert.ok(catalog.items.length >= 1);
+});
+
+// --- Regression: expired contracts must not count toward activeContractCount ---
+
+const contractId = (value: string): ContractId => value as ContractId;
+
+function buildStateWithExpiredContract() {
+	const state = buildState();
+	const expiredContract: Contract = {
+		id: contractId("expired-contract-1"),
+		name: "Expired Contract",
+		requirements: { vCpu: 8, ramGb: 32, storageTb: 1, gpuFlops: 0 },
+		monthlyPayment: 1_000,
+		penaltyPerMonth: 500,
+		termMonths: 1,
+		status: "expired",
+		urgency: "standard",
+		tier: 1,
+		offeredAtTick: 0 as import("@datacenter-tycoon/game-logic").Tick,
+		expiresAtTick: 2 as import("@datacenter-tycoon/game-logic").Tick,
+		startedAtTick: 1 as import("@datacenter-tycoon/game-logic").Tick,
+		assignedDcId: "dc-1" as DatacenterId,
+	};
+	return {
+		...state,
+		activeContracts: [expiredContract],
+	};
+}
+
+test("activeContractCount is zero when all accepted contracts are expired", () => {
+	const runtime = new GameRuntime({ state: buildStateWithExpiredContract(), paused: true });
+	const status = runtime.getStatus();
+	assert.equal(status.activeContractCount, 0, "expired contracts must not count as active");
+});
+
+test("activeContractCount counts only live (active or breached) contracts", () => {
+	const state = buildState();
+	const liveContract: Contract = {
+		id: contractId("live-contract-1"),
+		name: "Live Contract",
+		requirements: { vCpu: 8, ramGb: 32, storageTb: 1, gpuFlops: 0 },
+		monthlyPayment: 1_000,
+		penaltyPerMonth: 500,
+		termMonths: 6,
+		status: "active",
+		urgency: "standard",
+		tier: 1,
+		offeredAtTick: 0 as import("@datacenter-tycoon/game-logic").Tick,
+		expiresAtTick: 6 as import("@datacenter-tycoon/game-logic").Tick,
+		startedAtTick: 1 as import("@datacenter-tycoon/game-logic").Tick,
+		assignedDcId: "dc-1" as DatacenterId,
+	};
+	const expiredContract: Contract = {
+		id: contractId("expired-contract-2"),
+		name: "Expired Contract",
+		requirements: { vCpu: 8, ramGb: 32, storageTb: 1, gpuFlops: 0 },
+		monthlyPayment: 1_000,
+		penaltyPerMonth: 500,
+		termMonths: 1,
+		status: "expired",
+		urgency: "standard",
+		tier: 1,
+		offeredAtTick: 0 as import("@datacenter-tycoon/game-logic").Tick,
+		expiresAtTick: 2 as import("@datacenter-tycoon/game-logic").Tick,
+		startedAtTick: 1 as import("@datacenter-tycoon/game-logic").Tick,
+		assignedDcId: "dc-1" as DatacenterId,
+	};
+	const mixedState = { ...state, activeContracts: [liveContract, expiredContract] };
+	const runtime = new GameRuntime({ state: mixedState, paused: true });
+	const status = runtime.getStatus();
+	assert.equal(status.activeContractCount, 1, "only the live contract should count");
 });
