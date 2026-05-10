@@ -5,6 +5,7 @@ import {
 	RACK_CATALOG,
 	datacenterCapacity,
 	datacenterUsage,
+	isLiveContractStatus,
 	reduce,
 	VERSION,
 	type Datacenter,
@@ -69,7 +70,7 @@ function createStatusView(state: GameState, runtimeStatus: RuntimeStatus): Statu
 		cash: state.player.cash,
 		datacenterCount: state.datacenters.length,
 		rackCount: totalRackCount(state.datacenters),
-		activeContractCount: state.activeContracts.length,
+		activeContractCount: state.activeContracts.filter((c) => isLiveContractStatus(c.status)).length,
 		marketContractCount: state.contractMarket.length,
 		...runtimeStatus,
 	};
