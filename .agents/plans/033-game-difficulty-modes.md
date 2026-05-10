@@ -15,7 +15,7 @@ updated: 2026-05-10
   - [x] 2.1 Update new game initialization to use difficulty-based starting cash
   - [x] 2.2 Update rack failure logic to use the new age-based frequency curves
   - [x] 2.3 Apply difficulty multipliers to rack repair times
-  - [ ] 2.4 Apply difficulty multipliers to contract breach penalties
+  - [x] 2.4 Apply difficulty multipliers to contract breach penalties
   - [ ] 2.5 Update tests to cover both difficulty modes
 - [ ] **Phase 3 — Interface Updates**
   - [ ] 3.1 Update CLI `new-game` command to prompt for difficulty

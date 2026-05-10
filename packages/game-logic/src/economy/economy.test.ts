@@ -4,6 +4,7 @@ import test from "node:test";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { COOLING_OVERHEAD_RATIO } from "./constants.js";
+import { DIFFICULTY_CONFIG } from "../balance/difficulty.js";
 import { applyCapex, tickOpex, tickRevenue } from "../index.js";
 import type {
 	Contract,
@@ -99,6 +100,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
 		tick: tick(5),
 		seed: 42,
 		rngState: 42,
+		difficulty: "hard",
 		player: {
 			id: playerId("player-1"),
 			name: "Player One",
@@ -286,6 +288,52 @@ test("tickRevenue pays fulfilled contracts and recovers previously breached cont
 			},
 		],
 	});
+});
+
+test("tickRevenue scales breach penalties by difficulty", () => {
+	const datacenter = makeDatacenter("warehouse-1", DATACENTER_CATALOG.warehouse, [
+		placement("rack-1", "C2", 0, 0),
+		placement("rack-2", "M2", 0, 1),
+		placement("rack-3", "S2", 1, 0),
+		placement("rack-4", "G1", 1, 1),
+	]);
+	const breachedContracts = [
+		makeContract("contract-1", datacenter, {
+			requirements: { vCpu: 200, ramGb: 2_000, storageTb: 500, gpuFlops: 200 },
+			monthlyPayment: 10_000,
+			penaltyPerMonth: 3_000,
+		}),
+		makeContract("contract-2", datacenter, {
+			requirements: { vCpu: 150, ramGb: 3_000, storageTb: 600, gpuFlops: 200 },
+			monthlyPayment: 12_000,
+			penaltyPerMonth: 4_000,
+		}),
+		makeContract("contract-3", datacenter, {
+			requirements: { vCpu: 100, ramGb: 2_000, storageTb: 300, gpuFlops: 200 },
+			monthlyPayment: 15_000,
+			penaltyPerMonth: 5_000,
+		}),
+	];
+	const hardRevenue = tickRevenue(
+		makeState({
+			difficulty: "hard",
+			datacenters: [datacenter],
+			activeContracts: breachedContracts,
+		}),
+	);
+	const easyRevenue = tickRevenue(
+		makeState({
+			difficulty: "easy",
+			datacenters: [datacenter],
+			activeContracts: breachedContracts,
+		}),
+	);
+
+	assert.equal(hardRevenue.revenue, -12_000);
+	assert.equal(
+		easyRevenue.revenue,
+		-12_000 * DIFFICULTY_CONFIG.easy.breachPenaltyMultiplier,
+	);
 });
 
 test("tickRevenue breaches all overcommitted contracts on the same datacenter", () => {

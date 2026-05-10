@@ -1,3 +1,4 @@
+import { DIFFICULTY_CONFIG } from "../balance/difficulty.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { contractsFromState, isLiveContract, selectLiveContracts } from "../contracts/lifecycle.js";
 import { datacenterCapacity, datacenterRackPowerSummary, datacenterUsage } from "../entities/datacenter.js";
@@ -105,6 +106,7 @@ export function tickOpex(
 
 export function tickRevenue(state: GameState): RevenueTickResult {
 	const datacentersById = new Map(state.datacenters.map((datacenter) => [datacenter.id, datacenter]));
+	const breachPenaltyMultiplier = DIFFICULTY_CONFIG[state.difficulty].breachPenaltyMultiplier;
 	let revenue = 0;
 	const perDcRevenue: Record<DatacenterId, Money> = {};
 
@@ -116,9 +118,11 @@ export function tickRevenue(state: GameState): RevenueTickResult {
 		}
 
 		const datacenter = datacentersById.get(contract.assignedDcId);
+		const penalty = roundMoney(contract.penaltyPerMonth * breachPenaltyMultiplier);
+
 		if (!datacenter) {
-			revenue -= contract.penaltyPerMonth;
-			perDcRevenue[contract.assignedDcId] = (perDcRevenue[contract.assignedDcId] ?? 0) - contract.penaltyPerMonth;
+			revenue -= penalty;
+			perDcRevenue[contract.assignedDcId] = (perDcRevenue[contract.assignedDcId] ?? 0) - penalty;
 			return {
 				...contract,
 				lifecycleState: "breached",
@@ -130,8 +134,8 @@ export function tickRevenue(state: GameState): RevenueTickResult {
 		const datacenterDemand = getAssignedDemand(liveContracts, datacenter.id);
 		const datacenterSupply = datacenterCapacity(datacenter);
 		if (!canCoverRequirements(datacenterSupply, datacenterDemand)) {
-			revenue -= contract.penaltyPerMonth;
-			perDcRevenue[datacenter.id] = (perDcRevenue[datacenter.id] ?? 0) - contract.penaltyPerMonth;
+			revenue -= penalty;
+			perDcRevenue[datacenter.id] = (perDcRevenue[datacenter.id] ?? 0) - penalty;
 			return {
 				...contract,
 				lifecycleState: "breached",
