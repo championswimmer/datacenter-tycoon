@@ -11,6 +11,7 @@ import {
 	datacenterMaintenanceSummary,
 	datacenterRackPowerSummary,
 	datacenterUsage,
+	isLiveContractStatus,
 	rackCapacity,
 } from "../index.js";
 import type {
@@ -377,3 +378,69 @@ test("canPlaceRack allows tier-3 racks in liquid-cooled datacenters when budgets
 
 	assert.deepEqual(canPlaceRack(datacenter, RACK_CATALOG.C3, { row: 0, position: 1 }), { ok: true });
 });
+
+// --- Regression: expired / cancelled contracts must NOT commit capacity ---
+
+test("isLiveContractStatus returns true for active and breached, false for expired and cancelled", () => {
+	assert.equal(isLiveContractStatus("active"), true);
+	assert.equal(isLiveContractStatus("breached"), true);
+	assert.equal(isLiveContractStatus("expired"), false);
+	assert.equal(isLiveContractStatus("cancelled"), false);
+	assert.equal(isLiveContractStatus("offered"), false);
+});
+
+test("expired contract does not commit capacity — committed returns to zero after expiry", () => {
+	const datacenter = makeDatacenter(DATACENTER_CATALOG.garage, [placement("rack-1", "C1", 0, 0)]);
+
+	// While the contract is active it must commit capacity.
+	const activeContract = makeContract("expired-repro", datacenter.id, {
+		status: "active",
+		requirements: { vCpu: 64, ramGb: 256, storageTb: 8, gpuFlops: 0 },
+	});
+	const activeSummary = datacenterContractCapacitySummary(datacenter, [activeContract]);
+	assert.equal(activeSummary.committed.vCpu, 64, "active contract should commit capacity");
+
+	// After the contract expires its committed demand must be zero.
+	const expiredContract: Contract = { ...activeContract, status: "expired" };
+	const expiredSummary = datacenterContractCapacitySummary(datacenter, [expiredContract]);
+	assert.equal(expiredSummary.committed.vCpu, 0, "expired contract must NOT commit capacity");
+	assert.equal(expiredSummary.committed.ramGb, 0);
+	assert.equal(expiredSummary.committed.storageTb, 0);
+	assert.equal(expiredSummary.committed.gpuFlops, 0);
+
+	// Available capacity must be fully restored after expiry.
+	assert.deepEqual(expiredSummary.available, expiredSummary.usable);
+});
+
+test("cancelled contract does not commit capacity", () => {
+	const datacenter = makeDatacenter(DATACENTER_CATALOG.garage, [placement("rack-1", "C1", 0, 0)]);
+	const cancelledContract = makeContract("cancelled-repro", datacenter.id, {
+		status: "cancelled",
+		requirements: { vCpu: 128, ramGb: 512, storageTb: 16, gpuFlops: 0 },
+	});
+	const summary = datacenterContractCapacitySummary(datacenter, [cancelledContract]);
+	assert.deepEqual(summary.committed, { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 });
+	assert.deepEqual(summary.available, summary.usable);
+});
+
+test("a new contract can be accepted into capacity freed by an expired contract", () => {
+	// Uses datacenterContractCapacitySummary to verify available capacity matches
+	// what would be needed for a follow-on contract after the first expires.
+	const datacenter = makeDatacenter(DATACENTER_CATALOG.garage, [placement("rack-1", "C1", 0, 0)]);
+	const expiredContract = makeContract("old", datacenter.id, {
+		status: "expired",
+		requirements: { vCpu: 64, ramGb: 256, storageTb: 8, gpuFlops: 0 },
+	});
+	const newContract = makeContract("new", datacenter.id, {
+		status: "active",
+		requirements: { vCpu: 128, ramGb: 512, storageTb: 16, gpuFlops: 0 },
+	});
+	// With only the expired contract in the list, available == usable.
+	const afterExpiry = datacenterContractCapacitySummary(datacenter, [expiredContract]);
+	assert.deepEqual(afterExpiry.available, afterExpiry.usable);
+	// Adding a new active contract consumes capacity normally.
+	const withNew = datacenterContractCapacitySummary(datacenter, [expiredContract, newContract]);
+	assert.equal(withNew.committed.vCpu, 128);
+	assert.equal(withNew.available.vCpu, 0);
+});
+
