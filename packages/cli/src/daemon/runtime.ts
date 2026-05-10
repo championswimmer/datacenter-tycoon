@@ -4,6 +4,7 @@ import {
 	DATACENTER_CATALOG,
 	RACK_CATALOG,
 	datacenterCapacity,
+	datacenterMaintenanceStaffingView,
 	datacenterUsage,
 	isLiveContractStatus,
 	rackFailureRiskView,
@@ -81,6 +82,10 @@ function createDatacenterList(state: GameState): DatacenterListItem[] {
 	return state.datacenters.map((datacenter) => {
 		const capacity = datacenterCapacity(datacenter);
 		const usage = datacenterUsage(datacenter);
+		const region = state.map.regions.find((r) => r.id === datacenter.regionId);
+		if (!region) {
+			throw new Error(`Unknown region ${datacenter.regionId} for datacenter ${datacenter.id}`);
+		}
 
 		return {
 			datacenter,
@@ -93,6 +98,7 @@ function createDatacenterList(state: GameState): DatacenterListItem[] {
 			bandwidthCapacityGbps: datacenter.spec.bandwidthGbps,
 			slotsUsed: usage.slotsUsed,
 			totalSlots: datacenter.spec.rows * datacenter.spec.positionsPerRow,
+			maintenance: datacenterMaintenanceStaffingView(datacenter, region, state.datacenters, state.tick),
 		};
 	});
 }
