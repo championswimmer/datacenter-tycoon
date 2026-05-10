@@ -132,7 +132,27 @@ interface ContractSlaOutcome {
 
 The current save policy remains **destructive on incompatible format changes**. Version `5` migrates legacy contract saves from `completed` to `expired`, while versions earlier than `4` are still intentionally rejected because they predate reliability tracking.
 
-## Reliability-driven contract market
+## Contract liveness — live vs historical
+
+`GameState.activeContracts` is the **full accepted-contract history**, not just currently live contracts. Contracts persist in this list after they expire or are cancelled so that post-mortem inspection and SLA history remain available.
+
+Only `active` and `breached` contracts are **live**: they still commit capacity, pay revenue, and can levy penalties. `expired` and `cancelled` contracts are **historical**: their committed capacity has already been released and they no longer affect game-logic calculations.
+
+Always use the exported helper to classify liveness — never open-code the status check:
+
+```ts
+import { isLiveContractStatus } from "@datacenter-tycoon/game-logic";
+
+// Count only live contracts
+const liveCount = state.activeContracts.filter((c) => isLiveContractStatus(c.status)).length;
+
+// Check if a specific contract still commits capacity
+if (isLiveContractStatus(contract.status)) {
+  // contract is active or breached — capacity is reserved
+}
+```
+
+`datacenterContractCapacitySummary()` already applies this filter internally, so capacity numbers are always correct regardless of historical contracts in the list.
 
 Reliability is now a full simulation input, not just persisted profile metadata:
 
@@ -242,7 +262,7 @@ interface GameState {
   };
   datacenters: Datacenter[];
   contractMarket: Contract[];
-  activeContracts: Contract[];
+  activeContracts: Contract[]; // full accepted-contract history (live + historical); filter with isLiveContractStatus()
   ledger: LedgerEntry[];
   audioEnabled: boolean;
   audioSettings: AudioSettings;
