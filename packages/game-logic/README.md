@@ -234,6 +234,42 @@ Policy notes:
 - **Repairing racks** always return `0` — they have already failed and cannot newly fail while under repair.
 - The probability is clamped to `RACK_FAILURE_MAX_CHANCE` once a rack exceeds `RACK_FAILURE_MAX_AGE_MONTHS`.
 
+### Inspecting datacenter maintenance staffing
+
+Use `datacenterMaintenanceStaffingView()` to get a complete snapshot of a datacenter's maintenance staffing state, including hire affordances, wage costs, and repair speed. This is the canonical helper for both CLI and TUI consumers — never recompute these values ad-hoc.
+
+```ts
+import {
+  datacenterMaintenanceStaffingView,
+  type DatacenterMaintenanceStaffingView,
+} from "@datacenter-tycoon/game-logic";
+
+const region = state.map.regions.find((r) => r.id === datacenter.regionId)!;
+const view: DatacenterMaintenanceStaffingView = datacenterMaintenanceStaffingView(
+  datacenter,
+  region,
+  state.datacenters,
+  state.tick,
+);
+// view.currentStaff           — extra maintenance staff currently hired
+// view.maxStaff               — hard cap (MAX_MAINTENANCE_STAFF)
+// view.canIncrease            — false if capped or regional labor exhausted
+// view.canDecrease            — false if currentStaff === 0
+// view.availableRegionalStaff — spare slots in the region's labor pool
+// view.staffWagePerHead       — monthly wage per extra maintenance head
+// view.extraWagesMonthly      — total extra wages = currentStaff * staffWagePerHead
+// view.repairSpeedDaysPerTick — repair progress added per tick (increases with staff)
+// view.repairingRackCount     — racks currently under repair in this datacenter
+// view.totalRackCount         — total rack placements
+// view.averageRackAgeMonths   — mean rack age across all placements
+```
+
+To adjust maintenance staffing, dispatch `SetMaintenanceStaff`. The reducer clamps the count to `[0, MAX_MAINTENANCE_STAFF]` and validates regional labor availability.
+
+```ts
+reduce(state, { type: "SetMaintenanceStaff", dcId: datacenter.id, count: 3 });
+```
+
 ## Starter datacenter cooling headroom
 
 Starter datacenters now ship with slightly more thermal budget for normal expansion:

@@ -1,7 +1,7 @@
 ---
 name: CLI Maintenance Staffing Surfacing and Controls
 description: Surface maintenance staffing in the CLI, show its repair-speed and wage effects, and add CLI/TUI controls for increasing or decreasing maintenance staff per datacenter.
-status: created
+status: started
 created: 2026-05-10
 updated: 2026-05-10
 owner: cli
@@ -9,9 +9,9 @@ owner: cli
 
 ## Progress
 
-- [ ] **Phase 1 — Canonicalize maintenance staffing data in game-logic**
-  - [ ] 1.1 Add a shared game-logic helper/view for datacenter maintenance staffing state and effects
-  - [ ] 1.2 Add regression tests and README docs for maintenance staffing surfacing
+- [x] **Phase 1 — Canonicalize maintenance staffing data in game-logic**
+  - [x] 1.1 Add a shared game-logic helper/view for datacenter maintenance staffing state and effects
+  - [x] 1.2 Add regression tests and README docs for maintenance staffing surfacing
 - [ ] **Phase 2 — Add one-shot CLI visibility and control commands**
   - [ ] 2.1 Extend CLI datacenter list/detail payloads with maintenance staffing metadata
   - [ ] 2.2 Show maintenance staffing summary in `dct ls datacenters`

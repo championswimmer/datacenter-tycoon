@@ -3,8 +3,9 @@ import test from "node:test";
 
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
-import type { Datacenter, RackPlacement } from "../types.js";
-import { canMoveRack } from "./datacenter.js";
+import { MAX_MAINTENANCE_STAFF, DAYS_PER_TICK, BASE_REPAIR_SPEED_MULTIPLIER, REPAIR_SPEED_BONUS_PER_MAINTENANCE_STAFF } from "../balance/index.js";
+import type { Datacenter, RackPlacement, Region } from "../types.js";
+import { canMoveRack, datacenterMaintenanceStaffingView } from "./datacenter.js";
 
 const datacenterId = (value: string) => value as import("../types.js").DatacenterId;
 const rackPlacementId = (value: string) => value as import("../types.js").RackPlacementId;
@@ -33,6 +34,24 @@ function makeDatacenter(id: string, placements: RackPlacement[] = []): Datacente
 		builtAtTick: tick(0),
 		regionId: "us_west" as import("../types.js").RegionId,
 		maintenanceStaff: 0,
+	};
+}
+
+function makeRegion(overrides: Partial<Region> = {}): Region {
+	return {
+		id: "us_west" as import("../types.js").RegionId,
+		name: "US West",
+		code: "US-W",
+		city: "San Francisco",
+		coordinates: { x: 0, y: 0 },
+		powerCostPerKwh: 0.1,
+		staffWage: 5000,
+		taxRate: 0.05,
+		totalPowerAvailable: 10000,
+		totalStaffAvailable: 50,
+		powerUsed: 0,
+		staffUsed: 0,
+		...overrides,
 	};
 }
 
@@ -82,4 +101,88 @@ test("canMoveRack rejects occupied target slot", () => {
 	const result = canMoveRack(sourceDc, targetDc, placement, { row: 0, position: 0 });
 	assert.equal(result.ok, false);
 	assert.ok((result as { ok: false; reason: string }).reason.includes("slot_taken"));
+});
+
+// ── datacenterMaintenanceStaffingView tests ────────────────────────────────
+
+test("datacenterMaintenanceStaffingView: defaults with 0 staff", () => {
+	const dc = makeDatacenter("dc-1");
+	const region = makeRegion();
+	const view = datacenterMaintenanceStaffingView(dc, region, [dc], tick(0));
+
+	assert.equal(view.dcId, dc.id);
+	assert.equal(view.currentStaff, 0);
+	assert.equal(view.maxStaff, MAX_MAINTENANCE_STAFF);
+	assert.equal(view.canDecrease, false);
+	assert.equal(view.extraWagesMonthly, 0);
+	assert.equal(view.repairingRackCount, 0);
+	assert.equal(view.totalRackCount, 0);
+	assert.equal(view.averageRackAgeMonths, 0);
+	// repair speed with 0 extra staff = base multiplier * DAYS_PER_TICK
+	assert.equal(view.repairSpeedDaysPerTick, DAYS_PER_TICK * BASE_REPAIR_SPEED_MULTIPLIER);
+});
+
+test("datacenterMaintenanceStaffingView: with 2 maintenance staff", () => {
+	const dc = { ...makeDatacenter("dc-1"), maintenanceStaff: 2 };
+	const region = makeRegion();
+	const view = datacenterMaintenanceStaffingView(dc, region, [dc], tick(0));
+
+	assert.equal(view.currentStaff, 2);
+	assert.equal(view.canDecrease, true);
+	assert.equal(view.extraWagesMonthly, 2 * region.staffWage);
+	assert.equal(view.staffWagePerHead, region.staffWage);
+	// repair speed: (base + 2 * bonus) * DAYS_PER_TICK
+	const expectedSpeed = (BASE_REPAIR_SPEED_MULTIPLIER + 2 * REPAIR_SPEED_BONUS_PER_MAINTENANCE_STAFF) * DAYS_PER_TICK;
+	assert.equal(view.repairSpeedDaysPerTick, expectedSpeed);
+});
+
+test("datacenterMaintenanceStaffingView: canIncrease false when at max staff cap", () => {
+	const dc = { ...makeDatacenter("dc-1"), maintenanceStaff: MAX_MAINTENANCE_STAFF };
+	const region = makeRegion({ totalStaffAvailable: 999 }); // plenty of regional labor
+	const view = datacenterMaintenanceStaffingView(dc, region, [dc], tick(0));
+
+	assert.equal(view.currentStaff, MAX_MAINTENANCE_STAFF);
+	assert.equal(view.canIncrease, false); // capped by maxStaff
+});
+
+test("datacenterMaintenanceStaffingView: canIncrease false when regional labor exhausted", () => {
+	// garage spec has staffCount = 2; plus 1 maintenanceStaff = 3 total
+	const dc = { ...makeDatacenter("dc-1"), maintenanceStaff: 1 };
+	// totalStaffAvailable exactly equal to staffUsed → availableRegionalStaff = 0
+	const region = makeRegion({ totalStaffAvailable: dc.spec.staffCount + dc.maintenanceStaff });
+	const view = datacenterMaintenanceStaffingView(dc, region, [dc], tick(0));
+
+	assert.equal(view.availableRegionalStaff, 0);
+	assert.equal(view.canIncrease, false);
+});
+
+test("datacenterMaintenanceStaffingView: canIncrease true when below cap with spare regional staff", () => {
+	const dc = { ...makeDatacenter("dc-1"), maintenanceStaff: 1 };
+	const region = makeRegion({ totalStaffAvailable: 50 }); // plenty of spare
+	const view = datacenterMaintenanceStaffingView(dc, region, [dc], tick(0));
+
+	assert.equal(view.canIncrease, true);
+	assert.ok(view.availableRegionalStaff > 0);
+});
+
+test("datacenterMaintenanceStaffingView: computes averageRackAgeMonths from placements", () => {
+	const placement1 = { ...makePlacement("rack-1", "C1", 0, 0), installedAtTick: tick(0) };
+	const placement2 = { ...makePlacement("rack-2", "C1", 0, 1), installedAtTick: tick(0) };
+	const dc = makeDatacenter("dc-1", [placement1, placement2]);
+	const region = makeRegion();
+	const view = datacenterMaintenanceStaffingView(dc, region, [dc], tick(12));
+
+	assert.equal(view.totalRackCount, 2);
+	assert.equal(view.averageRackAgeMonths, 12);
+});
+
+test("datacenterMaintenanceStaffingView: counts repairing racks correctly", () => {
+	const healthy = makePlacement("rack-1", "C1", 0, 0);
+	const repairing = { ...makePlacement("rack-2", "C1", 0, 1), health: "repairing" as const, repairProgressDays: 30 };
+	const dc = makeDatacenter("dc-1", [healthy, repairing]);
+	const region = makeRegion();
+	const view = datacenterMaintenanceStaffingView(dc, region, [dc], tick(0));
+
+	assert.equal(view.repairingRackCount, 1);
+	assert.equal(view.totalRackCount, 2);
 });

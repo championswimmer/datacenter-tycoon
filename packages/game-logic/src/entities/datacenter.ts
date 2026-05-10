@@ -6,19 +6,24 @@ import {
 	summarizeRackActivity,
 	type RackActivityAllocationResult,
 } from "../economy/rack-activity.js";
-import { rackAgeMonths } from "../sim/maintenance.js";
+import { rackAgeMonths, repairProgressPerTick } from "../sim/maintenance.js";
+import { MAX_MAINTENANCE_STAFF } from "../balance/maintenance.js";
+import { regionStaffUsed } from "./region.js";
 import type {
 	CanPlaceRackResult,
 	Capacity,
 	Contract,
 	ContractRequirements,
 	Datacenter,
+	DatacenterId,
 	DatacenterResourceUsage,
 	GridPosition,
+	Money,
 	RackActivityView,
 	RackPowerSummary,
 	RackPlacement,
 	RackSpec,
+	Region,
 	Tick,
 } from "../types.js";
 import { rackCapacity } from "./rack.js";
@@ -229,6 +234,92 @@ export function datacenterMaintenanceSummary(
 		totalRackCount,
 		healthyRackCount,
 		repairingRackCount,
+		averageRackAgeMonths,
+	};
+}
+
+// ── Maintenance staffing view ────────────────────────────────────────────────
+
+/**
+ * A derived, read-only snapshot of a datacenter's maintenance staffing state
+ * and the economic + operational effects of that staffing level.
+ *
+ * Use `datacenterMaintenanceStaffingView()` to produce this — never assemble
+ * it ad-hoc in CLI or TUI renderers.
+ */
+export interface DatacenterMaintenanceStaffingView {
+	/** Id of the datacenter this view describes. */
+	dcId: DatacenterId;
+	/** Current number of extra maintenance staff hired for this datacenter. */
+	currentStaff: number;
+	/** Absolute maximum extra maintenance staff allowed by game rules. */
+	maxStaff: number;
+	/**
+	 * Whether another maintenance staff member can be hired right now.
+	 * False if at `maxStaff` cap or if the region's labor pool is exhausted.
+	 */
+	canIncrease: boolean;
+	/** Whether maintenance staff can be decreased (i.e. current > 0). */
+	canDecrease: boolean;
+	/**
+	 * Spare regional staff slots available for this region, accounting for all
+	 * datacenters in the region (including this one's current maintenanceStaff).
+	 */
+	availableRegionalStaff: number;
+	/** Monthly wage cost per extra maintenance staff head ($). */
+	staffWagePerHead: Money;
+	/** Total extra monthly wages charged for all current maintenance staff ($). */
+	extraWagesMonthly: Money;
+	/**
+	 * Repair progress accumulated per tick at the current staffing level, in
+	 * days. Higher means faster repairs.
+	 */
+	repairSpeedDaysPerTick: number;
+	/** Number of racks currently under repair. */
+	repairingRackCount: number;
+	/** Total number of rack placements in this datacenter. */
+	totalRackCount: number;
+	/** Average age of all racks in months. 0 if no racks. */
+	averageRackAgeMonths: number;
+}
+
+/**
+ * Derive the maintenance staffing view for a single datacenter.
+ *
+ * @param datacenter   - The datacenter to describe.
+ * @param region       - The region this datacenter belongs to.
+ * @param allDcs       - All datacenters in the game (needed to compute regional staff used).
+ * @param currentTick  - The current game tick (= months elapsed).
+ */
+export function datacenterMaintenanceStaffingView(
+	datacenter: Datacenter,
+	region: Region,
+	allDcs: readonly Datacenter[],
+	currentTick: Tick,
+): DatacenterMaintenanceStaffingView {
+	const currentStaff = datacenter.maintenanceStaff;
+	const staffUsed = regionStaffUsed(region.id, allDcs as Datacenter[]);
+	const availableRegionalStaff = Math.max(0, region.totalStaffAvailable - staffUsed);
+
+	const totalRackCount = datacenter.placements.length;
+	const repairingRackCount = datacenter.placements.filter((p) => p.health === "repairing").length;
+	const averageRackAgeMonths =
+		totalRackCount === 0
+			? 0
+			: datacenter.placements.reduce((sum, p) => sum + rackAgeMonths(currentTick, p), 0) / totalRackCount;
+
+	return {
+		dcId: datacenter.id,
+		currentStaff,
+		maxStaff: MAX_MAINTENANCE_STAFF,
+		canIncrease: currentStaff < MAX_MAINTENANCE_STAFF && availableRegionalStaff > 0,
+		canDecrease: currentStaff > 0,
+		availableRegionalStaff,
+		staffWagePerHead: region.staffWage,
+		extraWagesMonthly: currentStaff * region.staffWage,
+		repairSpeedDaysPerTick: repairProgressPerTick(currentStaff),
+		repairingRackCount,
+		totalRackCount,
 		averageRackAgeMonths,
 	};
 }
