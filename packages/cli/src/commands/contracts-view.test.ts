@@ -52,3 +52,81 @@ test("presentContract preserves expired status without remapping", () => {
 	assert.equal(view.status, "expired");
 	assert.equal(view.startedAtTick, 1);
 });
+
+import { presentAcceptedContract, presentContractBuckets } from "./contracts-view.js";
+
+test("presentAcceptedContract puts active contract in active bucket", () => {
+	const contract = {
+		...newGame(7).contractMarket[0]!,
+		status: "active" as const,
+		startedAtTick: 1,
+		assignedDcId: "dc-1" as const,
+	};
+	const view = presentAcceptedContract(contract);
+	assert.equal(view.bucket, "active");
+});
+
+test("presentAcceptedContract puts breached contract in active bucket", () => {
+	const contract = {
+		...newGame(7).contractMarket[0]!,
+		status: "breached" as const,
+		startedAtTick: 1,
+		assignedDcId: "dc-1" as const,
+	};
+	const view = presentAcceptedContract(contract);
+	assert.equal(view.bucket, "active");
+});
+
+test("presentAcceptedContract puts expired contract in history bucket", () => {
+	const contract = {
+		...newGame(7).contractMarket[0]!,
+		status: "expired" as const,
+		startedAtTick: 1,
+		assignedDcId: "dc-1" as const,
+	};
+	const view = presentAcceptedContract(contract);
+	assert.equal(view.bucket, "history");
+});
+
+test("presentAcceptedContract puts cancelled contract in history bucket", () => {
+	const contract = {
+		...newGame(7).contractMarket[0]!,
+		status: "cancelled" as const,
+		startedAtTick: 1,
+		assignedDcId: "dc-1" as const,
+	};
+	const view = presentAcceptedContract(contract);
+	assert.equal(view.bucket, "history");
+});
+
+test("presentContractBuckets splits live and historical accepted contracts", () => {
+	const base = newGame(7).contractMarket[0]!;
+	const activeContract = { ...base, id: "c-active" as typeof base.id, status: "active" as const, startedAtTick: 1, assignedDcId: "dc-1" as const };
+	const expiredContract = { ...base, id: "c-expired" as typeof base.id, status: "expired" as const, startedAtTick: 1, assignedDcId: "dc-1" as const };
+	const cancelledContract = { ...base, id: "c-cancelled" as typeof base.id, status: "cancelled" as const, startedAtTick: 1, assignedDcId: "dc-1" as const };
+
+	const snapshot = {
+		contractMarket: newGame(7).contractMarket,
+		activeContracts: [activeContract, expiredContract, cancelledContract],
+	};
+	const buckets = presentContractBuckets(snapshot);
+
+	assert.equal(buckets.active.length, 1);
+	assert.equal(buckets.active[0]!.id, "c-active");
+	assert.equal(buckets.history.length, 2);
+	assert.ok(buckets.history.every((c) => c.bucket === "history"));
+});
+
+test("presentContractBuckets returns empty history when all accepted contracts are live", () => {
+	const base = newGame(7).contractMarket[0]!;
+	const activeContract = { ...base, id: "c-live" as typeof base.id, status: "active" as const, startedAtTick: 1, assignedDcId: "dc-1" as const };
+
+	const snapshot = {
+		contractMarket: [],
+		activeContracts: [activeContract],
+	};
+	const buckets = presentContractBuckets(snapshot);
+
+	assert.equal(buckets.active.length, 1);
+	assert.equal(buckets.history.length, 0);
+});

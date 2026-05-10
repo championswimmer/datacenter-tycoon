@@ -131,3 +131,71 @@ test("runLsCommand datacenters text output shows layout bounds", async () => {
 	assert.match(logged[0] ?? "", /Layout: 2 rows × 4 cols \(8 slots\)/);
 	assert.match(logged[0] ?? "", /Bounds: rows 0-1, cols 0-3/);
 });
+
+import { newGame } from "@datacenter-tycoon/game-logic";
+import type { GameState } from "@datacenter-tycoon/game-logic";
+
+function createContractSnapshotClient(state: Pick<GameState, "contractMarket" | "activeContracts">): import("./common.js").CommandClient {
+	return {
+		connect: async () => undefined,
+		dispatch: async () => ({ tick: 0 }),
+		query: async (): Promise<GameState> => state as GameState,
+		control: async () => ({ ok: true }),
+		close: async () => undefined,
+	};
+}
+
+test("runLsCommand contracts text output shows history section for expired contracts", async () => {
+	const baseState = newGame(42);
+	const base = baseState.contractMarket[0]!;
+	const expiredContract = {
+		...base,
+		id: "exp-1" as typeof base.id,
+		status: "expired" as const,
+		startedAtTick: 1,
+		assignedDcId: undefined,
+	};
+	const state = { ...baseState, contractMarket: [], activeContracts: [expiredContract] };
+	const client = createContractSnapshotClient(state);
+
+	const logged: string[] = [];
+	const originalLog = console.log;
+	console.log = (message?: unknown) => { logged.push(String(message)); };
+	try {
+		await runLsCommand(parseArgv(["ls", "contracts"]), () => client);
+	} finally {
+		console.log = originalLog;
+	}
+
+	const output = logged.join("\n");
+	assert.match(output, /Contract History/i, "should have a history section");
+	assert.ok(!output.includes("=== Active Contracts ===") || output.includes("No active contracts."), "expired contract must not appear in Active Contracts");
+});
+
+test("runLsCommand contracts JSON output includes history bucket", async () => {
+	const baseState = newGame(42);
+	const base = baseState.contractMarket[0]!;
+	const expiredContract = {
+		...base,
+		id: "exp-json-1" as typeof base.id,
+		status: "expired" as const,
+		startedAtTick: 1,
+		assignedDcId: undefined,
+	};
+	const state = { ...baseState, contractMarket: [], activeContracts: [expiredContract] };
+	const client = createContractSnapshotClient(state);
+
+	const logged: string[] = [];
+	const originalLog = console.log;
+	console.log = (message?: unknown) => { logged.push(String(message)); };
+	try {
+		await runLsCommand(parseArgv(["ls", "contracts", "--json"]), () => client);
+	} finally {
+		console.log = originalLog;
+	}
+
+	const parsed = JSON.parse(logged[0] ?? "{}");
+	assert.ok(Array.isArray(parsed.data.history), "JSON output must have a history array");
+	assert.equal(parsed.data.history.length, 1);
+	assert.equal(parsed.data.active.length, 0, "expired contract must not be in active array");
+});

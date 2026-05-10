@@ -1,6 +1,12 @@
+import { isLiveContractStatus } from "@datacenter-tycoon/game-logic";
 import type { Contract, GameState } from "@datacenter-tycoon/game-logic";
 
-export type ContractListBucket = "market" | "active";
+/**
+ * `market`  — contract on the market, not yet accepted.
+ * `active`  — accepted and currently live (status: active | breached). Still commits capacity.
+ * `history` — accepted but no longer live (status: expired | cancelled). Capacity already released.
+ */
+export type ContractListBucket = "market" | "active" | "history";
 
 export interface CliContractView {
 	id: string;
@@ -42,15 +48,27 @@ export function presentContracts(contracts: readonly Contract[], bucket: Contrac
 	return contracts.map((contract) => presentContract(contract, bucket));
 }
 
+/**
+ * Classify a single accepted contract into either the `active` (live) or
+ * `history` (expired/cancelled) bucket based on its status.
+ */
+export function presentAcceptedContract(contract: Contract): CliContractView {
+	const bucket: ContractListBucket = isLiveContractStatus(contract.status) ? "active" : "history";
+	return presentContract(contract, bucket);
+}
+
 export function presentContractBuckets(
 	snapshot: Pick<GameState, "contractMarket" | "activeContracts">,
 ): {
 	market: CliContractView[];
 	active: CliContractView[];
+	history: CliContractView[];
 } {
+	const presented = snapshot.activeContracts.map(presentAcceptedContract);
 	return {
 		market: presentContracts(snapshot.contractMarket, "market"),
-		active: presentContracts(snapshot.activeContracts, "active"),
+		active: presented.filter((c) => c.bucket === "active"),
+		history: presented.filter((c) => c.bucket === "history"),
 	};
 }
 
@@ -58,9 +76,9 @@ export function presentContractById(
 	snapshot: Pick<GameState, "contractMarket" | "activeContracts">,
 	contractId: string,
 ): CliContractView | undefined {
-	const activeContract = snapshot.activeContracts.find((contract) => contract.id === contractId);
-	if (activeContract) {
-		return presentContract(activeContract, "active");
+	const acceptedContract = snapshot.activeContracts.find((contract) => contract.id === contractId);
+	if (acceptedContract) {
+		return presentAcceptedContract(acceptedContract);
 	}
 
 	const marketContract = snapshot.contractMarket.find((contract) => contract.id === contractId);
