@@ -78,13 +78,18 @@ function getRegionForDatacenter(state: GameState, dcId: string) {
 	return state.map.regions.find((r) => r.id === datacenter.regionId);
 }
 
-function processRackMaintenance(datacenter: Datacenter, currentTick: Tick, rng: ReturnType<typeof rngFromState>): Datacenter {
+function processRackMaintenance(
+	datacenter: Datacenter,
+	currentTick: Tick,
+	difficulty: GameState["difficulty"],
+	rng: ReturnType<typeof rngFromState>,
+): Datacenter {
 	const placements = datacenter.placements.map((placement): RackPlacement => {
 		if (placement.health === "repairing") {
 			return advanceRackRepair(placement, datacenter.maintenanceStaff);
 		}
 
-		const failureChance = rackFailureChance(rackAgeMonths(currentTick, placement));
+		const failureChance = rackFailureChance(rackAgeMonths(currentTick, placement), difficulty);
 		if (rng.next() >= failureChance) {
 			return placement;
 		}
@@ -107,7 +112,7 @@ export function tick(state: GameState): GameState {
 	const nextTick = (state.tick + 1) as Tick;
 	const rng = rngFromState(state.rngState);
 	const datacentersAfterMaintenance = state.datacenters.map((datacenter) =>
-		processRackMaintenance(datacenter, nextTick, rng),
+		processRackMaintenance(datacenter, nextTick, state.difficulty, rng),
 	);
 	const maintenanceState: GameState = {
 		...state,

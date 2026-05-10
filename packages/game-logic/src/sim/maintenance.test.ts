@@ -4,11 +4,8 @@ import test from "node:test";
 import {
 	BASE_REPAIR_DAYS,
 	DAYS_PER_TICK,
+	DIFFICULTY_CONFIG,
 	MAX_REPAIR_SPEED_MULTIPLIER,
-	RACK_FAILURE_MAX_AGE_MONTHS,
-	RACK_FAILURE_MAX_CHANCE,
-	RACK_FAILURE_YEAR_ONE_AGE_MONTHS,
-	RACK_FAILURE_YEAR_ONE_CHANCE,
 } from "../balance/index.js";
 import {
 	advanceRackRepair,
@@ -43,16 +40,13 @@ test("rackAgeMonths never goes below zero", () => {
 	assert.equal(rackAgeMonths(tick(3), { installedAtTick: tick(6) }), 0);
 });
 
-test("rackFailureChance hits the new year-1 and year-6 anchors with late-life acceleration", () => {
+test("rackFailureChance uses the configured hard-mode yearly curve and clamps old racks", () => {
 	assert.equal(rackFailureChance(0), 0);
-	assert.equal(rackFailureChance(RACK_FAILURE_YEAR_ONE_AGE_MONTHS / 2), RACK_FAILURE_YEAR_ONE_CHANCE / 2);
-	assert.equal(rackFailureChance(RACK_FAILURE_YEAR_ONE_AGE_MONTHS), RACK_FAILURE_YEAR_ONE_CHANCE);
-	assert.equal(rackFailureChance(RACK_FAILURE_MAX_AGE_MONTHS), RACK_FAILURE_MAX_CHANCE);
-	assert.equal(rackFailureChance(RACK_FAILURE_MAX_AGE_MONTHS + 24), RACK_FAILURE_MAX_CHANCE);
-
-	const earlyLifeDelta = rackFailureChance(24) - rackFailureChance(12);
-	const lateLifeDelta = rackFailureChance(60) - rackFailureChance(48);
-	assert.ok(lateLifeDelta > earlyLifeDelta);
+	assert.equal(rackFailureChance(11), 0);
+	assert.equal(rackFailureChance(12), DIFFICULTY_CONFIG.hard.failureCurvePct[1]! / 100);
+	assert.equal(rackFailureChance(24), DIFFICULTY_CONFIG.hard.failureCurvePct[2]! / 100);
+	assert.equal(rackFailureChance(60), DIFFICULTY_CONFIG.hard.failureCurvePct.at(-1)! / 100);
+	assert.equal(rackFailureChance(84), DIFFICULTY_CONFIG.hard.failureCurvePct.at(-1)! / 100);
 });
 
 test("repair speed scales with maintenance staff and clamps at the configured max", () => {
@@ -112,10 +106,10 @@ test("rackFailureRiskView: probability clamps at max-age cap for very old racks"
 		installedAtTick: tick(0),
 		health: "healthy" as const,
 	};
-	const viewAtCap = rackFailureRiskView(tick(RACK_FAILURE_MAX_AGE_MONTHS), rack);
-	const viewBeyondCap = rackFailureRiskView(tick(RACK_FAILURE_MAX_AGE_MONTHS + 24), rack);
-	assert.equal(viewAtCap.failureProbability, RACK_FAILURE_MAX_CHANCE);
-	assert.equal(viewBeyondCap.failureProbability, RACK_FAILURE_MAX_CHANCE);
+	const viewAtCap = rackFailureRiskView(tick(60), rack);
+	const viewBeyondCap = rackFailureRiskView(tick(84), rack);
+	assert.equal(viewAtCap.failureProbability, DIFFICULTY_CONFIG.hard.failureCurvePct.at(-1)! / 100);
+	assert.equal(viewBeyondCap.failureProbability, DIFFICULTY_CONFIG.hard.failureCurvePct.at(-1)! / 100);
 });
 
 test("rackFailureRiskView: young rack has near-zero failure probability", () => {
@@ -125,6 +119,5 @@ test("rackFailureRiskView: young rack has near-zero failure probability", () => 
 		health: "healthy" as const,
 	};
 	const view = rackFailureRiskView(tick(1), rack);
-	assert.ok(view.failureProbability > 0);
-	assert.ok(view.failureProbability < 0.01);
+	assert.equal(view.failureProbability, 0);
 });
