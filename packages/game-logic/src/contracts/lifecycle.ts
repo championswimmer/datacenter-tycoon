@@ -1,7 +1,16 @@
 import { datacenterCapacity } from "../entities/datacenter.js";
-import type { Contract, ContractSlaOutcomeKind, Datacenter } from "../types.js";
+import type { Contract, ContractSlaOutcomeKind, ContractStatus, Datacenter } from "../types.js";
 
 export type ContractEvaluationResult = "fulfilled" | "breached";
+
+/**
+ * Returns true when a contract is "live" — i.e. it still commits capacity and
+ * can currently pay revenue or levy penalties. Only `active` and `breached`
+ * contracts are live. `expired` and `cancelled` contracts are historical.
+ */
+export function isLiveContractStatus(status: ContractStatus): boolean {
+	return status === "active" || status === "breached";
+}
 
 export function evaluateContract(datacenter: Datacenter, contract: Contract): ContractEvaluationResult {
 	const capacity = datacenterCapacity(datacenter);

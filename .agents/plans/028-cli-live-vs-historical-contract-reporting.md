@@ -1,7 +1,7 @@
 ---
 name: CLI Live vs Historical Contract Reporting
 description: Fix the CLI/TUI bug where expired or cancelled contracts are still reported as active/capacity-holding, even though game-logic has already released their committed capacity.
-status: created
+status: started
 created: 2026-05-10
 updated: 2026-05-10
 owner: cli
@@ -9,8 +9,8 @@ owner: cli
 
 ## Progress
 
-- [ ] **Phase 1 — Canonicalize contract liveness semantics**
-  - [ ] 1.1 Add a shared game-logic helper for "live / capacity-committing" contract status
+- [x] **Phase 1 — Canonicalize contract liveness semantics**
+  - [x] 1.1 Add a shared game-logic helper for "live / capacity-committing" contract status
   - [ ] 1.2 Add focused game-logic regression coverage proving expired contracts no longer commit capacity
 - [ ] **Phase 2 — Fix CLI daemon status and one-shot contract views**
   - [ ] 2.1 Make daemon/runtime status counts use only live contracts
