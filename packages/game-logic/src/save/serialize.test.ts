@@ -23,7 +23,7 @@ test("serialize wraps state in a versioned envelope", () => {
 });
 
 test("serialize and deserialize round-trip a non-trivial game state", () => {
-	let state = newGame(42, { startingCash: 3_000_000, playerName: "Alex" });
+	let state = newGame(42, { difficulty: "easy", startingCash: 3_000_000, playerName: "Alex" });
 	const firstRegionId = state.map.regions[0]!.id;
 	state = reduce(state, {
 		type: "BuildDatacenter",
@@ -83,6 +83,7 @@ test("serialize and deserialize round-trip a non-trivial game state", () => {
 	const restored = deserialize(serialize(state));
 
 	assert.deepEqual(restored, state);
+	assert.equal(restored.difficulty, "easy");
 	assert.deepEqual(restored.player.reliability, state.player.reliability);
 });
 
