@@ -292,8 +292,24 @@ describe("selectDatacenterRackMaintenanceViews", () => {
         repairProgressDays: 30,
         repairCompletionPercent: 33,
         repairEtaTicks: 2,
+        failureProbability: 0,
       },
     ]);
+  });
+
+  it("includes non-zero failureProbability for healthy racks with age > 0", () => {
+    const baseState = stateWithDcAndRack();
+    const dc = baseState.datacenters[0]!;
+    const state = { ...baseState, tick: 12 };
+
+    const views = selectDatacenterRackMaintenanceViews(state, dc.id);
+    expect(views.length).toBeGreaterThan(0);
+    const view = views[0]!;
+    expect(view.status).toBe("healthy");
+    expect(view.ageMonths).toBe(12);
+    expect(typeof view.failureProbability).toBe("number");
+    expect(view.failureProbability).toBeGreaterThan(0);
+    expect(view.failureProbability).toBeLessThanOrEqual(1);
   });
 });
 

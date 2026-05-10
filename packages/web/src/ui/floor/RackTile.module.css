@@ -202,6 +202,22 @@
   color: var(--fg-2);
 }
 
+.failRiskText {
+  font-family: var(--font-mono);
+  font-size: 0.42rem;
+  letter-spacing: 0.07em;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+.failRiskActive {
+  color: var(--neon-amber, #f5a623);
+}
+
+.failRiskPaused {
+  color: var(--fg-3, #666);
+}
+
 .repairText {
   padding: 0 4px 3px;
   font-family: var(--font-mono);

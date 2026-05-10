@@ -44,6 +44,9 @@ export function RackTile({
   const repairProgressLabel = maintenanceView.status === "repairing"
     ? `${maintenanceView.repairCompletionPercent}% • ETA ${maintenanceView.repairEtaTicks} mo`
     : undefined;
+  const failRiskLabel = maintenanceView.status === "repairing"
+    ? "FAIL RISK PAUSED"
+    : `FAIL RISK ${(maintenanceView.failureProbability * 100).toFixed(1)}%/MO`;
   const activityStatus = rackActivity?.status
     ?? (maintenanceView.status === "repairing" ? "repairing" : hasActiveContract ? "active" : "idle");
   const activityLabel = activityStatus === "active"
@@ -84,7 +87,7 @@ export function RackTile({
           styles[`kind-${spec.kind}`],
           maintenanceView.status === "repairing" ? styles.tileRepairing : "",
         ].join(" ")}
-      title={`${spec.name} — Tier ${spec.tier}\nAge: ${maintenanceView.ageMonths} mo\nStatus: ${repairStatusLabel}${repairProgressLabel ? `\nRepair: ${repairProgressLabel}` : ""}\nActivity: ${activityLabel}\nBilled Power: ${billedPowerKw.toFixed(1)} kW\nCapex: $${spec.capexCost.toLocaleString()}\nReserved Power: ${spec.powerDrawKw} kW`}
+      title={`${spec.name} — Tier ${spec.tier}\nAge: ${maintenanceView.ageMonths} mo\nStatus: ${repairStatusLabel}${repairProgressLabel ? `\nRepair: ${repairProgressLabel}` : ""}\n${failRiskLabel}\nActivity: ${activityLabel}\nBilled Power: ${billedPowerKw.toFixed(1)} kW\nCapex: $${spec.capexCost.toLocaleString()}\nReserved Power: ${spec.powerDrawKw} kW`}
     >
       {/* ── Bezel ── */}
       <div className={styles.bezel}>
@@ -134,6 +137,12 @@ export function RackTile({
           {activityLabel}
         </span>
         <span className={styles.ageText}>AGE {maintenanceView.ageMonths} MO</span>
+        <span className={[
+          styles.failRiskText,
+          maintenanceView.status === "repairing" ? styles.failRiskPaused : styles.failRiskActive,
+        ].join(" ")}>
+          {failRiskLabel}
+        </span>
       </div>
 
       {repairProgressLabel && (

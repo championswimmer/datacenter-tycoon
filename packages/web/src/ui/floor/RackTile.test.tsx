@@ -26,6 +26,7 @@ function makeMaintenanceView(overrides: Partial<RackMaintenanceView> = {}): Rack
     repairProgressDays: 0,
     repairCompletionPercent: 0,
     repairEtaTicks: 0,
+    failureProbability: 0.01,
     ...overrides,
   };
 }
@@ -223,5 +224,44 @@ describe("RackTile", () => {
     );
     fireEvent.click(screen.getByLabelText(/Move/));
     expect(onMove).toHaveBeenCalledWith(placement.id);
+  });
+
+  it("shows FAIL RISK percentage for a healthy rack", () => {
+    const spec = RACK_CATALOG["C1"]!;
+    render(
+      <RackTile
+        placement={makePlacement("C1")}
+        maintenanceView={makeMaintenanceView({ status: "healthy", failureProbability: 0.025 })}
+        spec={spec}
+        hasActiveContract={false}
+        hasFault={false}
+        onDecommission={vi.fn()}
+        onMove={vi.fn()}
+      />,
+    );
+    // Should show risk as percentage/month label
+    expect(screen.getByText(/FAIL RISK 2\.5%\/MO/)).toBeTruthy();
+  });
+
+  it("shows FAIL RISK PAUSED for a repairing rack", () => {
+    const spec = RACK_CATALOG["C1"]!;
+    render(
+      <RackTile
+        placement={{ ...makePlacement("C1"), health: "repairing", repairProgressDays: 45 }}
+        maintenanceView={makeMaintenanceView({
+          status: "repairing",
+          repairProgressDays: 45,
+          repairCompletionPercent: 50,
+          repairEtaTicks: 2,
+          failureProbability: 0,
+        })}
+        spec={spec}
+        hasActiveContract={false}
+        hasFault={false}
+        onDecommission={vi.fn()}
+        onMove={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("FAIL RISK PAUSED")).toBeTruthy();
   });
 });

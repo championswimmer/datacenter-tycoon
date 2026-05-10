@@ -37,6 +37,7 @@ function maintenanceMapFor(
         repairProgressDays: 0,
         repairCompletionPercent: 0,
         repairEtaTicks: 0,
+        failureProbability: 0,
       },
     ]),
   );
