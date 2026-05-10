@@ -17,6 +17,14 @@ export type RegionId = Brand<string, "RegionId">;
 export type RackKind = "compute" | "memory" | "storage" | "gpu";
 export type RackTier = 1 | 2 | 3;
 export type CoolingType = "air" | "liquid";
+export type ContractLifecycleState =
+	| "market_open"
+	| "market_expired"
+	| "serving"
+	| "breached"
+	| "cancelled"
+	| "completed";
+/** @deprecated Use `Contract.lifecycleState` instead. */
 export type ContractStatus = "offered" | "active" | "breached" | "expired" | "cancelled";
 export type ContractUrgency = "standard" | "rush" | "anchor";
 export type ContractTier = 1 | 2 | 3;
@@ -103,12 +111,17 @@ export interface Contract {
 	monthlyPayment: Money;
 	penaltyPerMonth: Money;
 	termMonths: number;
+	lifecycleState: ContractLifecycleState;
+	/** @deprecated Temporary compatibility bridge for legacy consumers. */
 	status: ContractStatus;
 	urgency: ContractUrgency;
 	tier: ContractTier;
 	offeredAtTick: Tick;
 	expiresAtTick: Tick;
 	startedAtTick?: Tick;
+	acceptedAtTick?: Tick;
+	closedAtTick?: Tick;
+	breachStreakMonths?: number;
 	assignedDcId?: DatacenterId;
 }
 

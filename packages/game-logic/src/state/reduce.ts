@@ -260,7 +260,9 @@ function cancelContract(state: GameState, contractId: ContractId): GameState {
 	return {
 		...state,
 		activeContracts: state.activeContracts.map((candidate) =>
-			candidate.id === contractId ? { ...candidate, status: "cancelled" } : candidate,
+			candidate.id === contractId
+				? { ...candidate, lifecycleState: "cancelled", status: "cancelled", closedAtTick: state.tick }
+				: candidate,
 		),
 	};
 }

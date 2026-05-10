@@ -1,5 +1,5 @@
 import { datacenterCapacity } from "../entities/datacenter.js";
-import type { Contract, ContractSlaOutcomeKind, ContractStatus, Datacenter } from "../types.js";
+import type { Contract, ContractLifecycleState, ContractSlaOutcomeKind, ContractStatus, Datacenter } from "../types.js";
 
 export type ContractEvaluationResult = "fulfilled" | "breached";
 
@@ -10,6 +10,14 @@ export type ContractEvaluationResult = "fulfilled" | "breached";
  */
 export function isLiveContractStatus(status: ContractStatus): boolean {
 	return status === "active" || status === "breached";
+}
+
+export function isLiveContractLifecycleState(lifecycleState: ContractLifecycleState): boolean {
+	return lifecycleState === "serving" || lifecycleState === "breached";
+}
+
+export function isHistoricalContractLifecycleState(lifecycleState: ContractLifecycleState): boolean {
+	return lifecycleState === "market_expired" || lifecycleState === "cancelled" || lifecycleState === "completed";
 }
 
 export function evaluateContract(datacenter: Datacenter, contract: Contract): ContractEvaluationResult {
@@ -71,13 +79,15 @@ export function advanceContract(
 	if (hasTermEnded) {
 		return {
 			...contract,
+			lifecycleState: "completed",
 			status: "expired",
+			closedAtTick: currentTick,
 		};
 	}
 
 	if (evaluation === "breached") {
-		return { ...contract, status: "breached" };
+		return { ...contract, lifecycleState: "breached", status: "breached" };
 	}
 
-	return { ...contract, status: "active" };
+	return { ...contract, lifecycleState: "serving", status: "active" };
 }
