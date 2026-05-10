@@ -1,7 +1,7 @@
 ---
 name: Game Difficulty Modes
 description: Introduce Easy and Hard difficulty modes to alter starting cash, penalties, repair times, and hardware failure rates.
-status: created
+status: started
 created: 2026-05-10
 updated: 2026-05-10
 ---
@@ -9,7 +9,7 @@ updated: 2026-05-10
 ## Progress
 
 - [ ] **Phase 1 — Types & Configuration**
-  - [ ] 1.1 Add `Difficulty` type to root game state
+  - [x] 1.1 Add `Difficulty` type to root game state
   - [ ] 1.2 Create difficulty configuration constants and modifier curves
 - [ ] **Phase 2 — Game Logic Implementation**
   - [ ] 2.1 Update new game initialization to use difficulty-based starting cash

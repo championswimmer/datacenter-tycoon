@@ -35,6 +35,7 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 		tick: INITIAL_TICK,
 		seed: effectiveSeed,
 		rngState: effectiveSeed,
+		difficulty: "hard",
 		player: {
 			id: DEFAULT_PLAYER_ID,
 			name: options.playerName ?? "Player",
