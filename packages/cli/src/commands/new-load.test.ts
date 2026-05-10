@@ -59,6 +59,7 @@ test("runNewCommand recreates the save and reconnects to the daemon", async () =
 	assert.equal(fs.existsSync(savePath), true);
 	assert.deepEqual(log, ["connect", "control:shutdown", "close", "connect", "control:pause", "control:save-now", "query:status", "close"]);
 	assert.match(fs.readFileSync(savePath, "utf8"), /"seed":42/);
+	assert.match(fs.readFileSync(savePath, "utf8"), /"difficulty":"hard"/);
 });
 
 test("runNewCommand disables daemon auto-spawn during the pre-reset shutdown check", async () => {
@@ -74,6 +75,26 @@ test("runNewCommand disables daemon auto-spawn during the pre-reset shutdown che
 	);
 
 	assert.deepEqual(seenNoDaemonFlags, [true, false]);
+});
+
+test("runNewCommand accepts an explicit difficulty flag", async () => {
+	const { savePath, socketPath } = createTempPaths();
+
+	await runNewCommand(
+		parseArgv(["new", "--yes", "--difficulty", "easy", "--save", savePath, "--socket", socketPath, "--quiet"]),
+		() => createFakeClient([]),
+	);
+
+	assert.match(fs.readFileSync(savePath, "utf8"), /"difficulty":"easy"/);
+});
+
+test("runNewCommand rejects an invalid difficulty flag", async () => {
+	const { savePath, socketPath } = createTempPaths();
+
+	await assert.rejects(
+		() => runNewCommand(parseArgv(["new", "--yes", "--difficulty", "story", "--save", savePath, "--socket", socketPath, "--quiet"])),
+		/Invalid value for --difficulty/,
+	);
 });
 
 test("runLoadCommand validates and copies a save before reconnecting", async () => {
