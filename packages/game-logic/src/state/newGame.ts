@@ -1,12 +1,13 @@
+import { DEFAULT_DIFFICULTY, DIFFICULTY_CONFIG } from "../balance/difficulty.js";
 import { RELIABILITY_BASELINE_SCORE } from "../balance/reliability.js";
 import { withDerivedContractViews } from "../contracts/lifecycle.js";
 import { refreshContractMarket } from "../contracts/market.js";
-import { STARTING_CASH } from "../economy/constants.js";
 import { generateMap } from "../sim/mapgen.js";
-import type { GameId, GameState, Money, PlayerId, Tick } from "../types.js";
+import type { Difficulty, GameId, GameState, Money, PlayerId, Tick } from "../types.js";
 
 export interface NewGameOptions {
 	seed?: number;
+	difficulty?: Difficulty;
 	startingCash?: Money;
 	playerName?: string;
 }
@@ -20,7 +21,8 @@ function normalizeSeed(seed: number): number {
 
 export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 	const effectiveSeed = normalizeSeed(options.seed ?? seed);
-	const startingCash = options.startingCash ?? STARTING_CASH;
+	const difficulty = options.difficulty ?? DEFAULT_DIFFICULTY;
+	const startingCash = options.startingCash ?? DIFFICULTY_CONFIG[difficulty].startingCash;
 
 	if (!Number.isFinite(startingCash) || startingCash < 0) {
 		throw new Error(`Invalid starting cash: ${startingCash}`);
@@ -35,7 +37,7 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 		tick: INITIAL_TICK,
 		seed: effectiveSeed,
 		rngState: effectiveSeed,
-		difficulty: "hard",
+		difficulty,
 		player: {
 			id: DEFAULT_PLAYER_ID,
 			name: options.playerName ?? "Player",

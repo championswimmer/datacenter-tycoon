@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { DIFFICULTY_CONFIG } from "../balance/difficulty.js";
 import { RELIABILITY_BASELINE_SCORE } from "../balance/reliability.js";
-import { MARKET_REFRESH_SIZE, STARTING_CASH } from "../economy/constants.js";
+import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
 import { newGame } from "./newGame.js";
 
 test("newGame creates a deterministic initial state with a primed contract market", () => {
@@ -21,7 +22,8 @@ test("newGame creates a deterministic initial state with a primed contract marke
 	assert.equal(first.rngState !== first.seed, true);
 	assert.equal(first.tick, 0);
 	assert.equal(first.player.name, "Player");
-	assert.equal(first.player.cash, STARTING_CASH);
+	assert.equal(first.difficulty, "hard");
+	assert.equal(first.player.cash, DIFFICULTY_CONFIG.hard.startingCash);
 	assert.deepEqual(first.player.reliability, {
 		score: RELIABILITY_BASELINE_SCORE,
 		recentOutcomes: [],
@@ -36,11 +38,13 @@ test("newGame creates a deterministic initial state with a primed contract marke
 test("newGame accepts option overrides", () => {
 	const state = newGame(7, {
 		seed: 99,
+		difficulty: "easy",
 		startingCash: 123_456,
 		playerName: "Alex",
 	});
 
 	assert.equal(state.seed, 99);
+	assert.equal(state.difficulty, "easy");
 	assert.equal(state.player.name, "Alex");
 	assert.equal(state.player.cash, 123_456);
 	assert.deepEqual(state.player.reliability, {
@@ -48,6 +52,14 @@ test("newGame accepts option overrides", () => {
 		recentOutcomes: [],
 	});
 	assert.equal(state.contractMarket.length, MARKET_REFRESH_SIZE);
+});
+
+test("newGame uses difficulty-based starting cash by default", () => {
+	const easyState = newGame(1, { difficulty: "easy" });
+	const hardState = newGame(1, { difficulty: "hard" });
+
+	assert.equal(easyState.player.cash, DIFFICULTY_CONFIG.easy.startingCash);
+	assert.equal(hardState.player.cash, DIFFICULTY_CONFIG.hard.startingCash);
 });
 
 test("newGame rejects invalid starting cash", () => {

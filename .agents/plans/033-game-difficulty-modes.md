@@ -12,7 +12,7 @@ updated: 2026-05-10
   - [x] 1.1 Add `Difficulty` type to root game state
   - [x] 1.2 Create difficulty configuration constants and modifier curves
 - [ ] **Phase 2 — Game Logic Implementation**
-  - [ ] 2.1 Update new game initialization to use difficulty-based starting cash
+  - [x] 2.1 Update new game initialization to use difficulty-based starting cash
   - [ ] 2.2 Update rack failure logic to use the new age-based frequency curves
   - [ ] 2.3 Apply difficulty multipliers to rack repair times
   - [ ] 2.4 Apply difficulty multipliers to contract breach penalties
