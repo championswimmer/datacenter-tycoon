@@ -257,6 +257,20 @@ export async function runTui(): Promise<void> {
 				paletteOpen = true;
 				paletteInput = selectedDc ? `racks move ${selectedDc} ` : "racks move ";
 			}
+			if (activeTab === "datacenters" && (key.name === "+" || value === "+")) {
+				const selectedDc = snapshot?.datacenters[selectedDatacenterIndex]?.id ?? "";
+				if (selectedDc) {
+					paletteOpen = true;
+					paletteInput = `dc maint inc ${selectedDc}`;
+				}
+			}
+			if (activeTab === "datacenters" && (key.name === "-" || value === "-")) {
+				const selectedDc = snapshot?.datacenters[selectedDatacenterIndex]?.id ?? "";
+				if (selectedDc) {
+					paletteOpen = true;
+					paletteInput = `dc maint dec ${selectedDc}`;
+				}
+			}
 			if (activeTab === "contracts" && key.name === "a") {
 				paletteOpen = true;
 				paletteInput = "contract accept ";

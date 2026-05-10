@@ -1,3 +1,4 @@
+import { datacenterMaintenanceStaffingView } from "@datacenter-tycoon/game-logic";
 import type { GameState } from "@datacenter-tycoon/game-logic";
 
 export function renderDatacentersTab(snapshot: GameState, selectedIndex: number): string[] {
@@ -9,6 +10,12 @@ export function renderDatacentersTab(snapshot: GameState, selectedIndex: number)
 	if (!selected) {
 		return ["Datacenters", "", "No datacenters yet."];
 	}
+
+	const region = snapshot.map.regions.find((r) => r.id === selected.regionId);
+	const maintenance = region
+		? datacenterMaintenanceStaffingView(selected, region, snapshot.datacenters, snapshot.tick)
+		: null;
+
 	const placementsByCell = new Map(selected.placements.map((placement) => [`${placement.row}:${placement.position}`, placement.specId]));
 	const rows: string[] = [];
 	for (let row = 0; row < selected.spec.rows; row += 1) {
@@ -20,6 +27,21 @@ export function renderDatacentersTab(snapshot: GameState, selectedIndex: number)
 		rows.push(`r${row}: ${cells.join(" ")}`);
 	}
 
+	const maintLines: string[] = [];
+	if (maintenance) {
+		const staffLabel = maintenance.canIncrease
+			? `Spare: ${maintenance.availableRegionalStaff} regional`
+			: maintenance.currentStaff >= maintenance.maxStaff
+				? "AT STAFF CAP"
+				: "REGIONAL LABOR FULL";
+		maintLines.push(
+			`Maintenance: ${maintenance.currentStaff}/${maintenance.maxStaff} staff | +$${maintenance.extraWagesMonthly.toLocaleString()}/mo | Repair speed ${maintenance.repairSpeedDaysPerTick.toFixed(1)} days/tick`,
+		);
+		maintLines.push(
+			`Repairing: ${maintenance.repairingRackCount}/${maintenance.totalRackCount} racks | Avg age ${maintenance.averageRackAgeMonths.toFixed(1)} mo | ${staffLabel}`,
+		);
+	}
+
 	return [
 		`Datacenters (${snapshot.datacenters.length})`,
 		"",
@@ -27,9 +49,10 @@ export function renderDatacentersTab(snapshot: GameState, selectedIndex: number)
 		"",
 		`Selected: ${selected.id} · ${selected.name}`,
 		`Power ${selected.spec.powerCapacityKw}kW · Cooling ${selected.spec.coolingCapacityBtuPerHr} BTU/h · Bandwidth ${selected.spec.bandwidthGbps} Gbps`,
+		...maintLines,
 		"Rack grid:",
 		...rows,
 		"",
-		"m move rack · n new DC · r add rack · x remove rack",
+		"m move rack · n new DC · r add rack · x remove rack · + hire maint · - fire maint",
 	];
 }
