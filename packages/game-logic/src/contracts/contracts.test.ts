@@ -37,6 +37,10 @@ const playerId = (value: string): PlayerId => value as PlayerId;
 const rackPlacementId = (value: string): RackPlacementId => value as RackPlacementId;
 const tick = (value: number): Tick => value as Tick;
 
+function generatedThemeId(contract: Contract): string {
+	return contract.id.match(/^contract-(.+)-[0-9a-f]+$/)?.[1] ?? "unknown";
+}
+
 function placement(id: string, specId: keyof typeof RACK_CATALOG, row: number, position: number): RackPlacement {
 	const spec = RACK_CATALOG[specId];
 	return {
@@ -159,6 +163,30 @@ test("generateContract names use expanded enterprise nomenclature", () => {
 		`expected at least one generated name to use the new deliverable vocabulary: ${names.join(", ")}`,
 	);
 	assert.ok(names.every((name) => !["AI Training", "AI Inference", "HPC Simulation"].includes(name)));
+});
+
+test("generateContract uses workload-specific duration bands", () => {
+	const rng = createRng(4_242);
+	const samples = Array.from({ length: 400 }, () => generateContract(rng, 0.55));
+	const byTheme = new Map<string, Contract[]>();
+	for (const contract of samples) {
+		const themeId = generatedThemeId(contract);
+		const existing = byTheme.get(themeId) ?? [];
+		existing.push(contract);
+		byTheme.set(themeId, existing);
+	}
+
+	const videoRender = byTheme.get("video_render") ?? [];
+	const enterpriseDb = byTheme.get("enterprise_db") ?? [];
+	const coldStorage = byTheme.get("cold_storage") ?? [];
+
+	assert.ok(videoRender.length > 0, "expected to sample video_render contracts");
+	assert.ok(enterpriseDb.length > 0, "expected to sample enterprise_db contracts");
+	assert.ok(coldStorage.length > 0, "expected to sample cold_storage contracts");
+	assert.ok(videoRender.some((contract) => contract.termMonths <= 4));
+	assert.ok(Math.max(...videoRender.map((contract) => contract.termMonths)) <= 6);
+	assert.ok(enterpriseDb.some((contract) => contract.termMonths >= 18));
+	assert.ok(coldStorage.some((contract) => contract.termMonths >= 24));
 });
 
 test("refreshContractMarket is deterministic, removes expired offers, and tops up to the configured size", () => {
@@ -458,15 +486,20 @@ test("rush contracts have shorter term and higher payment than standard of same 
 	assert.ok(rush!.expiresAtTick <= 2, `rush offer window ${rush!.expiresAtTick} should be <= 2`);
 });
 
-test("anchor contracts have longer term and lower penalty ratio", () => {
+test("anchor contracts can surface long-lived enterprise commitments", () => {
 	const rng = createRng(5555);
 	let anchor: Contract | undefined;
-	for (let i = 0; i < 200 && !anchor; i++) {
-		const c = generateContract(rng, 0.5);
-		if (c.urgency === "anchor") anchor = c;
+	for (let i = 0; i < 500 && !anchor; i++) {
+		const candidate = generateContract(rng, 0.5);
+		if (
+			candidate.urgency === "anchor" &&
+			["enterprise_db", "cold_storage"].includes(generatedThemeId(candidate))
+		) {
+			anchor = candidate;
+		}
 	}
-	assert.ok(anchor, "should find an anchor contract");
-	assert.ok(anchor!.termMonths >= 8, `anchor term ${anchor!.termMonths} should be >= 8`);
+	assert.ok(anchor, "should find a long-term enterprise anchor contract");
+	assert.ok(anchor!.termMonths >= 18, `anchor term ${anchor!.termMonths} should be >= 18`);
 });
 
 test("advanceContract keeps an already breached contract breached while it remains live", () => {

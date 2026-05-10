@@ -6,10 +6,15 @@ import {
 import type { Contract, ContractId, ContractRequirements, ContractTier, ContractUrgency, Money } from "../types.js";
 import type { Rng } from "../sim/rng.js";
 
+type TermRange = readonly [minMonths: number, maxMonths: number];
+
 interface ContractTheme {
 	id: string;
 	label: string;
 	deliverables: readonly string[];
+	standardTermRange: TermRange;
+	anchorTermRange: TermRange;
+	rushTermRange: TermRange;
 	weights: {
 		vCpu: number;
 		ramGb: number;
@@ -63,42 +68,63 @@ const CONTRACT_THEMES: readonly ContractTheme[] = [
 		id: "ai_training",
 		label: "AI Training",
 		deliverables: ["LLM Cluster", "Foundation Model Pod", "Training Fabric"],
+		standardTermRange: [4, 10],
+		anchorTermRange: [10, 18],
+		rushTermRange: [1, 2],
 		weights: { vCpu: 0.2, ramGb: 0.45, storageTb: 0.15, gpuFlops: 1 },
 	},
 	{
 		id: "ai_inference",
 		label: "AI Inference",
 		deliverables: ["Inference Mesh", "Serving Fleet", "Vector Gateway"],
+		standardTermRange: [2, 6],
+		anchorTermRange: [6, 12],
+		rushTermRange: [1, 2],
 		weights: { vCpu: 0.45, ramGb: 0.4, storageTb: 0.15, gpuFlops: 0.55 },
 	},
 	{
 		id: "hpc_simulation",
 		label: "HPC Simulation",
 		deliverables: ["Simulation Grid", "Compute Sweep", "Monte Carlo Farm"],
+		standardTermRange: [3, 8],
+		anchorTermRange: [8, 14],
+		rushTermRange: [1, 2],
 		weights: { vCpu: 1, ramGb: 0.7, storageTb: 0.2, gpuFlops: 0.3 },
 	},
 	{
 		id: "enterprise_db",
 		label: "Enterprise OLTP",
 		deliverables: ["OLTP Failover Ring", "Transactional Core", "Business Continuity Stack"],
+		standardTermRange: [9, 18],
+		anchorTermRange: [18, 30],
+		rushTermRange: [1, 2],
 		weights: { vCpu: 0.55, ramGb: 1, storageTb: 0.45, gpuFlops: 0 },
 	},
 	{
 		id: "cold_storage",
 		label: "Cold Storage",
 		deliverables: ["Archive Vault", "Compliance Repository", "Deep Backup Lake"],
+		standardTermRange: [12, 24],
+		anchorTermRange: [24, 36],
+		rushTermRange: [1, 2],
 		weights: { vCpu: 0.05, ramGb: 0.08, storageTb: 1, gpuFlops: 0 },
 	},
 	{
 		id: "cdn_edge",
 		label: "CDN Edge",
 		deliverables: ["Edge POP Rollout", "Caching Mesh", "Regional Delivery Grid"],
+		standardTermRange: [4, 9],
+		anchorTermRange: [9, 16],
+		rushTermRange: [1, 2],
 		weights: { vCpu: 0.8, ramGb: 0.3, storageTb: 0.55, gpuFlops: 0 },
 	},
 	{
 		id: "video_render",
 		label: "Video Transcoding",
 		deliverables: ["Render Pipeline", "Transcode Swarm", "Streaming Encode Farm"],
+		standardTermRange: [1, 4],
+		anchorTermRange: [4, 6],
+		rushTermRange: [1, 2],
 		weights: { vCpu: 0.45, ramGb: 0.35, storageTb: 0.25, gpuFlops: 0.7 },
 	},
 ];
@@ -192,6 +218,18 @@ function contractValue(requirements: ContractRequirements): number {
 	);
 }
 
+function rollTermMonths(rng: Rng, range: TermRange, difficulty: number): number {
+	const [minMonths, maxMonths] = range;
+	if (minMonths >= maxMonths) {
+		return minMonths;
+	}
+
+	const span = maxMonths - minMonths;
+	const difficultyFloor = Math.floor(span * clampDifficulty(difficulty) * 0.5);
+	const remainingSpan = Math.max(0, span - difficultyFloor);
+	return minMonths + difficultyFloor + Math.floor(rng.next() * (remainingSpan + 1));
+}
+
 export function urgencyThresholdsForPolicy(policy: ContractGenerationPolicy): {
 	rushThreshold: number;
 	anchorThreshold: number;
@@ -231,7 +269,7 @@ export function generateContract(
 	const urgencyThresholds = urgencyThresholdsForPolicy(policy);
 	let urgency: ContractUrgency = "standard";
 	let offerDuration = OFFER_DURATION_TICKS;
-	let termMonths = 3 + Math.floor(normalizedDifficulty * 8) + Math.floor(rng.next() * 4);
+	let termMonths = rollTermMonths(rng, theme.standardTermRange, normalizedDifficulty);
 	let paymentMultiplier = 1;
 	let penaltyMultiplier = 1;
 
@@ -240,12 +278,12 @@ export function generateContract(
 	if (urgencyRoll < urgencyThresholds.rushThreshold) {
 		urgency = "rush";
 		offerDuration = 2;
-		termMonths = 1 + Math.floor(rng.next() * 2);
+		termMonths = rollTermMonths(rng, theme.rushTermRange, normalizedDifficulty);
 		paymentMultiplier = 1.4;
 		penaltyMultiplier = 1.2;
 	} else if (urgencyRoll < urgencyThresholds.anchorThreshold) {
 		urgency = "anchor";
-		termMonths = 8 + Math.floor(rng.next() * 6);
+		termMonths = rollTermMonths(rng, theme.anchorTermRange, normalizedDifficulty);
 		paymentMultiplier = 0.75;
 		penaltyMultiplier = 0.6;
 	}
