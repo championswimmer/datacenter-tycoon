@@ -3,7 +3,7 @@ import {
   newGame,
   serialize,
 } from "@datacenter-tycoon/game-logic";
-import type { GameState } from "@datacenter-tycoon/game-logic";
+import type { Difficulty, GameState } from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "./gameStore.js";
 import type { GameStore } from "./gameStore.js";
 import { attachAudioEvents } from "./audioEvents.js";
@@ -194,8 +194,8 @@ function loadSavedState(gameId?: string): GameState | null {
   return loadSave("datacenter-tycoon:save-v1");
 }
 
-export function createFreshSession(): StoreSession {
-  return createStoreSession(newGame(Math.floor(Math.random() * 2 ** 31)), true);
+export function createFreshSession(difficulty: Difficulty = "hard"): StoreSession {
+  return createStoreSession(newGame(Math.floor(Math.random() * 2 ** 31), { difficulty }), true);
 }
 
 export function createLoadedSession(gameId?: string): StoreSession | null {

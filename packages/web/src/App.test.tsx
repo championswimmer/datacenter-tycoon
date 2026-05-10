@@ -1,12 +1,13 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { newGame } from "@datacenter-tycoon/game-logic";
+import type { Difficulty } from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "./store/gameStore.js";
 import type { SaveInfo, StoreSession } from "./store/persist.js";
 
 const persistMocks = vi.hoisted(() => ({
   latestSave: null as SaveInfo | null,
-  createFreshSession: vi.fn<() => StoreSession>(),
+  createFreshSession: vi.fn<(difficulty?: Difficulty) => StoreSession>(),
   createLoadedSession: vi.fn<() => StoreSession | null>(),
   getLatestSaveInfo: vi.fn<() => SaveInfo | null>(),
 }));
@@ -57,6 +58,7 @@ describe("App start flow", () => {
 
     expect(screen.getByRole("button", { name: "Play" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Load Game" })).toBeNull();
+    expect(screen.getByRole("radio", { name: "HARD" }).getAttribute("aria-checked")).toBe("true");
   });
 
   it("shows Load Game and New Game when a save exists", () => {
@@ -86,7 +88,17 @@ describe("App start flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "New Game" }));
 
     expect(persistMocks.createFreshSession).toHaveBeenCalledTimes(1);
+    expect(persistMocks.createFreshSession).toHaveBeenCalledWith("hard");
     expect(screen.getByTestId("shell").getAttribute("data-auto-open")).toBe("true");
+  });
+
+  it("uses the selected difficulty for a fresh game", () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("radio", { name: "EASY" }));
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+
+    expect(persistMocks.createFreshSession).toHaveBeenCalledWith("easy");
   });
 
   it("waits to auto-open the tutorial until after the start button is clicked", () => {

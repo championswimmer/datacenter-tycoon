@@ -202,11 +202,19 @@ describe("attachAutosave", () => {
 // ── bootstrapStore ────────────────────────────────────────────────────────────
 
 describe("session creation helpers", () => {
-  it("creates a fresh session when requested", () => {
+  it("creates a fresh hard-mode session by default", () => {
     const session = createFreshSession();
 
     expect(session.isFreshStart).toBe(true);
     expect(session.store.getState().tick).toBe(0);
+    expect(session.store.getState().difficulty).toBe("hard");
+  });
+
+  it("creates a fresh easy-mode session when requested", () => {
+    const session = createFreshSession("easy");
+
+    expect(session.isFreshStart).toBe(true);
+    expect(session.store.getState().difficulty).toBe("easy");
   });
 
   it("restores a loaded session when a save exists", () => {

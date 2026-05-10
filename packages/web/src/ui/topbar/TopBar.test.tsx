@@ -24,13 +24,14 @@ afterEach(() => {
 });
 
 describe("TopBar", () => {
-  it("renders player name", () => {
+  it("renders player name and difficulty badge", () => {
     render(
       <Wrapper>
         <TopBar speed={1} onSpeedChange={() => {}} />
       </Wrapper>,
     );
     expect(screen.getByText("Acme Corp")).toBeTruthy();
+    expect(screen.getByText("HARD")).toBeTruthy();
   });
 
   it("renders all 4 speed buttons", () => {
