@@ -8,9 +8,9 @@ updated: 2026-05-10
 
 ## Progress
 
-- [ ] **Phase 1 — Types & Configuration**
+- [x] **Phase 1 — Types & Configuration**
   - [x] 1.1 Add `Difficulty` type to root game state
-  - [ ] 1.2 Create difficulty configuration constants and modifier curves
+  - [x] 1.2 Create difficulty configuration constants and modifier curves
 - [ ] **Phase 2 — Game Logic Implementation**
   - [ ] 2.1 Update new game initialization to use difficulty-based starting cash
   - [ ] 2.2 Update rack failure logic to use the new age-based frequency curves
