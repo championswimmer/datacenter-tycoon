@@ -6,6 +6,9 @@ import { RACK_CATALOG } from "./racks.js";
 import {
 	BALANCE_VERSION,
 	BANDWIDTH_USD_PER_GBPS_MONTH,
+	CONTRACT_TERM_DISCOUNT_BASELINE_MONTHS,
+	CONTRACT_TERM_DISCOUNT_FLOOR,
+	CONTRACT_TERM_DISCOUNT_PER_EXTRA_MONTH,
 	COOLING_OVERHEAD_RATIO,
 	HOURS_PER_MONTH,
 	MARKET_REFRESH_SIZE,
@@ -146,10 +149,13 @@ test("starter datacenter blueprints reserve the rebalanced cooling headroom", ()
 });
 
 test("economy constants are positive and within expected ranges", () => {
-	assert.equal(BALANCE_VERSION, 2);
+	assert.equal(BALANCE_VERSION, 3);
 	assert.equal(HOURS_PER_MONTH, 730);
 	assert.ok(BANDWIDTH_USD_PER_GBPS_MONTH > 0);
 	assert.ok(COOLING_OVERHEAD_RATIO > 0 && COOLING_OVERHEAD_RATIO < 1);
 	assert.ok(STARTING_CASH > DATACENTER_CATALOG.garage.capexCost);
 	assert.ok(MARKET_REFRESH_SIZE >= 3);
+	assert.ok(CONTRACT_TERM_DISCOUNT_BASELINE_MONTHS >= 3);
+	assert.ok(CONTRACT_TERM_DISCOUNT_PER_EXTRA_MONTH > 0 && CONTRACT_TERM_DISCOUNT_PER_EXTRA_MONTH < 0.1);
+	assert.ok(CONTRACT_TERM_DISCOUNT_FLOOR > 0.5 && CONTRACT_TERM_DISCOUNT_FLOOR < 1);
 });

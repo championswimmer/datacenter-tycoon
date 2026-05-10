@@ -3,6 +3,11 @@ import {
 	reliabilityMarketPolicyForScore,
 	type ReliabilityMarketPolicy,
 } from "../balance/reliability.js";
+import {
+	CONTRACT_TERM_DISCOUNT_BASELINE_MONTHS,
+	CONTRACT_TERM_DISCOUNT_FLOOR,
+	CONTRACT_TERM_DISCOUNT_PER_EXTRA_MONTH,
+} from "../economy/constants.js";
 import type { Contract, ContractId, ContractRequirements, ContractTier, ContractUrgency, Money } from "../types.js";
 import type { Rng } from "../sim/rng.js";
 
@@ -190,6 +195,14 @@ function roundMoneyToNearest(value: number, multiple: number): Money {
 	return roundMoney(Math.round(value / multiple) * multiple);
 }
 
+export function monthlyRateMultiplierForTerm(termMonths: number): number {
+	const extraMonths = Math.max(0, Math.round(termMonths) - CONTRACT_TERM_DISCOUNT_BASELINE_MONTHS);
+	return Math.max(
+		CONTRACT_TERM_DISCOUNT_FLOOR,
+		1 - extraMonths * CONTRACT_TERM_DISCOUNT_PER_EXTRA_MONTH,
+	);
+}
+
 function generateRequirement(rng: Rng, unit: number, weight: number, difficulty: number, multiple: number): number {
 	if (weight === 0) {
 		return 0;
@@ -292,8 +305,9 @@ export function generateContract(
 
 	const tier: ContractTier = normalizedDifficulty < 0.35 ? 1 : normalizedDifficulty < 0.7 ? 2 : 3;
 
+	const termRateMultiplier = monthlyRateMultiplierForTerm(termMonths);
 	const monthlyPayment = roundMoneyToNearest(
-		(5_000 + weightedValue * (0.8 + normalizedDifficulty * 0.25)) * paymentMultiplier,
+		(5_000 + weightedValue * (0.8 + normalizedDifficulty * 0.25)) * paymentMultiplier * termRateMultiplier,
 		100,
 	);
 	const penaltyPerMonth = roundMoneyToNearest(

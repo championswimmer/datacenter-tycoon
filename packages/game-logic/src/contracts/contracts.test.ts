@@ -15,9 +15,14 @@ import {
 	evaluateContract,
 	generateContract,
 	marketDifficulty,
+	monthlyRateMultiplierForTerm,
 	refreshContractMarket,
 } from "../contracts/index.js";
-import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
+import {
+	CONTRACT_TERM_DISCOUNT_BASELINE_MONTHS,
+	CONTRACT_TERM_DISCOUNT_FLOOR,
+	MARKET_REFRESH_SIZE,
+} from "../economy/constants.js";
 import { createRng } from "../sim/rng.js";
 import type {
 	Contract,
@@ -457,6 +462,12 @@ test("generateContract biases average term length by reliability policy", () => 
 
 	assert.ok(averageTerm(diamondTerms) > averageTerm(goldTerms));
 	assert.ok(averageTerm(goldTerms) > averageTerm(silverTerms));
+});
+
+test("monthlyRateMultiplierForTerm discounts longer commitments", () => {
+	assert.equal(monthlyRateMultiplierForTerm(CONTRACT_TERM_DISCOUNT_BASELINE_MONTHS), 1);
+	assert.ok(monthlyRateMultiplierForTerm(12) < monthlyRateMultiplierForTerm(8));
+	assert.equal(monthlyRateMultiplierForTerm(48), CONTRACT_TERM_DISCOUNT_FLOOR);
 });
 
 test("generateContract produces rush, anchor, and standard urgency types over a large sample", () => {
