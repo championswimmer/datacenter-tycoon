@@ -3,6 +3,7 @@ import type {
 	Capacity,
 	Contract,
 	Datacenter,
+	DatacenterMaintenanceStaffingView,
 	DatacenterSpec,
 	GameState,
 	LedgerEntry,
@@ -141,6 +142,8 @@ export interface DatacenterListItem {
 	bandwidthCapacityGbps: number;
 	slotsUsed: number;
 	totalSlots: number;
+	/** Maintenance staffing state and economics derived from game-logic. */
+	maintenance: DatacenterMaintenanceStaffingView;
 }
 
 export interface RackListItem {

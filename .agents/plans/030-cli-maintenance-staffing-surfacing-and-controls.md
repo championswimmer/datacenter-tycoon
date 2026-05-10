@@ -12,11 +12,11 @@ owner: cli
 - [x] **Phase 1 — Canonicalize maintenance staffing data in game-logic**
   - [x] 1.1 Add a shared game-logic helper/view for datacenter maintenance staffing state and effects
   - [x] 1.2 Add regression tests and README docs for maintenance staffing surfacing
-- [ ] **Phase 2 — Add one-shot CLI visibility and control commands**
-  - [ ] 2.1 Extend CLI datacenter list/detail payloads with maintenance staffing metadata
-  - [ ] 2.2 Show maintenance staffing summary in `dct ls datacenters`
-  - [ ] 2.3 Add `dct dc maint` commands to inspect, increase, decrease, and set maintenance staff
-  - [ ] 2.4 Add CLI regression coverage for text and `--json` maintenance flows
+- [x] **Phase 2 — Add one-shot CLI visibility and control commands**
+  - [x] 2.1 Extend CLI datacenter list/detail payloads with maintenance staffing metadata
+  - [x] 2.2 Show maintenance staffing summary in `dct ls datacenters`
+  - [x] 2.3 Add `dct dc maint` commands to inspect, increase, decrease, and set maintenance staff
+  - [x] 2.4 Add CLI regression coverage for text and `--json` maintenance flows
 - [ ] **Phase 3 — Add TUI maintenance staffing visibility and controls**
   - [ ] 3.1 Surface maintenance staffing, wage cost, repair speed, and regional spare staff in the Datacenters tab
   - [ ] 3.2 Add TUI controls and palette affordances for increasing/decreasing selected datacenter maintenance staff

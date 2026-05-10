@@ -189,6 +189,12 @@ async function listDatacenters(parsed: ParsedArgv, clientFactory: CommandClientF
 			const lines: string[] = ["=== Datacenters ==="];
 			for (const item of items) {
 				const dc = item.datacenter;
+				const m = item.maintenance;
+				const riskLabel = m.canIncrease
+					? `Spare regional staff: ${m.availableRegionalStaff}`
+					: m.currentStaff >= m.maxStaff
+						? "AT STAFF CAP"
+						: "REGIONAL LABOR FULL";
 				lines.push(
 					`  ${dc.id} | ${dc.spec.id} | Region: ${dc.regionId} | Slots: ${item.slotsUsed}/${item.totalSlots} | Layout: ${formatDatacenterLayout(dc.spec)}`,
 				);
@@ -197,6 +203,9 @@ async function listDatacenters(parsed: ParsedArgv, clientFactory: CommandClientF
 				);
 				lines.push(
 					`    Capacity: vCPU=${item.capacity.vCpu}, RAM=${item.capacity.ramGb}GB, Storage=${item.capacity.storageTb}TB, GPU=${item.capacity.gpuFlops}`,
+				);
+				lines.push(
+					`    Maintenance: ${m.currentStaff} staff | +$${m.extraWagesMonthly.toLocaleString()}/mo | Repair speed ${m.repairSpeedDaysPerTick.toFixed(1)} days/tick | Repairing ${m.repairingRackCount}/${m.totalRackCount} racks | ${riskLabel}`,
 				);
 			}
 

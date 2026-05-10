@@ -2,11 +2,29 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { DATACENTER_CATALOG, RACK_CATALOG } from "@datacenter-tycoon/game-logic";
-import type { DatacenterListItem } from "../protocol/messages.js";
+import type { DatacenterListItem, DatacenterMaintenanceStaffingView } from "../protocol/messages.js";
 import { parseArgv } from "../argv.js";
 import type { CatalogResult, ListResult, QueryParams, StatusView } from "../protocol/messages.js";
 import type { CommandClient } from "./common.js";
 import { runLsCommand } from "./ls.js";
+
+function makeMaintenance(overrides: Partial<DatacenterMaintenanceStaffingView> = {}): DatacenterMaintenanceStaffingView {
+	return {
+		dcId: "dc-1",
+		currentStaff: 0,
+		maxStaff: 10,
+		canIncrease: true,
+		canDecrease: false,
+		availableRegionalStaff: 20,
+		staffWagePerHead: 5000,
+		extraWagesMonthly: 0,
+		repairSpeedDaysPerTick: 30,
+		repairingRackCount: 0,
+		totalRackCount: 0,
+		averageRackAgeMonths: 0,
+		...overrides,
+	};
+}
 
 function createCatalogClient(): CommandClient {
 	return {
@@ -120,6 +138,7 @@ test("runLsCommand datacenters text output shows layout bounds", async () => {
 						bandwidthCapacityGbps: DATACENTER_CATALOG.garage.bandwidthGbps,
 						slotsUsed: 1,
 						totalSlots: DATACENTER_CATALOG.garage.rows * DATACENTER_CATALOG.garage.positionsPerRow,
+						maintenance: makeMaintenance({ currentStaff: 2, extraWagesMonthly: 10000 }),
 					},
 				]),
 		);
@@ -130,6 +149,9 @@ test("runLsCommand datacenters text output shows layout bounds", async () => {
 	assert.equal(logged.length, 1);
 	assert.match(logged[0] ?? "", /Layout: 2 rows × 4 cols \(8 slots\)/);
 	assert.match(logged[0] ?? "", /Bounds: rows 0-1, cols 0-3/);
+	assert.match(logged[0] ?? "", /Maintenance:/, "should show maintenance line");
+	assert.match(logged[0] ?? "", /2 staff/, "should show staff count");
+	assert.match(logged[0] ?? "", /Repair speed/, "should show repair speed");
 });
 
 import { newGame } from "@datacenter-tycoon/game-logic";
