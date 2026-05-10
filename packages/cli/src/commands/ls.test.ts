@@ -199,3 +199,112 @@ test("runLsCommand contracts JSON output includes history bucket", async () => {
 	assert.equal(parsed.data.history.length, 1);
 	assert.equal(parsed.data.active.length, 0, "expired contract must not be in active array");
 });
+
+// ── rack-risk listing tests ───────────────────────────────────────────────────
+
+import type { RackListItem } from "../protocol/messages.js";
+import { rackFailureChance } from "@datacenter-tycoon/game-logic";
+
+function createRackListClient(dcId: string, items: RackListItem[]): import("./common.js").CommandClient {
+	return {
+		connect: async () => undefined,
+		dispatch: async () => ({ tick: 0 }),
+		query: async (params: QueryParams): Promise<ListResult> => {
+			if (params.kind === "list" && params.target === "racks") {
+				return { kind: "racks", dcId, items };
+			}
+			throw new Error(`Unexpected query: ${JSON.stringify(params)}`);
+		},
+		control: async () => ({ ok: true }),
+		close: async () => undefined,
+	};
+}
+
+const HEALTHY_RACK_ITEM: RackListItem = {
+	dcId: "dc-1",
+	dcName: "Test DC",
+	placementId: "rp-1",
+	spec: RACK_CATALOG.C1!,
+	row: 0,
+	position: 0,
+	installedAtTick: 0,
+	health: "healthy",
+	ageMonths: 12,
+	failureProbability: rackFailureChance(12),
+};
+
+const REPAIRING_RACK_ITEM: RackListItem = {
+	...HEALTHY_RACK_ITEM,
+	placementId: "rp-2",
+	health: "repairing",
+	ageMonths: 24,
+	failureProbability: 0,
+};
+
+test("runLsCommand racks text output shows health and fail-risk for healthy rack", async () => {
+	const logged: string[] = [];
+	const originalLog = console.log;
+	console.log = (message?: unknown) => { logged.push(String(message ?? "")); };
+	try {
+		await runLsCommand(
+			parseArgv(["ls", "racks", "dc-1"]),
+			() => createRackListClient("dc-1", [HEALTHY_RACK_ITEM]),
+		);
+	} finally {
+		console.log = originalLog;
+	}
+
+	const output = logged.join("\n");
+	assert.match(output, /Health: HEALTHY/, "should show HEALTHY status");
+	assert.match(output, /Fail risk:.*%\/mo/, "should show fail risk percentage");
+	assert.match(output, /Age: 12 mo/, "should show rack age");
+});
+
+test("runLsCommand racks text output shows UNDER REPAIR for repairing rack", async () => {
+	const logged: string[] = [];
+	const originalLog = console.log;
+	console.log = (message?: unknown) => { logged.push(String(message ?? "")); };
+	try {
+		await runLsCommand(
+			parseArgv(["ls", "racks", "dc-1"]),
+			() => createRackListClient("dc-1", [REPAIRING_RACK_ITEM]),
+		);
+	} finally {
+		console.log = originalLog;
+	}
+
+	const output = logged.join("\n");
+	assert.match(output, /Health: REPAIRING/, "should show REPAIRING status");
+	assert.match(output, /Fail risk: UNDER REPAIR/, "should show UNDER REPAIR for repairing rack");
+});
+
+test("runLsCommand racks JSON output includes health, ageMonths, failureProbability fields", async () => {
+	const logged: string[] = [];
+	const originalLog = console.log;
+	console.log = (message?: unknown) => { logged.push(String(message ?? "")); };
+	try {
+		await runLsCommand(
+			parseArgv(["ls", "racks", "dc-1", "--json"]),
+			() => createRackListClient("dc-1", [HEALTHY_RACK_ITEM, REPAIRING_RACK_ITEM]),
+		);
+	} finally {
+		console.log = originalLog;
+	}
+
+	const parsed = JSON.parse(logged[0] ?? "{}") as {
+		ok: boolean;
+		data: { dcId: string; racks: RackListItem[] };
+	};
+	assert.equal(parsed.ok, true);
+	assert.equal(parsed.data.racks.length, 2);
+
+	const healthy = parsed.data.racks[0]!;
+	assert.equal(healthy.health, "healthy");
+	assert.equal(healthy.ageMonths, 12);
+	assert.ok(typeof healthy.failureProbability === "number");
+	assert.ok(healthy.failureProbability > 0, "healthy rack probability should be > 0");
+
+	const repairing = parsed.data.racks[1]!;
+	assert.equal(repairing.health, "repairing");
+	assert.equal(repairing.failureProbability, 0, "repairing rack probability should be 0");
+});

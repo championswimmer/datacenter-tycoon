@@ -12,10 +12,10 @@ owner: game-logic
 - [x] **Phase 1 — Canonicalize rack failure-risk data in game-logic**
   - [x] 1.1 Add a public game-logic helper/view that derives rack age and current failure probability
   - [x] 1.2 Add regression tests and README docs for the new rack-risk helper
-- [ ] **Phase 2 — Surface failure probability in CLI rack listings**
-  - [ ] 2.1 Extend CLI rack list protocol/runtime payloads with rack health and failure probability fields
-  - [ ] 2.2 Update `dct ls racks` text and JSON output to show current health and monthly failure probability
-  - [ ] 2.3 Add CLI regression coverage for rack-risk listing output
+- [x] **Phase 2 — Surface failure probability in CLI rack listings**
+  - [x] 2.1 Extend CLI rack list protocol/runtime payloads with rack health and failure probability fields
+  - [x] 2.2 Update `dct ls racks` text and JSON output to show current health and monthly failure probability
+  - [x] 2.3 Add CLI regression coverage for rack-risk listing output
 - [ ] **Phase 3 — Surface failure probability in the web rack UI**
   - [ ] 3.1 Extend web rack maintenance selectors with failure probability data from game-logic
   - [ ] 3.2 Render visible risk information in rack tiles/tooltips for desktop and phone layouts

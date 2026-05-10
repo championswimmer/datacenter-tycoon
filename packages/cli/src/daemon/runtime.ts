@@ -6,6 +6,7 @@ import {
 	datacenterCapacity,
 	datacenterUsage,
 	isLiveContractStatus,
+	rackFailureRiskView,
 	reduce,
 	VERSION,
 	type Datacenter,
@@ -131,15 +132,21 @@ function createListResult(state: GameState, query: ListQuery): ListResult {
 			return {
 				kind: "racks",
 				dcId: query.dcId,
-				items: datacenter.placements.map((placement) => ({
-					dcId: datacenter.id,
-					dcName: datacenter.name,
-					placementId: placement.id,
-					spec: getRackSpec(placement.specId),
-					row: placement.row,
-					position: placement.position,
-					installedAtTick: placement.installedAtTick,
-				})),
+				items: datacenter.placements.map((placement) => {
+					const riskView = rackFailureRiskView(state.tick, placement);
+					return {
+						dcId: datacenter.id,
+						dcName: datacenter.name,
+						placementId: placement.id,
+						spec: getRackSpec(placement.specId),
+						row: placement.row,
+						position: placement.position,
+						installedAtTick: placement.installedAtTick,
+						health: riskView.health,
+						ageMonths: riskView.ageMonths,
+						failureProbability: riskView.failureProbability,
+					};
+				}),
 			};
 		}
 		case "market-contracts":
