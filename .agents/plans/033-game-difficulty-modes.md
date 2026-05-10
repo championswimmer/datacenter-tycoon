@@ -3,7 +3,7 @@ name: Game Difficulty Modes
 description: Introduce Easy and Hard difficulty modes to alter starting cash, penalties, repair times, and hardware failure rates.
 status: created
 created: 2026-05-10
-updated: 2026-05-10
+updated: 2026-05-10T13:38:00Z
 ---
 
 ## Progress
@@ -17,14 +17,22 @@ updated: 2026-05-10
   - [ ] 2.3 Apply difficulty multipliers to rack repair times
   - [ ] 2.4 Apply difficulty multipliers to contract breach penalties
   - [ ] 2.5 Update tests to cover both difficulty modes
-- [ ] **Phase 3 — Interface Updates**
+- [ ] **Phase 3 — CLI Interface Updates**
   - [ ] 3.1 Update CLI `new-game` command to prompt for difficulty
   - [ ] 3.2 Display current difficulty in CLI HUD/status
-  - [ ] 3.3 Update web frontend game creation and HUD (if applicable)
+- [ ] **Phase 4 — Web Interface Updates**
+  - [ ] 4.1 Add a `DifficultyPicker` component for selecting difficulty during new game
+  - [ ] 4.2 Wire difficulty selection into `App.tsx` new-game flow and `createFreshSession`
+  - [ ] 4.3 Add difficulty to `SaveInfo` index and update `updateSaveIndex` in `persist.ts`
+  - [ ] 4.4 Display difficulty badge in the saved-game summary on `StartScreen`
+  - [ ] 4.5 Display current difficulty badge in the `TopBar` HUD
+  - [ ] 4.6 Treat legacy saves (missing `difficulty` field) as `"hard"` in migration
 
 ## Overview
 
 We are introducing 'easy' and 'hard' difficulty modes to Datacenter Tycoon to provide players with a more forgiving entry point. 'Hard' mode represents the current game configurations. 'Easy' mode offers a larger starting budget ($5M vs $2.5M), faster rack repairs, smaller contract breach penalties, and a halved hardware failure rate curve across rack lifespans.
+
+Old save files that do not contain a `difficulty` field are silently migrated to `"hard"` on load — no user prompt or explicit migration step is required.
 
 ## Architecture
 
@@ -32,11 +40,20 @@ We are introducing 'easy' and 'hard' difficulty modes to Datacenter Tycoon to pr
 flowchart TD
     DifficultyConfig[(Difficulty Config)]
     GameState[Game State] --> DifficultyConfig
-    
+
     DifficultyConfig -.-> |Starting Cash| Init[New Game Initialization]
     DifficultyConfig -.-> |Failure Curve| SimTick[Simulation Tick: Hardware]
     DifficultyConfig -.-> |Repair Multiplier| ActionRepair[Action: Repair Rack]
     DifficultyConfig -.-> |Penalty Multiplier| SimTickContracts[Simulation Tick: Contracts]
+
+    Init -.-> |difficulty passed from| CLIPicker[CLI new-game prompt]
+    Init -.-> |difficulty passed from| WebPicker[Web DifficultyPicker]
+
+    GameState -.-> |SaveInfo.difficulty| StartScreen[Web Start Screen]
+    GameState -.-> |selectDifficulty| TopBar[Web TopBar HUD]
+    GameState -.-> |state.difficulty| CLIHUD[CLI HUD]
+
+    OldSave([Old Save — no difficulty field]) -.-> |deserialize default = hard| GameState
 ```
 
 Key decisions:
@@ -116,7 +133,7 @@ export const DIFFICULTY_CONFIG = {
 - Add tests to ensure failure percentages lookup and contract penalties scale correctly according to the chosen difficulty.
 - Acceptance: `npm run test` passes locally for `game-logic`.
 
-## Phase 3 — Interface Updates
+## Phase 3 — CLI Interface Updates
 
 **Goal**: Expose difficulty selection and display it to the player in the CLI.
 
@@ -133,12 +150,51 @@ export const DIFFICULTY_CONFIG = {
 - Add the current game difficulty (e.g., "[Mode: Easy]") to the persistent UI header or status command.
 - Acceptance: Difficulty is visible while playing the CLI version.
 
-### Step 3.3 — Update web frontend game creation and HUD (if applicable)
+## Phase 4 — Web Interface Updates
 
-- File: `packages/web/src/...`
-- Add a difficulty toggle/dropdown to the web frontend's new game screen.
-- Ensure the game HUD clearly indicates the current difficulty.
-- Acceptance: Web UI fully supports difficulty selection and visibility.
+**Goal**: Expose difficulty selection in the web frontend new-game flow, display difficulty on saved-game cards, and show it in the in-game HUD.
+
+### Step 4.1 — Add a `DifficultyPicker` component
+
+- File: `packages/web/src/ui/start/DifficultyPicker.tsx` (new file)
+- Render two selectable cards — "Easy" and "Hard" — each showing the key differences for that mode (starting cash, repair speed, penalty size, failure rate).
+- Expose a `value: Difficulty` prop and an `onChange` callback.
+- Acceptance: Component renders and allows toggling between the two modes.
+
+### Step 4.2 — Wire difficulty selection into App.tsx new-game flow
+
+- Files: `packages/web/src/ui/start/StartScreen.tsx`, `packages/web/src/App.tsx`, `packages/web/src/store/persist.ts`
+- On the `StartScreen`, when the user clicks **New Game** (or **Play** for first-timers), show the `DifficultyPicker` before starting the session (either as an inline step or a modal).
+- Pass the chosen `Difficulty` to `createFreshSession` (update its signature to accept an optional `difficulty` argument) and forward it to `newGame(seed, difficulty)`.
+- Acceptance: Selecting easy or hard and confirming creates a game with the correct difficulty in state.
+
+### Step 4.3 — Add difficulty to `SaveInfo` and `updateSaveIndex`
+
+- File: `packages/web/src/store/persist.ts`
+- Add an optional `difficulty?: Difficulty` field to the `SaveInfo` interface.
+- In `updateSaveIndex`, copy `state.difficulty` into the `SaveInfo` entry so the start screen can read it without deserialising the full save.
+- Acceptance: After an autosave the difficulty field is present in the index entry.
+
+### Step 4.4 — Display difficulty badge in the saved-game summary on StartScreen
+
+- File: `packages/web/src/ui/start/StartScreen.tsx`
+- In the `saveSummary` meta-grid, add a "Difficulty" item reading from `latestSave.difficulty` (defaulting to `"hard"` when absent, for backward-compat with legacy saves).
+- Style the badge distinctly per mode (e.g. amber for hard, green for easy).
+- Acceptance: Loading the start screen shows the correct difficulty for the latest save.
+
+### Step 4.5 — Display current difficulty badge in the TopBar HUD
+
+- File: `packages/web/src/ui/topbar/TopBar.tsx`
+- Add a `selectDifficulty` selector in `packages/web/src/store/selectors.ts` that reads `state.difficulty`.
+- Render a compact HUD block labelled `MODE` with values `EASY` / `HARD` in the appropriate colour, placed alongside the existing financial blocks.
+- Acceptance: Difficulty is visible in the top bar while playing.
+
+### Step 4.6 — Legacy save migration: default missing difficulty to "hard"
+
+- File: `packages/game-logic/src/serialization.ts` (or wherever `deserialize` lives)
+- After deserialising the JSON, if `difficulty` is missing or undefined, set it to `"hard"` before returning the state.
+- No migration prompt is needed; old saves are silently upgraded to hard difficulty.
+- Acceptance: Loading an old save does not throw; the game runs with `state.difficulty === "hard"`.
 
 ## References
 
@@ -147,3 +203,4 @@ export const DIFFICULTY_CONFIG = {
 ## Changelog
 
 - 2026-05-10 — created.
+- 2026-05-10 — added Phase 4 (web UI steps: DifficultyPicker, SaveInfo difficulty badge, TopBar HUD badge, legacy save migration to hard).
