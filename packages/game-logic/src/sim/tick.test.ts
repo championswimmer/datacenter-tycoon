@@ -103,6 +103,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
 		tick: tickValue(0),
 		seed: 123,
 		rngState: 123,
+		difficulty: "hard",
 		player: {
 			id: playerId("player-1"),
 			name: "Player One",
