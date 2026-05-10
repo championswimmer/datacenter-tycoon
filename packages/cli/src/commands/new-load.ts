@@ -1,6 +1,6 @@
 import fs from "node:fs";
 
-import { deserialize, newGame, serialize } from "@datacenter-tycoon/game-logic";
+import { deserialize, newGame, serialize, type Difficulty } from "@datacenter-tycoon/game-logic";
 
 import type { ParsedArgv } from "../argv.js";
 import { DctClient } from "../client/client.js";
@@ -9,6 +9,7 @@ import {
 	copyStateFile,
 	createCommandClientOptions,
 	getNumberFlag,
+	getStringFlag,
 	hasBooleanFlag,
 	requirePositional,
 	resolveCommandPaths,
@@ -18,6 +19,19 @@ import {
 	withClient,
 	type CommandClientFactory,
 } from "./common.js";
+
+function parseDifficultyFlag(parsed: ParsedArgv): Difficulty {
+	const value = getStringFlag(parsed, "--difficulty");
+	if (!value) {
+		return "hard";
+	}
+
+	if (value === "easy" || value === "hard") {
+		return value;
+	}
+
+	throw new Error(`Invalid value for --difficulty: ${value}. Expected 'easy' or 'hard'.`);
+}
 
 export async function runNewCommand(
 	parsed: ParsedArgv,
@@ -34,7 +48,8 @@ export async function runNewCommand(
 	}
 
 	const seed = getNumberFlag(parsed, "--seed", 1);
-	writeStateFile(paths.savePath, serialize(newGame(seed)));
+	const difficulty = parseDifficultyFlag(parsed);
+	writeStateFile(paths.savePath, serialize(newGame(seed, { difficulty })));
 
 	await withClient(
 		parsed,
@@ -48,9 +63,10 @@ export async function runNewCommand(
 		clientFactory,
 	);
 
-	writeCommandResult(parsed, `Created a new game at ${paths.savePath} (paused). Run 'dct resume' when ready to start.`, {
+	writeCommandResult(parsed, `Created a new ${difficulty} game at ${paths.savePath} (paused). Run 'dct resume' when ready to start.`, {
 		savePath: paths.savePath,
 		seed,
+		difficulty,
 	});
 }
 
