@@ -1,6 +1,10 @@
+import { isLiveContractStatus } from "@datacenter-tycoon/game-logic";
 import type { GameState } from "@datacenter-tycoon/game-logic";
 
 export function renderContractsTab(snapshot: GameState): string[] {
+	const liveContracts = snapshot.activeContracts.filter((c) => isLiveContractStatus(c.status));
+	const historicalContracts = snapshot.activeContracts.filter((c) => !isLiveContractStatus(c.status));
+
 	const lines = ["Contracts", "", "Market:"];
 	if (snapshot.contractMarket.length === 0) {
 		lines.push("  No market contracts available.");
@@ -14,13 +18,23 @@ export function renderContractsTab(snapshot: GameState): string[] {
 	}
 
 	lines.push("", "Active:");
-	if (snapshot.activeContracts.length === 0) {
+	if (liveContracts.length === 0) {
 		lines.push("  No active contracts.");
 	} else {
 		lines.push(
-			...snapshot.activeContracts.map(
+			...liveContracts.map(
 				(contract) =>
 					`  ${contract.id}  ${contract.name}  dc=${contract.assignedDcId ?? "-"}  $${contract.monthlyPayment}/mo  ${contract.status}`,
+			),
+		);
+	}
+
+	if (historicalContracts.length > 0) {
+		lines.push("", "History:");
+		lines.push(
+			...historicalContracts.map(
+				(contract) =>
+					`  ${contract.id}  ${contract.name}  dc=${contract.assignedDcId ?? "-"}  ${contract.status.toUpperCase()}`,
 			),
 		);
 	}
