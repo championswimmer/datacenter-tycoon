@@ -50,6 +50,13 @@ test("rackFailureChance uses the configured hard-mode yearly curve and clamps ol
 	assert.equal(rackFailureChance(84), DIFFICULTY_CONFIG.hard.failureCurvePct.at(-1)! / 100);
 });
 
+test("rackFailureChance halves the yearly failure curve in easy mode", () => {
+	assert.equal(rackFailureChance(12, "easy"), DIFFICULTY_CONFIG.easy.failureCurvePct[1]! / 100);
+	assert.equal(rackFailureChance(24, "easy"), DIFFICULTY_CONFIG.easy.failureCurvePct[2]! / 100);
+	assert.equal(rackFailureChance(60, "easy"), DIFFICULTY_CONFIG.easy.failureCurvePct.at(-1)! / 100);
+	assert.equal(rackFailureChance(24, "easy"), rackFailureChance(24, "hard") / 2);
+});
+
 test("repair speed scales with maintenance staff and clamps at the configured max", () => {
 	assert.equal(repairSpeedMultiplier(0), 1);
 	assert.equal(repairSpeedMultiplier(4), 2);

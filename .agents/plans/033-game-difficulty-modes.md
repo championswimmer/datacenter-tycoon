@@ -11,12 +11,12 @@ updated: 2026-05-10
 - [x] **Phase 1 — Types & Configuration**
   - [x] 1.1 Add `Difficulty` type to root game state
   - [x] 1.2 Create difficulty configuration constants and modifier curves
-- [ ] **Phase 2 — Game Logic Implementation**
+- [x] **Phase 2 — Game Logic Implementation**
   - [x] 2.1 Update new game initialization to use difficulty-based starting cash
   - [x] 2.2 Update rack failure logic to use the new age-based frequency curves
   - [x] 2.3 Apply difficulty multipliers to rack repair times
   - [x] 2.4 Apply difficulty multipliers to contract breach penalties
-  - [ ] 2.5 Update tests to cover both difficulty modes
+  - [x] 2.5 Update tests to cover both difficulty modes
 - [ ] **Phase 3 — Interface Updates**
   - [ ] 3.1 Update CLI `new-game` command to prompt for difficulty
   - [ ] 3.2 Display current difficulty in CLI HUD/status
