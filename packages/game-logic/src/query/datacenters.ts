@@ -1,10 +1,12 @@
 import { contractsFromState, selectLiveContracts } from "../contracts/lifecycle.js";
 import {
+	datacenterBaseInfrastructure,
 	datacenterCommittedContractDemand,
 	datacenterContractCapacitySummary,
 	datacenterMaintenanceStaffingView,
 	datacenterRackActivityView,
 	datacenterRackPowerSummary,
+	resolveDatacenterInfrastructure,
 	type DatacenterContractCapacitySummary,
 	type DatacenterMaintenanceStaffingView,
 } from "../entities/datacenter.js";
@@ -12,6 +14,7 @@ import type {
 	Capacity,
 	Datacenter,
 	DatacenterId,
+	DatacenterInfrastructureProfile,
 	GameState,
 	RackActivityView,
 	RackPowerSummary,
@@ -46,6 +49,12 @@ export interface DatacenterCapacityFromStateSummary extends DatacenterContractCa
 	dcId: DatacenterId;
 }
 
+export interface DatacenterInfrastructureFromStateSummary {
+	dcId: DatacenterId;
+	base: DatacenterInfrastructureProfile;
+	effective: DatacenterInfrastructureProfile;
+}
+
 export interface NetworkCapacitySummary {
 	installed: Capacity;
 	usable: Capacity;
@@ -64,6 +73,24 @@ export function summarizeDatacenterCapacityFromState(
 		dcId,
 		...datacenterContractCapacitySummary(datacenter, liveContracts),
 	};
+}
+
+export function summarizeDatacenterInfrastructureFromState(
+	state: Pick<GameState, "datacenters">,
+	dcId: DatacenterId,
+): DatacenterInfrastructureFromStateSummary {
+	const datacenter = getDatacenterOrThrow(state.datacenters, dcId);
+	return {
+		dcId,
+		base: datacenterBaseInfrastructure(datacenter.spec),
+		effective: resolveDatacenterInfrastructure(datacenter),
+	};
+}
+
+export function summarizeAllDatacenterInfrastructureFromState(
+	state: Pick<GameState, "datacenters">,
+): DatacenterInfrastructureFromStateSummary[] {
+	return state.datacenters.map((datacenter) => summarizeDatacenterInfrastructureFromState(state, datacenter.id));
 }
 
 export function summarizeAllDatacenterCapacitiesFromState(

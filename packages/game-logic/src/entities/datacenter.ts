@@ -17,7 +17,9 @@ import type {
 	ContractRequirements,
 	Datacenter,
 	DatacenterId,
+	DatacenterInfrastructureProfile,
 	DatacenterResourceUsage,
+	DatacenterSpec,
 	GridPosition,
 	Money,
 	RackActivityView,
@@ -68,6 +70,22 @@ function getRackSpec(placement: RackPlacement): RackSpec {
 	}
 
 	return spec;
+}
+
+export function datacenterBaseInfrastructure(spec: DatacenterSpec): DatacenterInfrastructureProfile {
+	return {
+		gridImportCapacityKw: spec.powerCapacityKw,
+		onsiteGenerationCapacityKw: 0,
+		rackPowerCapacityKw: spec.powerCapacityKw,
+		coolingCapacityBtuPerHr: spec.coolingCapacityBtuPerHr,
+		coolingType: spec.coolingType,
+		networkType: spec.networkType,
+		bandwidthGbps: spec.bandwidthGbps,
+	};
+}
+
+export function resolveDatacenterInfrastructure(datacenter: Pick<Datacenter, "spec">): DatacenterInfrastructureProfile {
+	return datacenterBaseInfrastructure(datacenter.spec);
 }
 
 function isWithinBounds(datacenter: Datacenter, position: GridPosition): boolean {
@@ -341,21 +359,23 @@ export function canPlaceRack(
 		return { ok: false, reason: "slot_taken" };
 	}
 
-	if (datacenter.spec.coolingType === "air" && spec.tier === 3) {
+	const infrastructure = resolveDatacenterInfrastructure(datacenter);
+
+	if (infrastructure.coolingType === "air" && spec.tier === 3) {
 		return { ok: false, reason: "cooling_type_mismatch" };
 	}
 
 	const usage = datacenterUsage(datacenter);
 
-	if (usage.powerKw + spec.powerDrawKw > datacenter.spec.powerCapacityKw) {
+	if (usage.powerKw + spec.powerDrawKw > infrastructure.rackPowerCapacityKw) {
 		return { ok: false, reason: "insufficient_power" };
 	}
 
-	if (usage.heatOutputBtuPerHr + spec.heatOutputBtuPerHr > datacenter.spec.coolingCapacityBtuPerHr) {
+	if (usage.heatOutputBtuPerHr + spec.heatOutputBtuPerHr > infrastructure.coolingCapacityBtuPerHr) {
 		return { ok: false, reason: "insufficient_cooling" };
 	}
 
-	if (usage.bandwidthGbps + spec.bandwidthGbps > datacenter.spec.bandwidthGbps) {
+	if (usage.bandwidthGbps + spec.bandwidthGbps > infrastructure.bandwidthGbps) {
 		return { ok: false, reason: "insufficient_bandwidth" };
 	}
 

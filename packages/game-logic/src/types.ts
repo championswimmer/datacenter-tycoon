@@ -16,7 +16,8 @@ export type RegionId = Brand<string, "RegionId">;
 
 export type RackKind = "compute" | "memory" | "storage" | "gpu";
 export type RackTier = 0 | 1 | 2 | 3;
-export type CoolingType = "air" | "liquid";
+export type CoolingType = "air" | "hybrid" | "liquid";
+export type DatacenterNetworkType = "cat6" | "cat8" | "fiber";
 export type ContractLifecycleState =
 	| "market_open"
 	| "market_expired"
@@ -88,9 +89,20 @@ export interface DatacenterSpec {
 	powerCapacityKw: number;
 	coolingCapacityBtuPerHr: number;
 	coolingType: CoolingType;
+	networkType: DatacenterNetworkType;
 	bandwidthGbps: number;
 	capexCost: Money;
 	staffCount: number;
+}
+
+export interface DatacenterInfrastructureProfile {
+	gridImportCapacityKw: number;
+	onsiteGenerationCapacityKw: number;
+	rackPowerCapacityKw: number;
+	coolingCapacityBtuPerHr: number;
+	coolingType: CoolingType;
+	networkType: DatacenterNetworkType;
+	bandwidthGbps: number;
 }
 
 export interface Datacenter {

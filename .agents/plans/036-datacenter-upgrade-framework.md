@@ -1,7 +1,7 @@
 ---
 name: Datacenter Upgrade Framework
 description: Introduce a catalog-driven datacenter upgrade system with monotonic upgrade tracks for cooling, network type, and onsite power expansion.
-status: created
+status: started
 created: 2026-05-11
 updated: 2026-05-11
 owner: game-logic, web, cli
@@ -10,7 +10,7 @@ owner: game-logic, web, cli
 ## Progress
 
 - [ ] **Phase 1 — Model upgrades as first-class datacenter infrastructure**
-  - [ ] 1.1 Introduce canonical base-vs-effective infrastructure helpers without mutating spec semantics
+  - [x] 1.1 Introduce canonical base-vs-effective infrastructure helpers without mutating spec semantics
   - [ ] 1.2 Add a catalog-driven monotonic track model for cooling, network type, and gas generators
   - [ ] 1.3 Persist generic per-track progress on each datacenter and derive canonical resolvers
   - [ ] 1.4 Bump save/version boundaries and add regression fixtures for default upgrade state

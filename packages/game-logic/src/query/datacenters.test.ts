@@ -6,6 +6,7 @@ import { RACK_CATALOG } from "../catalog/racks.js";
 import {
 	selectDatacenterMaintenanceStaffingViewFromState,
 	summarizeDatacenterCapacityFromState,
+	summarizeDatacenterInfrastructureFromState,
 	summarizeNetworkCapacityFromState,
 	type Contract,
 	type ContractId,
@@ -134,6 +135,33 @@ test("summarizeDatacenterCapacityFromState reports installed, usable, committed,
 	const network = summarizeNetworkCapacityFromState(state);
 	assert.deepEqual(network.available, { vCpu: 96, ramGb: 2240, storageTb: 24, gpuFlops: 0 });
 	assert.equal(network.perDc.length, 2);
+});
+
+test("summarizeDatacenterInfrastructureFromState exposes explicit base and effective infrastructure views", () => {
+	const dc1 = makeDatacenter("dc-1", "region-a", [placement("rack-a", "C1", 0, 0)]);
+	const state = makeState({ datacenters: [dc1] });
+
+	assert.deepEqual(summarizeDatacenterInfrastructureFromState(state, dc1.id), {
+		dcId: dc1.id,
+		base: {
+			gridImportCapacityKw: DATACENTER_CATALOG.garage.powerCapacityKw,
+			onsiteGenerationCapacityKw: 0,
+			rackPowerCapacityKw: DATACENTER_CATALOG.garage.powerCapacityKw,
+			coolingCapacityBtuPerHr: DATACENTER_CATALOG.garage.coolingCapacityBtuPerHr,
+			coolingType: DATACENTER_CATALOG.garage.coolingType,
+			networkType: DATACENTER_CATALOG.garage.networkType,
+			bandwidthGbps: DATACENTER_CATALOG.garage.bandwidthGbps,
+		},
+		effective: {
+			gridImportCapacityKw: DATACENTER_CATALOG.garage.powerCapacityKw,
+			onsiteGenerationCapacityKw: 0,
+			rackPowerCapacityKw: DATACENTER_CATALOG.garage.powerCapacityKw,
+			coolingCapacityBtuPerHr: DATACENTER_CATALOG.garage.coolingCapacityBtuPerHr,
+			coolingType: DATACENTER_CATALOG.garage.coolingType,
+			networkType: DATACENTER_CATALOG.garage.networkType,
+			bandwidthGbps: DATACENTER_CATALOG.garage.bandwidthGbps,
+		},
+	});
 });
 
 test("selectDatacenterMaintenanceStaffingViewFromState flags exhausted regional labor pools", () => {
