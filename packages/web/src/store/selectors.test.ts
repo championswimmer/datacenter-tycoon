@@ -290,8 +290,8 @@ describe("selectDatacenterRackMaintenanceViews", () => {
         ageMonths: 6,
         status: "repairing",
         repairProgressDays: 30,
-        repairCompletionPercent: 33,
-        repairEtaTicks: 2,
+        repairCompletionPercent: 67,
+        repairEtaTicks: 1,
         failureProbability: 0,
       },
     ]);

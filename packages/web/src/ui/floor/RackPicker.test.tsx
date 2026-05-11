@@ -62,17 +62,17 @@ describe("RackPicker", () => {
     expect(screen.getByText("GPU")).toBeTruthy();
   });
 
-  it("shows all 12 rack cards when ALL filter is active", () => {
+  it("shows all 16 rack cards when ALL filter is active", () => {
     render(<Wrapper state={stateWithGarage()} />);
-    expect(screen.getByText("C1 Compute Rack")).toBeTruthy();
+    expect(screen.getByText("C0 Compute Rack")).toBeTruthy();
     expect(screen.getByText("G3 GPU Rack")).toBeTruthy();
   });
 
   it("filters to compute-only when COMPUTE chip is clicked", () => {
     render(<Wrapper state={stateWithGarage()} />);
     fireEvent.click(screen.getByText("COMPUTE"));
-    expect(screen.getByText("C1 Compute Rack")).toBeTruthy();
-    expect(screen.queryByText("M1 Memory Rack")).toBeNull();
+    expect(screen.getByText("C0 Compute Rack")).toBeTruthy();
+    expect(screen.queryByText("M0 Memory Rack")).toBeNull();
   });
 
   it("places a rack and closes immediately when an enabled rack card is clicked", () => {
@@ -88,7 +88,7 @@ describe("RackPicker", () => {
     );
 
     expect(screen.queryByText(/INSTALL —/i)).toBeNull();
-    fireEvent.click(screen.getByText("C1 Compute Rack"));
+    fireEvent.click(screen.getByText("C0 Compute Rack"));
 
     expect(store.getState().datacenters[0]!.placements).toHaveLength(1);
     expect(onClose).toHaveBeenCalledOnce();
@@ -107,7 +107,7 @@ describe("RackPicker", () => {
       </StoreProvider>,
     );
 
-    const rackButton = screen.getByRole("button", { name: /C1 Compute Rack/i });
+    const rackButton = screen.getByRole("button", { name: /C0 Compute Rack/i });
     expect(rackButton.getAttribute("disabled")).not.toBeNull();
     expect(within(rackButton).getByText(/Need \$/i)).toBeTruthy();
 

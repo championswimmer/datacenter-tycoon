@@ -7,6 +7,7 @@ import {
 	type RackActivityAllocationResult,
 } from "../economy/rack-activity.js";
 import { rackAgeMonths, repairProgressPerTick } from "../sim/maintenance.js";
+import { maintenanceStaffWagePerHead } from "../balance/easier.js";
 import { MAX_MAINTENANCE_STAFF } from "../balance/maintenance.js";
 import { regionStaffUsed } from "./region.js";
 import type {
@@ -262,7 +263,13 @@ export interface DatacenterMaintenanceStaffingView {
 	 * datacenters in the region (including this one's current maintenanceStaff).
 	 */
 	availableRegionalStaff: number;
-	/** Monthly wage cost per extra maintenance staff head ($). */
+	/**
+	 * Monthly wage cost per extra maintenance staff head ($).
+	 *
+	 * The easier-balance pass discounts this bucket separately from baseline
+	 * datacenter staffing so UIs can surface the targeted maintenance-hire cost
+	 * without also lowering all regional wages.
+	 */
 	staffWagePerHead: Money;
 	/** Total extra monthly wages charged for all current maintenance staff ($). */
 	extraWagesMonthly: Money;
@@ -304,6 +311,8 @@ export function datacenterMaintenanceStaffingView(
 			? 0
 			: datacenter.placements.reduce((sum, p) => sum + rackAgeMonths(currentTick, p), 0) / totalRackCount;
 
+	const staffWagePerHead = maintenanceStaffWagePerHead(region.staffWage);
+
 	return {
 		dcId: datacenter.id,
 		currentStaff,
@@ -311,8 +320,8 @@ export function datacenterMaintenanceStaffingView(
 		canIncrease: currentStaff < MAX_MAINTENANCE_STAFF && availableRegionalStaff > 0,
 		canDecrease: currentStaff > 0,
 		availableRegionalStaff,
-		staffWagePerHead: region.staffWage,
-		extraWagesMonthly: currentStaff * region.staffWage,
+		staffWagePerHead,
+		extraWagesMonthly: currentStaff * staffWagePerHead,
 		repairSpeedDaysPerTick: repairProgressPerTick(currentStaff),
 		repairingRackCount,
 		totalRackCount,

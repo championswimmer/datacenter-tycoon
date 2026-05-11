@@ -248,29 +248,28 @@ test("higher maintenance staffing restores repairing racks in fewer ticks", () =
 		repairProgressDays: 0,
 		lastFailureAtTick: tickValue(1),
 	};
-	let lowStaffState = makeState({
-		tick: tickValue(1),
-		datacenters: [
-			{
-				...makeDatacenter("dc-low", [repairingRack]),
-				maintenanceStaff: 0,
-			},
-		],
-	});
-	let highStaffState = makeState({
-		tick: tickValue(1),
-		datacenters: [
-			{
-				...makeDatacenter("dc-high", [repairingRack]),
-				maintenanceStaff: 4,
-			},
-		],
-	});
-
-	lowStaffState = tick(lowStaffState);
-	lowStaffState = tick(lowStaffState);
-	highStaffState = tick(highStaffState);
-	highStaffState = tick(highStaffState);
+	const lowStaffState = tick(
+		makeState({
+			tick: tickValue(1),
+			datacenters: [
+				{
+					...makeDatacenter("dc-low", [repairingRack]),
+					maintenanceStaff: 0,
+				},
+			],
+		}),
+	);
+	const highStaffState = tick(
+		makeState({
+			tick: tickValue(1),
+			datacenters: [
+				{
+					...makeDatacenter("dc-high", [repairingRack]),
+					maintenanceStaff: 4,
+				},
+			],
+		}),
+	);
 
 	assert.equal(lowStaffState.datacenters[0]?.placements[0]?.health, "repairing");
 	assert.equal(highStaffState.datacenters[0]?.placements[0]?.health, "healthy");
@@ -318,7 +317,7 @@ test("a repaired rack can restore contract revenue in the same tick", () => {
 			{
 				...placement("rack-1", "C1", 0, 0),
 				health: "repairing" as const,
-				repairProgressDays: 60,
+				repairProgressDays: 15,
 				lastFailureAtTick: tickValue(1),
 			},
 		]),

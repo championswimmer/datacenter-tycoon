@@ -35,10 +35,11 @@ describe("TUTORIAL_STEPS", () => {
   it("step 1 references live rack catalog examples", () => {
     const step1 = TUTORIAL_STEPS[0]!;
     expect(step1.id).toBe("racks");
-    expect(step1.body).toContain("C1 Compute Rack");
-    expect(step1.body).toContain("M1 Memory Rack");
-    expect(step1.body).toContain("S1 Storage Rack");
-    expect(step1.body).toContain("G1 GPU Rack");
+    expect(step1.body).toContain("C0 Compute Rack");
+    expect(step1.body).toContain("M0 Memory Rack");
+    expect(step1.body).toContain("S0 Storage Rack");
+    expect(step1.body).toContain("G0 GPU Rack");
+    expect(step1.body).toContain("tiers 0–3");
   });
 
   it("includes an aging and maintenance step", () => {

@@ -8,5 +8,6 @@ test("renderCatalogTab includes datacenter and rack catalog entries", () => {
 	assert.match(rendered, /Datacenters:/);
 	assert.match(rendered, /garage/);
 	assert.match(rendered, /Racks:/);
-	assert.match(rendered, /C1/);
+	assert.match(rendered, /C0/);
+	assert.match(rendered, /G3/);
 });

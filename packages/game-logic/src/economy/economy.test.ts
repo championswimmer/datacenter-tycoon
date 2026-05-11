@@ -168,13 +168,13 @@ test("tickOpex includes power, cooling, staff, bandwidth, and rack maintenance",
 	]);
 
 	assert.deepEqual(tickOpex(datacenter, TEST_REGION), {
-		total: 85079.9,
+		total: 84709.9,
 		breakdown: {
 			power: 946.08,
 			cooling: 283.82,
 			bandwidth: 34_000,
 			staff: 48_000,
-			maintenance: 1_850,
+			maintenance: 1_480,
 			tax: 0,
 		},
 	});
@@ -187,13 +187,13 @@ test("tickOpex charges idle-baseline power when no active workload is assigned",
 	]);
 
 	assert.deepEqual(tickOpex(datacenter, TEST_REGION, []), {
-		total: 84032.21,
+		total: 83662.21,
 		breakdown: {
 			power: 140.16,
 			cooling: 42.05,
 			bandwidth: 34_000,
 			staff: 48_000,
-			maintenance: 1_850,
+			maintenance: 1_480,
 			tax: 0,
 		},
 	});
@@ -215,13 +215,13 @@ test("tickOpex charges full draw only for racks needed by assigned contract dema
 	});
 
 	assert.deepEqual(tickOpex(datacenter, TEST_REGION, [computeOnlyContract]), {
-		total: 84738.26,
+		total: 84368.26,
 		breakdown: {
 			power: 683.28,
 			cooling: 204.98,
 			bandwidth: 34_000,
 			staff: 48_000,
-			maintenance: 1_850,
+			maintenance: 1_480,
 			tax: 0,
 		},
 	});
@@ -234,16 +234,37 @@ test("tickOpex charges additional wages for maintenance staffing", () => {
 	};
 
 	assert.deepEqual(tickOpex(datacenter, TEST_REGION), {
-		total: 36_800,
+		total: 33_200,
 		breakdown: {
 			power: 0,
 			cooling: 0,
 			bandwidth: 6_800,
-			staff: 30_000,
+			staff: 26_400,
 			maintenance: 0,
 			tax: 0,
 		},
 	});
+});
+
+test("starter-tier racks are cheaper to buy and operate than tier-1 hardware", () => {
+	for (const family of ["C", "M", "S", "G"] as const) {
+		const starter = RACK_CATALOG[`${family}0`];
+		const tierOne = RACK_CATALOG[`${family}1`];
+		assert.ok(starter.capexCost < tierOne.capexCost);
+		assert.ok(starter.monthlyMaintenance < tierOne.monthlyMaintenance);
+	}
+
+	const starterOpex = tickOpex(
+		makeDatacenter("garage-starter", DATACENTER_CATALOG.garage, [placement("rack-c0", "C0", 0, 0)]),
+		TEST_REGION,
+	);
+	const tierOneOpex = tickOpex(
+		makeDatacenter("garage-tier-one", DATACENTER_CATALOG.garage, [placement("rack-c1", "C1", 0, 0)]),
+		TEST_REGION,
+	);
+
+	assert.ok(starterOpex.breakdown.maintenance < tierOneOpex.breakdown.maintenance);
+	assert.ok(starterOpex.total < tierOneOpex.total);
 });
 
 test("tickRevenue pays fulfilled contracts and recovers previously breached contracts", () => {

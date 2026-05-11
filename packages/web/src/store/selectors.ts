@@ -1,5 +1,4 @@
 import {
-  BASE_REPAIR_DAYS,
   RELIABILITY_BASELINE_SCORE,
   datacenterMaintenanceSummary,
   datacenterCapacity,
@@ -10,6 +9,7 @@ import {
   rackFailureRiskView,
   reliabilityBandForScore,
   reliabilityMarketPolicyForScore,
+  repairDurationDays,
   repairProgressPerTick,
   tickOpex,
 } from "@datacenter-tycoon/game-logic";
@@ -254,18 +254,19 @@ export function selectDatacenterRackMaintenanceViews(
   }
 
   const repairProgressDaysPerTick = repairProgressPerTick(datacenter.maintenanceStaff);
+  const repairTargetDays = repairDurationDays(state.difficulty);
 
   return datacenter.placements.map((placement) => {
     const repairProgressDays = placement.repairProgressDays ?? 0;
-    const remainingRepairDays = Math.max(0, BASE_REPAIR_DAYS - repairProgressDays);
-    const riskView = rackFailureRiskView(state.tick, placement);
+    const remainingRepairDays = Math.max(0, repairTargetDays - repairProgressDays);
+    const riskView = rackFailureRiskView(state.tick, placement, state.difficulty);
 
     return {
       placementId: placement.id,
       ageMonths: riskView.ageMonths,
       status: placement.health,
       repairProgressDays,
-      repairCompletionPercent: Math.round((Math.min(repairProgressDays, BASE_REPAIR_DAYS) / BASE_REPAIR_DAYS) * 100),
+      repairCompletionPercent: Math.round((Math.min(repairProgressDays, repairTargetDays) / repairTargetDays) * 100),
       repairEtaTicks: placement.health === "repairing"
         ? Math.ceil(remainingRepairDays / repairProgressDaysPerTick)
         : 0,

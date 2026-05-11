@@ -87,12 +87,26 @@ function makeContract(id: string, dcId: DatacenterId, overrides: Partial<Contrac
 	};
 }
 
-test("rackCapacity mirrors the capacity fields from a rack spec", () => {
+test("rackCapacity mirrors the capacity fields from starter and advanced rack specs", () => {
+	assert.deepEqual(rackCapacity(RACK_CATALOG.C0), {
+		vCpu: 64,
+		ramGb: 256,
+		storageTb: 8,
+		gpuFlops: 0,
+	});
+
 	assert.deepEqual(rackCapacity(RACK_CATALOG.C2), {
 		vCpu: 256,
 		ramGb: 768,
 		storageTb: 24,
 		gpuFlops: 0,
+	});
+
+	assert.deepEqual(rackCapacity(RACK_CATALOG.G0), {
+		vCpu: 32,
+		ramGb: 512,
+		storageTb: 12,
+		gpuFlops: 250,
 	});
 
 	assert.deepEqual(rackCapacity(RACK_CATALOG.G2), {
@@ -282,6 +296,12 @@ test("canPlaceRack rejects occupied slots", () => {
 		ok: false,
 		reason: "slot_taken",
 	});
+});
+
+test("canPlaceRack allows starter GPU racks in air-cooled datacenters", () => {
+	const datacenter = makeDatacenter(DATACENTER_CATALOG.garage);
+
+	assert.deepEqual(canPlaceRack(datacenter, RACK_CATALOG.G0, { row: 0, position: 0 }), { ok: true });
 });
 
 test("canPlaceRack rejects tier-3 racks in air-cooled datacenters", () => {

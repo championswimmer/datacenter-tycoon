@@ -1,3 +1,5 @@
+import { applyRepairDurationMultiplier } from "./easier.js";
+
 export const RACK_FAILURE_YEAR_ONE_AGE_MONTHS = 12;
 export const RACK_FAILURE_YEAR_ONE_CHANCE = 0.02;
 export const RACK_FAILURE_MAX_CHANCE = 0.6;
@@ -7,7 +9,7 @@ export const RACK_FAILURE_CURVE_EXPONENT = 1.5;
 // Repair progress stays in days even though one simulation tick equals one month,
 // so tick-time maintenance can remain deterministic without converting the whole sim to daily turns.
 export const DAYS_PER_TICK = 30;
-export const BASE_REPAIR_DAYS = DAYS_PER_TICK * 3;
+export const BASE_REPAIR_DAYS = applyRepairDurationMultiplier(DAYS_PER_TICK * 3);
 
 export const DEFAULT_MAINTENANCE_STAFF = 0;
 export const MAX_MAINTENANCE_STAFF = 8;

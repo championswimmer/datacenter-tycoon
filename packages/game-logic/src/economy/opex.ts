@@ -1,4 +1,5 @@
 import { DIFFICULTY_CONFIG } from "../balance/difficulty.js";
+import { maintenanceStaffWagePerHead } from "../balance/easier.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { contractsFromState, isLiveContract, selectLiveContracts } from "../contracts/lifecycle.js";
 import { datacenterCapacity, datacenterRackPowerSummary, datacenterUsage } from "../entities/datacenter.js";
@@ -69,6 +70,10 @@ export function tickOpex(
 	const billedPowerKw = activeContracts
 		? datacenterRackPowerSummary(datacenter, assignedDemand).billedPowerKw
 		: usage.powerKw;
+	// The easier-balance pass maps the requested “staffing cost of all racks”
+	// onto `RackSpec.monthlyMaintenance`, because rack specs do not currently
+	// model a separate per-rack labor field. Rebalancing the catalog value keeps
+	// all existing consumers (UI, CLI, opex, docs) aligned on one source of truth.
 	const maintenance = datacenter.placements.reduce((total, placement) => {
 		const spec = RACK_CATALOG[placement.specId];
 		if (!spec) {
@@ -82,7 +87,12 @@ export function tickOpex(
 	const power = roundMoney(rawPowerCost);
 	const cooling = roundMoney(rawPowerCost * COOLING_OVERHEAD_RATIO);
 	const bandwidth = roundMoney(datacenter.spec.bandwidthGbps * BANDWIDTH_USD_PER_GBPS_MONTH);
-	const staff = roundMoney((datacenter.spec.staffCount + datacenter.maintenanceStaff) * region.staffWage);
+	// Extra maintenance staffing is the only wage bucket targeted by the easier
+	// balance pass. Baseline facility staffing remains tied to `region.staffWage`.
+	const maintenanceStaffWage = maintenanceStaffWagePerHead(region.staffWage);
+	const staff = roundMoney(
+		datacenter.spec.staffCount * region.staffWage + datacenter.maintenanceStaff * maintenanceStaffWage,
+	);
 	const breakdown = {
 		power,
 		cooling,

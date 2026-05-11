@@ -22,22 +22,17 @@ const rackKindByPrefix = {
 	G: "gpu",
 } as const;
 
-test("rack catalog contains all 12 starter rack SKUs", () => {
-	assert.equal(Object.keys(RACK_CATALOG).length, 12);
-	assert.deepEqual(Object.keys(RACK_CATALOG).sort(), [
-		"C1",
-		"C2",
-		"C3",
-		"G1",
-		"G2",
-		"G3",
-		"M1",
-		"M2",
-		"M3",
-		"S1",
-		"S2",
-		"S3",
-	]);
+test("rack catalog exposes a contiguous four-tier ladder for every rack family", () => {
+	const rackIds = Object.keys(RACK_CATALOG).sort();
+	assert.equal(rackIds.length, 16);
+
+	for (const family of Object.keys(rackKindByPrefix) as (keyof typeof rackKindByPrefix)[]) {
+		const familyTiers = rackIds
+			.filter((id) => id.startsWith(family))
+			.map((id) => RACK_CATALOG[id]!.tier)
+			.sort((a, b) => a - b);
+		assert.deepEqual(familyTiers, [0, 1, 2, 3]);
+	}
 });
 
 test("rack specs expose positive numeric fields and IDs line up with keys", () => {
@@ -49,9 +44,9 @@ test("rack specs expose positive numeric fields and IDs line up with keys", () =
 		assert.equal(seenIds.has(rack.id), false);
 		seenIds.add(rack.id);
 
-		assert.match(key, /^[CGMS][123]$/);
+		assert.match(key, /^[CGMS][0-3]$/);
 		assert.equal(rack.kind, rackKindByPrefix[key[0] as keyof typeof rackKindByPrefix]);
-		assert.equal(rack.tier, Number(key[1]));
+		assert.equal(rack.tier, Number(key.slice(1)));
 
 		assert.ok(rack.vCpu > 0);
 		assert.ok(rack.ramGb > 0);
@@ -74,34 +69,31 @@ test("only GPU racks expose GPU FLOPS", () => {
 	}
 });
 
-test("tier progression increases heat and primary output within each rack family", () => {
+test("tier progression increases heat, capex, opex, and primary output within each rack family", () => {
 	for (const family of ["C", "M", "S", "G"] as const) {
-		const tier1 = RACK_CATALOG[`${family}1`];
-		const tier2 = RACK_CATALOG[`${family}2`];
-		const tier3 = RACK_CATALOG[`${family}3`];
+		const familyRacks = [0, 1, 2, 3].map((tier) => RACK_CATALOG[`${family}${tier}`]);
 
-		assert.ok(tier2.heatOutputBtuPerHr > tier1.heatOutputBtuPerHr);
-		assert.ok(tier3.heatOutputBtuPerHr > tier2.heatOutputBtuPerHr);
-		assert.ok(tier3.capexCost > tier2.capexCost);
-		assert.ok(tier2.capexCost > tier1.capexCost);
+		for (let index = 1; index < familyRacks.length; index += 1) {
+			const previous = familyRacks[index - 1]!;
+			const current = familyRacks[index]!;
+			assert.ok(current.heatOutputBtuPerHr > previous.heatOutputBtuPerHr);
+			assert.ok(current.capexCost > previous.capexCost);
+			assert.ok(current.monthlyMaintenance > previous.monthlyMaintenance);
 
-		switch (family) {
-			case "C":
-				assert.ok(tier2.vCpu > tier1.vCpu);
-				assert.ok(tier3.vCpu > tier2.vCpu);
-				break;
-			case "M":
-				assert.ok(tier2.ramGb > tier1.ramGb);
-				assert.ok(tier3.ramGb > tier2.ramGb);
-				break;
-			case "S":
-				assert.ok(tier2.storageTb > tier1.storageTb);
-				assert.ok(tier3.storageTb > tier2.storageTb);
-				break;
-			case "G":
-				assert.ok(tier2.gpuFlops > tier1.gpuFlops);
-				assert.ok(tier3.gpuFlops > tier2.gpuFlops);
-				break;
+			switch (family) {
+				case "C":
+					assert.ok(current.vCpu > previous.vCpu);
+					break;
+				case "M":
+					assert.ok(current.ramGb > previous.ramGb);
+					break;
+				case "S":
+					assert.ok(current.storageTb > previous.storageTb);
+					break;
+				case "G":
+					assert.ok(current.gpuFlops > previous.gpuFlops);
+					break;
+			}
 		}
 	}
 });
@@ -149,7 +141,7 @@ test("starter datacenter blueprints reserve the rebalanced cooling headroom", ()
 });
 
 test("economy constants are positive and within expected ranges", () => {
-	assert.equal(BALANCE_VERSION, 3);
+	assert.equal(BALANCE_VERSION, 4);
 	assert.equal(HOURS_PER_MONTH, 730);
 	assert.ok(BANDWIDTH_USD_PER_GBPS_MONTH > 0);
 	assert.ok(COOLING_OVERHEAD_RATIO > 0 && COOLING_OVERHEAD_RATIO < 1);

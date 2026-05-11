@@ -27,7 +27,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
 • Storage — huge disk capacity for archives and databases. Example: ${exampleRack("storage")}.
 • GPU — specialized FLOPS for AI/ML and rendering. Example: ${exampleRack("gpu")}.
 
-Racks come in tiers 1–3. Higher tiers deliver more capacity but draw more power and generate more heat. Tier-3 racks require liquid cooling, so they can only be placed in datacenters that support it.`,
+Racks come in tiers 0–3. Tier 0 is starter hardware for cheap early expansion, while higher tiers deliver more capacity at the cost of more power, heat, and upkeep. Tier-3 racks require liquid cooling, so they can only be placed in datacenters that support it.`,
   },
   {
     id: "contracts",
@@ -79,6 +79,6 @@ Unused capacity earns nothing, so efficiency matters. Match your rack investment
 
 If a rack is no longer worth keeping, you can decommission it from the floor view to free the slot for a replacement. You can also add more maintenance staffing in a datacenter to repair racks faster.
 
-That extra staffing speeds recovery, but it also increases monthly wage costs — so balance resilience against overhead.`,
+That extra staffing speeds recovery, but it still increases monthly wage costs — so balance resilience against overhead.`,
   },
 ];

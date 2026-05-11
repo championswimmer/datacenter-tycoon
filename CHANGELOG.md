@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Changed
+- bumped `@datacenter-tycoon/game-logic` `BALANCE_VERSION` to `4` for the global easier-balance pass
+- reduced rack recurring upkeep by `20%` across all rack families and tiers
+- reduced extra maintenance-staff wages by `20%` while leaving baseline facility staffing unchanged
+- added starter-tier rack SKUs `C0`, `M0`, `S0`, and `G0` at roughly half of tier-1 capacity, capex, power, and upkeep
+- halved the base repair target from `90` days to `45` days before difficulty modifiers apply
 - bumped `@datacenter-tycoon/game-logic` `BALANCE_VERSION` to `3` for the contract-term pricing rebalance
 - long-duration contracts now apply a monthly-rate discount after the 6-month baseline so anchor/archive work trades margin for stability
 - contract generation now uses workload-specific term bands, so archive and enterprise offers can run much longer than render or inference burst work
