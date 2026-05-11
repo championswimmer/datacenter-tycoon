@@ -168,13 +168,13 @@ test("tickOpex includes power, cooling, staff, bandwidth, and rack maintenance",
 	]);
 
 	assert.deepEqual(tickOpex(datacenter, TEST_REGION), {
-		total: 85079.9,
+		total: 84709.9,
 		breakdown: {
 			power: 946.08,
 			cooling: 283.82,
 			bandwidth: 34_000,
 			staff: 48_000,
-			maintenance: 1_850,
+			maintenance: 1_480,
 			tax: 0,
 		},
 	});
@@ -187,13 +187,13 @@ test("tickOpex charges idle-baseline power when no active workload is assigned",
 	]);
 
 	assert.deepEqual(tickOpex(datacenter, TEST_REGION, []), {
-		total: 84032.21,
+		total: 83662.21,
 		breakdown: {
 			power: 140.16,
 			cooling: 42.05,
 			bandwidth: 34_000,
 			staff: 48_000,
-			maintenance: 1_850,
+			maintenance: 1_480,
 			tax: 0,
 		},
 	});
@@ -215,13 +215,13 @@ test("tickOpex charges full draw only for racks needed by assigned contract dema
 	});
 
 	assert.deepEqual(tickOpex(datacenter, TEST_REGION, [computeOnlyContract]), {
-		total: 84738.26,
+		total: 84368.26,
 		breakdown: {
 			power: 683.28,
 			cooling: 204.98,
 			bandwidth: 34_000,
 			staff: 48_000,
-			maintenance: 1_850,
+			maintenance: 1_480,
 			tax: 0,
 		},
 	});
@@ -234,12 +234,12 @@ test("tickOpex charges additional wages for maintenance staffing", () => {
 	};
 
 	assert.deepEqual(tickOpex(datacenter, TEST_REGION), {
-		total: 36_800,
+		total: 33_200,
 		breakdown: {
 			power: 0,
 			cooling: 0,
 			bandwidth: 6_800,
-			staff: 30_000,
+			staff: 26_400,
 			maintenance: 0,
 			tax: 0,
 		},

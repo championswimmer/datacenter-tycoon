@@ -16,7 +16,7 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		heatOutputBtuPerHr: 13_648,
 		bandwidthGbps: 10,
 		capexCost: 50_000,
-		monthlyMaintenance: 500,
+		monthlyMaintenance: 400,
 	},
 	C2: {
 		id: rackSpecId("C2"),
@@ -31,7 +31,7 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		heatOutputBtuPerHr: 23_884,
 		bandwidthGbps: 18,
 		capexCost: 120_000,
-		monthlyMaintenance: 1_200,
+		monthlyMaintenance: 960,
 	},
 	C3: {
 		id: rackSpecId("C3"),
@@ -46,7 +46,7 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		heatOutputBtuPerHr: 47_768,
 		bandwidthGbps: 32,
 		capexCost: 280_000,
-		monthlyMaintenance: 2_800,
+		monthlyMaintenance: 2_240,
 	},
 	M1: {
 		id: rackSpecId("M1"),
@@ -61,7 +61,7 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		heatOutputBtuPerHr: 12_966,
 		bandwidthGbps: 8,
 		capexCost: 65_000,
-		monthlyMaintenance: 650,
+		monthlyMaintenance: 520,
 	},
 	M2: {
 		id: rackSpecId("M2"),
@@ -76,7 +76,7 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		heatOutputBtuPerHr: 23_542,
 		bandwidthGbps: 14,
 		capexCost: 160_000,
-		monthlyMaintenance: 1_600,
+		monthlyMaintenance: 1_280,
 	},
 	M3: {
 		id: rackSpecId("M3"),
@@ -91,7 +91,7 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		heatOutputBtuPerHr: 46_065,
 		bandwidthGbps: 24,
 		capexCost: 380_000,
-		monthlyMaintenance: 3_800,
+		monthlyMaintenance: 3_040,
 	},
 	S1: {
 		id: rackSpecId("S1"),
@@ -106,7 +106,7 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		heatOutputBtuPerHr: 10_918,
 		bandwidthGbps: 6,
 		capexCost: 80_000,
-		monthlyMaintenance: 800,
+		monthlyMaintenance: 640,
 	},
 	S2: {
 		id: rackSpecId("S2"),
@@ -121,7 +121,7 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		heatOutputBtuPerHr: 19_789,
 		bandwidthGbps: 10,
 		capexCost: 200_000,
-		monthlyMaintenance: 2_000,
+		monthlyMaintenance: 1_600,
 	},
 	S3: {
 		id: rackSpecId("S3"),
@@ -136,7 +136,7 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		heatOutputBtuPerHr: 43_675,
 		bandwidthGbps: 18,
 		capexCost: 450_000,
-		monthlyMaintenance: 4_500,
+		monthlyMaintenance: 3_600,
 	},
 	G1: {
 		id: rackSpecId("G1"),
@@ -151,7 +151,7 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		heatOutputBtuPerHr: 20_472,
 		bandwidthGbps: 16,
 		capexCost: 800_000,
-		monthlyMaintenance: 8_000,
+		monthlyMaintenance: 6_400,
 	},
 	G2: {
 		id: rackSpecId("G2"),
@@ -166,7 +166,7 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		heatOutputBtuPerHr: 37_532,
 		bandwidthGbps: 28,
 		capexCost: 2_200_000,
-		monthlyMaintenance: 22_000,
+		monthlyMaintenance: 17_600,
 	},
 	G3: {
 		id: rackSpecId("G3"),
@@ -181,6 +181,6 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		heatOutputBtuPerHr: 75_064,
 		bandwidthGbps: 48,
 		capexCost: 5_500_000,
-		monthlyMaintenance: 55_000,
+		monthlyMaintenance: 44_000,
 	},
 };

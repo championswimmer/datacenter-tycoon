@@ -1,4 +1,5 @@
 import { DIFFICULTY_CONFIG } from "../balance/difficulty.js";
+import { maintenanceStaffWagePerHead } from "../balance/easier.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { contractsFromState, isLiveContract, selectLiveContracts } from "../contracts/lifecycle.js";
 import { datacenterCapacity, datacenterRackPowerSummary, datacenterUsage } from "../entities/datacenter.js";
@@ -88,7 +89,10 @@ export function tickOpex(
 	const bandwidth = roundMoney(datacenter.spec.bandwidthGbps * BANDWIDTH_USD_PER_GBPS_MONTH);
 	// Extra maintenance staffing is the only wage bucket targeted by the easier
 	// balance pass. Baseline facility staffing remains tied to `region.staffWage`.
-	const staff = roundMoney((datacenter.spec.staffCount + datacenter.maintenanceStaff) * region.staffWage);
+	const maintenanceStaffWage = maintenanceStaffWagePerHead(region.staffWage);
+	const staff = roundMoney(
+		datacenter.spec.staffCount * region.staffWage + datacenter.maintenanceStaff * maintenanceStaffWage,
+	);
 	const breakdown = {
 		power,
 		cooling,

@@ -114,6 +114,7 @@ test("datacenterMaintenanceStaffingView: defaults with 0 staff", () => {
 	assert.equal(view.currentStaff, 0);
 	assert.equal(view.maxStaff, MAX_MAINTENANCE_STAFF);
 	assert.equal(view.canDecrease, false);
+	assert.equal(view.staffWagePerHead, 4_000);
 	assert.equal(view.extraWagesMonthly, 0);
 	assert.equal(view.repairingRackCount, 0);
 	assert.equal(view.totalRackCount, 0);
@@ -129,8 +130,8 @@ test("datacenterMaintenanceStaffingView: with 2 maintenance staff", () => {
 
 	assert.equal(view.currentStaff, 2);
 	assert.equal(view.canDecrease, true);
-	assert.equal(view.extraWagesMonthly, 2 * region.staffWage);
-	assert.equal(view.staffWagePerHead, region.staffWage);
+	assert.equal(view.extraWagesMonthly, 8_000);
+	assert.equal(view.staffWagePerHead, 4_000);
 	// repair speed: (base + 2 * bonus) * DAYS_PER_TICK
 	const expectedSpeed = (BASE_REPAIR_SPEED_MULTIPLIER + 2 * REPAIR_SPEED_BONUS_PER_MAINTENANCE_STAFF) * DAYS_PER_TICK;
 	assert.equal(view.repairSpeedDaysPerTick, expectedSpeed);

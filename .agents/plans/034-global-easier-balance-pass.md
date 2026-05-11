@@ -13,7 +13,7 @@ owner: game-logic, web, cli
   - [x] 1.1 Codify the target balance levers and centralize new easier-pass constants
   - [x] 1.2 Extend rack tier typing and catalog invariants to support tier 0 hardware
 - [ ] **Phase 2 — Recurring cost and repair-time rebalance**
-  - [ ] 2.1 Apply the 20% recurring-cost reductions to rack opex and extra maintenance staffing
+  - [x] 2.1 Apply the 20% recurring-cost reductions to rack opex and extra maintenance staffing
   - [ ] 2.2 Halve base repair duration while preserving easy vs hard relative modifiers
 - [ ] **Phase 3 — Tier-0 hardware rollout**
   - [ ] 3.1 Add `C0`, `M0`, `S0`, and `G0` rack specs with proportionally smaller outputs and opex
