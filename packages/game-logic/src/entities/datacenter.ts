@@ -1,6 +1,7 @@
 import { isLiveContract } from "../contracts/lifecycle.js";
 import {
 	createDatacenterUpgradeProgress,
+	getDatacenterUpgradeTrackDefinition,
 	isNetworkTypeFiber,
 	listDatacenterUpgradeTrackDefinitions,
 } from "../catalog/datacenter-upgrades.js";
@@ -114,6 +115,14 @@ export interface DatacenterUpgradeState {
 	fabricEligible: boolean;
 }
 
+export interface ValidatedDatacenterUpgrade {
+	trackId: DatacenterUpgradeTrackId;
+	trackLabel: string;
+	currentNode: DatacenterUpgradeTrackNode;
+	targetNode: DatacenterUpgradeTrackNode;
+	capexCost: Money;
+}
+
 export function resolveDatacenterUpgradeProgress(datacenter: Pick<Datacenter, "spec" | "upgrades">): DatacenterUpgradeProgress {
 	return datacenter.upgrades ?? createDatacenterUpgradeProgress(datacenter.spec.id);
 }
@@ -147,6 +156,64 @@ export function resolveDatacenterUpgradeState(datacenter: Pick<Datacenter, "spec
 		progress,
 		tracks,
 		fabricEligible: isNetworkTypeFiber(networkTrack.currentNode.infrastructure.networkType ?? datacenter.spec.networkType),
+	};
+}
+
+export function validateDatacenterUpgradeRequest(
+	datacenter: Pick<Datacenter, "spec" | "upgrades">,
+	trackId: DatacenterUpgradeTrackId,
+	targetNodeId: string,
+): ValidatedDatacenterUpgrade {
+	const trackDefinition = getDatacenterUpgradeTrackDefinition(datacenter.spec.id, trackId);
+	const trackState = resolveDatacenterUpgradeState(datacenter).tracks.find((candidate) => candidate.trackId === trackId);
+	if (!trackState) {
+		throw new Error(`Datacenter '${datacenter.spec.id}' does not support upgrade track '${trackId}'`);
+	}
+
+	if (trackState.maxed) {
+		throw new Error(`Upgrade track '${trackId}' is already maxed for datacenter '${datacenter.spec.id}'`);
+	}
+
+	if (targetNodeId === trackState.currentNode.id) {
+		throw new Error(`Upgrade track '${trackId}' is already at node '${targetNodeId}'`);
+	}
+
+	const requestedNode = trackDefinition.nodes.find((node) => node.id === targetNodeId);
+	if (!requestedNode) {
+		throw new Error(`Unknown datacenter upgrade node '${targetNodeId}' for track '${trackId}' on '${datacenter.spec.id}'`);
+	}
+
+	const nextNode = trackState.nextNode;
+	if (!nextNode || nextNode.id !== requestedNode.id) {
+		throw new Error(
+			`Upgrade track '${trackId}' must advance to immediate next node '${nextNode?.id ?? "<maxed>"}', received '${targetNodeId}'`,
+		);
+	}
+
+	return {
+		trackId,
+		trackLabel: trackState.label,
+		currentNode: trackState.currentNode,
+		targetNode: requestedNode,
+		capexCost: requestedNode.capexCost,
+	};
+}
+
+export function applyDatacenterUpgrade(
+	datacenter: Datacenter,
+	trackId: DatacenterUpgradeTrackId,
+	targetNodeId: string,
+): Datacenter {
+	validateDatacenterUpgradeRequest(datacenter, trackId, targetNodeId);
+	const progress = resolveDatacenterUpgradeProgress(datacenter);
+	return {
+		...datacenter,
+		upgrades: {
+			currentNodeByTrack: {
+				...progress.currentNodeByTrack,
+				[trackId]: targetNodeId,
+			},
+		},
 	};
 }
 

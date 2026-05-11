@@ -15,7 +15,7 @@ owner: game-logic, web, cli
   - [x] 1.3 Persist generic per-track progress on each datacenter and derive canonical resolvers
   - [x] 1.4 Bump save/version boundaries and add regression fixtures for default upgrade state
 - [ ] **Phase 2 — Integrate upgrades into reducer, placement rules, and economy**
-  - [ ] 2.1 Add authoritative datacenter-upgrade actions and validation helpers
+  - [x] 2.1 Add authoritative datacenter-upgrade actions and validation helpers
   - [ ] 2.2 Route rack placement, move validation, and capacity checks through effective infrastructure
   - [ ] 2.3 Add upgrade-aware opex and split grid-vs-onsite power semantics for generators
   - [ ] 2.4 Add focused game-logic tests for upgrade progression, tier unlocks, and power/economy envelopes
