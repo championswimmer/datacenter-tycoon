@@ -259,7 +259,7 @@ export function selectDatacenterRackMaintenanceViews(
   return datacenter.placements.map((placement) => {
     const repairProgressDays = placement.repairProgressDays ?? 0;
     const remainingRepairDays = Math.max(0, repairTargetDays - repairProgressDays);
-    const riskView = rackFailureRiskView(state.tick, placement);
+    const riskView = rackFailureRiskView(state.tick, placement, state.difficulty);
 
     return {
       placementId: placement.id,
