@@ -9,7 +9,7 @@ import {
 import { rackAgeMonths, repairProgressPerTick } from "../sim/maintenance.js";
 import { maintenanceStaffWagePerHead } from "../balance/easier.js";
 import { MAX_MAINTENANCE_STAFF } from "../balance/maintenance.js";
-import { regionStaffUsed } from "./region.js";
+import { regionStaffRemaining } from "./region.js";
 import type {
 	CanPlaceRackResult,
 	Capacity,
@@ -301,8 +301,7 @@ export function datacenterMaintenanceStaffingView(
 	currentTick: Tick,
 ): DatacenterMaintenanceStaffingView {
 	const currentStaff = datacenter.maintenanceStaff;
-	const staffUsed = regionStaffUsed(region.id, allDcs as Datacenter[]);
-	const availableRegionalStaff = Math.max(0, region.totalStaffAvailable - staffUsed);
+	const availableRegionalStaff = regionStaffRemaining(region, allDcs as Datacenter[]);
 
 	const totalRackCount = datacenter.placements.length;
 	const repairingRackCount = datacenter.placements.filter((p) => p.health === "repairing").length;
