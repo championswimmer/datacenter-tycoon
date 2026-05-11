@@ -1,4 +1,9 @@
 import { isLiveContract } from "../contracts/lifecycle.js";
+import {
+	createDatacenterUpgradeProgress,
+	isNetworkTypeFiber,
+	listDatacenterUpgradeTrackDefinitions,
+} from "../catalog/datacenter-upgrades.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import {
 	allocateRackActivity,
@@ -20,6 +25,9 @@ import type {
 	DatacenterInfrastructureProfile,
 	DatacenterResourceUsage,
 	DatacenterSpec,
+	DatacenterUpgradeProgress,
+	DatacenterUpgradeTrackId,
+	DatacenterUpgradeTrackNode,
 	GridPosition,
 	Money,
 	RackActivityView,
@@ -84,8 +92,96 @@ export function datacenterBaseInfrastructure(spec: DatacenterSpec): DatacenterIn
 	};
 }
 
-export function resolveDatacenterInfrastructure(datacenter: Pick<Datacenter, "spec">): DatacenterInfrastructureProfile {
-	return datacenterBaseInfrastructure(datacenter.spec);
+export interface DatacenterUpgradeEconomics {
+	fixedMonthly: Money;
+	byTrack: Record<DatacenterUpgradeTrackId, Money>;
+}
+
+export interface ResolvedDatacenterUpgradeTrackState {
+	trackId: DatacenterUpgradeTrackId;
+	label: string;
+	presentation: "level" | "slots";
+	currentNode: DatacenterUpgradeTrackNode;
+	currentNodeIndex: number;
+	nextNode: DatacenterUpgradeTrackNode | null;
+	maxNode: DatacenterUpgradeTrackNode;
+	maxed: boolean;
+}
+
+export interface DatacenterUpgradeState {
+	progress: DatacenterUpgradeProgress;
+	tracks: ResolvedDatacenterUpgradeTrackState[];
+	fabricEligible: boolean;
+}
+
+export function resolveDatacenterUpgradeProgress(datacenter: Pick<Datacenter, "spec" | "upgrades">): DatacenterUpgradeProgress {
+	return datacenter.upgrades ?? createDatacenterUpgradeProgress(datacenter.spec.id);
+}
+
+export function resolveDatacenterUpgradeState(datacenter: Pick<Datacenter, "spec" | "upgrades">): DatacenterUpgradeState {
+	const progress = resolveDatacenterUpgradeProgress(datacenter);
+	const tracks = listDatacenterUpgradeTrackDefinitions(datacenter.spec.id).map<ResolvedDatacenterUpgradeTrackState>((track) => {
+		const currentNodeId = progress.currentNodeByTrack[track.id] ?? track.nodes[0]!.id;
+		const currentNodeIndex = track.nodes.findIndex((node) => node.id === currentNodeId);
+		if (currentNodeIndex < 0) {
+			throw new Error(`Unknown current node '${currentNodeId}' for track '${track.id}' on '${datacenter.spec.id}'`);
+		}
+
+		return {
+			trackId: track.id,
+			label: track.label,
+			presentation: track.presentation,
+			currentNode: track.nodes[currentNodeIndex]!,
+			currentNodeIndex,
+			nextNode: track.nodes[currentNodeIndex + 1] ?? null,
+			maxNode: track.nodes[track.nodes.length - 1]!,
+			maxed: currentNodeIndex === track.nodes.length - 1,
+		};
+	});
+	const networkTrack = tracks.find((track) => track.trackId === "networkType");
+	if (!networkTrack) {
+		throw new Error(`Datacenter '${datacenter.spec.id}' is missing a networkType upgrade track`);
+	}
+
+	return {
+		progress,
+		tracks,
+		fabricEligible: isNetworkTypeFiber(networkTrack.currentNode.infrastructure.networkType ?? datacenter.spec.networkType),
+	};
+}
+
+export function resolveDatacenterInfrastructure(datacenter: Pick<Datacenter, "spec" | "upgrades">): DatacenterInfrastructureProfile {
+	const resolved = datacenterBaseInfrastructure(datacenter.spec);
+	for (const track of resolveDatacenterUpgradeState(datacenter).tracks) {
+		if (track.currentNodeIndex === 0) {
+			continue;
+		}
+
+		const { infrastructure } = track.currentNode;
+		resolved.coolingType = infrastructure.coolingType ?? resolved.coolingType;
+		resolved.coolingCapacityBtuPerHr = infrastructure.coolingCapacityBtuPerHr ?? resolved.coolingCapacityBtuPerHr;
+		resolved.networkType = infrastructure.networkType ?? resolved.networkType;
+		resolved.bandwidthGbps = infrastructure.bandwidthGbps ?? resolved.bandwidthGbps;
+		resolved.onsiteGenerationCapacityKw = infrastructure.onsiteGenerationCapacityKw ?? resolved.onsiteGenerationCapacityKw;
+	}
+	resolved.rackPowerCapacityKw = resolved.gridImportCapacityKw + resolved.onsiteGenerationCapacityKw;
+	return resolved;
+}
+
+export function resolveDatacenterUpgradeEconomics(datacenter: Pick<Datacenter, "spec" | "upgrades">): DatacenterUpgradeEconomics {
+	const byTrack = {
+		cooling: 0,
+		networkType: 0,
+		onsiteGeneration: 0,
+	} satisfies Record<DatacenterUpgradeTrackId, Money>;
+	for (const track of resolveDatacenterUpgradeState(datacenter).tracks) {
+		byTrack[track.trackId] = track.currentNode.opex.fixedMonthly ?? 0;
+	}
+
+	return {
+		fixedMonthly: byTrack.cooling + byTrack.networkType + byTrack.onsiteGeneration,
+		byTrack,
+	};
 }
 
 function isWithinBounds(datacenter: Datacenter, position: GridPosition): boolean {
