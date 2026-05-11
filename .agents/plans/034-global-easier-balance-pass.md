@@ -19,7 +19,7 @@ owner: game-logic, web, cli
   - [x] 3.1 Add `C0`, `M0`, `S0`, and `G0` rack specs with proportionally smaller outputs and opex
   - [x] 3.2 Add simulation and economy coverage proving tier-0 racks are cheaper, weaker, and fully usable
 - [ ] **Phase 4 — Consumer surfaces, versioning & docs**
-  - [ ] 4.1 Update web/CLI catalog surfaces and copy for the expanded tier range
+  - [x] 4.1 Update web/CLI catalog surfaces and copy for the expanded tier range
   - [ ] 4.2 Bump balance version, update changelog/docs, and run cross-package verification
 
 ## Overview

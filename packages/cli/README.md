@@ -33,7 +33,7 @@ dct ls racks <dcId>
 dct ls catalog
 
 dct dc build garage --region us_west
-dct racks add dc-123 0 0 C1
+dct racks add dc-123 0 0 C0
 dct racks decom dc-123 rp-123
 dct racks move dc-123 rp-123 dc-456 0 1
 
@@ -62,6 +62,7 @@ dct speed 4
   - `market_expired` — historical, offer expired before acceptance
 - `GameState.contracts` is the canonical contract collection. `contractMarket` and `activeContracts` are deprecated compatibility views; use lifecycle helpers from `@datacenter-tycoon/game-logic` for new code.
 - `dct ls catalog` shows datacenter geometry as `rows × cols (slots)`.
+- The rack catalog now spans tiers `0–3`; tier 0 is the starter line, and only tier 3 requires liquid cooling.
 - `dct ls datacenters` shows both the layout summary and valid row/column bounds for rack placement.
 
 ## Global flags
@@ -113,7 +114,7 @@ Helpful palette commands:
 - `dc maint inc <dcId>` — hire a maintenance engineer
 - `dc maint dec <dcId>` — fire a maintenance engineer
 - `dc maint set <dcId> <count>` — set absolute maintenance staff level
-- `racks add <dcId> <row> <position> C1`
+- `racks add <dcId> <row> <position> C0`
 - `contract details <contractId>`
 - `contract accept <contractId> <dcId>`
 - `tick 10`
