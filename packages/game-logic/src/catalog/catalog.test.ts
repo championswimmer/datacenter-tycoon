@@ -132,6 +132,9 @@ test("datacenter catalog exposes three starter blueprints with sane capacities",
 	assert.equal(DATACENTER_CATALOG.garage.coolingType, "air");
 	assert.equal(DATACENTER_CATALOG.warehouse.coolingType, "air");
 	assert.equal(DATACENTER_CATALOG.hyperscale.coolingType, "liquid");
+	assert.equal(DATACENTER_CATALOG.garage.networkType, "cat6");
+	assert.equal(DATACENTER_CATALOG.warehouse.networkType, "cat8");
+	assert.equal(DATACENTER_CATALOG.hyperscale.networkType, "fiber");
 });
 
 test("starter datacenter blueprints reserve the rebalanced cooling headroom", () => {
