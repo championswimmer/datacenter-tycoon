@@ -94,6 +94,60 @@ test("end-to-end scripted game remains profitable over an early 3-tick run", () 
 	assert.equal(state.datacenters[0]?.placements.length, 6);
 });
 
+test("starter-tier builds can serve a modest tier-1 contract without contract-system changes", () => {
+	let state = newGame(21);
+	const dcId = datacenterId("dc-starter-1");
+	const placementSpecs = [RACK_CATALOG.C0.id, RACK_CATALOG.M0.id, RACK_CATALOG.S0.id] as const;
+
+	state = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId,
+		regionId: regionId("us_west"),
+	});
+
+	placementSpecs.forEach((specId, index) => {
+		state = reduce(state, {
+			type: "PlaceRack",
+			dcId,
+			specId,
+			row: 0,
+			position: index,
+			placementId: rackPlacementId(`starter-${index}`),
+		});
+	});
+
+	state = {
+		...state,
+		contractMarket: [
+			{
+				id: contractId("starter-tier-contract"),
+				name: "Starter Tier Contract",
+				requirements: { vCpu: 80, ramGb: 512, storageTb: 200, gpuFlops: 0 },
+				monthlyPayment: 45_000,
+				penaltyPerMonth: 10_000,
+				termMonths: 2,
+				status: "offered",
+				offeredAtTick: state.tick,
+				expiresAtTick: state.tick + 3,
+				tier: 1,
+			},
+		],
+	};
+
+	state = reduce(state, {
+		type: "AcceptContract",
+		contractId: contractId("starter-tier-contract"),
+		dcId,
+	});
+	const cashBeforeTick = state.player.cash;
+	state = reduce(state, { type: "Tick" });
+
+	assert.equal(state.activeContracts[0]?.status, "active");
+	assert.ok(state.player.cash > cashBeforeTick);
+	assert.equal(state.datacenters[0]?.placements.length, 3);
+});
+
 test("regional opex reflects location economics", () => {
 	let state = newGame(42);
 	const usEastId = regionId("us_east");

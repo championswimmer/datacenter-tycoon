@@ -246,6 +246,27 @@ test("tickOpex charges additional wages for maintenance staffing", () => {
 	});
 });
 
+test("starter-tier racks are cheaper to buy and operate than tier-1 hardware", () => {
+	for (const family of ["C", "M", "S", "G"] as const) {
+		const starter = RACK_CATALOG[`${family}0`];
+		const tierOne = RACK_CATALOG[`${family}1`];
+		assert.ok(starter.capexCost < tierOne.capexCost);
+		assert.ok(starter.monthlyMaintenance < tierOne.monthlyMaintenance);
+	}
+
+	const starterOpex = tickOpex(
+		makeDatacenter("garage-starter", DATACENTER_CATALOG.garage, [placement("rack-c0", "C0", 0, 0)]),
+		TEST_REGION,
+	);
+	const tierOneOpex = tickOpex(
+		makeDatacenter("garage-tier-one", DATACENTER_CATALOG.garage, [placement("rack-c1", "C1", 0, 0)]),
+		TEST_REGION,
+	);
+
+	assert.ok(starterOpex.breakdown.maintenance < tierOneOpex.breakdown.maintenance);
+	assert.ok(starterOpex.total < tierOneOpex.total);
+});
+
 test("tickRevenue pays fulfilled contracts and recovers previously breached contracts", () => {
 	const datacenter = makeDatacenter("warehouse-1", DATACENTER_CATALOG.warehouse, [
 		placement("rack-1", "C2", 0, 0),

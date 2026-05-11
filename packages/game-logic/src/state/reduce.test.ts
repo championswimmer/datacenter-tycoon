@@ -139,6 +139,30 @@ test("reduce handles PlaceRack and rejects invalid placement attempts", () => {
 	);
 });
 
+test("reduce can place starter-tier racks through the normal reducer flow", () => {
+	const state = newGame(42, { startingCash: 3_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const builtState = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-0"),
+		regionId: firstRegionId,
+	});
+
+	const nextState = reduce(builtState, {
+		type: "PlaceRack",
+		dcId: datacenterId("dc-0"),
+		specId: RACK_CATALOG.C0.id,
+		row: 0,
+		position: 0,
+		placementId: rackPlacementId("rack-c0"),
+	});
+
+	assert.equal(nextState.datacenters[0]?.placements[0]?.specId, RACK_CATALOG.C0.id);
+	assert.equal(nextState.datacenters[0]?.placements[0]?.kind, "compute");
+	assert.equal(nextState.player.cash, builtState.player.cash - RACK_CATALOG.C0.capexCost);
+});
+
 test("reduce keeps placement power-cap checks strict even with no active demand", () => {
 	const constrainedDatacenter: Datacenter = {
 		...makeDatacenter("dc-1", [placement("rack-1", "C1", 0, 0)]),
