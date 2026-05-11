@@ -241,6 +241,7 @@ export interface OpexBreakdown {
 	bandwidth: Money;
 	staff: Money;
 	maintenance: Money;
+	upgrades: Money;
 	tax: Money;
 }
 

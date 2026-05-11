@@ -2,7 +2,13 @@ import { DIFFICULTY_CONFIG } from "../balance/difficulty.js";
 import { maintenanceStaffWagePerHead } from "../balance/easier.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { contractsFromState, isLiveContract, selectLiveContracts } from "../contracts/lifecycle.js";
-import { datacenterCapacity, datacenterRackPowerSummary, datacenterUsage } from "../entities/datacenter.js";
+import {
+	datacenterCapacity,
+	datacenterRackPowerSummary,
+	datacenterUsage,
+	resolveDatacenterInfrastructure,
+	resolveDatacenterUpgradeEconomics,
+} from "../entities/datacenter.js";
 import type {
 	Capacity,
 	Contract,
@@ -66,6 +72,8 @@ export function tickOpex(
 	activeContracts?: readonly Contract[],
 ): OpexTickResult {
 	const usage = datacenterUsage(datacenter);
+	const infrastructure = resolveDatacenterInfrastructure(datacenter);
+	const upgradeEconomics = resolveDatacenterUpgradeEconomics(datacenter);
 	const assignedDemand = activeContracts ? getAssignedDemand(activeContracts, datacenter.id) : EMPTY_CAPACITY;
 	const billedPowerKw = activeContracts
 		? datacenterRackPowerSummary(datacenter, assignedDemand).billedPowerKw
@@ -86,7 +94,7 @@ export function tickOpex(
 	const rawPowerCost = billedPowerKw * HOURS_PER_MONTH * region.powerCostPerKwh;
 	const power = roundMoney(rawPowerCost);
 	const cooling = roundMoney(rawPowerCost * COOLING_OVERHEAD_RATIO);
-	const bandwidth = roundMoney(datacenter.spec.bandwidthGbps * BANDWIDTH_USD_PER_GBPS_MONTH);
+	const bandwidth = roundMoney(infrastructure.bandwidthGbps * BANDWIDTH_USD_PER_GBPS_MONTH);
 	// Extra maintenance staffing is the only wage bucket targeted by the easier
 	// balance pass. Baseline facility staffing remains tied to `region.staffWage`.
 	const maintenanceStaffWage = maintenanceStaffWagePerHead(region.staffWage);
@@ -99,6 +107,7 @@ export function tickOpex(
 		bandwidth,
 		staff,
 		maintenance: roundMoney(maintenance),
+		upgrades: roundMoney(upgradeEconomics.fixedMonthly),
 		tax: 0 as Money,
 	};
 
@@ -108,7 +117,8 @@ export function tickOpex(
 				breakdown.cooling +
 				breakdown.bandwidth +
 				breakdown.staff +
-				breakdown.maintenance,
+				breakdown.maintenance +
+				breakdown.upgrades,
 		),
 		breakdown,
 	};

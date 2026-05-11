@@ -17,7 +17,7 @@ owner: game-logic, web, cli
 - [ ] **Phase 2 — Integrate upgrades into reducer, placement rules, and economy**
   - [x] 2.1 Add authoritative datacenter-upgrade actions and validation helpers
   - [x] 2.2 Route rack placement, move validation, and capacity checks through effective infrastructure
-  - [ ] 2.3 Add upgrade-aware opex and split grid-vs-onsite power semantics for generators
+  - [x] 2.3 Add upgrade-aware opex and split grid-vs-onsite power semantics for generators
   - [ ] 2.4 Add focused game-logic tests for upgrade progression, tier unlocks, and power/economy envelopes
 - [ ] **Phase 3 — Expose an authoritative upgrade query surface and cross-package transport**
   - [ ] 3.1 Add read-only game-logic queries for current upgrade status, effective infrastructure, and next-node affordances

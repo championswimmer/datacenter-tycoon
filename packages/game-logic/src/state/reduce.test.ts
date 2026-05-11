@@ -20,6 +20,7 @@ import type {
 } from "../types.js";
 import { newGame } from "./newGame.js";
 import { reduce } from "./reduce.js";
+import { resolveDatacenterInfrastructure } from "../entities/datacenter.js";
 
 const contractId = (value: string): ContractId => value as ContractId;
 const datacenterId = (value: string): DatacenterId => value as DatacenterId;
@@ -186,6 +187,33 @@ test("reduce rejects stale and non-immediate datacenter upgrade requests determi
 			),
 		{ message: /already maxed/ },
 	);
+});
+
+test("generator upgrades increase rack headroom without consuming additional regional grid reservations", () => {
+	const state = newGame(42, { startingCash: 5_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const builtState = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.warehouse.id,
+		dcId: datacenterId("dc-generator"),
+		regionId: firstRegionId,
+	});
+	const gridPowerBefore = builtState.map.regions.find((region) => region.id === firstRegionId)?.powerUsed;
+	const baseInfrastructure = resolveDatacenterInfrastructure(builtState.datacenters[0]!);
+
+	const upgradedState = reduce(builtState, {
+		type: "UpgradeDatacenter",
+		dcId: datacenterId("dc-generator"),
+		trackId: "onsiteGeneration",
+		targetNodeId: "gen-1",
+	});
+	const gridPowerAfter = upgradedState.map.regions.find((region) => region.id === firstRegionId)?.powerUsed;
+	const upgradedInfrastructure = resolveDatacenterInfrastructure(upgradedState.datacenters[0]!);
+
+	assert.equal(gridPowerAfter, gridPowerBefore);
+	assert.equal(upgradedInfrastructure.gridImportCapacityKw, baseInfrastructure.gridImportCapacityKw);
+	assert.equal(upgradedInfrastructure.onsiteGenerationCapacityKw, 80);
+	assert.equal(upgradedInfrastructure.rackPowerCapacityKw, baseInfrastructure.rackPowerCapacityKw + 80);
 });
 
 test("reduce handles PlaceRack and rejects invalid placement attempts", () => {
