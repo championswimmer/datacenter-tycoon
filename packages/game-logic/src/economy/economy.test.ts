@@ -156,6 +156,7 @@ test("tickOpex charges staff and reserved bandwidth even for an empty datacenter
 			bandwidth: 6_800,
 			staff: 12_000,
 			maintenance: 0,
+			upgrades: 0,
 			tax: 0,
 		},
 	});
@@ -175,6 +176,7 @@ test("tickOpex includes power, cooling, staff, bandwidth, and rack maintenance",
 			bandwidth: 34_000,
 			staff: 48_000,
 			maintenance: 1_480,
+			upgrades: 0,
 			tax: 0,
 		},
 	});
@@ -194,6 +196,7 @@ test("tickOpex charges idle-baseline power when no active workload is assigned",
 			bandwidth: 34_000,
 			staff: 48_000,
 			maintenance: 1_480,
+			upgrades: 0,
 			tax: 0,
 		},
 	});
@@ -222,6 +225,7 @@ test("tickOpex charges full draw only for racks needed by assigned contract dema
 			bandwidth: 34_000,
 			staff: 48_000,
 			maintenance: 1_480,
+			upgrades: 0,
 			tax: 0,
 		},
 	});
@@ -241,6 +245,33 @@ test("tickOpex charges additional wages for maintenance staffing", () => {
 			bandwidth: 6_800,
 			staff: 26_400,
 			maintenance: 0,
+			upgrades: 0,
+			tax: 0,
+		},
+	});
+});
+
+test("tickOpex charges fixed upgrade upkeep and upgraded bandwidth from the effective infrastructure", () => {
+	const datacenter: Datacenter = {
+		...makeDatacenter("garage-upgraded", DATACENTER_CATALOG.garage),
+		upgrades: {
+			currentNodeByTrack: {
+				cooling: "hybrid",
+				networkType: "fiber",
+				onsiteGeneration: "gen-1",
+			},
+		},
+	};
+
+	assert.deepEqual(tickOpex(datacenter, TEST_REGION), {
+		total: 42_950,
+		breakdown: {
+			power: 0,
+			cooling: 0,
+			bandwidth: 27_200,
+			staff: 12_000,
+			maintenance: 0,
+			upgrades: 3_750,
 			tax: 0,
 		},
 	});
@@ -416,6 +447,7 @@ test("tickOpex keeps non-power cost components stable across active vs idle bill
 	assert.equal(idleOpex.breakdown.staff, activeOpex.breakdown.staff);
 	assert.equal(idleOpex.breakdown.bandwidth, activeOpex.breakdown.bandwidth);
 	assert.equal(idleOpex.breakdown.maintenance, activeOpex.breakdown.maintenance);
+	assert.equal(idleOpex.breakdown.upgrades, activeOpex.breakdown.upgrades);
 	assert.equal(idleOpex.breakdown.tax, activeOpex.breakdown.tax);
 	assert.ok(idleOpex.breakdown.power < activeOpex.breakdown.power);
 	assert.ok(idleOpex.breakdown.cooling < activeOpex.breakdown.cooling);
