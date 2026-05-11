@@ -14,10 +14,10 @@ owner: game-logic, web, cli
   - [x] 1.2 Add state-level datacenter capacity / maintenance query helpers so UIs stop recomputing them from raw fields
   - [x] 1.3 Add rack-move candidate helpers for first-fit slot search and move-target summaries
   - [x] 1.4 Export the new query surface and add focused game-logic regression tests
-- [ ] **Phase 2 — Refactor web to consume only canonical gameplay queries**
+- [x] **Phase 2 — Refactor web to consume only canonical gameplay queries**
   - [x] 2.1 Replace web contract fit / free-capacity / bucket logic with game-logic queries
   - [x] 2.2 Fix datacenter power, maintenance, and move-modal views to consume game-logic summaries instead of local rule copies
-  - [ ] 2.3 Remove remaining web reads of deprecated compatibility views where a canonical query exists
+  - [x] 2.3 Remove remaining web reads of deprecated compatibility views where a canonical query exists
 - [ ] **Phase 3 — Refactor CLI and daemon to consume only canonical gameplay queries**
   - [ ] 3.1 Update daemon/runtime status and list endpoints to derive buckets and counts from canonical game-logic queries
   - [ ] 3.2 Replace CLI contract presenters and TUI tabs that still classify contracts locally
