@@ -14,11 +14,11 @@ owner: game-logic, web, cli
   - [x] 1.2 Add a catalog-driven monotonic track model for cooling, network type, and gas generators
   - [x] 1.3 Persist generic per-track progress on each datacenter and derive canonical resolvers
   - [x] 1.4 Bump save/version boundaries and add regression fixtures for default upgrade state
-- [ ] **Phase 2 — Integrate upgrades into reducer, placement rules, and economy**
+- [x] **Phase 2 — Integrate upgrades into reducer, placement rules, and economy**
   - [x] 2.1 Add authoritative datacenter-upgrade actions and validation helpers
   - [x] 2.2 Route rack placement, move validation, and capacity checks through effective infrastructure
   - [x] 2.3 Add upgrade-aware opex and split grid-vs-onsite power semantics for generators
-  - [ ] 2.4 Add focused game-logic tests for upgrade progression, tier unlocks, and power/economy envelopes
+  - [x] 2.4 Add focused game-logic tests for upgrade progression, tier unlocks, and power/economy envelopes
 - [ ] **Phase 3 — Expose an authoritative upgrade query surface and cross-package transport**
   - [ ] 3.1 Add read-only game-logic queries for current upgrade status, effective infrastructure, and next-node affordances
   - [ ] 3.2 Extend CLI daemon/protocol/list views and add `dct dc upgrade` commands using canonical queries
