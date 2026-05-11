@@ -1,6 +1,6 @@
 import type { GameState } from "../types.js";
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 export interface SaveEnvelope {
 	saveVersion: number;

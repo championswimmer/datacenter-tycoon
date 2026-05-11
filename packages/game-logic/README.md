@@ -128,6 +128,13 @@ interface Datacenter {
   builtAtTick: Tick;
   regionId: RegionId;
   maintenanceStaff: number;
+  upgrades?: {
+    currentNodeByTrack: {
+      cooling: string;
+      networkType: string;
+      onsiteGeneration: string;
+    };
+  };
 }
 ```
 
@@ -152,7 +159,7 @@ interface ContractSlaOutcome {
 }
 ```
 
-The current save policy is **destructive on incompatible format changes**. Version `6` introduced canonical contract lifecycle storage; older save versions are intentionally rejected and should be recreated.
+The current save policy is **destructive on incompatible format changes**. Version `7` introduced persisted datacenter upgrade progress; older save versions are intentionally rejected and should be recreated.
 
 ## Contract lifecycle
 
@@ -430,7 +437,7 @@ interface MapState {
 
 ```json
 {
-  "saveVersion": 4,
+  "saveVersion": 7,
   "state": {
     "tick": 0,
     "seed": 42,
@@ -456,4 +463,4 @@ interface MapState {
 }
 ```
 
-Use `deserialize(json)` to restore a saved game. Saves from earlier versions are intentionally rejected and must be recreated after incompatible updates; the current incompatible boundary is `saveVersion: 4`, which introduced persisted player reliability.
+Use `deserialize(json)` to restore a saved game. Saves from earlier versions are intentionally rejected and must be recreated after incompatible updates; the current incompatible boundary is `saveVersion: 7`, which introduced persisted datacenter upgrade progress.

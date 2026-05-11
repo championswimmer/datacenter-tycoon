@@ -85,6 +85,29 @@ test("serialize and deserialize round-trip a non-trivial game state", () => {
 	assert.deepEqual(restored, state);
 	assert.equal(restored.difficulty, "easy");
 	assert.deepEqual(restored.player.reliability, state.player.reliability);
+	assert.deepEqual(restored.datacenters[0]?.upgrades, state.datacenters[0]?.upgrades);
+});
+
+
+test("serialize persists default datacenter upgrade progress after build", () => {
+	let state = newGame(42, { startingCash: 3_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	state = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-upgrades"),
+		regionId: firstRegionId,
+	});
+
+	const serialized = JSON.parse(serialize(state)) as { saveVersion: number; state: typeof state };
+	assert.deepEqual(serialized.state.datacenters[0]?.upgrades, {
+		currentNodeByTrack: {
+			cooling: "air",
+			networkType: "cat6",
+			onsiteGeneration: "gen-0",
+		},
+	});
+	assert.deepEqual(deserialize(JSON.stringify(serialized)).datacenters[0]?.upgrades, serialized.state.datacenters[0]?.upgrades);
 });
 
 test("deserialize preserves reliability so future market refreshes still use the saved reputation band", () => {
@@ -123,10 +146,10 @@ test("migrate is a no-op for current-version envelopes", () => {
 	assert.deepEqual(migrate(envelope), envelope);
 });
 
-test("migrate rejects v4 saves after the contract lifecycle storage refactor", () => {
+test("migrate rejects v6 saves after the datacenter upgrade persistence refactor", () => {
 	const state = newGame(7);
 
-	assert.throws(() => migrate({ saveVersion: 4, state }), {
+	assert.throws(() => migrate({ saveVersion: 6, state }), {
 		message: /Outdated save version/,
 	});
 });
