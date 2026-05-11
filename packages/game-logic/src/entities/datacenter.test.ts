@@ -5,7 +5,13 @@ import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { MAX_MAINTENANCE_STAFF, DAYS_PER_TICK, BASE_REPAIR_SPEED_MULTIPLIER, REPAIR_SPEED_BONUS_PER_MAINTENANCE_STAFF } from "../balance/index.js";
 import type { Datacenter, RackPlacement, Region } from "../types.js";
-import { canMoveRack, datacenterMaintenanceStaffingView } from "./datacenter.js";
+import {
+	canMoveRack,
+	datacenterMaintenanceStaffingView,
+	resolveDatacenterInfrastructure,
+	resolveDatacenterUpgradeEconomics,
+	resolveDatacenterUpgradeState,
+} from "./datacenter.js";
 
 const datacenterId = (value: string) => value as import("../types.js").DatacenterId;
 const rackPlacementId = (value: string) => value as import("../types.js").RackPlacementId;
@@ -54,6 +60,31 @@ function makeRegion(overrides: Partial<Region> = {}): Region {
 		...overrides,
 	};
 }
+
+test("upgrade resolvers derive default track state, effective infrastructure, and economics", () => {
+	const datacenter = makeDatacenter("dc-1");
+	const state = resolveDatacenterUpgradeState(datacenter);
+	const infrastructure = resolveDatacenterInfrastructure(datacenter);
+	const economics = resolveDatacenterUpgradeEconomics(datacenter);
+
+	assert.equal(state.fabricEligible, false);
+	assert.equal(state.tracks.find((track) => track.trackId === "cooling")?.currentNode.id, "air");
+	assert.equal(state.tracks.find((track) => track.trackId === "networkType")?.nextNode?.id, "cat8");
+	assert.equal(state.tracks.find((track) => track.trackId === "onsiteGeneration")?.currentNode.id, "gen-0");
+	assert.deepEqual(infrastructure, {
+		gridImportCapacityKw: DATACENTER_CATALOG.garage.powerCapacityKw,
+		onsiteGenerationCapacityKw: 0,
+		rackPowerCapacityKw: DATACENTER_CATALOG.garage.powerCapacityKw,
+		coolingCapacityBtuPerHr: DATACENTER_CATALOG.garage.coolingCapacityBtuPerHr,
+		coolingType: DATACENTER_CATALOG.garage.coolingType,
+		networkType: DATACENTER_CATALOG.garage.networkType,
+		bandwidthGbps: DATACENTER_CATALOG.garage.bandwidthGbps,
+	});
+	assert.deepEqual(economics, {
+		fixedMonthly: 0,
+		byTrack: { cooling: 0, networkType: 0, onsiteGeneration: 0 },
+	});
+});
 
 test("canMoveRack allows valid move between different datacenters", () => {
 	const sourceDc = makeDatacenter("dc-1", [makePlacement("rack-1", "C1", 0, 0)]);

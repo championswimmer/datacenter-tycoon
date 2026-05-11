@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { createDatacenterUpgradeProgress } from "../catalog/datacenter-upgrades.js";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { DEFAULT_MAINTENANCE_STAFF, MAX_MAINTENANCE_STAFF } from "../balance/maintenance.js";
@@ -89,6 +90,7 @@ test("reduce handles BuildDatacenter and validates spec ids", () => {
 	assert.equal(nextState.datacenters.length, 1);
 	assert.equal(nextState.datacenters[0]?.spec.id, DATACENTER_CATALOG.garage.id);
 	assert.equal(nextState.datacenters[0]?.maintenanceStaff, DEFAULT_MAINTENANCE_STAFF);
+	assert.deepEqual(nextState.datacenters[0]?.upgrades, createDatacenterUpgradeProgress(DATACENTER_CATALOG.garage.id));
 	assert.equal(nextState.player.cash, state.player.cash - DATACENTER_CATALOG.garage.capexCost);
 	assert.equal(nextState.ledger.at(-1)?.type, "capex");
 	assert.throws(

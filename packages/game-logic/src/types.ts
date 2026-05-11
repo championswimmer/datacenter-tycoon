@@ -125,6 +125,10 @@ export interface DatacenterUpgradeTrackDefinition {
 	nodes: readonly DatacenterUpgradeTrackNode[];
 }
 
+export interface DatacenterUpgradeProgress {
+	currentNodeByTrack: Record<DatacenterUpgradeTrackId, string>;
+}
+
 export interface Datacenter {
 	id: DatacenterId;
 	name: string;
@@ -133,6 +137,7 @@ export interface Datacenter {
 	builtAtTick: Tick;
 	regionId: RegionId;
 	maintenanceStaff: number;
+	upgrades?: DatacenterUpgradeProgress;
 }
 
 export interface ContractRequirements extends Capacity {}

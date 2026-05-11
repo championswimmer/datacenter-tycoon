@@ -1,6 +1,7 @@
 import { DEFAULT_MAINTENANCE_STAFF, MAX_MAINTENANCE_STAFF } from "../balance/maintenance.js";
 import { acceptContract } from "../contracts/market.js";
 import { contractsFromState, isLiveContract, withDerivedContractViews } from "../contracts/lifecycle.js";
+import { createDatacenterUpgradeProgress } from "../catalog/datacenter-upgrades.js";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { applyCapex } from "../economy/capex.js";
@@ -122,6 +123,7 @@ function buildDatacenter(state: GameState, specId: DatacenterSpecId, dcId: Datac
 		builtAtTick: state.tick,
 		regionId,
 		maintenanceStaff: DEFAULT_MAINTENANCE_STAFF,
+		upgrades: createDatacenterUpgradeProgress(spec.id),
 	};
 
 	const updatedRegions = state.map.regions.map((r) =>

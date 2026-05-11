@@ -1,6 +1,7 @@
 import type {
 	DatacenterNetworkType,
 	DatacenterSpecId,
+	DatacenterUpgradeProgress,
 	DatacenterUpgradeTrackDefinition,
 	DatacenterUpgradeTrackId,
 	DatacenterUpgradeTrackNode,
@@ -235,6 +236,17 @@ export function defaultDatacenterUpgradeNodeByTrack(
 		cooling: blueprint.tracks.cooling.nodes[0]!,
 		networkType: blueprint.tracks.networkType.nodes[0]!,
 		onsiteGeneration: blueprint.tracks.onsiteGeneration.nodes[0]!,
+	};
+}
+
+export function createDatacenterUpgradeProgress(specId: DatacenterSpecId): DatacenterUpgradeProgress {
+	const defaultNodes = defaultDatacenterUpgradeNodeByTrack(specId);
+	return {
+		currentNodeByTrack: {
+			cooling: defaultNodes.cooling.id,
+			networkType: defaultNodes.networkType.id,
+			onsiteGeneration: defaultNodes.onsiteGeneration.id,
+		},
 	};
 }
 
