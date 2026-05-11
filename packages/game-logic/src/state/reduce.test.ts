@@ -20,7 +20,7 @@ import type {
 } from "../types.js";
 import { newGame } from "./newGame.js";
 import { reduce } from "./reduce.js";
-import { resolveDatacenterInfrastructure } from "../entities/datacenter.js";
+import { canPlaceRack, resolveDatacenterInfrastructure, resolveDatacenterUpgradeState } from "../entities/datacenter.js";
 
 const contractId = (value: string): ContractId => value as ContractId;
 const datacenterId = (value: string): DatacenterId => value as DatacenterId;
@@ -214,6 +214,191 @@ test("generator upgrades increase rack headroom without consuming additional reg
 	assert.equal(upgradedInfrastructure.gridImportCapacityKw, baseInfrastructure.gridImportCapacityKw);
 	assert.equal(upgradedInfrastructure.onsiteGenerationCapacityKw, 80);
 	assert.equal(upgradedInfrastructure.rackPowerCapacityKw, baseInfrastructure.rackPowerCapacityKw + 80);
+});
+
+test("garage and warehouse cooling upgrades progress monotonically and unlock tier-3 rack placement", () => {
+	const state = newGame(42, { startingCash: 8_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const secondRegionId = state.map.regions[1]!.id;
+	const builtGarage = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-garage-cooling"),
+		regionId: firstRegionId,
+	});
+	const builtWarehouse = reduce(builtGarage, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.warehouse.id,
+		dcId: datacenterId("dc-warehouse-cooling"),
+		regionId: secondRegionId,
+	});
+
+	const garageBefore = builtWarehouse.datacenters.find((dc) => dc.id === datacenterId("dc-garage-cooling"))!;
+	const warehouseBefore = builtWarehouse.datacenters.find((dc) => dc.id === datacenterId("dc-warehouse-cooling"))!;
+	assert.deepEqual(canPlaceRack(garageBefore, RACK_CATALOG.C3, { row: 0, position: 0 }), {
+		ok: false,
+		reason: "cooling_type_mismatch",
+	});
+	assert.deepEqual(canPlaceRack(warehouseBefore, RACK_CATALOG.C3, { row: 0, position: 0 }), {
+		ok: false,
+		reason: "cooling_type_mismatch",
+	});
+
+	const hybridGarageState = reduce(builtWarehouse, {
+		type: "UpgradeDatacenter",
+		dcId: datacenterId("dc-garage-cooling"),
+		trackId: "cooling",
+		targetNodeId: "hybrid",
+	});
+	const liquidWarehouseState = reduce(
+		reduce(hybridGarageState, {
+			type: "UpgradeDatacenter",
+			dcId: datacenterId("dc-warehouse-cooling"),
+			trackId: "cooling",
+			targetNodeId: "hybrid",
+		}),
+		{
+			type: "UpgradeDatacenter",
+			dcId: datacenterId("dc-warehouse-cooling"),
+			trackId: "cooling",
+			targetNodeId: "liquid",
+		},
+	);
+
+	const garageAfter = liquidWarehouseState.datacenters.find((dc) => dc.id === datacenterId("dc-garage-cooling"))!;
+	const warehouseAfter = liquidWarehouseState.datacenters.find((dc) => dc.id === datacenterId("dc-warehouse-cooling"))!;
+	assert.equal(resolveDatacenterInfrastructure(garageAfter).coolingType, "hybrid");
+	assert.equal(resolveDatacenterInfrastructure(warehouseAfter).coolingType, "liquid");
+	assert.equal(resolveDatacenterUpgradeState(garageAfter).tracks.find((track) => track.trackId === "cooling")?.maxNode.id, "hybrid");
+	assert.deepEqual(canPlaceRack(garageAfter, RACK_CATALOG.C3, { row: 0, position: 0 }), { ok: true });
+	assert.deepEqual(canPlaceRack(warehouseAfter, RACK_CATALOG.C3, { row: 0, position: 0 }), { ok: true });
+});
+
+test("garage network upgrades increase bandwidth monotonically and become fabric-eligible only at fiber", () => {
+	const state = newGame(42, { startingCash: 4_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const builtState = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-network"),
+		regionId: firstRegionId,
+	});
+	const cat8State = reduce(builtState, {
+		type: "UpgradeDatacenter",
+		dcId: datacenterId("dc-network"),
+		trackId: "networkType",
+		targetNodeId: "cat8",
+	});
+	const fiberState = reduce(cat8State, {
+		type: "UpgradeDatacenter",
+		dcId: datacenterId("dc-network"),
+		trackId: "networkType",
+		targetNodeId: "fiber",
+	});
+
+	const builtDc = builtState.datacenters[0]!;
+	const cat8Dc = cat8State.datacenters[0]!;
+	const fiberDc = fiberState.datacenters[0]!;
+	assert.equal(resolveDatacenterInfrastructure(builtDc).bandwidthGbps, 80);
+	assert.equal(resolveDatacenterInfrastructure(cat8Dc).bandwidthGbps, 160);
+	assert.equal(resolveDatacenterInfrastructure(fiberDc).bandwidthGbps, 320);
+	assert.equal(resolveDatacenterUpgradeState(builtDc).fabricEligible, false);
+	assert.equal(resolveDatacenterUpgradeState(cat8Dc).fabricEligible, false);
+	assert.equal(resolveDatacenterUpgradeState(fiberDc).fabricEligible, true);
+});
+
+test("generator track caps are enforced for warehouse and hyperscale blueprints", () => {
+	const state = newGame(42, { startingCash: 50_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const secondRegionId = state.map.regions[1]!.id;
+	const builtWarehouse = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.warehouse.id,
+		dcId: datacenterId("dc-warehouse-gen"),
+		regionId: firstRegionId,
+	});
+	const builtHyperscale = reduce(builtWarehouse, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.hyperscale.id,
+		dcId: datacenterId("dc-hyperscale-gen"),
+		regionId: secondRegionId,
+	});
+
+	const warehouseMaxed = reduce(
+		reduce(builtHyperscale, {
+			type: "UpgradeDatacenter",
+			dcId: datacenterId("dc-warehouse-gen"),
+			trackId: "onsiteGeneration",
+			targetNodeId: "gen-1",
+		}),
+		{
+			type: "UpgradeDatacenter",
+			dcId: datacenterId("dc-warehouse-gen"),
+			trackId: "onsiteGeneration",
+			targetNodeId: "gen-2",
+		},
+	);
+	const hyperscaleMaxed = reduce(
+		reduce(
+			reduce(
+				reduce(warehouseMaxed, {
+					type: "UpgradeDatacenter",
+					dcId: datacenterId("dc-hyperscale-gen"),
+					trackId: "onsiteGeneration",
+					targetNodeId: "gen-1",
+				}),
+				{
+					type: "UpgradeDatacenter",
+					dcId: datacenterId("dc-hyperscale-gen"),
+					trackId: "onsiteGeneration",
+					targetNodeId: "gen-2",
+				},
+			),
+			{
+				type: "UpgradeDatacenter",
+				dcId: datacenterId("dc-hyperscale-gen"),
+				trackId: "onsiteGeneration",
+				targetNodeId: "gen-3",
+			},
+		),
+		{
+			type: "UpgradeDatacenter",
+			dcId: datacenterId("dc-hyperscale-gen"),
+			trackId: "onsiteGeneration",
+			targetNodeId: "gen-4",
+		},
+	);
+
+	assert.equal(
+		resolveDatacenterUpgradeState(hyperscaleMaxed.datacenters.find((dc) => dc.id === datacenterId("dc-warehouse-gen"))!)
+			.tracks.find((track) => track.trackId === "onsiteGeneration")?.currentNode.id,
+		"gen-2",
+	);
+	assert.equal(
+		resolveDatacenterUpgradeState(hyperscaleMaxed.datacenters.find((dc) => dc.id === datacenterId("dc-hyperscale-gen"))!)
+			.tracks.find((track) => track.trackId === "onsiteGeneration")?.currentNode.id,
+		"gen-4",
+	);
+	assert.throws(
+		() =>
+			reduce(warehouseMaxed, {
+				type: "UpgradeDatacenter",
+				dcId: datacenterId("dc-warehouse-gen"),
+				trackId: "onsiteGeneration",
+				targetNodeId: "gen-2",
+			}),
+		{ message: /already maxed/ },
+	);
+	assert.throws(
+		() =>
+			reduce(hyperscaleMaxed, {
+				type: "UpgradeDatacenter",
+				dcId: datacenterId("dc-hyperscale-gen"),
+				trackId: "onsiteGeneration",
+				targetNodeId: "gen-4",
+			}),
+		{ message: /already maxed/ },
+	);
 });
 
 test("reduce handles PlaceRack and rejects invalid placement attempts", () => {
