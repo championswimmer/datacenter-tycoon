@@ -136,17 +136,22 @@ test("GameRuntime query returns status, catalogs, and derived listings", () => {
 	assert.equal(datacenters.kind, "datacenters");
 	assert.equal(datacenters.items[0]?.slotsUsed, 1);
 	assert.equal(datacenters.items[0]?.capacity.vCpu, RACK_CATALOG.C1.vCpu);
+	assert.equal(datacenters.items[0]?.capacitySummary.available.vCpu, RACK_CATALOG.C1.vCpu);
 
 	const racks = runtime.query({ kind: "list", target: "racks", dcId: "dc-1" });
 	assert.equal(racks.kind, "racks");
 	assert.equal(racks.items[0]?.spec.id, RACK_CATALOG.C1.id);
 
+	const contracts = runtime.query({ kind: "list", target: "contracts" });
+	assert.equal(contracts.kind, "contracts");
+	assert.ok(Array.isArray(contracts.market));
+	assert.ok(Array.isArray(contracts.active));
+	assert.ok(Array.isArray(contracts.history));
+
 	const catalog = runtime.query({ kind: "catalog", target: "racks" });
 	assert.equal(catalog.kind, "racks");
 	assert.ok(catalog.items.length >= 1);
 });
-
-// --- Regression: expired contracts must not count toward activeContractCount ---
 
 const contractId = (value: string): ContractId => value as ContractId;
 
@@ -169,7 +174,9 @@ function buildStateWithExpiredContract() {
 	};
 	return {
 		...state,
-		activeContracts: [expiredContract],
+		contracts: [expiredContract],
+		activeContracts: [],
+		contractMarket: [],
 	};
 }
 
@@ -211,8 +218,18 @@ test("activeContractCount counts only live (active or breached) contracts", () =
 		startedAtTick: 1 as import("@datacenter-tycoon/game-logic").Tick,
 		assignedDcId: "dc-1" as DatacenterId,
 	};
-	const mixedState = { ...state, activeContracts: [liveContract, expiredContract] };
+	const mixedState = {
+		...state,
+		contracts: [liveContract, expiredContract],
+		activeContracts: [],
+		contractMarket: [],
+	};
 	const runtime = new GameRuntime({ state: mixedState, paused: true });
 	const status = runtime.getStatus();
 	assert.equal(status.activeContractCount, 1, "only the live contract should count");
+
+	const contractList = runtime.query({ kind: "list", target: "contracts" });
+	assert.equal(contractList.kind, "contracts");
+	assert.equal(contractList.active.length, 1);
+	assert.equal(contractList.history.length, 1);
 });

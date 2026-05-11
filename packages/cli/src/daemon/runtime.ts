@@ -3,12 +3,14 @@ import { EventEmitter } from "node:events";
 import {
 	DATACENTER_CATALOG,
 	RACK_CATALOG,
-	datacenterCapacity,
-	datacenterMaintenanceStaffingView,
 	datacenterUsage,
-	isLiveContractStatus,
 	rackFailureRiskView,
 	reduce,
+	selectDatacenterMaintenanceStaffingViewFromState,
+	selectHistoricalContractsFromState,
+	selectLiveContractsFromState,
+	selectOpenMarketContractsFromState,
+	summarizeDatacenterCapacityFromState,
 	VERSION,
 	type Datacenter,
 	type GameState,
@@ -73,24 +75,21 @@ function createStatusView(state: GameState, runtimeStatus: RuntimeStatus): Statu
 		difficulty: state.difficulty,
 		datacenterCount: state.datacenters.length,
 		rackCount: totalRackCount(state.datacenters),
-		activeContractCount: state.activeContracts.filter((c) => isLiveContractStatus(c.status)).length,
-		marketContractCount: state.contractMarket.length,
+		activeContractCount: selectLiveContractsFromState(state).length,
+		marketContractCount: selectOpenMarketContractsFromState(state).length,
 		...runtimeStatus,
 	};
 }
 
 function createDatacenterList(state: GameState): DatacenterListItem[] {
 	return state.datacenters.map((datacenter) => {
-		const capacity = datacenterCapacity(datacenter);
+		const capacitySummary = summarizeDatacenterCapacityFromState(state, datacenter.id);
 		const usage = datacenterUsage(datacenter);
-		const region = state.map.regions.find((r) => r.id === datacenter.regionId);
-		if (!region) {
-			throw new Error(`Unknown region ${datacenter.regionId} for datacenter ${datacenter.id}`);
-		}
 
 		return {
 			datacenter,
-			capacity,
+			capacity: capacitySummary.installed,
+			capacitySummary,
 			powerKw: usage.powerKw,
 			powerCapacityKw: datacenter.spec.powerCapacityKw,
 			heatOutputBtuPerHr: usage.heatOutputBtuPerHr,
@@ -99,7 +98,7 @@ function createDatacenterList(state: GameState): DatacenterListItem[] {
 			bandwidthCapacityGbps: datacenter.spec.bandwidthGbps,
 			slotsUsed: usage.slotsUsed,
 			totalSlots: datacenter.spec.rows * datacenter.spec.positionsPerRow,
-			maintenance: datacenterMaintenanceStaffingView(datacenter, region, state.datacenters, state.tick),
+			maintenance: selectDatacenterMaintenanceStaffingViewFromState(state, datacenter.id),
 		};
 	});
 }
@@ -157,9 +156,16 @@ function createListResult(state: GameState, query: ListQuery): ListResult {
 			};
 		}
 		case "market-contracts":
-			return { kind: "market-contracts", items: state.contractMarket };
+			return { kind: "market-contracts", items: selectOpenMarketContractsFromState(state) };
 		case "active-contracts":
-			return { kind: "active-contracts", items: state.activeContracts };
+			return { kind: "active-contracts", items: selectLiveContractsFromState(state) };
+		case "contracts":
+			return {
+				kind: "contracts",
+				market: selectOpenMarketContractsFromState(state),
+				active: selectLiveContractsFromState(state),
+				history: selectHistoricalContractsFromState(state),
+			};
 		default:
 			return assertNever(query.target, "Unsupported list target");
 	}
