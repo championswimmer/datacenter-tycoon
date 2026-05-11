@@ -3,7 +3,7 @@ name: Regional Fabric & Pooled Capacity
 description: Add a region-local fabric investment layer that pools connected datacenter capacity for contract fulfilment.
 status: created
 created: 2026-05-04
-updated: 2026-05-04
+updated: 2026-05-11
 owner: game-logic, web
 ---
 
@@ -34,6 +34,8 @@ owner: game-logic, web
 
 This plan extends the regional economy work with a new investment layer: a region-local fabric that connects datacenters and turns them into one pooled capacity block for contract fulfilment. The goal is to let players pay a connection cost to join datacenters into the fabric, starting with the first pair in a region and then reusing the same cost for every additional datacenter. Once connected, those datacenters should behave like one homogeneous capacity pool for contract checks, while still remaining serializable and deterministic in game-logic.
 
+This plan now explicitly depends on the datacenter-upgrade work in [036-datacenter-upgrade-framework.md](./036-datacenter-upgrade-framework.md): only datacenters whose effective network type is `fiber` may participate in the regional fabric. Fabric creation and later joins must therefore validate fiber readiness through authoritative `game-logic` upgrade/infrastructure queries instead of inferring it from raw bandwidth numbers in UI or reducer code.
+
 This is a follow-on to the regional map and location-economy work, so the implementation should build on the existing region and datacenter model instead of introducing a parallel system.
 
 ## Architecture
@@ -63,6 +65,8 @@ Key decisions:
 - Capacity is derived from membership, not duplicated into each datacenter.
 - Contract fulfilment uses the pooled fabric block when a datacenter is fabric-connected.
 - The initial fabric connection and later joins use the same capex cost.
+- Fabric membership is gated by effective datacenter `networkType === "fiber"`; non-fiber datacenters cannot create or join a fabric.
+- Fabric eligibility must be resolved through the upgrade/infrastructure query surface from plan 036, not re-derived from raw bandwidth thresholds.
 
 ## Phase 1 - Game-logic model, persistence, and exports
 
@@ -99,9 +103,10 @@ Key decisions:
 
 - File: `packages/game-logic/src/state/reduce.ts`
 - Introduce a reducer action for linking datacenters into the regional fabric.
-- Validate region locality, existing membership, and the first-link case where the fabric is created by connecting the first pair.
+- Validate region locality, existing membership, the first-link case where the fabric is created by connecting the first pair, and the new prerequisite that every participating datacenter has effective `networkType === "fiber"`.
+- Resolve fiber readiness through the authoritative infrastructure/upgrade helpers from plan 036 rather than by comparing raw `bandwidthGbps` values inline.
 - Debit the same investment cost for the first link and every later join.
-- Acceptance: reducer tests cover valid first join, valid follow-up join, and rejected invalid joins.
+- Acceptance: reducer tests cover valid first join, valid follow-up join, rejected non-fiber joins, and rejected attempts to bootstrap a fabric from non-fiber datacenters.
 
 ### Step 2.2 - Persist investment results
 
@@ -114,9 +119,9 @@ Key decisions:
 ### Step 2.3 - Define validation errors
 
 - File: `packages/game-logic/src/state/reduce.ts`, related test files
-- Reject cross-region links, duplicate joins, and joins against unknown datacenters with explicit errors.
+- Reject cross-region links, duplicate joins, joins against unknown datacenters, and joins involving non-fiber datacenters with explicit errors.
 - Keep the failure reasons stable enough for UI feedback and tests.
-- Acceptance: negative-path tests assert the exact rejected cases.
+- Acceptance: negative-path tests assert the exact rejected cases, including the fiber prerequisite.
 
 ## Phase 3 - Pooled capacity and contract evaluation
 
@@ -142,7 +147,8 @@ Key decisions:
 - File: `packages/web/src/store/selectors.ts`, `packages/game-logic/src/sim/tick.ts` if summaries need adjustment
 - Expose fabric-aware totals so the UI can render a single block view when a region fabric is active.
 - Keep raw datacenter totals available where the UI still needs per-site breakdowns.
-- Acceptance: selectors expose both pooled and per-datacenter views without breaking existing screens.
+- Also expose fabric eligibility / ineligibility reasons per datacenter so consumers can explain why a site cannot yet join (for now, the key reason is non-fiber `networkType`).
+- Acceptance: selectors expose both pooled and per-datacenter views without breaking existing screens and can explain fiber-gated ineligible sites.
 
 ## Phase 4 - Web UI and feedback
 
@@ -151,9 +157,9 @@ Key decisions:
 ### Step 4.1 - Surface fabric status
 
 - File: `packages/web/src/ui/map/MapView.tsx`, `packages/web/src/ui/map/RegionPanel.tsx`, `packages/web/src/ui/dc-view/DatacenterView.tsx`
-- Show whether a region has an active fabric, which datacenters are joined, and what the join cost is.
+- Show whether a region has an active fabric, which datacenters are joined, what the join cost is, and which datacenters are still blocked because they are not yet on fiber network type.
 - Make the connected-state obvious from both the region view and the datacenter view.
-- Acceptance: the user can identify fabric-connected datacenters and region fabric state at a glance.
+- Acceptance: the user can identify fabric-connected datacenters, region fabric state, and fiber-gated ineligible datacenters at a glance.
 
 ### Step 4.2 - Update capacity displays
 
@@ -167,7 +173,8 @@ Key decisions:
 - File: `packages/web/src/ui/onboarding/NewDatacenterModal.tsx` or a region/datacenter action component
 - Add the control used to pay for and create fabric links.
 - Wire the control to the new reducer action and reuse existing store patterns.
-- Acceptance: the player can connect a datacenter to the regional fabric from the UI.
+- Disable or block the control with clear feedback when any target datacenter is not yet on fiber network type.
+- Acceptance: the player can connect a datacenter to the regional fabric from the UI only when all participating datacenters meet the fiber prerequisite.
 
 ## Phase 5 - Tests and regression coverage
 
@@ -176,7 +183,7 @@ Key decisions:
 ### Step 5.1 - Add game-logic tests
 
 - File: `packages/game-logic/src/**/*.test.ts`
-- Cover first-link creation, follow-up joins, invalid joins, and save/load round-trips.
+- Cover first-link creation, follow-up joins, invalid joins, save/load round-trips, and the new fiber prerequisite.
 - Add coverage for fabric-aware capacity helpers and state migration.
 - Acceptance: `npm run test -w @datacenter-tycoon/game-logic` passes.
 
@@ -189,7 +196,7 @@ Key decisions:
 ### Step 5.3 - Add web tests
 
 - File: `packages/web/src/ui/**/*.test.tsx`, `packages/web/src/store/selectors.test.ts`
-- Verify the new fabric indicators and pooled-capacity rendering paths.
+- Verify the new fabric indicators, pooled-capacity rendering paths, and fiber-gated disabled/error states for non-eligible datacenters.
 - Acceptance: web tests pass and the new selectors/components stay stable.
 
 ## References
@@ -198,7 +205,9 @@ Key decisions:
 - [AGENTS.md](../AGENTS.md)
 - [game-logic AGENTS.md](../../packages/game-logic/AGENTS.md)
 - [web AGENTS.md](../../packages/web/AGENTS.md)
+- [Datacenter Upgrade Framework](./036-datacenter-upgrade-framework.md)
 
 ## Changelog
 
 - 2026-05-04 - created.
+- 2026-05-11 - added dependency on plan 036 so regional fabric requires all participating datacenters to have effective fiber network type.
