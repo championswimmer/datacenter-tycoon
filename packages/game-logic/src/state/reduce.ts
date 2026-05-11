@@ -6,7 +6,7 @@ import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { applyCapex } from "../economy/capex.js";
 import { calculateMoveCost } from "../economy/move.js";
-import { canPlaceRack } from "../entities/datacenter.js";
+import { applyDatacenterUpgrade, canMoveRack, canPlaceRack, validateDatacenterUpgradeRequest } from "../entities/datacenter.js";
 import { canBuildInRegion } from "../entities/region.js";
 import { tick } from "../sim/tick.js";
 import type {
@@ -44,6 +44,7 @@ export type Action =
 	  }
 	| { type: "AcceptContract"; contractId: ContractId; dcId: DatacenterId }
 	| { type: "CancelContract"; contractId: ContractId }
+	| { type: "UpgradeDatacenter"; dcId: DatacenterId; trackId: import("../types.js").DatacenterUpgradeTrackId; targetNodeId: string }
 	| { type: "SetMaintenanceStaff"; dcId: DatacenterId; maintenanceStaff: number }
 	| { type: "SetAudioEnabled"; enabled: boolean }
 	| { type: "UpdateAudioSettings"; settings: Partial<import("../types.js").AudioSettings> }
@@ -224,9 +225,21 @@ function moveRack(
 
 	const targetDc = getDatacenter(state, targetDcId);
 	const spec = getRackSpec(placement.specId);
-	const placementCheck = canPlaceRack(targetDc, spec, { row, position });
-	if (!placementCheck.ok) {
-		throw createRackPlacementError(targetDc, placementCheck.reason);
+	const moveCheck = canMoveRack(sourceDc, targetDc, placement, { row, position });
+	if (!moveCheck.ok) {
+		const reason = moveCheck.reason.replace(/^Cannot place rack: /, "");
+		if (
+			reason === "slot_taken" ||
+			reason === "out_of_bounds" ||
+			reason === "insufficient_power" ||
+			reason === "insufficient_cooling" ||
+			reason === "insufficient_bandwidth" ||
+			reason === "cooling_type_mismatch"
+		) {
+			throw createRackPlacementError(targetDc, reason);
+		}
+
+		throw new Error(moveCheck.reason);
 	}
 
 	const cost = calculateMoveCost(spec, sourceDc.regionId, targetDc.regionId);
@@ -248,6 +261,23 @@ function moveRack(
 	};
 
 	return replaceDatacenter(replaceDatacenter(debitedState, updatedSourceDc), updatedTargetDc);
+}
+
+function upgradeDatacenter(
+	state: GameState,
+	dcId: DatacenterId,
+	trackId: import("../types.js").DatacenterUpgradeTrackId,
+	targetNodeId: string,
+): GameState {
+	const datacenter = getDatacenter(state, dcId);
+	const validated = validateDatacenterUpgradeRequest(datacenter, trackId, targetNodeId);
+	const debitedState = applyCapex(
+		state,
+		validated.capexCost,
+		`Upgrade datacenter: ${datacenter.name} ${validated.trackLabel} → ${validated.targetNode.label}`,
+	);
+	const refreshedDatacenter = applyDatacenterUpgrade(getDatacenter(debitedState, dcId), trackId, targetNodeId);
+	return replaceDatacenter(debitedState, refreshedDatacenter);
 }
 
 function cancelContract(state: GameState, contractId: ContractId): GameState {
@@ -343,6 +373,8 @@ export function reduce(state: GameState, action: Action): GameState {
 			return acceptContract(state, action.contractId, action.dcId);
 		case "CancelContract":
 			return cancelContract(state, action.contractId);
+		case "UpgradeDatacenter":
+			return upgradeDatacenter(state, action.dcId, action.trackId, action.targetNodeId);
 		case "SetMaintenanceStaff":
 			return setMaintenanceStaff(state, action.dcId, action.maintenanceStaff);
 		case "SetAudioEnabled":

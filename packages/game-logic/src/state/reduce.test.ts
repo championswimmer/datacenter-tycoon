@@ -105,6 +105,89 @@ test("reduce handles BuildDatacenter and validates spec ids", () => {
 	);
 });
 
+test("reduce handles UpgradeDatacenter and debits capex for the validated next node", () => {
+	const state = newGame(42, { startingCash: 3_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const builtState = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-upgrade"),
+		regionId: firstRegionId,
+	});
+
+	const upgradedState = reduce(builtState, {
+		type: "UpgradeDatacenter",
+		dcId: datacenterId("dc-upgrade"),
+		trackId: "cooling",
+		targetNodeId: "hybrid",
+	});
+
+	assert.equal(upgradedState.datacenters[0]?.upgrades?.currentNodeByTrack.cooling, "hybrid");
+	assert.equal(
+		upgradedState.player.cash,
+		builtState.player.cash - 180_000,
+	);
+	assert.match(upgradedState.ledger.at(-1)?.reason ?? "", /Upgrade datacenter: Garage Datacenter Cooling loop/);
+});
+
+test("reduce rejects stale and non-immediate datacenter upgrade requests deterministically", () => {
+	const state = newGame(42, { startingCash: 3_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const builtState = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-upgrade-rules"),
+		regionId: firstRegionId,
+	});
+
+	assert.throws(
+		() =>
+			reduce(builtState, {
+				type: "UpgradeDatacenter",
+				dcId: datacenterId("dc-upgrade-rules"),
+				trackId: "networkType",
+				targetNodeId: "fiber",
+			}),
+		{ message: /immediate next node 'cat8'/ },
+	);
+
+	const cat8State = reduce(builtState, {
+		type: "UpgradeDatacenter",
+		dcId: datacenterId("dc-upgrade-rules"),
+		trackId: "networkType",
+		targetNodeId: "cat8",
+	});
+
+	assert.throws(
+		() =>
+			reduce(cat8State, {
+				type: "UpgradeDatacenter",
+				dcId: datacenterId("dc-upgrade-rules"),
+				trackId: "networkType",
+				targetNodeId: "cat8",
+			}),
+		{ message: /already at node 'cat8'/ },
+	);
+	assert.throws(
+		() =>
+			reduce(
+				reduce(cat8State, {
+					type: "UpgradeDatacenter",
+					dcId: datacenterId("dc-upgrade-rules"),
+					trackId: "networkType",
+					targetNodeId: "fiber",
+				}),
+				{
+					type: "UpgradeDatacenter",
+					dcId: datacenterId("dc-upgrade-rules"),
+					trackId: "networkType",
+					targetNodeId: "fiber",
+				},
+			),
+		{ message: /already maxed/ },
+	);
+});
+
 test("reduce handles PlaceRack and rejects invalid placement attempts", () => {
 	const state = newGame(42, { startingCash: 3_000_000 });
 	const firstRegionId = state.map.regions[0]!.id;
