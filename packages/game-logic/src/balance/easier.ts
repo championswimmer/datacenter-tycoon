@@ -13,6 +13,9 @@ export const RACK_RECURRING_OPEX_MULTIPLIER = 0.8;
  */
 export const EXTRA_MAINTENANCE_STAFF_WAGE_MULTIPLIER = 0.8;
 
+/** Use 50% of tier-1 hardware to define the new starter tier. */
+export const STARTER_TIER_RATIO = 0.5;
+
 /** Global easier-pass target: halve the pre-difficulty repair baseline. */
 export const REPAIR_DURATION_MULTIPLIER = 0.5;
 

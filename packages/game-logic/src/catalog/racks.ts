@@ -2,7 +2,25 @@ import type { RackSpec, RackSpecId } from "../types.js";
 
 const rackSpecId = (value: string): RackSpecId => value as RackSpecId;
 
+// Tier-0 starter racks intentionally scale tier-1 hardware by 50% across
+// primary output, supporting resources, capex, and recurring opex so the
+// progression remains monotonic while giving players a cheaper on-ramp.
 export const RACK_CATALOG: Record<string, RackSpec> = {
+	C0: {
+		id: rackSpecId("C0"),
+		name: "C0 Compute Rack",
+		kind: "compute",
+		tier: 0,
+		vCpu: 64,
+		ramGb: 256,
+		storageTb: 8,
+		gpuFlops: 0,
+		powerDrawKw: 2,
+		heatOutputBtuPerHr: 6_824,
+		bandwidthGbps: 5,
+		capexCost: 25_000,
+		monthlyMaintenance: 200,
+	},
 	C1: {
 		id: rackSpecId("C1"),
 		name: "C1 Compute Rack",
@@ -47,6 +65,21 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		bandwidthGbps: 32,
 		capexCost: 280_000,
 		monthlyMaintenance: 2_240,
+	},
+	M0: {
+		id: rackSpecId("M0"),
+		name: "M0 Memory Rack",
+		kind: "memory",
+		tier: 0,
+		vCpu: 24,
+		ramGb: 1_024,
+		storageTb: 10,
+		gpuFlops: 0,
+		powerDrawKw: 1.9,
+		heatOutputBtuPerHr: 6_483,
+		bandwidthGbps: 4,
+		capexCost: 32_500,
+		monthlyMaintenance: 260,
 	},
 	M1: {
 		id: rackSpecId("M1"),
@@ -93,6 +126,21 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		capexCost: 380_000,
 		monthlyMaintenance: 3_040,
 	},
+	S0: {
+		id: rackSpecId("S0"),
+		name: "S0 Storage Rack",
+		kind: "storage",
+		tier: 0,
+		vCpu: 12,
+		ramGb: 128,
+		storageTb: 250,
+		gpuFlops: 0,
+		powerDrawKw: 1.6,
+		heatOutputBtuPerHr: 5_459,
+		bandwidthGbps: 3,
+		capexCost: 40_000,
+		monthlyMaintenance: 320,
+	},
 	S1: {
 		id: rackSpecId("S1"),
 		name: "S1 Storage Rack",
@@ -137,6 +185,21 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		bandwidthGbps: 18,
 		capexCost: 450_000,
 		monthlyMaintenance: 3_600,
+	},
+	G0: {
+		id: rackSpecId("G0"),
+		name: "G0 GPU Rack",
+		kind: "gpu",
+		tier: 0,
+		vCpu: 32,
+		ramGb: 512,
+		storageTb: 12,
+		gpuFlops: 250,
+		powerDrawKw: 3,
+		heatOutputBtuPerHr: 10_236,
+		bandwidthGbps: 8,
+		capexCost: 400_000,
+		monthlyMaintenance: 3_200,
 	},
 	G1: {
 		id: rackSpecId("G1"),
