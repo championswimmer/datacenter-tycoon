@@ -262,7 +262,13 @@ export interface DatacenterMaintenanceStaffingView {
 	 * datacenters in the region (including this one's current maintenanceStaff).
 	 */
 	availableRegionalStaff: number;
-	/** Monthly wage cost per extra maintenance staff head ($). */
+	/**
+	 * Monthly wage cost per extra maintenance staff head ($).
+	 *
+	 * The easier-balance pass discounts this bucket separately from baseline
+	 * datacenter staffing so UIs can surface the targeted maintenance-hire cost
+	 * without also lowering all regional wages.
+	 */
 	staffWagePerHead: Money;
 	/** Total extra monthly wages charged for all current maintenance staff ($). */
 	extraWagesMonthly: Money;

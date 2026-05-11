@@ -1,7 +1,7 @@
 ---
 name: Global Easier Balance Pass
 description: Reduce recurring operating pressure, add starter-tier rack SKUs, and shorten repairs so both easy and hard games feel more forgiving.
-status: created
+status: started
 created: 2026-05-11
 updated: 2026-05-11
 owner: game-logic, web, cli
@@ -10,7 +10,7 @@ owner: game-logic, web, cli
 ## Progress
 
 - [ ] **Phase 1 — Balance mapping & scaffolding**
-  - [ ] 1.1 Codify the target balance levers and centralize new easier-pass constants
+  - [x] 1.1 Codify the target balance levers and centralize new easier-pass constants
   - [ ] 1.2 Extend rack tier typing and catalog invariants to support tier 0 hardware
 - [ ] **Phase 2 — Recurring cost and repair-time rebalance**
   - [ ] 2.1 Apply the 20% recurring-cost reductions to rack opex and extra maintenance staffing
