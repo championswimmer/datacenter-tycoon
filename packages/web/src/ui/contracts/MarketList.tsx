@@ -1,46 +1,29 @@
-import { useState, useCallback } from "react";
-import type { Capacity, Contract, Datacenter } from "@datacenter-tycoon/game-logic";
+import { useCallback, useMemo, useState } from "react";
+import { contractDealScore } from "@datacenter-tycoon/game-logic";
+import type {
+  Capacity,
+  Contract,
+  ContractAssignmentFitSummary,
+  Datacenter,
+} from "@datacenter-tycoon/game-logic";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import {
   selectAllDatacenters,
-  selectActiveContracts,
-  selectTick,
+  selectMarketFitSummaries,
   selectReliabilitySummary,
+  selectTick,
 } from "../../store/selectors.js";
-import { canFulfill, dcFreeCapacity, contractDealScore } from "./contractUtils.js";
 import { useTickFraction } from "../../store/tickFractionStore.js";
 import { monthsAndDaysBetween, formatRemaining } from "../../store/gameTime.js";
 import styles from "./MarketList.module.css";
 
 function fmt(n: number): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1_000)     return `$${(n / 1_000).toFixed(1)}K`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
   return `$${n.toLocaleString()}`;
 }
 
-function fitStatus(
-  contract: Contract,
-  datacenters: Datacenter[],
-  activeContracts: Contract[],
-): "fits" | "partial" | "none" {
-  const reqs = contract.requirements;
-  let anyFits  = false;
-  const totalFree = { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 };
-
-  for (const dc of datacenters) {
-    const free = dcFreeCapacity(dc, activeContracts);
-    totalFree.vCpu += free.vCpu;
-    totalFree.ramGb += free.ramGb;
-    totalFree.storageTb += free.storageTb;
-    totalFree.gpuFlops += free.gpuFlops;
-    if (canFulfill(free, reqs)) anyFits = true;
-  }
-
-  if (anyFits)                     return "fits";
-  if (canFulfill(totalFree, reqs)) return "partial";
-  return "none";
-}
-
+const ZERO_CAPACITY: Capacity = { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 };
 const FIT_ICON: Record<string, string> = { fits: "✅", partial: "⚠", none: "❌" };
 const FIT_LABEL: Record<string, string> = {
   fits: "DC available",
@@ -49,12 +32,12 @@ const FIT_LABEL: Record<string, string> = {
 };
 
 const CATEGORY_MAP: Record<string, { abbr: string; color: string }> = {
-  "AI Model Training Job":          { abbr: "AI", color: "purple" },
-  "Realtime Analytics Cluster":     { abbr: "AN", color: "cyan" },
-  "Edge Compute Burst":             { abbr: "EC", color: "lime" },
-  "Small Data Storage Startup":     { abbr: "ST", color: "blue" },
-  "Rendering Farm":                 { abbr: "RF", color: "amber" },
-  "In-Memory Database Migration":   { abbr: "DB", color: "pink" },
+  "AI Model Training Job": { abbr: "AI", color: "purple" },
+  "Realtime Analytics Cluster": { abbr: "AN", color: "cyan" },
+  "Edge Compute Burst": { abbr: "EC", color: "lime" },
+  "Small Data Storage Startup": { abbr: "ST", color: "blue" },
+  "Rendering Farm": { abbr: "RF", color: "amber" },
+  "In-Memory Database Migration": { abbr: "DB", color: "pink" },
 };
 
 function dealScoreLabel(score: number): string {
@@ -64,27 +47,20 @@ function dealScoreLabel(score: number): string {
   return "Low";
 }
 
-function sumFreeCapacity(datacenters: Datacenter[], activeContracts: Contract[]): Capacity {
-  return datacenters.reduce<Capacity>((acc, dc) => {
-    const free = dcFreeCapacity(dc, activeContracts);
-    return {
-      vCpu: acc.vCpu + free.vCpu,
-      ramGb: acc.ramGb + free.ramGb,
-      storageTb: acc.storageTb + free.storageTb,
-      gpuFlops: acc.gpuFlops + free.gpuFlops,
-    };
-  }, { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 });
-}
-
 export function MarketList({ contracts }: { contracts: Contract[] }) {
   const datacenters = useSelector(selectAllDatacenters);
-  const activeContracts = useSelector(selectActiveContracts);
+  const marketFitSummaries = useSelector(selectMarketFitSummaries);
   const tick = useSelector(selectTick);
   const reliability = useSelector(selectReliabilitySummary);
   const dispatch = useGameDispatch();
   const fraction = useTickFraction();
 
   const [accepting, setAccepting] = useState<string | null>(null);
+
+  const fitSummaryById = useMemo(
+    () => new Map(marketFitSummaries.map((summary) => [summary.contractId, summary])),
+    [marketFitSummaries],
+  );
 
   const handleAccept = useCallback((contractId: string, dcId: string) => {
     dispatch({
@@ -101,52 +77,52 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
 
   return (
     <div className={styles.list}>
-      {contracts.map((c) => {
-        const fit = fitStatus(c, datacenters, activeContracts);
-        const { months, days } = monthsAndDaysBetween(tick, fraction, c.expiresAtTick, 0);
+      {contracts.map((contract) => {
+        const fitSummary = fitSummaryById.get(contract.id);
+        const fit = fitSummary?.fitStatus ?? "none";
+        const { months, days } = monthsAndDaysBetween(tick, fraction, contract.expiresAtTick, 0);
         const expired = months <= 0 && days <= 0;
         const expiryLabel = expired ? "EXPIRED" : formatRemaining(months, days);
         const urgent = !expired && months === 0 && days <= 7;
-        const isAccepting = accepting === c.id;
-        const networkFree = sumFreeCapacity(datacenters, activeContracts);
-        const score = contractDealScore(c);
-        const cat = CATEGORY_MAP[c.name];
+        const isAccepting = accepting === contract.id;
+        const networkFree = fitSummary?.networkAvailable ?? ZERO_CAPACITY;
+        const score = contractDealScore(contract);
+        const category = CATEGORY_MAP[contract.name];
         const reliabilityHint = (reliability.band === "silver" || reliability.band === "bronze")
           ? {
               tone: styles.reliabilityHintNegative,
               text: "Low reliability is limiting longer-term work until SLA performance improves.",
             }
-          : (reliability.band === "platinum" || reliability.band === "diamond") && (c.urgency === "anchor" || c.termMonths >= 8)
+          : (reliability.band === "platinum" || reliability.band === "diamond") && (contract.urgency === "anchor" || contract.termMonths >= 8)
             ? {
                 tone: styles.reliabilityHintPositive,
                 text: `${reliability.band.charAt(0).toUpperCase() + reliability.band.slice(1)} reliability is helping surface longer-term offers like this.`,
               }
             : null;
+
         return (
-          <div key={c.id} className={[styles.card, styles[`fit-${fit}`]].join(" ")}>
+          <div key={contract.id} className={[styles.card, styles[`fit-${fit}`]].join(" ")}>
             <div className={styles.cardTop}>
               <div className={styles.cardLeft}>
-                {cat && (
-                  <span className={[styles.categoryBadge, styles[`cat-${cat.color}`]].join(" ")}>
-                    {cat.abbr}
+                {category && (
+                  <span className={[styles.categoryBadge, styles[`cat-${category.color}`]].join(" ")}>
+                    {category.abbr}
                   </span>
                 )}
                 <span className={styles.fitBadge} title={FIT_LABEL[fit]}>{FIT_ICON[fit]}</span>
                 <div>
-                  <div className={styles.name}>{c.name}</div>
+                  <div className={styles.name}>{contract.name}</div>
                   <div className={styles.meta}>
-                    <span>{c.termMonths} mo</span>
+                    <span>{contract.termMonths} mo</span>
                     <span className={styles.dot}>·</span>
-                    <span className={urgent ? styles.expiring : styles.expiry}>
-                      {expiryLabel}
-                    </span>
-                    {c.urgency === "rush" && (
+                    <span className={urgent ? styles.expiring : styles.expiry}>{expiryLabel}</span>
+                    {contract.urgency === "rush" && (
                       <>
                         <span className={styles.dot}>·</span>
                         <span className={styles.rushBadge}>RUSH</span>
                       </>
                     )}
-                    {c.urgency === "anchor" && (
+                    {contract.urgency === "anchor" && (
                       <>
                         <span className={styles.dot}>·</span>
                         <span className={styles.anchorBadge}>ANCHOR</span>
@@ -156,14 +132,14 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
                 </div>
               </div>
               <div className={styles.financials}>
-                <div className={styles.payment}>{fmt(c.monthlyPayment)}<span className={styles.unit}>/mo</span></div>
+                <div className={styles.payment}>{fmt(contract.monthlyPayment)}<span className={styles.unit}>/mo</span></div>
                 <div className={styles.dealScore}>{dealScoreLabel(score)}</div>
-                <div className={styles.penalty}>−{fmt(c.penaltyPerMonth)}<span className={styles.unit}>/mo breach</span></div>
+                <div className={styles.penalty}>−{fmt(contract.penaltyPerMonth)}<span className={styles.unit}>/mo breach</span></div>
               </div>
             </div>
 
-            <RequirementsRow reqs={c.requirements} />
-            <CapacityComparison reqs={c.requirements} free={networkFree} />
+            <RequirementsRow reqs={contract.requirements} />
+            <CapacityComparison reqs={contract.requirements} free={networkFree} />
 
             {reliabilityHint && (
               <div className={[styles.reliabilityHint, reliabilityHint.tone].join(" ")}>{reliabilityHint.text}</div>
@@ -172,17 +148,17 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
             {!isAccepting ? (
               <button
                 className={styles.acceptBtn}
-                onClick={() => setAccepting(c.id)}
-                disabled={fit === "none" || datacenters.length === 0}
+                onClick={() => setAccepting(contract.id)}
+                disabled={fit !== "fits" || datacenters.length === 0}
               >
                 ACCEPT CONTRACT
               </button>
             ) : (
               <DcSelector
-                contract={c}
+                contract={contract}
                 datacenters={datacenters}
-                activeContracts={activeContracts}
-                onSelect={(dcId) => handleAccept(c.id, dcId)}
+                fitSummary={fitSummary}
+                onSelect={(dcId) => handleAccept(contract.id, dcId)}
                 onCancel={() => setAccepting(null)}
               />
             )}
@@ -200,12 +176,13 @@ function RequirementsRow({ reqs }: { reqs: Contract["requirements"] }) {
     reqs.storageTb > 0 && { label: "STORAGE", val: `${reqs.storageTb} TB`, color: "purple" },
     reqs.gpuFlops > 0 && { label: "GPU", val: `${reqs.gpuFlops} TFLOPS`, color: "amber" },
   ].filter(Boolean) as { label: string; val: string; color: string }[];
+
   return (
     <div className={styles.reqs}>
-      {items.map((it) => (
-        <span key={it.label} className={[styles.req, styles[`req-${it.color}`]].join(" ")}>
-          <span className={styles.reqLabel}>{it.label}</span>
-          <span className={styles.reqVal}>{it.val}</span>
+      {items.map((item) => (
+        <span key={item.label} className={[styles.req, styles[`req-${item.color}`]].join(" ")}>
+          <span className={styles.reqLabel}>{item.label}</span>
+          <span className={styles.reqVal}>{item.val}</span>
         </span>
       ))}
     </div>
@@ -246,13 +223,13 @@ function CapacityComparison({ reqs, free }: { reqs: Contract["requirements"]; fr
 function DcSelector({
   contract,
   datacenters,
-  activeContracts,
+  fitSummary,
   onSelect,
   onCancel,
 }: {
   contract: Contract;
   datacenters: Datacenter[];
-  activeContracts: Contract[];
+  fitSummary: ContractAssignmentFitSummary | undefined;
   onSelect: (dcId: string) => void;
   onCancel: () => void;
 }) {
@@ -262,15 +239,15 @@ function DcSelector({
       <span className={styles.dcSelectorHelp}>The datacenter you choose becomes the live assignment immediately.</span>
       <div className={styles.dcList}>
         {datacenters.map((dc) => {
-          const free = dcFreeCapacity(dc, activeContracts);
-          const ok = canFulfill(free, contract.requirements);
+          const candidate = fitSummary?.candidates.find((entry) => entry.dcId === dc.id);
+          const ok = candidate?.fits ?? false;
           return (
             <button
               key={dc.id}
               className={[styles.dcBtn, ok ? styles.dcBtnOk : styles.dcBtnNo].join(" ")}
               onClick={() => ok && onSelect(dc.id)}
               disabled={!ok}
-              title={ok ? `Accept with ${dc.name}` : "Insufficient free capacity"}
+              title={ok ? `Accept with ${dc.name}` : `Insufficient free capacity for ${contract.name}`}
             >
               {dc.name}
               <span className={styles.dcBtnStatus}>{ok ? "✓ click to accept" : "✗ no room"}</span>

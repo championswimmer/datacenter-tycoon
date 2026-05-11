@@ -1,41 +1,44 @@
-import { useState, useCallback } from "react";
-import type { Contract, ContractStatus } from "@datacenter-tycoon/game-logic";
+import { useCallback, useMemo, useState } from "react";
 import { tickOpex } from "@datacenter-tycoon/game-logic";
+import type { Contract, ContractStatus } from "@datacenter-tycoon/game-logic";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import {
   selectActiveContracts,
   selectAllDatacenters,
-  selectTick,
+  selectDatacenterCapacitySummary,
   selectReliabilitySummary,
+  selectTick,
 } from "../../store/selectors.js";
 import { ProgressBar } from "../../theme/primitives/index.js";
-import { dcFreeCapacity, canFulfill } from "./contractUtils.js";
 import { useTickFraction } from "../../store/tickFractionStore.js";
 import { monthsAndDaysBetween, formatRemaining } from "../../store/gameTime.js";
 import styles from "./ActiveList.module.css";
 
 function fmt(n: number): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1_000)     return `$${(n / 1_000).toFixed(1)}K`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
   return `$${n.toLocaleString()}`;
 }
 
 const STATUS_LABEL: Record<ContractStatus, string> = {
-  active:    "ACTIVE",
-  breached:  "BREACHED",
-  expired:   "EXPIRED",
+  active: "ACTIVE",
+  breached: "BREACHED",
+  expired: "EXPIRED",
   cancelled: "CANCELLED",
-  offered:   "OFFERED",
+  offered: "OFFERED",
 };
 
 export function ActiveList() {
-  const contracts   = useSelector(selectActiveContracts);
+  const contracts = useSelector(selectActiveContracts);
   const datacenters = useSelector(selectAllDatacenters);
-  const regions     = useSelector(s => s.map.regions);
-  const tick        = useSelector(selectTick);
+  const regions = useSelector((state) => state.map.regions);
+  const tick = useSelector(selectTick);
   const reliability = useSelector(selectReliabilitySummary);
-  const dispatch    = useGameDispatch();
-  const fraction    = useTickFraction();
+  const capacityByDcId = useSelector((state) => new Map(
+    state.datacenters.map((dc) => [dc.id, selectDatacenterCapacitySummary(state, dc.id)]),
+  ));
+  const dispatch = useGameDispatch();
+  const fraction = useTickFraction();
   const [confirming, setConfirming] = useState<string | null>(null);
 
   const handleCancel = useCallback((contractId: string) => {
@@ -44,14 +47,18 @@ export function ActiveList() {
   }, [dispatch]);
 
   const dcName = (id: string | undefined) =>
-    datacenters.find(d => d.id === id)?.name ?? "—";
+    datacenters.find((datacenter) => datacenter.id === id)?.name ?? "—";
 
-  const sorted = [...contracts].sort((a, b) => {
+  const sorted = useMemo(() => [...contracts].sort((a, b) => {
     const order: Record<ContractStatus, number> = {
-      breached: 0, active: 1, offered: 2, expired: 3, cancelled: 4,
+      breached: 0,
+      active: 1,
+      offered: 2,
+      expired: 3,
+      cancelled: 4,
     };
     return order[a.status] - order[b.status];
-  });
+  }), [contracts]);
 
   if (sorted.length === 0) {
     return <p className={styles.empty}>No active contracts yet — accept one from the market.</p>;
@@ -59,39 +66,39 @@ export function ActiveList() {
 
   return (
     <div className={styles.list}>
-      {sorted.map(c => {
-        const started = c.startedAtTick ?? tick;
+      {sorted.map((contract) => {
+        const started = contract.startedAtTick ?? tick;
         const elapsedMonths = Math.max(0, tick - started);
-        const progress = Math.min(1, elapsedMonths / Math.max(c.termMonths, 1));
-        const monthsLeft = Math.max(0, c.termMonths - elapsedMonths);
-        // Day-level precision for the remaining label using sub-tick fraction
+        const progress = Math.min(1, elapsedMonths / Math.max(contract.termMonths, 1));
+        const monthsLeft = Math.max(0, contract.termMonths - elapsedMonths);
         const { months: mLeft, days: dLeft } = monthsAndDaysBetween(
-          tick, fraction,
-          started + c.termMonths, 0,
+          tick,
+          fraction,
+          started + contract.termMonths,
+          0,
         );
         const remainingLabel = formatRemaining(mLeft, dLeft);
-        const isExpiringThisMonth = monthsLeft <= 0 && c.status === "active";
-        const isConfirming = confirming === c.id;
-        const canCancel = c.status === "active" || c.status === "breached";
+        const isExpiringThisMonth = monthsLeft <= 0 && contract.lifecycleState === "serving";
+        const isConfirming = confirming === contract.id;
+        const canCancel = contract.lifecycleState === "serving" || contract.lifecycleState === "breached";
 
-        const dc = datacenters.find(d => d.id === c.assignedDcId);
-        const region = dc ? regions.find(r => r.id === dc.regionId) : undefined;
-        const contractsOnDc = contracts.filter(
-          x => x.assignedDcId === dc?.id && x.status === "active",
-        );
-        const attributedOpex = dc && region
-          ? tickOpex(dc, region).total / Math.max(contractsOnDc.length, 1)
+        const datacenter = datacenters.find((entry) => entry.id === contract.assignedDcId);
+        const region = datacenter ? regions.find((entry) => entry.id === datacenter.regionId) : undefined;
+        const contractsOnDatacenter = contracts.filter((entry) => entry.assignedDcId === datacenter?.id);
+        const attributedOpex = datacenter && region
+          ? tickOpex(datacenter, region).total / Math.max(contractsOnDatacenter.length, 1)
           : 0;
-        const margin = c.monthlyPayment - attributedOpex;
+        const margin = contract.monthlyPayment - attributedOpex;
 
-        const free = dc ? dcFreeCapacity(dc, contracts) : null;
-        const bufferLow = free !== null && canFulfill(free, c.requirements) &&
-          (free.vCpu < c.requirements.vCpu * 0.1 ||
-           free.ramGb < c.requirements.ramGb * 0.1 ||
-           (c.requirements.storageTb > 0 && free.storageTb < c.requirements.storageTb * 0.1) ||
-           (c.requirements.gpuFlops > 0 && free.gpuFlops < c.requirements.gpuFlops * 0.1));
-        const latestOutcome = [...reliability.recentOutcomes].reverse().find(outcome => outcome.contractId === c.id);
-        const slaHint = c.status === "breached"
+        const free = datacenter ? capacityByDcId.get(datacenter.id)?.available : undefined;
+        const bufferLow = free !== undefined && (
+          free.vCpu < contract.requirements.vCpu * 0.1 ||
+          free.ramGb < contract.requirements.ramGb * 0.1 ||
+          (contract.requirements.storageTb > 0 && free.storageTb < contract.requirements.storageTb * 0.1) ||
+          (contract.requirements.gpuFlops > 0 && free.gpuFlops < contract.requirements.gpuFlops * 0.1)
+        );
+        const latestOutcome = [...reliability.recentOutcomes].reverse().find((outcome) => outcome.contractId === contract.id);
+        const slaHint = contract.lifecycleState === "breached"
           ? "SLA hit: this breach already hurt reliability. Recover service now or cancellation will damage it again."
           : latestOutcome?.kind === "fulfilled"
             ? "SLA credit: this contract improved reliability last month — keep it stable to preserve market access."
@@ -100,47 +107,43 @@ export function ActiveList() {
               : "SLA impact: fulfilled months improve future contract access and longer-term opportunities.";
 
         return (
-          <div key={c.id} className={[styles.card, styles[`status-${c.status}`]].join(" ")}>
+          <div key={contract.id} className={[styles.card, styles[`status-${contract.status}`]].join(" ")}>
             <div className={styles.cardTop}>
               <div className={styles.cardLeft}>
-                <span
-                  className={[styles.statusPill, styles[`pill-${c.status}`]].join(" ")}
-                >
-                  {STATUS_LABEL[c.status]}
+                <span className={[styles.statusPill, styles[`pill-${contract.status}`]].join(" ")}>
+                  {STATUS_LABEL[contract.status]}
                 </span>
-                <div className={styles.name}>{c.name}</div>
-                <div className={styles.dcLabel}>→ {dcName(c.assignedDcId)}</div>
+                <div className={styles.name}>{contract.name}</div>
+                <div className={styles.dcLabel}>→ {dcName(contract.assignedDcId)}</div>
               </div>
               <div className={styles.financials}>
-                <div className={styles.payment}>{fmt(c.monthlyPayment)}<span className={styles.unit}>/mo</span></div>
-                <div className={styles.marginLine}>
-                  {fmt(margin)}<span className={styles.unit}> margin</span>
-                </div>
+                <div className={styles.payment}>{fmt(contract.monthlyPayment)}<span className={styles.unit}>/mo</span></div>
+                <div className={styles.marginLine}>{fmt(margin)}<span className={styles.unit}> margin</span></div>
               </div>
             </div>
 
-            {bufferLow && c.status === "active" && (
+            {bufferLow && contract.lifecycleState === "serving" && (
               <div className={styles.warningBadge}>Capacity buffer low</div>
             )}
 
             <div className={[
               styles.slaHint,
-              c.status === "breached" ? styles.slaHintNegative : styles.slaHintPositive,
+              contract.lifecycleState === "breached" ? styles.slaHintNegative : styles.slaHintPositive,
             ].join(" ")}>{slaHint}</div>
 
             <div className={styles.progressRow}>
               <ProgressBar
                 value={progress * 100}
                 max={100}
-                segments={c.termMonths}
-                color={c.status === "breached" ? "red" : c.status === "expired" ? "cyan" : "lime"}
+                segments={contract.termMonths}
+                color={contract.lifecycleState === "breached" ? "red" : contract.status === "expired" ? "cyan" : "lime"}
                 showLabel
                 height={6}
                 label={`Contract progress: ${Math.round(progress * 100)}%`}
-                pulse={monthsLeft <= 2 && c.status === "active"}
+                pulse={monthsLeft <= 2 && contract.lifecycleState === "serving"}
               />
               <span className={styles.progressMeta}>
-                {elapsedMonths}/{c.termMonths} mo · {remainingLabel}
+                {elapsedMonths}/{contract.termMonths} mo · {remainingLabel}
                 {isExpiringThisMonth && (
                   <span className={styles.expiryUrgent}> · Expires this month!</span>
                 )}
@@ -148,17 +151,17 @@ export function ActiveList() {
             </div>
 
             {canCancel && !isConfirming && (
-              <button className={styles.cancelBtn} onClick={() => setConfirming(c.id)}>
+              <button className={styles.cancelBtn} onClick={() => setConfirming(contract.id)}>
                 CANCEL CONTRACT
               </button>
             )}
             {isConfirming && (
               <div className={styles.confirmRow}>
                 <span className={styles.confirmMsg}>
-                  Cancel incurs a penalty of {fmt(c.penaltyPerMonth)} — confirm?
+                  Cancel incurs a penalty of {fmt(contract.penaltyPerMonth)} — confirm?
                 </span>
-                <button className={styles.confirmYes} onClick={() => handleCancel(c.id)}>YES, CANCEL</button>
-                <button className={styles.confirmNo}  onClick={() => setConfirming(null)}>KEEP</button>
+                <button className={styles.confirmYes} onClick={() => handleCancel(contract.id)}>YES, CANCEL</button>
+                <button className={styles.confirmNo} onClick={() => setConfirming(null)}>KEEP</button>
               </div>
             )}
           </div>

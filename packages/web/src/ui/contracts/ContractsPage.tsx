@@ -1,17 +1,17 @@
-import { useState, useMemo } from "react";
-import type { Contract } from "@datacenter-tycoon/game-logic";
+import { useMemo, useState } from "react";
+import { contractDealScore } from "@datacenter-tycoon/game-logic";
 import { MarketList } from "./MarketList.js";
 import { ActiveList } from "./ActiveList.js";
 import { CompletedList } from "./CompletedList.js";
 import { useSelector } from "../../store/storeContext.js";
 import {
-  selectMarket,
   selectActiveContracts,
-  selectAllDatacenters,
+  selectHistoricalContracts,
+  selectMarket,
+  selectMarketFitSummaries,
   selectReliabilitySummary,
   selectReliabilityMarketEffectSummary,
 } from "../../store/selectors.js";
-import { contractDealScore, canFulfill, dcFreeCapacity } from "./contractUtils.js";
 import styles from "./ContractsPage.module.css";
 
 type ContractsTab = "market" | "active" | "history";
@@ -39,18 +39,21 @@ export function ContractsPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [filter, setFilter] = useState<FilterKey>("all");
 
-  const market   = useSelector(selectMarket);
-  const active   = useSelector(selectActiveContracts);
-  const datacenters = useSelector(selectAllDatacenters);
+  const market = useSelector(selectMarket);
+  const marketFitSummaries = useSelector(selectMarketFitSummaries);
+  const active = useSelector(selectActiveContracts);
+  const history = useSelector(selectHistoricalContracts);
   const reliability = useSelector(selectReliabilitySummary);
   const reliabilityFx = useSelector(selectReliabilityMarketEffectSummary);
-  const activeAll = useSelector((s: import("@datacenter-tycoon/game-logic").GameState) =>
-    s.activeContracts.filter(c => c.status === "expired" || c.status === "cancelled")
+
+  const fitSummaryById = useMemo(
+    () => new Map(marketFitSummaries.map((summary) => [summary.contractId, summary])),
+    [marketFitSummaries],
   );
 
   const handleSort = (key: SortKey) => {
     if (key === sortKey) {
-      setSortDir(d => d === "asc" ? "desc" : "asc");
+      setSortDir((direction) => (direction === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
       setSortDir(key === "expiry" ? "asc" : "desc");
@@ -61,32 +64,31 @@ export function ContractsPage() {
     let list = [...market];
 
     if (filter === "fits") {
-      list = list.filter(c => {
-        return datacenters.some(dc => {
-          const free = dcFreeCapacity(dc, active);
-          return canFulfill(free, c.requirements);
-        });
-      });
+      list = list.filter((contract) => fitSummaryById.get(contract.id)?.fitStatus === "fits");
     } else if (filter === "highValue") {
-      list = list.filter(c => contractDealScore(c) >= 1.2);
+      list = list.filter((contract) => contractDealScore(contract) >= 1.2);
     } else if (filter === "rush") {
-      list = list.filter(c => c.urgency === "rush");
+      list = list.filter((contract) => contract.urgency === "rush");
     } else if (filter === "anchor") {
-      list = list.filter(c => c.urgency === "anchor");
+      list = list.filter((contract) => contract.urgency === "anchor");
     }
 
     const dir = sortDir === "asc" ? 1 : -1;
     list.sort((a, b) => {
       switch (sortKey) {
-        case "payment": return dir * (a.monthlyPayment - b.monthlyPayment);
-        case "term":    return dir * (a.termMonths - b.termMonths);
-        case "expiry":  return dir * (a.expiresAtTick - b.expiresAtTick);
-        case "score":   return dir * (contractDealScore(a) - contractDealScore(b));
+        case "payment":
+          return dir * (a.monthlyPayment - b.monthlyPayment);
+        case "term":
+          return dir * (a.termMonths - b.termMonths);
+        case "expiry":
+          return dir * (a.expiresAtTick - b.expiresAtTick);
+        case "score":
+          return dir * (contractDealScore(a) - contractDealScore(b));
       }
     });
 
     return list;
-  }, [market, datacenters, active, sortKey, sortDir, filter]);
+  }, [filter, fitSummaryById, market, sortDir, sortKey]);
 
   return (
     <div className={styles.page}>
@@ -140,7 +142,7 @@ export function ContractsPage() {
           ACTIVE
           <span className={[
             styles.badge,
-            active.some(c => c.status === "breached") ? styles.badgeRed : "",
+            active.some((contract) => contract.lifecycleState === "breached") ? styles.badgeRed : "",
           ].join(" ")}>
             {active.length}
           </span>
@@ -152,14 +154,14 @@ export function ContractsPage() {
           onClick={() => setTab("history")}
         >
           HISTORY
-          <span className={styles.badge}>{activeAll.length}</span>
+          <span className={styles.badge}>{history.length}</span>
         </button>
       </div>
 
       {tab === "market" && (
         <div className={styles.controls}>
           <div className={styles.sortRow}>
-            {(Object.keys(SORT_LABELS) as SortKey[]).map(key => (
+            {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
               <button
                 key={key}
                 className={[styles.sortBtn, sortKey === key ? styles.sortBtnActive : ""].join(" ")}
@@ -173,11 +175,11 @@ export function ContractsPage() {
             ))}
           </div>
           <div className={styles.filterRow}>
-            {(Object.keys(FILTER_LABELS) as FilterKey[]).map(key => (
+            {(Object.keys(FILTER_LABELS) as FilterKey[]).map((key) => (
               <button
                 key={key}
                 className={[styles.filterPill, filter === key ? styles.filterPillActive : ""].join(" ")}
-                onClick={() => setFilter(f => f === key ? "all" : key)}
+                onClick={() => setFilter((current) => (current === key ? "all" : key))}
               >
                 {FILTER_LABELS[key]}
               </button>

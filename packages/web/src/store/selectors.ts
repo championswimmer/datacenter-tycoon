@@ -1,9 +1,6 @@
 import {
   RELIABILITY_BASELINE_SCORE,
   datacenterMaintenanceSummary,
-  datacenterCapacity,
-  datacenterRackActivityView,
-  datacenterRackPowerSummary,
   datacenterUsage,
   rackAgeMonths,
   rackFailureRiskView,
@@ -11,12 +8,21 @@ import {
   reliabilityMarketPolicyForScore,
   repairDurationDays,
   repairProgressPerTick,
+  selectDatacenterMaintenanceStaffingViewFromState,
+  selectDatacenterRackActivityViewFromState,
+  selectDatacenterRackPowerSummaryFromState,
+  selectHistoricalContractsFromState,
+  selectLiveContractsFromState,
+  selectOpenMarketContractsFromState,
+  summarizeDatacenterCapacityFromState,
+  summarizeNetworkCapacityFromState,
+  summarizeOpenMarketContractFits,
   tickOpex,
 } from "@datacenter-tycoon/game-logic";
 import type {
   Capacity,
   Contract,
-  ContractRequirements,
+  ContractAssignmentFitSummary,
   ContractSlaOutcome,
   DatacenterId,
   Datacenter,
@@ -26,6 +32,8 @@ import type {
   LedgerEntry,
   Money,
   OpexTickResult,
+  DatacenterCapacityFromStateSummary,
+  DatacenterMaintenanceStaffingView,
   RackActivityView,
   RackHealthStatus,
   RackPlacementId,
@@ -230,6 +238,18 @@ export function selectMaintenanceViews(state: GameState): DatacenterMaintenanceV
     .filter((view): view is DatacenterMaintenanceView => view !== undefined);
 }
 
+export function selectDatacenterMaintenanceStaffingView(
+  state: GameState,
+  id: DatacenterId,
+): DatacenterMaintenanceStaffingView | undefined {
+  const datacenter = selectDatacenter(state, id);
+  if (!datacenter) {
+    return undefined;
+  }
+
+  return selectDatacenterMaintenanceStaffingViewFromState(state, id);
+}
+
 export interface RackMaintenanceView {
   placementId: RackPlacementId;
   ageMonths: number;
@@ -276,13 +296,15 @@ export function selectDatacenterRackMaintenanceViews(
 }
 
 /**
- * Contracts that are currently running (active or breached).
- * Does not include offered, expired, or cancelled.
+ * Contracts that are currently live (serving or breached).
+ * Does not include market-open or historical contracts.
  */
 export function selectActiveContracts(state: GameState): Contract[] {
-  return state.activeContracts.filter(
-    (c) => c.status === "active" || c.status === "breached",
-  );
+  return selectLiveContractsFromState(state);
+}
+
+export function selectHistoricalContracts(state: GameState): Contract[] {
+  return selectHistoricalContractsFromState(state);
 }
 
 export function selectDatacenterRackActivityViews(
@@ -294,11 +316,7 @@ export function selectDatacenterRackActivityViews(
     return [];
   }
 
-  const activeContracts = selectActiveContracts(state);
-  return datacenterRackActivityView(
-    datacenter,
-    assignedDemandForDatacenter(activeContracts, datacenter.id),
-  );
+  return selectDatacenterRackActivityViewFromState(state, id);
 }
 
 export function selectDatacenterRackPowerSummary(
@@ -310,16 +328,16 @@ export function selectDatacenterRackPowerSummary(
     return undefined;
   }
 
-  const activeContracts = selectActiveContracts(state);
-  return datacenterRackPowerSummary(
-    datacenter,
-    assignedDemandForDatacenter(activeContracts, datacenter.id),
-  );
+  return selectDatacenterRackPowerSummaryFromState(state, id);
 }
 
-/** All contracts currently on the open market (status === "offered"). */
+/** All contracts currently on the open market. */
 export function selectMarket(state: GameState): Contract[] {
-  return state.contractMarket;
+  return selectOpenMarketContractsFromState(state);
+}
+
+export function selectMarketFitSummaries(state: GameState): ContractAssignmentFitSummary[] {
+  return summarizeOpenMarketContractFits(state);
 }
 
 /** Last N ledger entries, newest first. Defaults to all entries. */
@@ -330,30 +348,38 @@ export function selectLedger(state: GameState, limit = state.ledger.length): Led
 // ── Derived / aggregate selectors ────────────────────────────────────────────
 
 export interface AggregateCapacity {
-  /** Sum of all racks across all datacenters */
+  /** Sum of all installed racks across all datacenters */
   total: Capacity;
-  /** Per-datacenter breakdown */
+  /** Per-datacenter installed capacity breakdown */
   perDc: Array<{ dcId: DatacenterId; capacity: Capacity }>;
 }
 
-/** Total and per-DC rack capacity (vCPU / RAM / Storage / GPU). */
+export function selectNetworkCapacitySummary(state: GameState) {
+  return summarizeNetworkCapacityFromState(state);
+}
+
+export function selectDatacenterCapacitySummary(
+  state: GameState,
+  id: DatacenterId,
+): DatacenterCapacityFromStateSummary | undefined {
+  const datacenter = selectDatacenter(state, id);
+  if (!datacenter) {
+    return undefined;
+  }
+
+  return summarizeDatacenterCapacityFromState(state, id);
+}
+
+/** Total installed and per-DC installed capacity (vCPU / RAM / Storage / GPU). */
 export function selectCapacity(state: GameState): AggregateCapacity {
-  const perDc = state.datacenters.map((dc) => ({
-    dcId: dc.id,
-    capacity: datacenterCapacity(dc),
-  }));
-
-  const total: Capacity = perDc.reduce(
-    (acc, { capacity }) => ({
-      vCpu: acc.vCpu + capacity.vCpu,
-      ramGb: acc.ramGb + capacity.ramGb,
-      storageTb: acc.storageTb + capacity.storageTb,
-      gpuFlops: acc.gpuFlops + capacity.gpuFlops,
-    }),
-    { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 },
-  );
-
-  return { total, perDc };
+  const summary = selectNetworkCapacitySummary(state);
+  return {
+    total: summary.installed,
+    perDc: summary.perDc.map((entry) => ({
+      dcId: entry.dcId,
+      capacity: entry.installed,
+    })),
+  };
 }
 
 export interface AggregateOpex {
@@ -361,29 +387,6 @@ export interface AggregateOpex {
   total: Money;
   /** Per-DC opex result (breakdown + total) */
   perDc: Array<{ dcId: DatacenterId; result: OpexTickResult }>;
-}
-
-function assignedDemandForDatacenter(
-  contracts: readonly Contract[],
-  dcId: DatacenterId,
-): ContractRequirements {
-  return contracts.reduce<ContractRequirements>((acc, contract) => {
-    if (contract.assignedDcId !== dcId) {
-      return acc;
-    }
-
-    return {
-      vCpu: acc.vCpu + contract.requirements.vCpu,
-      ramGb: acc.ramGb + contract.requirements.ramGb,
-      storageTb: acc.storageTb + contract.requirements.storageTb,
-      gpuFlops: acc.gpuFlops + contract.requirements.gpuFlops,
-    };
-  }, {
-    vCpu: 0,
-    ramGb: 0,
-    storageTb: 0,
-    gpuFlops: 0,
-  });
 }
 
 /**
@@ -429,10 +432,9 @@ export interface AggregateRackPowerSummary {
  * Reserved power reflects placement headroom usage, billed power reflects this month's active workload.
  */
 export function selectRackPowerSummary(state: GameState): AggregateRackPowerSummary {
-  const activeContracts = selectActiveContracts(state);
   const perDc = state.datacenters.map((dc) => ({
     dcId: dc.id,
-    summary: datacenterRackPowerSummary(dc, assignedDemandForDatacenter(activeContracts, dc.id)),
+    summary: selectDatacenterRackPowerSummaryFromState(state, dc.id),
   }));
 
   const total = perDc.reduce<RackPowerSummary>(
@@ -526,24 +528,7 @@ export function selectMonthlyPnl(state: GameState): MonthlyPnl {
  * Values are floored at 0 — the contracts panel can show "over-committed" separately.
  */
 export function selectFreeCapacity(state: GameState): Capacity {
-  const { total } = selectCapacity(state);
-
-  const demand = selectActiveContracts(state).reduce<Capacity>(
-    (acc, c) => ({
-      vCpu: acc.vCpu + c.requirements.vCpu,
-      ramGb: acc.ramGb + c.requirements.ramGb,
-      storageTb: acc.storageTb + c.requirements.storageTb,
-      gpuFlops: acc.gpuFlops + c.requirements.gpuFlops,
-    }),
-    { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 },
-  );
-
-  return {
-    vCpu: Math.max(0, total.vCpu - demand.vCpu),
-    ramGb: Math.max(0, total.ramGb - demand.ramGb),
-    storageTb: Math.max(0, total.storageTb - demand.storageTb),
-    gpuFlops: Math.max(0, total.gpuFlops - demand.gpuFlops),
-  };
+  return selectNetworkCapacitySummary(state).available;
 }
 
 export function selectRegions(state: GameState): import("@datacenter-tycoon/game-logic").Region[] {
