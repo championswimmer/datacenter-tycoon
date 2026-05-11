@@ -1,20 +1,16 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import {
-  RACK_CATALOG,
-  canPlaceRack,
-  calculateMoveCost,
-} from "@datacenter-tycoon/game-logic";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { RACK_CATALOG } from "@datacenter-tycoon/game-logic";
 import type {
-  Datacenter,
   DatacenterId,
   RackPlacementId,
   Region,
 } from "@datacenter-tycoon/game-logic";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import {
-  selectCash,
   selectAllDatacenters,
+  selectCash,
   selectDatacenter,
+  selectRackMoveTargets,
   selectRegions,
 } from "../../store/selectors.js";
 import { useDialogFocus } from "../dialogFocus.js";
@@ -28,54 +24,18 @@ interface MoveRackModalProps {
 
 function formatMoney(n: number): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1_000)     return `$${(n / 1_000).toFixed(1)}K`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
   return `$${n.toLocaleString()}`;
 }
 
-/** Find the first empty slot in a datacenter for a given rack spec. */
-function findFirstAvailableSlot(
-  dc: Datacenter,
-  specId: string,
-): { row: number; position: number } | null {
-  const spec = RACK_CATALOG[specId];
-  if (!spec) return null;
-
-  const occupied = new Set(dc.placements.map((p) => `${p.row},${p.position}`));
-
-  for (let r = 0; r < dc.spec.rows; r++) {
-    for (let p = 0; p < dc.spec.positionsPerRow; p++) {
-      if (occupied.has(`${r},${p}`)) continue;
-      const check = canPlaceRack(dc, spec, { row: r, position: p });
-      if (check.ok) return { row: r, position: p };
-    }
-  }
-  return null;
-}
-
-/** Count total available slots in a datacenter for a given rack spec. */
-function countAvailableSlots(dc: Datacenter, specId: string): number {
-  const spec = RACK_CATALOG[specId];
-  if (!spec) return 0;
-
-  const occupied = new Set(dc.placements.map((p) => `${p.row},${p.position}`));
-  let count = 0;
-
-  for (let r = 0; r < dc.spec.rows; r++) {
-    for (let p = 0; p < dc.spec.positionsPerRow; p++) {
-      if (occupied.has(`${r},${p}`)) continue;
-      const check = canPlaceRack(dc, spec, { row: r, position: p });
-      if (check.ok) count++;
-    }
-  }
-  return count;
-}
-
 interface CandidateInfo {
-  dc: Datacenter;
+  dcId: DatacenterId;
+  name: string;
   region: Region | undefined;
   availableSlots: number;
-  cost: number;
+  moveCost: number;
   sameRegion: boolean;
+  firstAvailableSlot: { row: number; position: number } | null;
 }
 
 export function MoveRackModal({ sourceDcId, placementId, onClose }: MoveRackModalProps) {
@@ -83,67 +43,65 @@ export function MoveRackModal({ sourceDcId, placementId, onClose }: MoveRackModa
   const cash = useSelector(selectCash);
   const allDatacenters = useSelector(selectAllDatacenters);
   const regions = useSelector(selectRegions);
-  const sourceDc = useSelector((s) => selectDatacenter(s, sourceDcId));
+  const sourceDc = useSelector((state) => selectDatacenter(state, sourceDcId));
+  const moveTargets = useSelector((state) => selectRackMoveTargets(state, sourceDcId, placementId));
 
-  const placement = sourceDc?.placements.find((p) => p.id === placementId);
+  const placement = sourceDc?.placements.find((entry) => entry.id === placementId);
   const spec = placement ? RACK_CATALOG[placement.specId] : undefined;
-  const sourceRegion = regions.find((r) => r.id === sourceDc?.regionId);
+  const sourceRegion = regions.find((entry) => entry.id === sourceDc?.regionId);
 
-  const candidates: CandidateInfo[] = useMemo(() => {
-    if (!spec || !sourceDc) return [];
-    return allDatacenters
-      .filter((dc) => dc.id !== sourceDcId)
-      .map((dc) => {
-        const region = regions.find((r) => r.id === dc.regionId);
-        return {
-          dc,
-          region,
-          availableSlots: countAvailableSlots(dc, spec.id),
-          cost: calculateMoveCost(spec, sourceDc.regionId, dc.regionId),
-          sameRegion: sourceDc.regionId === dc.regionId,
-        };
-      });
-  }, [allDatacenters, sourceDcId, spec, sourceDc, regions]);
+  const candidates: CandidateInfo[] = moveTargets.map((target) => {
+    const datacenter = allDatacenters.find((entry) => entry.id === target.targetDcId);
+    return {
+      dcId: target.targetDcId,
+      name: datacenter?.name ?? target.targetDcId,
+      region: regions.find((entry) => entry.id === target.targetRegionId),
+      availableSlots: target.availableSlots,
+      moveCost: target.moveCost,
+      sameRegion: target.sameRegion,
+      firstAvailableSlot: target.firstAvailableSlot,
+    };
+  });
 
   const [selectedDcId, setSelectedDcId] = useState<DatacenterId | null>(
-    candidates.find((c) => c.availableSlots > 0)?.dc.id ?? null,
+    candidates.find((candidate) => candidate.availableSlots > 0)?.dcId ?? null,
   );
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   useDialogFocus(closeButtonRef);
 
-  const selectedCandidate = candidates.find((c) => c.dc.id === selectedDcId);
-  const selectedDc = selectedCandidate?.dc;
+  useEffect(() => {
+    if (selectedDcId && candidates.some((candidate) => candidate.dcId === selectedDcId && candidate.availableSlots > 0)) {
+      return;
+    }
+    setSelectedDcId(candidates.find((candidate) => candidate.availableSlots > 0)?.dcId ?? null);
+  }, [candidates, selectedDcId]);
 
-  const targetSlot = useMemo(() => {
-    if (!selectedDc || !spec) return null;
-    return findFirstAvailableSlot(selectedDc, spec.id);
-  }, [selectedDc, spec]);
-
-  const moveCost = selectedCandidate?.cost ?? 0;
+  const selectedCandidate = candidates.find((candidate) => candidate.dcId === selectedDcId);
+  const moveCost = selectedCandidate?.moveCost ?? 0;
   const canAfford = cash >= moveCost;
   const isSameRegion = selectedCandidate?.sameRegion ?? false;
+  const targetSlot = selectedCandidate?.firstAvailableSlot ?? null;
 
-  // ESC closes
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
   const handleConfirm = useCallback(() => {
-    if (!selectedDc || !targetSlot || !canAfford || !placement) return;
+    if (!selectedCandidate || !targetSlot || !canAfford || !placement) return;
     dispatch({
       type: "MoveRack",
       dcId: sourceDcId,
       placementId: placement.id,
-      targetDcId: selectedDc.id,
+      targetDcId: selectedCandidate.dcId,
       row: targetSlot.row,
       position: targetSlot.position,
     });
     onClose();
-  }, [dispatch, sourceDcId, placement, selectedDc, targetSlot, canAfford, onClose]);
+  }, [canAfford, dispatch, onClose, placement, selectedCandidate, sourceDcId, targetSlot]);
 
   if (!placement || !spec || !sourceDc) {
     return null;
@@ -152,16 +110,10 @@ export function MoveRackModal({ sourceDcId, placementId, onClose }: MoveRackModa
   return (
     <div
       className={styles.backdrop}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
       role="presentation"
     >
-      <div
-        className={styles.panel}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="move-rack-title"
-      >
-        {/* ── Header ── */}
+      <div className={styles.panel} role="dialog" aria-modal="true" aria-labelledby="move-rack-title">
         <div className={styles.header}>
           <div className={styles.headerLeft}>
             <h2 id="move-rack-title" className={styles.title}>MOVE RACK</h2>
@@ -178,55 +130,52 @@ export function MoveRackModal({ sourceDcId, placementId, onClose }: MoveRackModa
           >✕</button>
         </div>
 
-        {/* ── Source info ── */}
         <div className={styles.sourceInfo}>
           <span className={styles.sourceLabel}>FROM</span>
           <span className={styles.sourceValue}>{sourceDc.name}</span>
           <span className={styles.sourceRegion}>{sourceRegion?.name ?? sourceDc.regionId}</span>
         </div>
 
-        {/* ── Target DC cards ── */}
         <div className={styles.candidates}>
           {candidates.length === 0 && (
             <p className={styles.noCandidates}>No other datacenters available.</p>
           )}
           {candidates.map((candidate) => {
-            const { dc, region, availableSlots, cost, sameRegion } = candidate;
-            const isSelected = dc.id === selectedDcId;
-            const canFit = availableSlots > 0;
+            const isSelected = candidate.dcId === selectedDcId;
+            const canFit = candidate.availableSlots > 0;
 
             return (
               <button
-                key={dc.id}
+                key={candidate.dcId}
                 className={[
                   styles.card,
                   isSelected ? styles.cardSelected : "",
                   !canFit ? styles.cardDisabled : "",
                 ].filter(Boolean).join(" ")}
-                onClick={() => canFit && setSelectedDcId(dc.id)}
+                onClick={() => canFit && setSelectedDcId(candidate.dcId)}
                 aria-pressed={isSelected}
                 disabled={!canFit}
               >
                 <div className={styles.cardHeader}>
-                  <span className={styles.cardName}>{dc.name}</span>
+                  <span className={styles.cardName}>{candidate.name}</span>
                   <span className={[
                     styles.regionBadge,
-                    sameRegion ? styles.regionSame : styles.regionCross,
+                    candidate.sameRegion ? styles.regionSame : styles.regionCross,
                   ].join(" ")}>
-                    {sameRegion ? "SAME REGION" : "CROSS-REGION"}
+                    {candidate.sameRegion ? "SAME REGION" : "CROSS-REGION"}
                   </span>
                 </div>
                 <div className={styles.cardMeta}>
-                  <span>{region?.name ?? dc.regionId}</span>
-                  <span>{availableSlots} slot{availableSlots !== 1 ? "s" : ""} free</span>
+                  <span>{candidate.region?.name ?? candidate.dcId}</span>
+                  <span>{candidate.availableSlots} slot{candidate.availableSlots !== 1 ? "s" : ""} free</span>
                 </div>
                 <div className={styles.cardCost}>
                   <span className={styles.costLabel}>MOVE COST</span>
                   <span className={[
                     styles.costValue,
-                    cash >= cost ? styles.costOk : styles.costNo,
+                    cash >= candidate.moveCost ? styles.costOk : styles.costNo,
                   ].join(" ")}>
-                    {formatMoney(cost)}
+                    {formatMoney(candidate.moveCost)}
                   </span>
                 </div>
               </button>
@@ -234,25 +183,21 @@ export function MoveRackModal({ sourceDcId, placementId, onClose }: MoveRackModa
           })}
         </div>
 
-        {/* ── Selected target details ── */}
-        {selectedDc && targetSlot && (
+        {selectedCandidate && targetSlot && (
           <div className={styles.targetDetail}>
-            <span>
-              Target slot: Row {String.fromCharCode(65 + targetSlot.row)}, Position {targetSlot.position + 1}
-            </span>
+            <span>Target slot: Row {String.fromCharCode(65 + targetSlot.row)}, Position {targetSlot.position + 1}</span>
             <span className={isSameRegion ? styles.sameRegion : styles.crossRegion}>
               {isSameRegion ? "Same region — discounted rate" : "Cross-region — standard rate"}
             </span>
           </div>
         )}
 
-        {selectedDc && !targetSlot && (
+        {selectedCandidate && !targetSlot && (
           <div className={styles.targetDetail}>
             <span className={styles.noSlot}>No valid slot available in this datacenter.</span>
           </div>
         )}
 
-        {/* ── Footer ── */}
         <div className={styles.footer}>
           {!canAfford && moveCost > 0 && (
             <span className={styles.insufficient}>

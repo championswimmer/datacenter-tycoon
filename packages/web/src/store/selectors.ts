@@ -8,6 +8,7 @@ import {
   reliabilityMarketPolicyForScore,
   repairDurationDays,
   repairProgressPerTick,
+  listRackMoveTargets,
   selectDatacenterMaintenanceStaffingViewFromState,
   selectDatacenterRackActivityViewFromState,
   selectDatacenterRackPowerSummaryFromState,
@@ -34,6 +35,7 @@ import type {
   OpexTickResult,
   DatacenterCapacityFromStateSummary,
   DatacenterMaintenanceStaffingView,
+  MoveRackTarget,
   RackActivityView,
   RackHealthStatus,
   RackPlacementId,
@@ -338,6 +340,14 @@ export function selectMarket(state: GameState): Contract[] {
 
 export function selectMarketFitSummaries(state: GameState): ContractAssignmentFitSummary[] {
   return summarizeOpenMarketContractFits(state);
+}
+
+export function selectRackMoveTargets(
+  state: GameState,
+  sourceDcId: DatacenterId,
+  placementId: RackPlacementId,
+): MoveRackTarget[] {
+  return listRackMoveTargets(state, sourceDcId, placementId);
 }
 
 /** Last N ledger entries, newest first. Defaults to all entries. */
