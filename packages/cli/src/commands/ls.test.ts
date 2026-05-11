@@ -130,6 +130,13 @@ test("runLsCommand datacenters text output shows layout bounds", async () => {
 							maintenanceStaff: 2,
 						},
 						capacity: { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 },
+						capacitySummary: {
+							dcId: "dc-1" as never,
+							installed: { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 },
+							usable: { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 },
+							committed: { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 },
+							available: { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 },
+						},
 						powerKw: 0,
 						powerCapacityKw: DATACENTER_CATALOG.garage.powerCapacityKw,
 						heatOutputBtuPerHr: 0,
@@ -157,11 +164,21 @@ test("runLsCommand datacenters text output shows layout bounds", async () => {
 import { newGame } from "@datacenter-tycoon/game-logic";
 import type { GameState } from "@datacenter-tycoon/game-logic";
 
-function createContractSnapshotClient(state: Pick<GameState, "contractMarket" | "activeContracts">): import("./common.js").CommandClient {
+function createContractSnapshotClient(state: Pick<GameState, "contracts" | "contractMarket" | "activeContracts">): import("./common.js").CommandClient {
 	return {
 		connect: async () => undefined,
 		dispatch: async () => ({ tick: 0 }),
-		query: async (): Promise<GameState> => state as GameState,
+		query: async (params: QueryParams): Promise<GameState | ListResult> => {
+			if (params.kind === "list" && params.target === "contracts") {
+				return {
+					kind: "contracts",
+					market: state.contracts.filter((contract) => contract.status === "offered"),
+					active: state.contracts.filter((contract) => contract.status === "active" || contract.status === "breached"),
+					history: state.contracts.filter((contract) => contract.status === "expired" || contract.status === "cancelled"),
+				};
+			}
+			return state as GameState;
+		},
 		control: async () => ({ ok: true }),
 		close: async () => undefined,
 	};
@@ -177,7 +194,7 @@ test("runLsCommand contracts text output shows history section for expired contr
 		startedAtTick: 1,
 		assignedDcId: undefined,
 	};
-	const state = { ...baseState, contractMarket: [], activeContracts: [expiredContract] };
+	const state = { ...baseState, contracts: [expiredContract], contractMarket: [], activeContracts: [] };
 	const client = createContractSnapshotClient(state);
 
 	const logged: string[] = [];
@@ -204,7 +221,7 @@ test("runLsCommand contracts JSON output includes history bucket", async () => {
 		startedAtTick: 1,
 		assignedDcId: undefined,
 	};
-	const state = { ...baseState, contractMarket: [], activeContracts: [expiredContract] };
+	const state = { ...baseState, contracts: [expiredContract], contractMarket: [], activeContracts: [] };
 	const client = createContractSnapshotClient(state);
 
 	const logged: string[] = [];

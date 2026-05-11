@@ -11,7 +11,7 @@ import type {
 	ListResult,
 	RackListItem,
 } from "../protocol/messages.js";
-import type { DatacenterSpec, GameState } from "@datacenter-tycoon/game-logic";
+import type { DatacenterSpec } from "@datacenter-tycoon/game-logic";
 import {
 	hasBooleanFlag,
 	resolveCommandPaths,
@@ -19,9 +19,7 @@ import {
 	writeCommandResult,
 	type CommandClientFactory,
 } from "./common.js";
-import { formatContractRequirements, presentContractBuckets } from "./contracts-view.js";
-
-// ── ls (router) ───────────────────────────────────────────────────────────────
+import { formatContractRequirements, presentContracts } from "./contracts-view.js";
 
 export async function runLsCommand(
 	parsed: ParsedArgv,
@@ -55,8 +53,6 @@ function formatDatacenterLayout(spec: Pick<DatacenterSpec, "rows" | "positionsPe
 	const slots = spec.rows * spec.positionsPerRow;
 	return `${spec.rows} rows × ${spec.positionsPerRow} cols (${slots} slots)`;
 }
-
-// ── saves ────────────────────────────────────────────────────────────────────
 
 async function listSaves(parsed: ParsedArgv): Promise<void> {
 	const paths = resolveCommandPaths(parsed);
@@ -95,16 +91,20 @@ async function listSaves(parsed: ParsedArgv): Promise<void> {
 	writeCommandResult(parsed, saves.length > 0 ? `Available Saves:\n${table}` : "No valid saves found.", { saves });
 }
 
-// ── contracts ────────────────────────────────────────────────────────────────
-
 async function listContracts(parsed: ParsedArgv, clientFactory: CommandClientFactory): Promise<void> {
 	const isJson = hasBooleanFlag(parsed, "--json");
 
 	await withClient(
 		parsed,
 		async (client) => {
-			const snapshot = (await client.query({ kind: "snapshot" })) as GameState;
-			const { market, active, history } = presentContractBuckets(snapshot);
+			const result = (await client.query({ kind: "list", target: "contracts" })) as ListResult;
+			if (result.kind !== "contracts") {
+				throw new Error("Unexpected contracts payload from daemon");
+			}
+
+			const market = presentContracts(result.market, "market");
+			const active = presentContracts(result.active, "active");
+			const history = presentContracts(result.history, "history");
 
 			if (isJson) {
 				writeCommandResult(parsed, "", { market, active, history });
@@ -159,8 +159,6 @@ async function listContracts(parsed: ParsedArgv, clientFactory: CommandClientFac
 	);
 }
 
-// ── datacenters ───────────────────────────────────────────────────────────────
-
 async function listDatacenters(parsed: ParsedArgv, clientFactory: CommandClientFactory): Promise<void> {
 	const isJson = hasBooleanFlag(parsed, "--json");
 
@@ -202,7 +200,7 @@ async function listDatacenters(parsed: ParsedArgv, clientFactory: CommandClientF
 					`    Bounds: rows 0-${dc.spec.rows - 1}, cols 0-${dc.spec.positionsPerRow - 1} | Power: ${item.powerKw.toFixed(1)}/${item.powerCapacityKw}kW | Cooling: ${Math.round(item.heatOutputBtuPerHr)}/${item.coolingCapacityBtuPerHr} BTU/hr | BW: ${item.bandwidthGbps}/${item.bandwidthCapacityGbps}Gbps`,
 				);
 				lines.push(
-					`    Capacity: vCPU=${item.capacity.vCpu}, RAM=${item.capacity.ramGb}GB, Storage=${item.capacity.storageTb}TB, GPU=${item.capacity.gpuFlops}`,
+					`    Capacity: installed ${formatContractRequirements({ requirements: item.capacitySummary.installed })} | committed ${formatContractRequirements({ requirements: item.capacitySummary.committed })} | available ${formatContractRequirements({ requirements: item.capacitySummary.available })}`,
 				);
 				lines.push(
 					`    Maintenance: ${m.currentStaff} staff | +$${m.extraWagesMonthly.toLocaleString()}/mo | Repair speed ${m.repairSpeedDaysPerTick.toFixed(1)} days/tick | Repairing ${m.repairingRackCount}/${m.totalRackCount} racks | ${riskLabel}`,
@@ -214,8 +212,6 @@ async function listDatacenters(parsed: ParsedArgv, clientFactory: CommandClientF
 		clientFactory,
 	);
 }
-
-// ── racks ─────────────────────────────────────────────────────────────────────
 
 async function listRacks(parsed: ParsedArgv, clientFactory: CommandClientFactory): Promise<void> {
 	const dcId = parsed.positionals[1];
@@ -268,8 +264,6 @@ async function listRacks(parsed: ParsedArgv, clientFactory: CommandClientFactory
 		clientFactory,
 	);
 }
-
-// ── catalog ───────────────────────────────────────────────────────────────────
 
 async function listCatalog(parsed: ParsedArgv, clientFactory: CommandClientFactory): Promise<void> {
 	const isJson = hasBooleanFlag(parsed, "--json");

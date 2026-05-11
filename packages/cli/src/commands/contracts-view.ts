@@ -1,10 +1,17 @@
-import { isLiveContractStatus } from "@datacenter-tycoon/game-logic";
+import {
+	isHistoricalContract,
+	isLiveContract,
+	selectContractByIdFromState,
+	selectHistoricalContractsFromState,
+	selectLiveContractsFromState,
+	selectOpenMarketContractsFromState,
+} from "@datacenter-tycoon/game-logic";
 import type { Contract, GameState } from "@datacenter-tycoon/game-logic";
 
 /**
  * `market`  — contract on the market, not yet accepted.
- * `active`  — accepted and currently live (status: active | breached). Still commits capacity.
- * `history` — accepted but no longer live (status: expired | cancelled). Capacity already released.
+ * `active`  — accepted and currently live. Still commits capacity.
+ * `history` — accepted but no longer live. Capacity already released.
  */
 export type ContractListBucket = "market" | "active" | "history";
 
@@ -48,41 +55,39 @@ export function presentContracts(contracts: readonly Contract[], bucket: Contrac
 	return contracts.map((contract) => presentContract(contract, bucket));
 }
 
-/**
- * Classify a single accepted contract into either the `active` (live) or
- * `history` (expired/cancelled) bucket based on its status.
- */
 export function presentAcceptedContract(contract: Contract): CliContractView {
-	const bucket: ContractListBucket = isLiveContractStatus(contract.status) ? "active" : "history";
+	const bucket: ContractListBucket = isLiveContract(contract)
+		? "active"
+		: isHistoricalContract(contract)
+			? "history"
+			: "market";
 	return presentContract(contract, bucket);
 }
 
 export function presentContractBuckets(
-	snapshot: Pick<GameState, "contractMarket" | "activeContracts">,
+	snapshot: Pick<GameState, "contracts" | "contractMarket" | "activeContracts">,
 ): {
 	market: CliContractView[];
 	active: CliContractView[];
 	history: CliContractView[];
 } {
-	const presented = snapshot.activeContracts.map(presentAcceptedContract);
 	return {
-		market: presentContracts(snapshot.contractMarket, "market"),
-		active: presented.filter((c) => c.bucket === "active"),
-		history: presented.filter((c) => c.bucket === "history"),
+		market: presentContracts(selectOpenMarketContractsFromState(snapshot), "market"),
+		active: presentContracts(selectLiveContractsFromState(snapshot), "active"),
+		history: presentContracts(selectHistoricalContractsFromState(snapshot), "history"),
 	};
 }
 
 export function presentContractById(
-	snapshot: Pick<GameState, "contractMarket" | "activeContracts">,
+	snapshot: Pick<GameState, "contracts" | "contractMarket" | "activeContracts">,
 	contractId: string,
 ): CliContractView | undefined {
-	const acceptedContract = snapshot.activeContracts.find((contract) => contract.id === contractId);
-	if (acceptedContract) {
-		return presentAcceptedContract(acceptedContract);
+	const contract = selectContractByIdFromState(snapshot, contractId as Contract["id"]);
+	if (!contract) {
+		return undefined;
 	}
 
-	const marketContract = snapshot.contractMarket.find((contract) => contract.id === contractId);
-	return marketContract ? presentContract(marketContract, "market") : undefined;
+	return presentAcceptedContract(contract);
 }
 
 export function formatContractRequirements(contract: Pick<CliContractView, "requirements">): string {

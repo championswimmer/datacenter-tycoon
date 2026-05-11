@@ -20,7 +20,7 @@ owner: game-logic, web, cli
   - [x] 2.3 Remove remaining web reads of deprecated compatibility views where a canonical query exists
 - [ ] **Phase 3 — Refactor CLI and daemon to consume only canonical gameplay queries**
   - [x] 3.1 Update daemon/runtime status and list endpoints to derive buckets and counts from canonical game-logic queries
-  - [ ] 3.2 Replace CLI contract presenters and TUI tabs that still classify contracts locally
+  - [x] 3.2 Replace CLI contract presenters and TUI tabs that still classify contracts locally
   - [ ] 3.3 Keep command-level UX validation thin and delete leftover gameplay interpretation from CLI code
 - [ ] **Phase 4 — Verification, docs, and guardrails**
   - [ ] 4.1 Add cross-workspace regression tests proving web/cli outputs match game-logic query results

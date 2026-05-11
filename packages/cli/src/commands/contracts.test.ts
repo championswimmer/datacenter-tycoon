@@ -5,7 +5,7 @@ import { newGame, type Action, type GameState } from "@datacenter-tycoon/game-lo
 
 import { parseArgv } from "../argv.js";
 import type { CommandClient } from "./common.js";
-import { runAcceptContractCommand, runCancelContractCommand, runContractCommand, runContractDetailsCommand } from "./contracts.js";
+import { runAcceptContractCommand, runCancelContractCommand, runContractCommand } from "./contracts.js";
 import { runLsCommand } from "./ls.js";
 
 function createSnapshot(): GameState {
@@ -13,15 +13,17 @@ function createSnapshot(): GameState {
 	const marketContract = snapshot.contractMarket[0]!;
 	return {
 		...snapshot,
-		activeContracts: [
+		contracts: [
 			{
 				...marketContract,
 				status: "breached",
 				startedAtTick: 3,
 				assignedDcId: "dc-1" as GameState["activeContracts"][number]["assignedDcId"],
 			},
+			...snapshot.contractMarket.slice(1),
 		],
-		contractMarket: snapshot.contractMarket.slice(1),
+		activeContracts: [],
+		contractMarket: [],
 		player: {
 			...snapshot.player,
 			reliability: {
@@ -41,10 +43,10 @@ function createSnapshot(): GameState {
 
 function createStatusSnapshot(): GameState {
 	const snapshot = newGame(11);
-	const [breachedSource, cancelledSource, expiredSource] = snapshot.contractMarket.slice(0, 3);
+	const [breachedSource, cancelledSource, expiredSource, ...market] = snapshot.contractMarket;
 	return {
 		...snapshot,
-		activeContracts: [
+		contracts: [
 			{
 				...breachedSource!,
 				status: "breached",
@@ -63,8 +65,10 @@ function createStatusSnapshot(): GameState {
 				startedAtTick: 0,
 				assignedDcId: "dc-2" as GameState["activeContracts"][number]["assignedDcId"],
 			},
+			...market,
 		],
-		contractMarket: snapshot.contractMarket.slice(3),
+		activeContracts: [],
+		contractMarket: [],
 		player: {
 			...snapshot.player,
 			reliability: {
@@ -91,10 +95,18 @@ function createFakeClient(actions: Action[], snapshot: GameState = createSnapsho
 				return snapshot;
 			}
 			if (params.kind === "list" && params.target === "market-contracts") {
-				return { kind: "market-contracts", items: snapshot.contractMarket };
+				return { kind: "market-contracts", items: snapshot.contracts.slice(1) };
 			}
 			if (params.kind === "list" && params.target === "active-contracts") {
-				return { kind: "active-contracts", items: snapshot.activeContracts };
+				return { kind: "active-contracts", items: [snapshot.contracts[0]] };
+			}
+			if (params.kind === "list" && params.target === "contracts") {
+				return {
+					kind: "contracts",
+					market: snapshot.contracts.slice(1),
+					active: [snapshot.contracts[0]!],
+					history: [],
+				};
 			}
 			return { tick: 0 };
 		},
@@ -133,7 +145,7 @@ test("runContractCommand routes cancel subcommand", async () => {
 
 test("runContractDetailsCommand returns snapshot-backed contract details as json", async () => {
 	const snapshot = createSnapshot();
-	const targetContractId = snapshot.activeContracts[0]!.id;
+	const targetContractId = snapshot.contracts[0]!.id;
 	const actions: Action[] = [];
 	const logged: string[] = [];
 	const originalLog = console.log;
@@ -170,7 +182,7 @@ test("runContractDetailsCommand returns snapshot-backed contract details as json
 
 test("runContractDetailsCommand text output shows the assigned datacenter", async () => {
 	const snapshot = createSnapshot();
-	const targetContractId = snapshot.activeContracts[0]!.id;
+	const targetContractId = snapshot.contracts[0]!.id;
 	const actions: Action[] = [];
 	const logged: string[] = [];
 	const originalLog = console.log;
@@ -213,7 +225,7 @@ test("contract list text output shows the assigned datacenter", async () => {
 
 test("contract list and details json use the same canonical monthlyPayment schema", async () => {
 	const snapshot = createSnapshot();
-	const targetContractId = snapshot.activeContracts[0]!.id;
+	const targetContractId = snapshot.contracts[0]!.id;
 	const actions: Action[] = [];
 	const logged: string[] = [];
 	const originalLog = console.log;
@@ -301,9 +313,9 @@ test("runContractCommand preserves breached, cancelled, and expired statuses in 
 	};
 
 	try {
-		await runContractCommand(parseArgv(["contract", "details", snapshot.activeContracts[0]!.id, "--json"]), () => createFakeClient(actions, snapshot));
-		await runContractCommand(parseArgv(["contract", "details", snapshot.activeContracts[1]!.id, "--json"]), () => createFakeClient(actions, snapshot));
-		await runContractCommand(parseArgv(["contract", "details", snapshot.activeContracts[2]!.id, "--json"]), () => createFakeClient(actions, snapshot));
+		await runContractCommand(parseArgv(["contract", "details", snapshot.contracts[0]!.id, "--json"]), () => createFakeClient(actions, snapshot));
+		await runContractCommand(parseArgv(["contract", "details", snapshot.contracts[1]!.id, "--json"]), () => createFakeClient(actions, snapshot));
+		await runContractCommand(parseArgv(["contract", "details", snapshot.contracts[2]!.id, "--json"]), () => createFakeClient(actions, snapshot));
 	} finally {
 		console.log = originalLog;
 	}
@@ -326,8 +338,7 @@ test("runContractCommand rejects bare command and points users to ls contracts",
 
 test("runContractDetailsCommand text output labels expired contract as HISTORICAL, not live", async () => {
 	const snapshot = createStatusSnapshot();
-	// snapshot.activeContracts[2] is expired
-	const expiredContractId = snapshot.activeContracts[2]!.id;
+	const expiredContractId = snapshot.contracts[2]!.id;
 	const actions: Action[] = [];
 	const logged: string[] = [];
 	const originalLog = console.log;
@@ -342,10 +353,9 @@ test("runContractDetailsCommand text output labels expired contract as HISTORICA
 	assert.ok(!output.includes("currently commits capacity"), "expired contract must not say it commits capacity");
 });
 
-test("runContractDetailsCommand text output labels active/breached contract as LIVE", async () => {
+test("runContractDetailsCommand text output labels active\/breached contract as LIVE", async () => {
 	const snapshot = createStatusSnapshot();
-	// snapshot.activeContracts[0] is breached (live)
-	const breachedContractId = snapshot.activeContracts[0]!.id;
+	const breachedContractId = snapshot.contracts[0]!.id;
 	const actions: Action[] = [];
 	const logged: string[] = [];
 	const originalLog = console.log;
