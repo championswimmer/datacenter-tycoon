@@ -1,7 +1,7 @@
 ---
 name: Shared Gameplay Query Surface
 description: Move cross-interface gameplay queries and state interpretation out of web/cli and into authoritative game-logic helpers.
-status: started
+status: completed
 created: 2026-05-11
 updated: 2026-05-11
 owner: game-logic, web, cli
@@ -22,9 +22,9 @@ owner: game-logic, web, cli
   - [x] 3.1 Update daemon/runtime status and list endpoints to derive buckets and counts from canonical game-logic queries
   - [x] 3.2 Replace CLI contract presenters and TUI tabs that still classify contracts locally
   - [x] 3.3 Keep command-level UX validation thin and delete leftover gameplay interpretation from CLI code
-- [ ] **Phase 4 — Verification, docs, and guardrails**
-  - [ ] 4.1 Add cross-workspace regression tests proving web/cli outputs match game-logic query results
-  - [ ] 4.2 Update AGENTS/docs and add a grep-based audit for gameplay logic leaking back into consumers
+- [x] **Phase 4 — Verification, docs, and guardrails**
+  - [x] 4.1 Add cross-workspace regression tests proving web/cli outputs match game-logic query results
+  - [x] 4.2 Update AGENTS/docs and add a grep-based audit for gameplay logic leaking back into consumers
 
 ## Overview
 

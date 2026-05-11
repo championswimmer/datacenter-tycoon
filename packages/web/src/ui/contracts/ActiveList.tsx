@@ -136,7 +136,7 @@ export function ActiveList() {
                 value={progress * 100}
                 max={100}
                 segments={contract.termMonths}
-                color={contract.lifecycleState === "breached" ? "red" : contract.status === "expired" ? "cyan" : "lime"}
+                color={contract.lifecycleState === "breached" ? "red" : "lime"}
                 showLabel
                 height={6}
                 label={`Contract progress: ${Math.round(progress * 100)}%`}

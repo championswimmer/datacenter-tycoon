@@ -36,6 +36,7 @@
     "test:cli": "npm run test -w @datacenter-tycoon/cli",
 
     "typecheck": "npm run typecheck --workspaces --if-present",
+    "audit:query-boundary": "bash -lc '! rg -n \"state\\.activeContracts|state\\.contractMarket|status === \\\"active\\\"|status === \\\"breached\\\"|status === \\\"expired\\\"|status === \\\"cancelled\\\"\" packages/web/src packages/cli/src --glob \"!**/*.test.ts\" --glob \"!**/*.test.tsx\" --glob \"!packages/cli/.tui-test/**\" && ! rg -n \"contractUtils|dcFreeCapacity|canFulfill|findFirstAvailableSlot|countAvailableSlots\" packages/web/src packages/cli/src --glob \"!**/*.test.ts\" --glob \"!**/*.test.tsx\" --glob \"!packages/cli/.tui-test/**\"'",
     "lint": "npm run lint --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present && rm -rf node_modules/.cache",
 
