@@ -16,6 +16,7 @@
 ## Rules
 
 - **No game rules here.** All simulation logic lives in `@datacenter-tycoon/game-logic`. This package is a view + input layer.
+- Shared gameplay queries (contract buckets, contract fit, datacenter available capacity, maintenance staffing affordances, move-target discovery) must come from exported `@datacenter-tycoon/game-logic` helpers or thin web selectors over those helpers — never from UI-local reducers or helper files.
 - Import game logic via the package name (`@datacenter-tycoon/game-logic`), never via relative paths across packages.
 - Keep UI state separate from game state. Game state comes from `game-logic`; UI state (selected tab, modals open, etc.) lives in the frontend only.
 - Prefer presentational components that take game state as props.

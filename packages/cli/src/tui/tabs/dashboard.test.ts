@@ -23,14 +23,15 @@ test("renderDashboardTab active contracts KPI counts only live contracts", () =>
 	const contract = base.contractMarket[0]!;
 	const snapshot = {
 		...base,
-		activeContracts: [
+		contracts: [
 			{ ...contract, id: "c-active" as typeof contract.id, status: "active" as const, startedAtTick: 1, assignedDcId: "dc-1" as typeof contract.assignedDcId },
 			{ ...contract, id: "c-expired" as typeof contract.id, status: "expired" as const, startedAtTick: 1, assignedDcId: "dc-1" as typeof contract.assignedDcId },
 			{ ...contract, id: "c-cancelled" as typeof contract.id, status: "cancelled" as const, startedAtTick: 1, assignedDcId: "dc-1" as typeof contract.assignedDcId },
 		],
+		activeContracts: [],
+		contractMarket: [],
 	};
 
 	const lines = renderDashboardTab(snapshot).join("\n");
-	// Only 1 live contract (c-active); expired and cancelled must not count.
 	assert.match(lines, /Active contracts: 1/);
 });

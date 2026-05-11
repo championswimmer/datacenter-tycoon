@@ -17,26 +17,23 @@ interface FloorViewProps {
 }
 
 export function FloorView({ dcId }: FloorViewProps) {
-  const dc              = useSelector(s => selectDatacenter(s, dcId));
+  const datacenter = useSelector((state) => selectDatacenter(state, dcId));
   const activeContracts = useSelector(selectActiveContracts);
-  const rackMaintenanceViews = useSelector(s => selectDatacenterRackMaintenanceViews(s, dcId));
-  const rackActivityViews = useSelector(s => selectDatacenterRackActivityViews(s, dcId));
-  const dispatch        = useGameDispatch();
+  const rackMaintenanceViews = useSelector((state) => selectDatacenterRackMaintenanceViews(state, dcId));
+  const rackActivityViews = useSelector((state) => selectDatacenterRackActivityViews(state, dcId));
+  const dispatch = useGameDispatch();
 
   const [pickerSlot, setPickerSlot] = useState<GridPosition | null>(null);
   const [movePlacementId, setMovePlacementId] = useState<RackPlacementId | null>(null);
 
-  if (!dc) return null;
+  if (!datacenter) return null;
 
-  const hasActiveContract = activeContracts.some(
-    c => c.assignedDcId === dc.id && c.status === "active",
-  );
-  const hasFault = activeContracts.some(
-    c => c.assignedDcId === dc.id && c.status === "breached",
-  );
+  const datacenterContracts = activeContracts.filter((contract) => contract.assignedDcId === datacenter.id);
+  const hasActiveContract = datacenterContracts.some((contract) => contract.lifecycleState === "serving");
+  const hasFault = datacenterContracts.some((contract) => contract.lifecycleState === "breached");
 
   const handleDecommission = (placementId: RackPlacementId) => {
-    dispatch({ type: "RemoveRack", dcId: dc.id, placementId });
+    dispatch({ type: "RemoveRack", dcId: datacenter.id, placementId });
   };
   const handleMove = (placementId: RackPlacementId) => {
     setMovePlacementId(placementId);
@@ -51,7 +48,7 @@ export function FloorView({ dcId }: FloorViewProps) {
   return (
     <div className={styles.floor}>
       <Grid
-        datacenter={dc}
+        datacenter={datacenter}
         rackMaintenanceByPlacementId={rackMaintenanceByPlacementId}
         rackActivityByPlacementId={rackActivityByPlacementId}
         hasActiveContract={hasActiveContract}
@@ -63,7 +60,7 @@ export function FloorView({ dcId }: FloorViewProps) {
 
       {pickerSlot && (
         <RackPicker
-          datacenter={dc}
+          datacenter={datacenter}
           row={pickerSlot.row}
           position={pickerSlot.position}
           onClose={() => setPickerSlot(null)}

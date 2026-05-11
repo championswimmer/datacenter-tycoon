@@ -17,6 +17,7 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 - [`026-cli-command-grouping-and-contract-guardrails.md`](./026-cli-command-grouping-and-contract-guardrails.md) — enforce contract-fit rejection, unify contract JSON naming, make `--json` universal, and replace flat CLI verbs with grouped resource commands. _status: completed_
 - [`034-global-easier-balance-pass.md`](./034-global-easier-balance-pass.md) — reduce recurring costs, add tier-0 rack SKUs, and shorten repair times so both difficulty modes feel more forgiving. _status: created_
 - [`034-contract-region-affinity.md`](./034-contract-region-affinity.md) — add optional EU/Asia/USA region-affinity whitelists for contracts across game-logic, CLI, and web. _status: created_
+- [`035-shared-gameplay-query-surface.md`](./035-shared-gameplay-query-surface.md) — move cross-interface gameplay queries and state interpretation out of web/cli and into authoritative game-logic helpers. _status: completed_
 
 ## Related plan guidance
 
@@ -24,6 +25,8 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 - If future work touches **power budgeting, rack activity/billing, or datacenter power UI semantics**, read [`022-rack-usage-based-billing.md`](./022-rack-usage-based-billing.md) first. It defines the canonical reserved-vs-billed power vocabulary and deterministic allocation model used by both game logic and web selectors.
 - If future work touches **web startup flow, tutorial timing, saved-game entry UX, contract-assignment clicks, or rack-placement clicks**, read [`024-web-start-screen-and-one-click-actions.md`](./024-web-start-screen-and-one-click-actions.md) first. It establishes the intended banner-first entry flow and the current “click is commit” interaction pattern for contracts and rack installation.
 - If future work touches **contract generation, assignment eligibility, region whitelists, or contract geography shown in CLI/web**, read [`034-contract-region-affinity.md`](./034-contract-region-affinity.md) first. It defines the planned contract-region whitelist model and the cross-package presentation/validation responsibilities.
+- If future work touches **shared derived gameplay answers** like contract fit, capacity availability, live/history bucketing, maintenance affordances, or move-target discovery, read [`035-shared-gameplay-query-surface.md`](./035-shared-gameplay-query-surface.md) first. It defines the boundary between consumer formatting and authoritative `game-logic` queries.
+- Use `npm run audit:query-boundary` after touching `web` or `cli` contract/capacity/move code. It greps for common signs that gameplay interpretation has leaked back out of `game-logic`.
 
 ## Conventions
 

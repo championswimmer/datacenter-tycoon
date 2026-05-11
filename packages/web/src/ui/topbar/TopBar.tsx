@@ -2,16 +2,16 @@ import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import {
+  selectActiveContracts,
+  selectAudioSettings,
   selectCash,
   selectDifficulty,
-  selectPlayerName,
-  selectTick,
-  selectMonthlyPnl,
-  selectActiveContracts,
   selectMarket,
-  selectAudioSettings,
+  selectMonthlyPnl,
+  selectPlayerName,
   selectReliabilitySummary,
   selectReliabilityMarketEffectSummary,
+  selectTick,
 } from "../../store/selectors.js";
 import { LedSegment } from "../../theme/primitives/index.js";
 import { navigate } from "../../router/hashRouter.js";
@@ -25,9 +25,9 @@ import styles from "./TopBar.module.css";
 
 function formatMoney(n: number, showSign = false): string {
   const sign = showSign ? (n >= 0 ? "+" : "") : "";
-  const abs  = Math.abs(n);
+  const abs = Math.abs(n);
   if (abs >= 1_000_000) return `${sign}$${(n / 1_000_000).toFixed(2)}M`;
-  if (abs >= 1_000)     return `${sign}$${(n / 1_000).toFixed(1)}K`;
+  if (abs >= 1_000) return `${sign}$${(n / 1_000).toFixed(1)}K`;
   return `${sign}$${n.toLocaleString()}`;
 }
 
@@ -40,26 +40,25 @@ interface TopBarProps {
 const SPEED_LABELS: Record<Speed, string> = { 0: "⏸", 1: "▶", 2: "▶▶", 3: "▶▶▶" };
 
 export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
-  const fraction        = useTickFraction();
-  const dispatch        = useGameDispatch();
-  const playerName      = useSelector(selectPlayerName);
-  const difficulty      = useSelector(selectDifficulty);
-  const cash            = useSelector(selectCash);
-  const tick            = useSelector(selectTick);
-  const pnl             = useSelector(selectMonthlyPnl);
+  const fraction = useTickFraction();
+  const dispatch = useGameDispatch();
+  const playerName = useSelector(selectPlayerName);
+  const difficulty = useSelector(selectDifficulty);
+  const cash = useSelector(selectCash);
+  const tick = useSelector(selectTick);
+  const pnl = useSelector(selectMonthlyPnl);
   const activeContracts = useSelector(selectActiveContracts);
-  const market          = useSelector(selectMarket);
-  const audioSettings   = useSelector(selectAudioSettings);
-  const reliability     = useSelector(selectReliabilitySummary);
-  const reliabilityFx   = useSelector(selectReliabilityMarketEffectSummary);
+  const market = useSelector(selectMarket);
+  const audioSettings = useSelector(selectAudioSettings);
+  const reliability = useSelector(selectReliabilitySummary);
+  const reliabilityFx = useSelector(selectReliabilityMarketEffectSummary);
 
   const gameDate = tickToGameDate(tick, fraction);
-
   const isDesktop = isDesktopRuntime();
-  const breachedCount = activeContracts.filter(c => c.status === "breached").length;
-  const expiringOffers = market.filter(c => c.expiresAtTick - tick <= 1).length;
+  const breachedCount = activeContracts.filter((contract) => contract.lifecycleState === "breached").length;
+  const expiringOffers = market.filter((contract) => contract.expiresAtTick - tick <= 1).length;
   const contractsEndingSoon = activeContracts.filter(
-    c => c.startedAtTick !== undefined && c.startedAtTick + c.termMonths - tick <= 1,
+    (contract) => contract.startedAtTick !== undefined && contract.startedAtTick + contract.termMonths - tick <= 1,
   ).length;
   const cashLow = cash < 100_000;
 
@@ -83,7 +82,6 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
 
   return (
     <header className={styles.bar}>
-      {/* ── Left: branding + company ── */}
       <div className={styles.left}>
         <span className={styles.logo}>DCT</span>
         <span className={styles.company}>{playerName}</span>
@@ -91,7 +89,6 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
         {isDesktop && <span className={styles.desktopBadge}>DESKTOP</span>}
       </div>
 
-      {/* ── Center: financials + date ── */}
       <div className={styles.center}>
         <div className={styles.hudBlock}>
           <span className={styles.hudLabel}>CASH</span>
@@ -149,7 +146,6 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
         </div>
       </div>
 
-      {/* ── Right: alerts + help + speed ── */}
       <div className={styles.right}>
         {banner && (
           <button
@@ -193,34 +189,25 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
           </button>
         )}
 
-        <LedSegment
-          color={speed === 0 ? "amber" : "lime"}
-          blink={speed > 0}
-          size={8}
-        />
+        <LedSegment color={speed === 0 ? "amber" : "lime"} blink={speed > 0} size={8} />
 
         <div className={styles.speeds}>
-          {([0, 1, 2, 3] as Speed[]).map(s => (
+          {([0, 1, 2, 3] as Speed[]).map((entry) => (
             <button
-              key={s}
-              className={[styles.speedBtn, speed === s ? styles.speedActive : ""].join(" ")}
-              onClick={() => onSpeedChange(s)}
-              title={s === 0 ? "Pause" : `${s}× speed`}
-              aria-pressed={speed === s}
+              key={entry}
+              className={[styles.speedBtn, speed === entry ? styles.speedActive : ""].join(" ")}
+              onClick={() => onSpeedChange(entry)}
+              title={entry === 0 ? "Pause" : `${entry}× speed`}
+              aria-pressed={speed === entry}
             >
-              {SPEED_LABELS[s]}
+              {SPEED_LABELS[entry]}
             </button>
           ))}
         </div>
       </div>
 
-      {showResetModal && (
-        <ResetGameModal onClose={() => setShowResetModal(false)} />
-      )}
-
-      {showAudioModal && (
-        <AudioSettingsModal onClose={() => setShowAudioModal(false)} />
-      )}
+      {showResetModal && <ResetGameModal onClose={() => setShowResetModal(false)} />}
+      {showAudioModal && <AudioSettingsModal onClose={() => setShowAudioModal(false)} />}
     </header>
   );
 }

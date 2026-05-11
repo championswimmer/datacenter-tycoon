@@ -8,22 +8,7 @@ import { renderContractsTab } from "./contracts.js";
 test("renderContractsTab shows market and active contracts", () => {
 	const snapshot = {
 		...newGame(1),
-		contractMarket: [
-			{
-				id: "offer-1" as never,
-				name: "Offer 1",
-				requirements: { vCpu: 1, ramGb: 1, storageTb: 1, gpuFlops: 0 },
-				monthlyPayment: 500,
-				penaltyPerMonth: 100,
-				termMonths: 3,
-				status: "offered",
-				urgency: "standard",
-				tier: 1,
-				offeredAtTick: 0,
-				expiresAtTick: 10,
-			},
-		],
-		activeContracts: [
+		contracts: [
 			{
 				id: "active-1" as never,
 				name: "Active 1",
@@ -39,7 +24,22 @@ test("renderContractsTab shows market and active contracts", () => {
 				assignedDcId: "dc-1" as never,
 				startedAtTick: 1,
 			},
+			{
+				id: "offer-1" as never,
+				name: "Offer 1",
+				requirements: { vCpu: 1, ramGb: 1, storageTb: 1, gpuFlops: 0 },
+				monthlyPayment: 500,
+				penaltyPerMonth: 100,
+				termMonths: 3,
+				status: "offered",
+				urgency: "standard",
+				tier: 1,
+				offeredAtTick: 0,
+				expiresAtTick: 10,
+			},
 		],
+		contractMarket: [],
+		activeContracts: [],
 	};
 
 	const rendered = renderContractsTab(snapshot).join("\n");
@@ -55,8 +55,7 @@ test("renderContractsTab places expired contracts in History section, not Active
 	const contract = base.contractMarket[0]!;
 	const snapshot = {
 		...base,
-		contractMarket: [],
-		activeContracts: [
+		contracts: [
 			{
 				...contract,
 				id: "c-live" as typeof contract.id,
@@ -79,20 +78,16 @@ test("renderContractsTab places expired contracts in History section, not Active
 				assignedDcId: "dc-2" as typeof contract.assignedDcId,
 			},
 		],
+		contractMarket: [],
+		activeContracts: [],
 	};
 
 	const rendered = renderContractsTab(snapshot).join("\n");
-
-	// Active section must only contain the live contract.
 	assert.match(rendered, /Active:/);
 	assert.match(rendered, /c-live/);
-
-	// History section must exist and contain the expired and cancelled contracts.
 	assert.match(rendered, /History:/);
 	assert.match(rendered, /c-expired/);
 	assert.match(rendered, /c-cancelled/);
-
-	// The expired/cancelled IDs must NOT appear before the History section.
 	const activeIdx = rendered.indexOf("Active:");
 	const historyIdx = rendered.indexOf("History:");
 	const expiredIdx = rendered.indexOf("c-expired");
@@ -107,8 +102,7 @@ test("renderContractsTab shows no active contracts when all accepted contracts a
 	const contract = base.contractMarket[0]!;
 	const snapshot = {
 		...base,
-		contractMarket: [],
-		activeContracts: [
+		contracts: [
 			{
 				...contract,
 				id: "c-expired" as typeof contract.id,
@@ -117,6 +111,8 @@ test("renderContractsTab shows no active contracts when all accepted contracts a
 				assignedDcId: "dc-1" as typeof contract.assignedDcId,
 			},
 		],
+		contractMarket: [],
+		activeContracts: [],
 	};
 
 	const rendered = renderContractsTab(snapshot).join("\n");

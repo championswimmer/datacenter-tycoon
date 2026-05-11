@@ -11,6 +11,7 @@ export * from "./catalog/index.js";
 export * from "./entities/index.js";
 export * from "./economy/index.js";
 export * from "./contracts/index.js";
+export * from "./query/index.js";
 export * from "./sim/index.js";
 export * from "./state/index.js";
 export * from "./save/index.js";

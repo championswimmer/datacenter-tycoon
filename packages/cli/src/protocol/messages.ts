@@ -3,6 +3,7 @@ import type {
 	Capacity,
 	Contract,
 	Datacenter,
+	DatacenterCapacityFromStateSummary,
 	DatacenterMaintenanceStaffingView,
 	DatacenterSpec,
 	GameState,
@@ -85,7 +86,7 @@ export interface StatusQuery {
 
 export interface ListQuery {
 	kind: "list";
-	target: "datacenters" | "racks" | "market-contracts" | "active-contracts";
+	target: "datacenters" | "racks" | "market-contracts" | "active-contracts" | "contracts";
 	dcId?: string;
 }
 
@@ -135,6 +136,7 @@ export interface StatusView extends RuntimeStatus {
 export interface DatacenterListItem {
 	datacenter: Datacenter;
 	capacity: Capacity;
+	capacitySummary: DatacenterCapacityFromStateSummary;
 	powerKw: number;
 	powerCapacityKw: number;
 	heatOutputBtuPerHr: number;
@@ -170,7 +172,8 @@ export type ListResult =
 	| { kind: "datacenters"; items: DatacenterListItem[] }
 	| { kind: "racks"; dcId: string; items: RackListItem[] }
 	| { kind: "market-contracts"; items: Contract[] }
-	| { kind: "active-contracts"; items: Contract[] };
+	| { kind: "active-contracts"; items: Contract[] }
+	| { kind: "contracts"; market: Contract[]; active: Contract[]; history: Contract[] };
 
 export type CatalogResult =
 	| { kind: "datacenters"; items: DatacenterSpec[] }

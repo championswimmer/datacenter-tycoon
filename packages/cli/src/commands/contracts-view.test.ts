@@ -3,7 +3,13 @@ import test from "node:test";
 
 import { newGame } from "@datacenter-tycoon/game-logic";
 
-import { formatContractRequirements, presentContract, presentContracts } from "./contracts-view.js";
+import {
+	formatContractRequirements,
+	presentAcceptedContract,
+	presentContract,
+	presentContractBuckets,
+	presentContracts,
+} from "./contracts-view.js";
 
 test("presentContract normalizes nullable contract fields and preserves monthlyPayment", () => {
 	const contract = newGame(7).contractMarket[0]!;
@@ -53,8 +59,6 @@ test("presentContract preserves expired status without remapping", () => {
 	assert.equal(view.startedAtTick, 1);
 });
 
-import { presentAcceptedContract, presentContractBuckets } from "./contracts-view.js";
-
 test("presentAcceptedContract puts active contract in active bucket", () => {
 	const contract = {
 		...newGame(7).contractMarket[0]!,
@@ -99,22 +103,24 @@ test("presentAcceptedContract puts cancelled contract in history bucket", () => 
 	assert.equal(view.bucket, "history");
 });
 
-test("presentContractBuckets splits live and historical accepted contracts", () => {
+test("presentContractBuckets splits live and historical accepted contracts from canonical state", () => {
 	const base = newGame(7).contractMarket[0]!;
 	const activeContract = { ...base, id: "c-active" as typeof base.id, status: "active" as const, startedAtTick: 1, assignedDcId: "dc-1" as const };
 	const expiredContract = { ...base, id: "c-expired" as typeof base.id, status: "expired" as const, startedAtTick: 1, assignedDcId: "dc-1" as const };
 	const cancelledContract = { ...base, id: "c-cancelled" as typeof base.id, status: "cancelled" as const, startedAtTick: 1, assignedDcId: "dc-1" as const };
 
 	const snapshot = {
-		contractMarket: newGame(7).contractMarket,
-		activeContracts: [activeContract, expiredContract, cancelledContract],
+		contracts: [activeContract, expiredContract, cancelledContract, ...newGame(7).contractMarket],
+		contractMarket: [],
+		activeContracts: [],
 	};
 	const buckets = presentContractBuckets(snapshot);
 
 	assert.equal(buckets.active.length, 1);
 	assert.equal(buckets.active[0]!.id, "c-active");
 	assert.equal(buckets.history.length, 2);
-	assert.ok(buckets.history.every((c) => c.bucket === "history"));
+	assert.ok(buckets.history.every((contract) => contract.bucket === "history"));
+	assert.ok(buckets.market.length >= 1);
 });
 
 test("presentContractBuckets returns empty history when all accepted contracts are live", () => {
@@ -122,8 +128,9 @@ test("presentContractBuckets returns empty history when all accepted contracts a
 	const activeContract = { ...base, id: "c-live" as typeof base.id, status: "active" as const, startedAtTick: 1, assignedDcId: "dc-1" as const };
 
 	const snapshot = {
+		contracts: [activeContract],
 		contractMarket: [],
-		activeContracts: [activeContract],
+		activeContracts: [],
 	};
 	const buckets = presentContractBuckets(snapshot);
 

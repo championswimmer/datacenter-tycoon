@@ -55,6 +55,7 @@ npm run dev:cli            # run the CLI package in watch/dev mode
 2. **Deterministic simulation**: Game logic should be deterministic given a seed, to support replays, multiplayer, and testing.
 3. **Serializable state**: All game state must be JSON-serializable for save/load and network sync.
 4. **No circular deps** between packages. Dependency direction: `web`/`desktop`/`server` → `game-logic`.
+5. **Shared gameplay queries stay in `game-logic`**. If multiple interfaces need the same derived domain answer — e.g. contract market/live/history buckets, contract-fit checks, datacenter available capacity, maintenance staffing affordances, or legal rack-move targets — add/export a read-only helper in `game-logic` and have consumers call it. Do not duplicate those reducers/filters in `web` or `cli`.
 
 ## Domain Vocabulary
 
@@ -88,4 +89,5 @@ Non-trivial work is captured as numbered plans in `.agents/plans/NNN-slug.md`. A
 
 - Read the package-level `AGENTS.md` for the package you're editing.
 - Prefer adding logic to `game-logic` over duplicating it in a frontend.
+- Run `npm run audit:query-boundary` when touching contract/capacity/maintenance/move UI or CLI code to catch gameplay logic drifting back out of `game-logic`.
 - Keep changes small and well-typed; favor pure functions over mutable singletons.

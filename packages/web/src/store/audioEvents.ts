@@ -3,8 +3,9 @@ import type { GameStore } from "./gameStore.js";
 import {
   selectActiveContracts,
   selectAudioSettings,
-  selectResourceUsage,
   selectCapacity,
+  selectHistoricalContracts,
+  selectResourceUsage,
   selectTotalServers,
 } from "./selectors.js";
 
@@ -17,46 +18,36 @@ export function attachAudioEvents(store: GameStore): () => void {
   return store.subscribe(() => {
     const state = store.getState();
     const settings = selectAudioSettings(state);
-    
-    // Handle continuous audio lifecycle
+
     if (settings.master) {
-      // Music
       if (settings.music) {
         if (!musicStarted) {
           music.start();
           musicStarted = true;
         }
-      } else {
-        if (musicStarted) {
-          music.stop();
-          musicStarted = false;
-        }
+      } else if (musicStarted) {
+        music.stop();
+        musicStarted = false;
       }
 
-      // Ambient
       if (settings.ambient) {
         if (!ambientStarted) {
           ambient.start();
           ambientStarted = true;
         }
-        
-        // Modulate ambient hum based on usage and scale
+
         const usage = selectResourceUsage(state);
         const capacity = selectCapacity(state);
         const servers = selectTotalServers(state);
-        const load = capacity.total.vCpu > 0 
+        const load = capacity.total.vCpu > 0
           ? Math.min(1, usage.total.powerKw / (capacity.total.vCpu * 0.5))
           : 0;
         ambient.setUsage(load, servers);
-
-        // Modulate by speed and pause
         ambient.setSpeed(state.game.speed);
         ambient.setPaused(state.game.paused);
-      } else {
-        if (ambientStarted) {
-          ambient.stop();
-          ambientStarted = false;
-        }
+      } else if (ambientStarted) {
+        ambient.stop();
+        ambientStarted = false;
       }
     } else {
       if (musicStarted) {
@@ -72,25 +63,25 @@ export function attachAudioEvents(store: GameStore): () => void {
     const currActive = selectActiveContracts(state);
 
     if (settings.master) {
-      // SFX (Datacenter events)
       if (settings.sfx) {
-        const currActiveIds = new Set(currActive.map((c) => c.id));
-        const prevActiveIds = new Set(prevActive.map((c) => c.id));
+        const currActiveIds = new Set(currActive.map((contract) => contract.id));
+        const prevActiveIds = new Set(prevActive.map((contract) => contract.id));
+        const historicalById = new Map(
+          selectHistoricalContracts(state).map((contract) => [contract.id, contract]),
+        );
 
-        // Detect accepted (newly active)
         for (const curr of currActive) {
           if (!prevActiveIds.has(curr.id)) {
             playSound("contract_accepted", false);
           }
         }
 
-        // Detect expired/cancelled (newly inactive)
         for (const prev of prevActive) {
           if (!currActiveIds.has(prev.id)) {
-            const updated = state.activeContracts.find((c) => c.id === prev.id);
-            if (updated?.status === "cancelled") {
+            const updated = historicalById.get(prev.id);
+            if (updated?.lifecycleState === "cancelled") {
               playSound("error", false);
-            } else if (updated?.status === "expired") {
+            } else if (updated?.lifecycleState === "completed") {
               playSound("success", false);
             } else {
               playSound("error", false);
@@ -99,7 +90,6 @@ export function attachAudioEvents(store: GameStore): () => void {
         }
       }
 
-      // Money sounds
       if (settings.money) {
         const cashDelta = state.player.cash - prevCash;
         if (cashDelta > 0) {

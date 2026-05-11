@@ -12,6 +12,14 @@ export function regionStaffUsed(regionId: string, datacenters: Datacenter[]): nu
 		.reduce((total, dc) => total + dc.spec.staffCount + dc.maintenanceStaff, 0);
 }
 
+export function regionPowerRemaining(region: Region, datacenters: Datacenter[]): number {
+	return Math.max(0, region.totalPowerAvailable - regionPowerUsed(region.id, datacenters));
+}
+
+export function regionStaffRemaining(region: Region, datacenters: Datacenter[]): number {
+	return Math.max(0, region.totalStaffAvailable - regionStaffUsed(region.id, datacenters));
+}
+
 export function canBuildInRegion(
 	region: Region,
 	spec: DatacenterSpec,
