@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import {
+	DATACENTER_UPGRADE_CATALOG,
+	describeDatacenterUpgradeBlueprint,
+	isNetworkTypeFiber,
+} from "./datacenter-upgrades.js";
 import { DATACENTER_CATALOG } from "./datacenters.js";
 import { RACK_CATALOG } from "./racks.js";
 import {
@@ -141,6 +146,45 @@ test("starter datacenter blueprints reserve the rebalanced cooling headroom", ()
 	assert.equal(DATACENTER_CATALOG.garage.coolingCapacityBtuPerHr, 120_000);
 	assert.equal(DATACENTER_CATALOG.warehouse.coolingCapacityBtuPerHr, 520_000);
 	assert.equal(DATACENTER_CATALOG.hyperscale.coolingCapacityBtuPerHr, 10_500_000);
+});
+
+test("datacenter upgrade catalog defines monotonic cooling, network, and generator tracks per blueprint", () => {
+	assert.deepEqual(Object.keys(DATACENTER_UPGRADE_CATALOG).sort(), ["garage", "hyperscale", "warehouse"]);
+
+	const garage = describeDatacenterUpgradeBlueprint(DATACENTER_CATALOG.garage.id);
+	const warehouse = describeDatacenterUpgradeBlueprint(DATACENTER_CATALOG.warehouse.id);
+	const hyperscale = describeDatacenterUpgradeBlueprint(DATACENTER_CATALOG.hyperscale.id);
+
+	assert.equal(garage.fabricEligible, false);
+	assert.equal(warehouse.fabricEligible, false);
+	assert.equal(hyperscale.fabricEligible, true);
+
+	assert.deepEqual(
+		garage.tracks.find((track) => track.trackId === "cooling")?.currentNode.id,
+		"air",
+	);
+	assert.deepEqual(
+		garage.tracks.find((track) => track.trackId === "cooling")?.maxNode.id,
+		"hybrid",
+	);
+	assert.deepEqual(
+		warehouse.tracks.find((track) => track.trackId === "cooling")?.maxNode.id,
+		"liquid",
+	);
+	assert.deepEqual(
+		hyperscale.tracks.find((track) => track.trackId === "networkType")?.currentNode.id,
+		"fiber",
+	);
+	assert.equal(
+		warehouse.tracks.find((track) => track.trackId === "onsiteGeneration")?.maxNode.id,
+		"gen-2",
+	);
+	assert.equal(
+		hyperscale.tracks.find((track) => track.trackId === "onsiteGeneration")?.maxNode.id,
+		"gen-4",
+	);
+	assert.equal(isNetworkTypeFiber("cat8"), false);
+	assert.equal(isNetworkTypeFiber("fiber"), true);
 });
 
 test("economy constants are positive and within expected ranges", () => {
