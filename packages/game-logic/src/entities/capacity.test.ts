@@ -313,6 +313,92 @@ test("canPlaceRack rejects tier-3 racks in air-cooled datacenters", () => {
 	});
 });
 
+test("cooling upgrades unlock tier-3 placements once the effective cooling type improves", () => {
+	const datacenter = makeDatacenter(DATACENTER_CATALOG.garage);
+	const upgradedDatacenter: Datacenter = {
+		...datacenter,
+		upgrades: {
+			currentNodeByTrack: {
+				cooling: "hybrid",
+				networkType: "cat6",
+				onsiteGeneration: "gen-0",
+			},
+		},
+	};
+
+	assert.deepEqual(canPlaceRack(datacenter, RACK_CATALOG.C3, { row: 0, position: 0 }), {
+		ok: false,
+		reason: "cooling_type_mismatch",
+	});
+	assert.deepEqual(canPlaceRack(upgradedDatacenter, RACK_CATALOG.C3, { row: 0, position: 0 }), { ok: true });
+});
+
+test("network upgrades increase effective bandwidth headroom for placement checks", () => {
+	const garageNearBandwidthCap = makeDatacenter(DATACENTER_CATALOG.garage, [
+		placement("rack-1", "C1", 0, 0),
+		placement("rack-2", "C1", 0, 1),
+		placement("rack-3", "C1", 0, 2),
+		placement("rack-4", "C1", 0, 3),
+		placement("rack-5", "C1", 1, 0),
+		placement("rack-6", "C1", 1, 1),
+		placement("rack-7", "C1", 1, 2),
+	]);
+	const cat8Garage: Datacenter = {
+		...garageNearBandwidthCap,
+		upgrades: {
+			currentNodeByTrack: {
+				cooling: "air",
+				networkType: "cat8",
+				onsiteGeneration: "gen-0",
+			},
+		},
+	};
+
+	assert.deepEqual(canPlaceRack(garageNearBandwidthCap, RACK_CATALOG.C2, { row: 1, position: 3 }), {
+		ok: false,
+		reason: "insufficient_bandwidth",
+	});
+	assert.deepEqual(canPlaceRack(cat8Garage, RACK_CATALOG.C2, { row: 1, position: 3 }), { ok: true });
+});
+
+test("generator upgrades increase effective rack-power headroom for placement checks", () => {
+	const generatorCandidate = makeDatacenter(DATACENTER_CATALOG.garage, [
+		placement("rack-1", "C3", 0, 0),
+		placement("rack-2", "C3", 0, 1),
+		placement("rack-3", "C3", 0, 2),
+		placement("rack-4", "M3", 0, 3),
+	]);
+	const upgradedGeneratorSite: Datacenter = {
+		...generatorCandidate,
+		upgrades: {
+			currentNodeByTrack: {
+				cooling: "hybrid",
+				networkType: "cat8",
+				onsiteGeneration: "gen-1",
+			},
+		},
+	};
+
+	assert.deepEqual(canPlaceRack(generatorCandidate, RACK_CATALOG.C2, { row: 1, position: 0 }), {
+		ok: false,
+		reason: "insufficient_power",
+	});
+	assert.deepEqual(canPlaceRack({
+		...generatorCandidate,
+		upgrades: {
+			currentNodeByTrack: {
+				cooling: "hybrid",
+				networkType: "cat8",
+				onsiteGeneration: "gen-0",
+			},
+		},
+	}, RACK_CATALOG.C2, { row: 1, position: 0 }), {
+		ok: false,
+		reason: "insufficient_power",
+	});
+	assert.deepEqual(canPlaceRack(upgradedGeneratorSite, RACK_CATALOG.C2, { row: 1, position: 0 }), { ok: true });
+});
+
 test("canPlaceRack rejects placements that exceed remaining power budget", () => {
 	const datacenter = makeDatacenter(DATACENTER_CATALOG.warehouse, [
 		placement("rack-1", "G2", 0, 0),
