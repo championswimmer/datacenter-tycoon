@@ -9,9 +9,9 @@ owner: game-logic, web, cli
 
 ## Progress
 
-- [ ] **Phase 1 — Balance mapping & scaffolding**
+- [x] **Phase 1 — Balance mapping & scaffolding**
   - [x] 1.1 Codify the target balance levers and centralize new easier-pass constants
-  - [ ] 1.2 Extend rack tier typing and catalog invariants to support tier 0 hardware
+  - [x] 1.2 Extend rack tier typing and catalog invariants to support tier 0 hardware
 - [ ] **Phase 2 — Recurring cost and repair-time rebalance**
   - [ ] 2.1 Apply the 20% recurring-cost reductions to rack opex and extra maintenance staffing
   - [ ] 2.2 Halve base repair duration while preserving easy vs hard relative modifiers

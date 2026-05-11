@@ -22,22 +22,21 @@ const rackKindByPrefix = {
 	G: "gpu",
 } as const;
 
-test("rack catalog contains all 12 starter rack SKUs", () => {
-	assert.equal(Object.keys(RACK_CATALOG).length, 12);
-	assert.deepEqual(Object.keys(RACK_CATALOG).sort(), [
-		"C1",
-		"C2",
-		"C3",
-		"G1",
-		"G2",
-		"G3",
-		"M1",
-		"M2",
-		"M3",
-		"S1",
-		"S2",
-		"S3",
-	]);
+test("rack catalog exposes a contiguous tier ladder for every rack family", () => {
+	const rackIds = Object.keys(RACK_CATALOG).sort();
+	assert.ok(rackIds.length >= 12);
+
+	for (const family of Object.keys(rackKindByPrefix) as (keyof typeof rackKindByPrefix)[]) {
+		const familyTiers = rackIds
+			.filter((id) => id.startsWith(family))
+			.map((id) => RACK_CATALOG[id]!.tier)
+			.sort((a, b) => a - b);
+		assert.ok(familyTiers.length >= 3);
+		assert.deepEqual(
+			familyTiers,
+			Array.from({ length: familyTiers.length }, (_, index) => familyTiers[0]! + index),
+		);
+	}
 });
 
 test("rack specs expose positive numeric fields and IDs line up with keys", () => {
@@ -49,9 +48,9 @@ test("rack specs expose positive numeric fields and IDs line up with keys", () =
 		assert.equal(seenIds.has(rack.id), false);
 		seenIds.add(rack.id);
 
-		assert.match(key, /^[CGMS][123]$/);
+		assert.match(key, /^[CGMS][0-3]$/);
 		assert.equal(rack.kind, rackKindByPrefix[key[0] as keyof typeof rackKindByPrefix]);
-		assert.equal(rack.tier, Number(key[1]));
+		assert.equal(rack.tier, Number(key.slice(1)));
 
 		assert.ok(rack.vCpu > 0);
 		assert.ok(rack.ramGb > 0);
