@@ -59,9 +59,16 @@ src/
     ├── index.ts
     ├── newGame.test.ts
     └── reduce.test.ts
+
+docs/
+├── ARCHITECTURE.md           # entity ownership, relationships, and module boundaries
+└── CORE_LOOP.md              # exact monthly tick order and evaluation flow
 ```
 
 ## Architectural Expectations
+
+- **For entity/model deep dives, start with `docs/ARCHITECTURE.md`.** It maps the canonical persisted entities, ownership rules, and which modules are responsible for which behavior.
+- **For monthly simulation deep dives, start with `docs/CORE_LOOP.md`.** It documents the exact `tick()` order, including maintenance, opex, revenue, tax, contract finalization, reliability, and market refresh.
 
 - **`src/index.ts` is the public surface.** If a symbol is intended for consumers, re-export it there via the relevant barrel.
 - **Catalogs are data, not logic containers.** Keep rack/datacenter blueprints in `catalog/` as plain objects.
@@ -96,6 +103,9 @@ These are already implemented and should usually be extended rather than replace
   - determinism still holds
   - ledger entries remain sensible
   - integration test still passes
+  - `docs/CORE_LOOP.md` still matches the real execution order
+- When changing **core entity ownership / contract / capacity architecture**, update:
+  - `docs/ARCHITECTURE.md`
 - When changing **contracts or economy**, keep generation and monthly outcomes deterministic for the same seed and action sequence.
 - Prefer reusing existing helpers like `applyCapex`, `canPlaceRack`, `acceptContract`, `refreshContractMarket`, and `tick` rather than duplicating logic.
 
