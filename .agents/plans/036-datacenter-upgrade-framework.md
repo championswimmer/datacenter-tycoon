@@ -34,7 +34,7 @@ Today a datacenter's live infrastructure is implicitly its embedded `DatacenterS
 
 This feature therefore needs more than three one-off fields or reducer branches. We need a reusable upgrade architecture that lets a datacenter keep its **base blueprint defaults** while separately tracking **monotonic upgrade progress** and deriving a canonical **effective infrastructure profile** for placement, economy, region accounting, CLI, and web.
 
-The plan below keeps `game-logic` authoritative, models upgrades as catalog-defined tracks, and is deliberately extendible beyond the initial request. The first concrete tracks are: cooling retrofits (air → liquid + more thermal headroom), network-type progression (Cat6 / Cat8 / fiber), and onsite generation expansion via gas-generator slots. The same architecture should also support later tracks like UPS, batteries, security hardening, or advanced cooling loops without changing the persisted `Datacenter` shape again.
+The plan below keeps `game-logic` authoritative, models upgrades as catalog-defined tracks, and is deliberately extendible beyond the initial request. The first concrete tracks are: cooling retrofits (air → hybrid → liquid, with hybrid meaning liquid-assisted air cooling and more thermal headroom), network-type progression (Cat6 / Cat8 / fiber), and onsite generation expansion via gas-generator slots. The same architecture should also support later tracks like UPS, batteries, security hardening, or advanced cooling loops without changing the persisted `Datacenter` shape again.
 
 ## Architecture
 
@@ -45,7 +45,7 @@ flowchart LR
     Progress[Datacenter.upgrades\ncurrent node per track] --> Resolver
     Base --> Resolver
 
-    Resolver[resolveDatacenterInfrastructure(dc)] --> Placement[canPlaceRack / canMoveRack]
+    Resolver[resolveDatacenterInfrastructure] --> Placement[canPlaceRack / canMoveRack]
     Resolver --> Economy[tickOpex / capex / ledger]
     Resolver --> Queries[state-level upgrade + infrastructure queries]
     Resolver --> Region[grid reservation + regional capacity]
@@ -74,6 +74,7 @@ Key decisions:
 
 - **Keep `DatacenterSpec` immutable at runtime.** The spec stored on a datacenter remains the built blueprint default. Upgrades must never mutate `datacenter.spec.*`; live capacity comes from resolvers.
 - **Use one generic monotonic track engine.** Internally, every upgrade family is an ordered track of nodes. “Levels” and “slots” are presentation concepts, not separate reducer architectures. Cooling, network type, and gas generators should all use the same progression engine.
+- **Model cooling as three explicit levels.** Cooling should be represented as `air`, `hybrid`, and `liquid`. `hybrid` is a liquid-assisted air cooling mode that increases cooling capacity without fully becoming liquid cooling; garage may advance only to `hybrid`, while warehouse may advance all the way to `liquid`.
 - **Persist generic progress, not bespoke per-feature fields.** `Datacenter.upgrades` should store the current node per track (or equivalent generic progress), so adding a future track does not require changing the `Datacenter` interface again.
 - **Separate physical infrastructure resolution from economic effects.** The canonical resolver should answer effective physical limits (power, cooling, bandwidth, cooling type, network type), while upgrade-economics helpers answer fixed monthly upkeep only in v1.
 - **Split grid import from onsite generation.** Region power usage should continue to mean grid-reserved capacity. Gas generators add local rack headroom and generator-related opex, but must not inflate regional `powerUsed`.
@@ -129,7 +130,9 @@ Initial catalog intent for the requested tracks:
 - `garage`: starts **air** cooling, **Cat6** network type, **0/1** installed gas-generator slots.
 - `warehouse`: starts **air** cooling, **Cat8** network type, **0/2** installed gas-generator slots.
 - `hyperscale`: starts **liquid** cooling, **fiber** network type, **0/4** installed gas-generator slots.
-- Cooling progression must increase thermal headroom and eventually flip the effective cooling type to `liquid`, which is what unlocks tier-3 rack placement.
+- Cooling progression must increase thermal headroom and use the cooling ladder `air` → `hybrid` → `liquid`.
+- Garage cooling may advance only to `hybrid`; it must never reach full `liquid` cooling.
+- Warehouse cooling may advance all the way to `liquid`.
 - Network progression must be defined by named network-type nodes (`cat6` → `cat8` → `fiber`) rather than arbitrary bandwidth deltas spread through reducers and UI.
 - Generator expansion should be expressed as ordered nodes (`0`, `1`, `2`, `3`, `4` installed slots), even if the first implementation keeps per-slot deltas uniform. That leaves room for future per-slot differences in capex, upkeep, or power yield.
 
@@ -169,6 +172,7 @@ Initial catalog intent for the requested tracks:
 - Files: `packages/game-logic/src/types.ts`, `packages/game-logic/src/state/reduce.ts`, `packages/game-logic/src/entities/datacenter.ts`, `packages/game-logic/src/entities/index.ts`
 - Extend `Datacenter` with persisted upgrade progress initialized from the catalog when the facility is built.
 - Store generic progress such as `currentNodeByTrack`, not bespoke `coolingLevelId` / `generatorSlotsInstalled` fields, so adding a new track later does not require another persisted-shape redesign.
+- Ensure save data explicitly contains which upgrade nodes / slots are installed so a load can fully reconstruct the datacenter’s live infrastructure.
 - Add pure helpers such as:
   - `resolveDatacenterInfrastructure(datacenter)` for physical limits
   - `resolveDatacenterUpgradeEconomics(datacenter)` for fixed upkeep semantics
@@ -179,7 +183,7 @@ Initial catalog intent for the requested tracks:
 
 - Files: `packages/game-logic/src/save/serialize.ts`, `packages/game-logic/src/state/reduce.ts`, relevant `*.test.ts` fixtures near save/state code, `packages/game-logic/README.md`
 - Bump `SAVE_VERSION` because the persisted datacenter shape changes.
-- Decide explicitly whether the repo continues its current “reject older saves” policy or adds a narrow v6→v7 migration that seeds default upgrade progress; document the decision.
+- Treat the upgrade save change as a destructive version bump: old saves do not need to remain compatible, and the serializer/deserializer may reject or replace pre-upgrade saves instead of migrating them.
 - Add focused save/load coverage proving datacenters serialize with default upgrade state intact.
 - Acceptance: persisted upgrade state is versioned intentionally and covered by tests/docs rather than being an accidental schema change.
 
@@ -204,7 +208,7 @@ Initial catalog intent for the requested tracks:
 
 - Files: `packages/game-logic/src/entities/datacenter.ts`, `packages/game-logic/src/query/datacenters.ts`, `packages/game-logic/src/state/reduce.ts`, related tests
 - Update `canPlaceRack()`, `canMoveRack()`, resource-usage comparisons, and capacity summaries to read from `resolveDatacenterInfrastructure()`.
-- Preserve the existing tier-3 rack cooling rule semantically, but base it on the **effective cooling type** so a liquid retrofit genuinely unlocks tier-3 placements.
+- Preserve the existing tier-3 rack cooling rule semantically, but base it on the **effective cooling type** so the new cooling ladder (`air` → `hybrid` → `liquid`) genuinely unlocks tier-3 placements only when the blueprint allows it.
 - Ensure network-type/bandwidth and power-capacity placement checks use effective upgraded headroom rather than raw spec values.
 - Acceptance: a garage cannot host tier-3 racks before cooling retrofit, can host them afterward if headroom allows, and network/power checks scale with applied upgrades.
 
@@ -221,7 +225,8 @@ Initial catalog intent for the requested tracks:
 
 - Files: targeted tests such as `packages/game-logic/src/entities/datacenter.test.ts`, `packages/game-logic/src/economy/opex.test.ts`, `packages/game-logic/src/state/reduce.test.ts`, `packages/game-logic/src/query/datacenters.test.ts`
 - Cover at least:
-  - garage air→liquid upgrade enabling a tier-3 placement that previously failed for `cooling_type_mismatch`
+  - garage air→hybrid upgrade improving cooling headroom without ever reaching liquid cooling
+  - warehouse air→hybrid→liquid progression enabling a tier-3 placement that previously failed for `cooling_type_mismatch`
   - garage Cat6→Cat8→fiber progression increasing bandwidth limits monotonically and flipping fabric-eligibility only at fiber
   - warehouse / hyperscale generator node caps of 2 / 4 being enforced
   - stale/non-immediate upgrade-node requests being rejected deterministically
@@ -307,4 +312,4 @@ Initial catalog intent for the requested tracks:
 
 - 2026-05-11 — created.
 - 2026-05-11 — refined architecture around generic monotonic track nodes, explicit base-vs-effective infrastructure resolution, and generator grid-vs-onsite opex semantics.
-- 2026-05-11 — simplified generator economics to fixed upkeep only, renamed the network track to `networkType`, and added an explicit plan-016 fabric eligibility dependency on fiber network type.
+- 2026-05-11 — simplified generator economics to fixed upkeep only, renamed the network track to `networkType`, added an explicit plan-016 fabric eligibility dependency on fiber network type, and updated cooling to the `air` / `hybrid` / `liquid` ladder.
