@@ -1,6 +1,6 @@
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { calculateMoveCost } from "../economy/move.js";
-import { canPlaceRack } from "../entities/datacenter.js";
+import { canMoveRack } from "../entities/datacenter.js";
 import type {
 	Datacenter,
 	DatacenterId,
@@ -38,17 +38,21 @@ function getPlacementOrThrow(datacenter: Datacenter, placementId: RackPlacementI
 	return placement;
 }
 
-function listValidSlots(datacenter: Datacenter, placement: RackPlacement): GridPosition[] {
+function listValidSlots(
+	sourceDatacenter: Datacenter,
+	targetDatacenter: Datacenter,
+	placement: RackPlacement,
+): GridPosition[] {
 	const spec = RACK_CATALOG[placement.specId];
 	if (!spec) {
 		throw new Error(`Unknown rack spec: ${placement.specId}`);
 	}
 
 	const validSlots: GridPosition[] = [];
-	for (let row = 0; row < datacenter.spec.rows; row += 1) {
-		for (let position = 0; position < datacenter.spec.positionsPerRow; position += 1) {
+	for (let row = 0; row < targetDatacenter.spec.rows; row += 1) {
+		for (let position = 0; position < targetDatacenter.spec.positionsPerRow; position += 1) {
 			const candidatePosition = { row, position };
-			const check = canPlaceRack(datacenter, spec, candidatePosition);
+			const check = canMoveRack(sourceDatacenter, targetDatacenter, placement, candidatePosition);
 			if (check.ok) {
 				validSlots.push(candidatePosition);
 			}
@@ -73,7 +77,7 @@ export function listRackMoveTargets(
 	return state.datacenters
 		.filter((datacenter) => datacenter.id !== sourceDcId)
 		.map((targetDatacenter) => {
-			const validSlots = listValidSlots(targetDatacenter, placement);
+			const validSlots = listValidSlots(sourceDatacenter, targetDatacenter, placement);
 			return {
 				targetDcId: targetDatacenter.id,
 				targetRegionId: targetDatacenter.regionId,
