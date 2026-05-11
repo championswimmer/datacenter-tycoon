@@ -7,6 +7,7 @@ import {
 	selectDatacenterMaintenanceStaffingViewFromState,
 	summarizeDatacenterCapacityFromState,
 	summarizeDatacenterInfrastructureFromState,
+	summarizeDatacenterUpgradeViewFromState,
 	summarizeNetworkCapacityFromState,
 	type Contract,
 	type ContractId,
@@ -161,7 +162,52 @@ test("summarizeDatacenterInfrastructureFromState exposes explicit base and effec
 			networkType: DATACENTER_CATALOG.garage.networkType,
 			bandwidthGbps: DATACENTER_CATALOG.garage.bandwidthGbps,
 		},
+		fabricEligible: false,
 	});
+});
+
+test("summarizeDatacenterUpgradeViewFromState exposes track affordances, upgrade opex, and fiber eligibility", () => {
+	const upgradedDc: Datacenter = {
+		...makeDatacenter("dc-upgraded", "region-a", [placement("rack-a", "C1", 0, 0)]),
+		upgrades: {
+			currentNodeByTrack: {
+				cooling: "hybrid",
+				networkType: "fiber",
+				onsiteGeneration: "gen-1",
+			},
+		},
+	};
+	const state = makeState({ datacenters: [upgradedDc] });
+	const summary = summarizeDatacenterUpgradeViewFromState(state, upgradedDc.id);
+
+	assert.equal(summary.fabricEligible, true);
+	assert.equal(summary.infrastructure.effective.coolingType, "hybrid");
+	assert.equal(summary.infrastructure.effective.networkType, "fiber");
+	assert.equal(summary.infrastructure.effective.onsiteGenerationCapacityKw, 25);
+	assert.equal(summary.fixedMonthlyUpgradeOpex, 3_750);
+	assert.equal(summary.tracks.find((track) => track.trackId === "cooling")?.currentNode.id, "hybrid");
+	assert.equal(summary.tracks.find((track) => track.trackId === "cooling")?.nextNode, null);
+	assert.equal(summary.tracks.find((track) => track.trackId === "networkType")?.currentNode.id, "fiber");
+	assert.equal(summary.tracks.find((track) => track.trackId === "onsiteGeneration")?.nextNode?.id ?? null, null);
+	assert.equal(summary.tracks.find((track) => track.trackId === "onsiteGeneration")?.totalNodes, 2);
+	assert.equal(summary.tracks.find((track) => track.trackId === "onsiteGeneration")?.maxed, true);
+});
+
+test("summarizeDatacenterUpgradeViewFromState exposes next-node capex and opex deltas for default datacenters", () => {
+	const dc1 = makeDatacenter("dc-1", "region-a", []);
+	const state = makeState({ datacenters: [dc1] });
+	const summary = summarizeDatacenterUpgradeViewFromState(state, dc1.id);
+	const cooling = summary.tracks.find((track) => track.trackId === "cooling");
+	const network = summary.tracks.find((track) => track.trackId === "networkType");
+
+	assert.equal(summary.fabricEligible, false);
+	assert.equal(cooling?.currentNode.id, "air");
+	assert.equal(cooling?.nextNode?.id, "hybrid");
+	assert.equal(cooling?.nextNode?.capexCost, 180_000);
+	assert.equal(cooling?.nextNode?.fixedMonthlyOpexDelta, 900);
+	assert.equal(network?.currentNode.id, "cat6");
+	assert.equal(network?.nextNode?.id, "cat8");
+	assert.equal(network?.nextNode?.fixedMonthlyOpexDelta, 350);
 });
 
 test("selectDatacenterMaintenanceStaffingViewFromState flags exhausted regional labor pools", () => {

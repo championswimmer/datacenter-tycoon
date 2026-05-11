@@ -93,6 +93,9 @@ Consumer packages should prefer exported query helpers over reconstructing gamep
 - `summarizeOpenMarketContractFits(state)`
 - `contractDealScore(contract)`
 - `summarizeDatacenterCapacityFromState(state, dcId)`
+- `summarizeDatacenterInfrastructureFromState(state, dcId)`
+- `summarizeDatacenterUpgradeTracksFromState(state, dcId)`
+- `summarizeDatacenterUpgradeViewFromState(state, dcId)`
 - `summarizeNetworkCapacityFromState(state)`
 - `selectDatacenterMaintenanceStaffingViewFromState(state, dcId)`
 - `selectDatacenterRackActivityViewFromState(state, dcId)`
@@ -246,6 +249,7 @@ export type Action =
     }
   | { type: "RemoveRack"; dcId: DatacenterId; placementId: RackPlacementId }
   | { type: "SetMaintenanceStaff"; dcId: DatacenterId; maintenanceStaff: number }
+  | { type: "UpgradeDatacenter"; dcId: DatacenterId; trackId: DatacenterUpgradeTrackId; targetNodeId: string }
   | { type: "AcceptContract"; contractId: ContractId; dcId: DatacenterId }
   | { type: "CancelContract"; contractId: ContractId }
   | { type: "Tick" };

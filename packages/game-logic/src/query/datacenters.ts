@@ -1,3 +1,4 @@
+import { getDatacenterUpgradeTrackDefinition } from "../catalog/datacenter-upgrades.js";
 import { contractsFromState, selectLiveContracts } from "../contracts/lifecycle.js";
 import {
 	datacenterBaseInfrastructure,
@@ -7,6 +8,8 @@ import {
 	datacenterRackActivityView,
 	datacenterRackPowerSummary,
 	resolveDatacenterInfrastructure,
+	resolveDatacenterUpgradeEconomics,
+	resolveDatacenterUpgradeState,
 	type DatacenterContractCapacitySummary,
 	type DatacenterMaintenanceStaffingView,
 } from "../entities/datacenter.js";
@@ -15,6 +18,8 @@ import type {
 	Datacenter,
 	DatacenterId,
 	DatacenterInfrastructureProfile,
+	DatacenterUpgradeTrackId,
+	DatacenterUpgradeTrackNode,
 	GameState,
 	RackActivityView,
 	RackPowerSummary,
@@ -49,10 +54,40 @@ export interface DatacenterCapacityFromStateSummary extends DatacenterContractCa
 	dcId: DatacenterId;
 }
 
-export interface DatacenterInfrastructureFromStateSummary {
+export interface DatacenterInfrastructureView {
 	dcId: DatacenterId;
 	base: DatacenterInfrastructureProfile;
 	effective: DatacenterInfrastructureProfile;
+	fabricEligible: boolean;
+}
+
+export interface DatacenterUpgradeNodeView {
+	id: string;
+	label: string;
+	capexCost: number;
+	fixedMonthlyOpex: number;
+	infrastructure: DatacenterUpgradeTrackNode["infrastructure"];
+}
+
+export interface DatacenterUpgradeTrackView {
+	dcId: DatacenterId;
+	trackId: DatacenterUpgradeTrackId;
+	label: string;
+	presentation: "level" | "slots";
+	currentNode: DatacenterUpgradeNodeView;
+	nextNode: (DatacenterUpgradeNodeView & { fixedMonthlyOpexDelta: number }) | null;
+	maxNode: DatacenterUpgradeNodeView;
+	currentNodeIndex: number;
+	totalNodes: number;
+	maxed: boolean;
+}
+
+export interface DatacenterUpgradeView {
+	dcId: DatacenterId;
+	infrastructure: DatacenterInfrastructureView;
+	tracks: DatacenterUpgradeTrackView[];
+	fixedMonthlyUpgradeOpex: number;
+	fabricEligible: boolean;
 }
 
 export interface NetworkCapacitySummary {
@@ -75,22 +110,83 @@ export function summarizeDatacenterCapacityFromState(
 	};
 }
 
+function toUpgradeNodeView(node: DatacenterUpgradeTrackNode): DatacenterUpgradeNodeView {
+	return {
+		id: node.id,
+		label: node.label,
+		capexCost: node.capexCost,
+		fixedMonthlyOpex: node.opex.fixedMonthly ?? 0,
+		infrastructure: node.infrastructure,
+	};
+}
+
+function summarizeUpgradeTrackViews(datacenter: Datacenter, dcId: DatacenterId): DatacenterUpgradeTrackView[] {
+	return resolveDatacenterUpgradeState(datacenter).tracks.map((track) => ({
+		dcId,
+		trackId: track.trackId,
+		label: track.label,
+		presentation: track.presentation,
+		currentNode: toUpgradeNodeView(track.currentNode),
+		nextNode: track.nextNode
+			? {
+				...toUpgradeNodeView(track.nextNode),
+				fixedMonthlyOpexDelta: (track.nextNode.opex.fixedMonthly ?? 0) - (track.currentNode.opex.fixedMonthly ?? 0),
+			}
+			: null,
+		maxNode: toUpgradeNodeView(track.maxNode),
+		currentNodeIndex: track.currentNodeIndex,
+		totalNodes: getDatacenterUpgradeTrackDefinition(datacenter.spec.id, track.trackId).nodes.length,
+		maxed: track.maxed,
+	}));
+}
+
 export function summarizeDatacenterInfrastructureFromState(
 	state: Pick<GameState, "datacenters">,
 	dcId: DatacenterId,
-): DatacenterInfrastructureFromStateSummary {
+): DatacenterInfrastructureView {
 	const datacenter = getDatacenterOrThrow(state.datacenters, dcId);
+	const upgradeState = resolveDatacenterUpgradeState(datacenter);
 	return {
 		dcId,
 		base: datacenterBaseInfrastructure(datacenter.spec),
 		effective: resolveDatacenterInfrastructure(datacenter),
+		fabricEligible: upgradeState.fabricEligible,
 	};
 }
 
 export function summarizeAllDatacenterInfrastructureFromState(
 	state: Pick<GameState, "datacenters">,
-): DatacenterInfrastructureFromStateSummary[] {
+): DatacenterInfrastructureView[] {
 	return state.datacenters.map((datacenter) => summarizeDatacenterInfrastructureFromState(state, datacenter.id));
+}
+
+export function summarizeDatacenterUpgradeTracksFromState(
+	state: Pick<GameState, "datacenters">,
+	dcId: DatacenterId,
+): DatacenterUpgradeTrackView[] {
+	const datacenter = getDatacenterOrThrow(state.datacenters, dcId);
+	return summarizeUpgradeTrackViews(datacenter, dcId);
+}
+
+export function summarizeDatacenterUpgradeViewFromState(
+	state: Pick<GameState, "datacenters">,
+	dcId: DatacenterId,
+): DatacenterUpgradeView {
+	const datacenter = getDatacenterOrThrow(state.datacenters, dcId);
+	const upgradeState = resolveDatacenterUpgradeState(datacenter);
+	return {
+		dcId,
+		infrastructure: summarizeDatacenterInfrastructureFromState(state, dcId),
+		tracks: summarizeUpgradeTrackViews(datacenter, dcId),
+		fixedMonthlyUpgradeOpex: resolveDatacenterUpgradeEconomics(datacenter).fixedMonthly,
+		fabricEligible: upgradeState.fabricEligible,
+	};
+}
+
+export function summarizeAllDatacenterUpgradeViewsFromState(
+	state: Pick<GameState, "datacenters">,
+): DatacenterUpgradeView[] {
+	return state.datacenters.map((datacenter) => summarizeDatacenterUpgradeViewFromState(state, datacenter.id));
 }
 
 export function summarizeAllDatacenterCapacitiesFromState(
