@@ -105,6 +105,26 @@ export interface DatacenterInfrastructureProfile {
 	bandwidthGbps: number;
 }
 
+export type DatacenterUpgradeTrackId = "cooling" | "networkType" | "onsiteGeneration";
+export type DatacenterUpgradeTrackPresentation = "level" | "slots";
+
+export interface DatacenterUpgradeTrackNode {
+	id: string;
+	label: string;
+	capexCost: Money;
+	opex: {
+		fixedMonthly?: Money;
+	};
+	infrastructure: Partial<Pick<DatacenterInfrastructureProfile, "coolingType" | "coolingCapacityBtuPerHr" | "networkType" | "bandwidthGbps" | "onsiteGenerationCapacityKw">>;
+}
+
+export interface DatacenterUpgradeTrackDefinition {
+	id: DatacenterUpgradeTrackId;
+	label: string;
+	presentation: DatacenterUpgradeTrackPresentation;
+	nodes: readonly DatacenterUpgradeTrackNode[];
+}
+
 export interface Datacenter {
 	id: DatacenterId;
 	name: string;

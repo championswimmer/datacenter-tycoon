@@ -11,7 +11,7 @@ owner: game-logic, web, cli
 
 - [ ] **Phase 1 — Model upgrades as first-class datacenter infrastructure**
   - [x] 1.1 Introduce canonical base-vs-effective infrastructure helpers without mutating spec semantics
-  - [ ] 1.2 Add a catalog-driven monotonic track model for cooling, network type, and gas generators
+  - [x] 1.2 Add a catalog-driven monotonic track model for cooling, network type, and gas generators
   - [ ] 1.3 Persist generic per-track progress on each datacenter and derive canonical resolvers
   - [ ] 1.4 Bump save/version boundaries and add regression fixtures for default upgrade state
 - [ ] **Phase 2 — Integrate upgrades into reducer, placement rules, and economy**
