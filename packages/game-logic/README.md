@@ -80,6 +80,27 @@ Main exports from `src/index.ts`:
 - power billing helpers such as `RACK_IDLE_BASELINE_POWER_KW`, `idleBaselinePowerForRackCount()`, `monthlyKwhFromPowerKw()`, and `KWH_PER_KW_PER_MONTH`
 - all public domain types from `types.ts`, including `RackActivityView` and `RackPowerSummary`
 
+## Shared gameplay query surface
+
+Consumer packages should prefer exported query helpers over reconstructing gameplay meaning from raw state. The canonical read-only surface now includes helpers such as:
+
+- `bucketContractsFromState(state)`
+- `selectOpenMarketContractsFromState(state)`
+- `selectLiveContractsFromState(state)`
+- `selectHistoricalContractsFromState(state)`
+- `selectLiveContractsForDatacenter(state, dcId)`
+- `summarizeContractAssignmentFit(state, contractId)`
+- `summarizeOpenMarketContractFits(state)`
+- `contractDealScore(contract)`
+- `summarizeDatacenterCapacityFromState(state, dcId)`
+- `summarizeNetworkCapacityFromState(state)`
+- `selectDatacenterMaintenanceStaffingViewFromState(state, dcId)`
+- `selectDatacenterRackActivityViewFromState(state, dcId)`
+- `selectDatacenterRackPowerSummaryFromState(state, dcId)`
+- `listRackMoveTargets(state, sourceDcId, placementId)`
+
+Use these in `web`, `cli`, and any future consumers whenever the answer should be identical across interfaces — for example contract bucketing, capacity availability, contract-fit checks, maintenance affordances, and legal rack-move destinations.
+
 ## Rack health & maintenance scaffolding
 
 Rack and datacenter state now exposes the persisted maintenance fields needed for aging/failure simulation:

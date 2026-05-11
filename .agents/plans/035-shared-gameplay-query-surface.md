@@ -9,11 +9,11 @@ owner: game-logic, web, cli
 
 ## Progress
 
-- [ ] **Phase 1 — Add canonical read-only gameplay queries to `game-logic`**
+- [x] **Phase 1 — Add canonical read-only gameplay queries to `game-logic`**
   - [x] 1.1 Add canonical contract bucket and datacenter-assignment query helpers over `GameState.contracts`
   - [x] 1.2 Add state-level datacenter capacity / maintenance query helpers so UIs stop recomputing them from raw fields
   - [x] 1.3 Add rack-move candidate helpers for first-fit slot search and move-target summaries
-  - [ ] 1.4 Export the new query surface and add focused game-logic regression tests
+  - [x] 1.4 Export the new query surface and add focused game-logic regression tests
 - [ ] **Phase 2 — Refactor web to consume only canonical gameplay queries**
   - [ ] 2.1 Replace web contract fit / free-capacity / bucket logic with game-logic queries
   - [ ] 2.2 Fix datacenter power, maintenance, and move-modal views to consume game-logic summaries instead of local rule copies
