@@ -132,9 +132,9 @@ function makeDatacenterItem(fiber = false): DatacenterListItem {
 	};
 }
 
-function makeClient(): { client: CommandClient; dispatched: Action[] } {
+function makeClient(initialUpgraded = false): { client: CommandClient; dispatched: Action[] } {
 	const dispatched: Action[] = [];
-	let upgraded = false;
+	let upgraded = initialUpgraded;
 	const client: CommandClient = {
 		connect: async () => undefined,
 		dispatch: async (action: Action) => {
@@ -179,6 +179,21 @@ test("dct dc upgrade <dcId> prints canonical upgrade status", async () => {
 	assert.match(output, /Fabric ready  : NO/);
 	assert.match(output, /Cooling loop: Air cooling/);
 	assert.match(output, /Network uplink: Cat6 uplink/);
+});
+
+test("dct dc upgrade reports maxed tracks when no further purchases are available", async () => {
+	const { client } = makeClient(true);
+	const { logged, restore } = captureLog();
+	try {
+		await runDcUpgradeCommand(argv(["dc-1"]), () => client);
+	} finally {
+		restore();
+	}
+
+	const output = logged.join("\n");
+	assert.match(output, /Cooling loop: Hybrid cooling \(hybrid\) → MAXED/);
+	assert.match(output, /Network uplink: Fiber uplink \(fiber\) → MAXED/);
+	assert.match(output, /Upgrade upkeep: \$2,150\/mo/);
 });
 
 test("dct dc upgrade apply dispatches UpgradeDatacenter and shows refreshed view", async () => {

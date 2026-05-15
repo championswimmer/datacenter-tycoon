@@ -81,6 +81,25 @@ describe("PowerView", () => {
     expect(screen.getByText(/COOLING MODE/)).toBeTruthy();
     expect(screen.getAllByText(/HYBRID/).length).toBeGreaterThan(0);
     expect(screen.getByText(/UPKEEP \$900\/mo/)).toBeTruthy();
+    expect(screen.getByText("MAXED")).toBeTruthy();
+  });
+
+  it("shows generator installs raising effective power headroom and upgrade upkeep", () => {
+    const { state: builtState, dcId } = stateWithDatacenterAndRack();
+    const state = reduce(builtState, {
+      type: "UpgradeDatacenter",
+      dcId,
+      trackId: "onsiteGeneration",
+      targetNodeId: "gen-1",
+    });
+
+    renderPowerView(state, dcId);
+
+    expect(screen.getByText(/Onsite generation/i)).toBeTruthy();
+    expect(screen.getByText(/25 kW/)).toBeTruthy();
+    expect(screen.getByText(/POWER ENVELOPE/i)).toBeTruthy();
+    expect(screen.getByText(/85 kW/)).toBeTruthy();
+    expect(screen.getByText(/UPKEEP \$1,600\/mo/)).toBeTruthy();
   });
 
   it("keeps reserved power stable while billed power increases when workload is active", () => {

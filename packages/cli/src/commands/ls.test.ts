@@ -240,7 +240,9 @@ test("runLsCommand datacenters text output shows layout bounds", async () => {
 	assert.match(logged[0] ?? "", /Repair speed/, "should show repair speed");
 	assert.match(logged[0] ?? "", /Fabric READY/, "should show fabric eligibility");
 	assert.match(logged[0] ?? "", /Cooling mode hybrid/, "should show effective cooling mode");
+	assert.match(logged[0] ?? "", /grid 60kW \+ onsite 25kW/i, "should show generator-backed power split");
 	assert.match(logged[0] ?? "", /network Fiber uplink|network Fiber/i, "should show upgrade track state");
+	assert.match(logged[0] ?? "", /generators 1 generator installed/i, "should show generator track state");
 });
 
 import { newGame } from "@datacenter-tycoon/game-logic";

@@ -18,7 +18,7 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 - [`034-global-easier-balance-pass.md`](./034-global-easier-balance-pass.md) — reduce recurring costs, add tier-0 rack SKUs, and shorten repair times so both difficulty modes feel more forgiving. _status: created_
 - [`034-contract-region-affinity.md`](./034-contract-region-affinity.md) — add optional EU/Asia/USA region-affinity whitelists for contracts across game-logic, CLI, and web. _status: created_
 - [`035-shared-gameplay-query-surface.md`](./035-shared-gameplay-query-surface.md) — move cross-interface gameplay queries and state interpretation out of web/cli and into authoritative game-logic helpers. _status: completed_
-- [`036-datacenter-upgrade-framework.md`](./036-datacenter-upgrade-framework.md) — introduce a data-driven datacenter upgrade system with level- and slot-based tracks for cooling, network fabric, and onsite power expansion. _status: started_
+- [`036-datacenter-upgrade-framework.md`](./036-datacenter-upgrade-framework.md) — introduce a data-driven datacenter upgrade system with level- and slot-based tracks for cooling, network fabric, and onsite power expansion. _status: completed_
 
 ## Related plan guidance
 
