@@ -3,7 +3,13 @@ import test from "node:test";
 
 import { DATACENTER_CATALOG } from "@datacenter-tycoon/game-logic";
 import type { DatacenterMaintenanceStaffingView, Action } from "@datacenter-tycoon/game-logic";
-import type { DatacenterListItem, ListResult, QueryParams } from "../protocol/messages.js";
+import type {
+	DatacenterInfrastructureView,
+	DatacenterListItem,
+	DatacenterUpgradeView,
+	ListResult,
+	QueryParams,
+} from "../protocol/messages.js";
 import type { CommandClient } from "./common.js";
 import { runDcMaintCommand } from "./dc-maint.js";
 
@@ -39,6 +45,41 @@ function makeMaintenance(
 	};
 }
 
+function makeInfrastructureView(dcId: string): DatacenterInfrastructureView {
+	return {
+		dcId: dcId as never,
+		base: {
+			gridImportCapacityKw: DATACENTER_CATALOG.garage.powerCapacityKw,
+			onsiteGenerationCapacityKw: 0,
+			rackPowerCapacityKw: DATACENTER_CATALOG.garage.powerCapacityKw,
+			coolingCapacityBtuPerHr: DATACENTER_CATALOG.garage.coolingCapacityBtuPerHr,
+			coolingType: DATACENTER_CATALOG.garage.coolingType,
+			networkType: DATACENTER_CATALOG.garage.networkType,
+			bandwidthGbps: DATACENTER_CATALOG.garage.bandwidthGbps,
+		},
+		effective: {
+			gridImportCapacityKw: DATACENTER_CATALOG.garage.powerCapacityKw,
+			onsiteGenerationCapacityKw: 0,
+			rackPowerCapacityKw: DATACENTER_CATALOG.garage.powerCapacityKw,
+			coolingCapacityBtuPerHr: DATACENTER_CATALOG.garage.coolingCapacityBtuPerHr,
+			coolingType: DATACENTER_CATALOG.garage.coolingType,
+			networkType: DATACENTER_CATALOG.garage.networkType,
+			bandwidthGbps: DATACENTER_CATALOG.garage.bandwidthGbps,
+		},
+		fabricEligible: false,
+	};
+}
+
+function makeUpgradeView(dcId: string): DatacenterUpgradeView {
+	return {
+		dcId: dcId as never,
+		infrastructure: makeInfrastructureView(dcId),
+		tracks: [],
+		fixedMonthlyUpgradeOpex: 0,
+		fabricEligible: false,
+	};
+}
+
 function makeDatacenterItem(
 	dcId: string,
 	maintenance: DatacenterMaintenanceStaffingView,
@@ -54,6 +95,8 @@ function makeDatacenterItem(
 			maintenanceStaff: maintenance.currentStaff,
 		},
 		capacity: { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 },
+		infrastructure: makeInfrastructureView(dcId),
+		upgrades: makeUpgradeView(dcId),
 		powerKw: 0,
 		powerCapacityKw: DATACENTER_CATALOG.garage.powerCapacityKw,
 		heatOutputBtuPerHr: 0,

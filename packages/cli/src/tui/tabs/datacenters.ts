@@ -1,4 +1,8 @@
-import { datacenterMaintenanceStaffingView } from "@datacenter-tycoon/game-logic";
+import {
+	datacenterMaintenanceStaffingView,
+	summarizeDatacenterInfrastructureFromState,
+	summarizeDatacenterUpgradeViewFromState,
+} from "@datacenter-tycoon/game-logic";
 import type { GameState } from "@datacenter-tycoon/game-logic";
 
 export function renderDatacentersTab(snapshot: GameState, selectedIndex: number): string[] {
@@ -15,6 +19,8 @@ export function renderDatacentersTab(snapshot: GameState, selectedIndex: number)
 	const maintenance = region
 		? datacenterMaintenanceStaffingView(selected, region, snapshot.datacenters, snapshot.tick)
 		: null;
+	const infrastructure = summarizeDatacenterInfrastructureFromState(snapshot, selected.id);
+	const upgrades = summarizeDatacenterUpgradeViewFromState(snapshot, selected.id);
 
 	const placementsByCell = new Map(selected.placements.map((placement) => [`${placement.row}:${placement.position}`, placement.specId]));
 	const rows: string[] = [];
@@ -48,7 +54,9 @@ export function renderDatacentersTab(snapshot: GameState, selectedIndex: number)
 		...snapshot.datacenters.map((datacenter, index) => `${index === selectedIndex ? ">" : " "} ${datacenter.id}  ${datacenter.name}  racks ${datacenter.placements.length}`),
 		"",
 		`Selected: ${selected.id} · ${selected.name}`,
-		`Power ${selected.spec.powerCapacityKw}kW · Cooling ${selected.spec.coolingCapacityBtuPerHr} BTU/h · Bandwidth ${selected.spec.bandwidthGbps} Gbps`,
+		`Power ${infrastructure.effective.rackPowerCapacityKw}kW (${infrastructure.effective.gridImportCapacityKw} grid + ${infrastructure.effective.onsiteGenerationCapacityKw} onsite) · Cooling ${infrastructure.effective.coolingCapacityBtuPerHr} BTU/h (${infrastructure.effective.coolingType}) · Bandwidth ${infrastructure.effective.bandwidthGbps} Gbps (${infrastructure.effective.networkType})`,
+		`Fabric ${upgrades.fabricEligible ? "READY" : "NOT READY"} · Upgrade upkeep $${upgrades.fixedMonthlyUpgradeOpex.toLocaleString()}/mo`,
+		`Tracks: cooling ${upgrades.tracks.find((track) => track.trackId === "cooling")?.currentNode.id ?? "n/a"} · network ${upgrades.tracks.find((track) => track.trackId === "networkType")?.currentNode.id ?? "n/a"} · gen ${upgrades.tracks.find((track) => track.trackId === "onsiteGeneration")?.currentNode.id ?? "n/a"}`,
 		...maintLines,
 		"Rack grid:",
 		...rows,

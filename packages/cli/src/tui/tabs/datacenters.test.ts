@@ -30,6 +30,29 @@ test("renderDatacentersTab shows the list and rack grid for the selected datacen
 	assert.match(rendered, /\[C1\]/);
 });
 
+test("renderDatacentersTab shows effective infrastructure and upgrade summary for selected datacenter", () => {
+	let snapshot = newGame(1, { startingCash: 3_000_000 });
+	const firstRegionId = snapshot.map.regions[0]!.id;
+	snapshot = reduce(snapshot, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: "dc-1" as never,
+		regionId: firstRegionId,
+	});
+	snapshot = reduce(snapshot, {
+		type: "UpgradeDatacenter",
+		dcId: "dc-1" as never,
+		trackId: "cooling",
+		targetNodeId: "hybrid",
+	});
+
+	const rendered = renderDatacentersTab(snapshot, 0).join("\n");
+	assert.match(rendered, /Power 60kW \(60 grid \+ 0 onsite\)/, "should show grid\/onsite split");
+	assert.match(rendered, /Cooling 250000 BTU\/h \(hybrid\)/, "should show effective cooling mode");
+	assert.match(rendered, /Fabric NOT READY/, "should show fabric status");
+	assert.match(rendered, /Tracks: cooling hybrid/, "should show upgrade track summary");
+});
+
 test("renderDatacentersTab shows maintenance staffing summary for selected datacenter", () => {
 	let snapshot = newGame(1, { startingCash: 3_000_000 });
 	const firstRegionId = snapshot.map.regions[0]!.id;
