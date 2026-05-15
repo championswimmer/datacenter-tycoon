@@ -3,7 +3,7 @@ name: Datacenter Upgrade Framework
 description: Introduce a catalog-driven datacenter upgrade system with monotonic upgrade tracks for cooling, network type, and onsite power expansion.
 status: started
 created: 2026-05-11
-updated: 2026-05-11
+updated: 2026-05-15
 owner: game-logic, web, cli
 ---
 
@@ -24,7 +24,7 @@ owner: game-logic, web, cli
   - [x] 3.2 Extend CLI daemon/protocol/list views and add `dct dc upgrade` commands using canonical queries
   - [x] 3.3 Update web selectors and datacenter screens to inspect/apply upgrades without UI-local rule copies
 - [ ] **Phase 4 — Balance scaffolding, UX polish, and guardrails**
-  - [ ] 4.1 Centralize upgrade balance constants and per-blueprint limits in tunable catalog data
+  - [x] 4.1 Centralize upgrade balance constants and per-blueprint limits in tunable catalog data
   - [ ] 4.2 Update docs, AGENTS guidance, and plan index so future upgrades extend tracks instead of patching specs ad hoc
   - [ ] 4.3 Add cross-workspace regression coverage for upgrade views, opex presentation, and command/UI flows
 

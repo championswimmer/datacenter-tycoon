@@ -1,3 +1,8 @@
+import {
+	DATACENTER_UPGRADE_BALANCE,
+	DATACENTER_UPGRADE_FABRIC_NETWORK_TYPE,
+	type DatacenterUpgradeBalanceNode,
+} from "../balance/datacenter-upgrades.js";
 import type {
 	DatacenterNetworkType,
 	DatacenterSpecId,
@@ -30,164 +35,51 @@ export interface DatacenterUpgradeBlueprintView {
 	fabricEligible: boolean;
 }
 
-function createCoolingNode(
-	id: string,
-	label: string,
-	coolingType: DatacenterUpgradeTrackNode["infrastructure"]["coolingType"],
-	coolingCapacityBtuPerHr: number,
-	capexCost: number,
-	fixedMonthly = 0,
-): DatacenterUpgradeTrackNode {
+function toUpgradeTrackNode(node: DatacenterUpgradeBalanceNode): DatacenterUpgradeTrackNode {
 	return {
-		id,
-		label,
-		capexCost,
-		opex: fixedMonthly > 0 ? { fixedMonthly } : {},
-		infrastructure: {
-			coolingType,
-			coolingCapacityBtuPerHr,
-		},
+		id: node.id,
+		label: node.label,
+		capexCost: node.capexCost,
+		opex: node.fixedMonthlyOpex && node.fixedMonthlyOpex > 0 ? { fixedMonthly: node.fixedMonthlyOpex } : {},
+		infrastructure: node.infrastructure,
 	};
 }
 
-function createNetworkNode(
-	id: string,
-	label: string,
-	networkType: DatacenterNetworkType,
-	bandwidthGbps: number,
-	capexCost: number,
-	fixedMonthly = 0,
-): DatacenterUpgradeTrackNode {
-	return {
-		id,
-		label,
-		capexCost,
-		opex: fixedMonthly > 0 ? { fixedMonthly } : {},
-		infrastructure: {
-			networkType,
-			bandwidthGbps,
-		},
-	};
-}
+function buildUpgradeBlueprint(specId: string): DatacenterUpgradeBlueprint {
+	const balance = DATACENTER_UPGRADE_BALANCE[specId];
+	if (!balance) {
+		throw new Error(`Unknown datacenter upgrade balance: ${specId}`);
+	}
 
-function createGeneratorNode(
-	installedSlots: number,
-	onsiteGenerationCapacityKw: number,
-	capexCost: number,
-	fixedMonthly = 0,
-): DatacenterUpgradeTrackNode {
 	return {
-		id: `gen-${installedSlots}`,
-		label: installedSlots === 1 ? "1 generator installed" : `${installedSlots} generators installed`,
-		capexCost,
-		opex: fixedMonthly > 0 ? { fixedMonthly } : {},
-		infrastructure: {
-			onsiteGenerationCapacityKw,
+		specId: datacenterSpecId(specId),
+		tracks: {
+			cooling: {
+				id: "cooling",
+				label: balance.tracks.cooling.label,
+				presentation: balance.tracks.cooling.presentation,
+				nodes: balance.tracks.cooling.nodes.map(toUpgradeTrackNode),
+			},
+			networkType: {
+				id: "networkType",
+				label: balance.tracks.networkType.label,
+				presentation: balance.tracks.networkType.presentation,
+				nodes: balance.tracks.networkType.nodes.map(toUpgradeTrackNode),
+			},
+			onsiteGeneration: {
+				id: "onsiteGeneration",
+				label: balance.tracks.onsiteGeneration.label,
+				presentation: balance.tracks.onsiteGeneration.presentation,
+				nodes: balance.tracks.onsiteGeneration.nodes.map(toUpgradeTrackNode),
+			},
 		},
 	};
 }
 
 export const DATACENTER_UPGRADE_CATALOG: Record<string, DatacenterUpgradeBlueprint> = {
-	garage: {
-		specId: datacenterSpecId("garage"),
-		tracks: {
-			cooling: {
-				id: "cooling",
-				label: "Cooling loop",
-				presentation: "level",
-				nodes: [
-					createCoolingNode("air", "Air cooling", "air", 120_000, 0),
-					createCoolingNode("hybrid", "Hybrid cooling", "hybrid", 250_000, 180_000, 900),
-				],
-			},
-			networkType: {
-				id: "networkType",
-				label: "Network uplink",
-				presentation: "level",
-				nodes: [
-					createNetworkNode("cat6", "Cat6 uplink", "cat6", 80, 0),
-					createNetworkNode("cat8", "Cat8 uplink", "cat8", 160, 75_000, 350),
-					createNetworkNode("fiber", "Fiber uplink", "fiber", 320, 180_000, 1_250),
-				],
-			},
-			onsiteGeneration: {
-				id: "onsiteGeneration",
-				label: "Gas generators",
-				presentation: "slots",
-				nodes: [
-					createGeneratorNode(0, 0, 0),
-					createGeneratorNode(1, 25, 120_000, 1_600),
-				],
-			},
-		},
-	},
-	warehouse: {
-		specId: datacenterSpecId("warehouse"),
-		tracks: {
-			cooling: {
-				id: "cooling",
-				label: "Cooling loop",
-				presentation: "level",
-				nodes: [
-					createCoolingNode("air", "Air cooling", "air", 520_000, 0),
-					createCoolingNode("hybrid", "Hybrid cooling", "hybrid", 900_000, 360_000, 2_200),
-					createCoolingNode("liquid", "Liquid cooling", "liquid", 1_400_000, 840_000, 5_200),
-				],
-			},
-			networkType: {
-				id: "networkType",
-				label: "Network uplink",
-				presentation: "level",
-				nodes: [
-					createNetworkNode("cat8", "Cat8 uplink", "cat8", 400, 0),
-					createNetworkNode("fiber", "Fiber uplink", "fiber", 1_000, 275_000, 2_000),
-				],
-			},
-			onsiteGeneration: {
-				id: "onsiteGeneration",
-				label: "Gas generators",
-				presentation: "slots",
-				nodes: [
-					createGeneratorNode(0, 0, 0),
-					createGeneratorNode(1, 80, 450_000, 3_800),
-					createGeneratorNode(2, 160, 900_000, 7_600),
-				],
-			},
-		},
-	},
-	hyperscale: {
-		specId: datacenterSpecId("hyperscale"),
-		tracks: {
-			cooling: {
-				id: "cooling",
-				label: "Cooling loop",
-				presentation: "level",
-				nodes: [
-					createCoolingNode("liquid", "Liquid cooling", "liquid", 10_500_000, 0),
-				],
-			},
-			networkType: {
-				id: "networkType",
-				label: "Network uplink",
-				presentation: "level",
-				nodes: [
-					createNetworkNode("fiber", "Fiber uplink", "fiber", 5_000, 0),
-				],
-			},
-			onsiteGeneration: {
-				id: "onsiteGeneration",
-				label: "Gas generators",
-				presentation: "slots",
-				nodes: [
-					createGeneratorNode(0, 0, 0),
-					createGeneratorNode(1, 400, 1_800_000, 16_000),
-					createGeneratorNode(2, 800, 3_600_000, 32_000),
-					createGeneratorNode(3, 1_200, 5_400_000, 48_000),
-					createGeneratorNode(4, 1_600, 7_200_000, 64_000),
-				],
-			},
-		},
-	},
+	garage: buildUpgradeBlueprint("garage"),
+	warehouse: buildUpgradeBlueprint("warehouse"),
+	hyperscale: buildUpgradeBlueprint("hyperscale"),
 };
 
 export function listDatacenterUpgradeTrackDefinitions(specId: DatacenterSpecId): DatacenterUpgradeTrackDefinition[] {
@@ -251,7 +143,7 @@ export function createDatacenterUpgradeProgress(specId: DatacenterSpecId): Datac
 }
 
 export function isNetworkTypeFiber(networkType: DatacenterNetworkType): boolean {
-	return networkType === "fiber";
+	return networkType === DATACENTER_UPGRADE_FABRIC_NETWORK_TYPE;
 }
 
 export function describeDatacenterUpgradeBlueprint(specId: DatacenterSpecId): DatacenterUpgradeBlueprintView {
@@ -272,6 +164,8 @@ export function describeDatacenterUpgradeBlueprint(specId: DatacenterSpecId): Da
 	return {
 		specId,
 		tracks,
-		fabricEligible: isNetworkTypeFiber(networkTrack.currentNode.infrastructure.networkType ?? "cat6"),
+		fabricEligible: isNetworkTypeFiber(
+			networkTrack.currentNode.infrastructure.networkType ?? DATACENTER_UPGRADE_FABRIC_NETWORK_TYPE,
+		),
 	};
 }
