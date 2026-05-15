@@ -234,6 +234,15 @@ Use `reliabilityMarketPolicyForScore(score)` when a consumer needs the exact off
 
 Because `tick()` updates reliability **before** refreshing the market, a clean fulfillment month can immediately improve the next offer refresh, while a breach can reduce the next refresh without any UI-side bookkeeping.
 
+## Datacenter upgrade extension rules
+
+Datacenter upgrades now follow the same extension path everywhere in the repo:
+
+- Tune **costs, upkeep, bandwidth deltas, cooling deltas, generator yields, and slot caps** in `src/balance/datacenter-upgrades.ts`.
+- Treat `src/catalog/datacenter-upgrades.ts` as the canonical blueprint builder over that balance data.
+- Treat `Datacenter.spec` as the immutable built blueprint. Live power/cooling/network answers must come from `resolveDatacenterInfrastructure()` and the exported query summaries such as `summarizeDatacenterInfrastructureFromState()` / `summarizeDatacenterUpgradeViewFromState()`.
+- CLI and web consumers should never inspect `datacenter.upgrades` or hardcode upgrade rules directly; they should render the canonical query surface instead.
+
 ## Action reference
 
 ```ts

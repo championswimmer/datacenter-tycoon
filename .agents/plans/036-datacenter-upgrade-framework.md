@@ -25,7 +25,7 @@ owner: game-logic, web, cli
   - [x] 3.3 Update web selectors and datacenter screens to inspect/apply upgrades without UI-local rule copies
 - [ ] **Phase 4 — Balance scaffolding, UX polish, and guardrails**
   - [x] 4.1 Centralize upgrade balance constants and per-blueprint limits in tunable catalog data
-  - [ ] 4.2 Update docs, AGENTS guidance, and plan index so future upgrades extend tracks instead of patching specs ad hoc
+  - [x] 4.2 Update docs, AGENTS guidance, and plan index so future upgrades extend tracks instead of patching specs ad hoc
   - [ ] 4.3 Add cross-workspace regression coverage for upgrade views, opex presentation, and command/UI flows
 
 ## Overview

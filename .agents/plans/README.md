@@ -18,7 +18,7 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 - [`034-global-easier-balance-pass.md`](./034-global-easier-balance-pass.md) — reduce recurring costs, add tier-0 rack SKUs, and shorten repair times so both difficulty modes feel more forgiving. _status: created_
 - [`034-contract-region-affinity.md`](./034-contract-region-affinity.md) — add optional EU/Asia/USA region-affinity whitelists for contracts across game-logic, CLI, and web. _status: created_
 - [`035-shared-gameplay-query-surface.md`](./035-shared-gameplay-query-surface.md) — move cross-interface gameplay queries and state interpretation out of web/cli and into authoritative game-logic helpers. _status: completed_
-- [`036-datacenter-upgrade-framework.md`](./036-datacenter-upgrade-framework.md) — introduce a data-driven datacenter upgrade system with level- and slot-based tracks for cooling, network fabric, and onsite power expansion. _status: created_
+- [`036-datacenter-upgrade-framework.md`](./036-datacenter-upgrade-framework.md) — introduce a data-driven datacenter upgrade system with level- and slot-based tracks for cooling, network fabric, and onsite power expansion. _status: started_
 
 ## Related plan guidance
 
@@ -27,7 +27,7 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 - If future work touches **web startup flow, tutorial timing, saved-game entry UX, contract-assignment clicks, or rack-placement clicks**, read [`024-web-start-screen-and-one-click-actions.md`](./024-web-start-screen-and-one-click-actions.md) first. It establishes the intended banner-first entry flow and the current “click is commit” interaction pattern for contracts and rack installation.
 - If future work touches **contract generation, assignment eligibility, region whitelists, or contract geography shown in CLI/web**, read [`034-contract-region-affinity.md`](./034-contract-region-affinity.md) first. It defines the planned contract-region whitelist model and the cross-package presentation/validation responsibilities.
 - If future work touches **shared derived gameplay answers** like contract fit, capacity availability, live/history bucketing, maintenance affordances, move-target discovery, or upgrade affordances/effective infrastructure views, read [`035-shared-gameplay-query-surface.md`](./035-shared-gameplay-query-surface.md) first. It defines the boundary between consumer formatting and authoritative `game-logic` queries.
-- If future work touches **datacenter upgrades, effective facility capacities, cooling/network/power retrofit progression, or generator-vs-grid accounting**, read [`036-datacenter-upgrade-framework.md`](./036-datacenter-upgrade-framework.md) first. It defines the base-vs-effective infrastructure model and the catalog-driven upgrade-track architecture.
+- If future work touches **datacenter upgrades, effective facility capacities, cooling/network/power retrofit progression, generator-vs-grid accounting, or fiber-fabric eligibility**, read [`036-datacenter-upgrade-framework.md`](./036-datacenter-upgrade-framework.md) first. It defines the base-vs-effective infrastructure model, the catalog-driven upgrade-track architecture, and the rule that future upgrades extend catalog tracks instead of patching `Datacenter.spec` or UI-local helpers.
 - Use `npm run audit:query-boundary` after touching `web` or `cli` contract/capacity/move code. It greps for common signs that gameplay interpretation has leaked back out of `game-logic`.
 
 ## Conventions

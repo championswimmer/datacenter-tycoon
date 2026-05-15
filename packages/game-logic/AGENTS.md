@@ -72,6 +72,7 @@ docs/
 
 - **`src/index.ts` is the public surface.** If a symbol is intended for consumers, re-export it there via the relevant barrel.
 - **Catalogs are data, not logic containers.** Keep rack/datacenter blueprints in `catalog/` as plain objects.
+- **Upgradeable datacenter resources have a blueprint-vs-effective split.** `DatacenterSpec` is the immutable build-time blueprint; live power/cooling/network/generator answers must flow through the infrastructure/upgrade resolvers and query views.
 - **Reducer remains the main gameplay entry point.** New gameplay interactions should usually become actions in `state/reduce.ts` and delegate to small domain helpers.
 - **Simulation lives in `sim/tick.ts`.** Monthly progression should be orchestrated there, not spread across UI/server code.
 - **Save/load format is versioned.** Preserve `SAVE_VERSION` semantics and route format changes through `migrate()`.
@@ -107,7 +108,8 @@ These are already implemented and should usually be extended rather than replace
 - When changing **core entity ownership / contract / capacity architecture**, update:
   - `docs/ARCHITECTURE.md`
 - When changing **contracts or economy**, keep generation and monthly outcomes deterministic for the same seed and action sequence.
-- Prefer reusing existing helpers like `applyCapex`, `canPlaceRack`, `acceptContract`, `refreshContractMarket`, and `tick` rather than duplicating logic.
+- When changing **datacenter upgrade topology or tuning**, edit `src/balance/datacenter-upgrades.ts` and reuse the catalog/resolver pipeline instead of hardcoding costs, caps, or fabric eligibility in reducers/UI-facing helpers.
+- Prefer reusing existing helpers like `applyCapex`, `canPlaceRack`, `acceptContract`, `refreshContractMarket`, `tick`, `resolveDatacenterInfrastructure`, and the upgrade query summaries rather than duplicating logic.
 
 ## Testing
 
