@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+	DATACENTER_UPGRADE_BALANCE,
+	DATACENTER_UPGRADE_FABRIC_NETWORK_TYPE,
+} from "../balance/datacenter-upgrades.js";
+import {
 	DATACENTER_UPGRADE_CATALOG,
 	describeDatacenterUpgradeBlueprint,
 	isNetworkTypeFiber,
@@ -146,6 +150,26 @@ test("starter datacenter blueprints reserve the rebalanced cooling headroom", ()
 	assert.equal(DATACENTER_CATALOG.garage.coolingCapacityBtuPerHr, 120_000);
 	assert.equal(DATACENTER_CATALOG.warehouse.coolingCapacityBtuPerHr, 520_000);
 	assert.equal(DATACENTER_CATALOG.hyperscale.coolingCapacityBtuPerHr, 10_500_000);
+});
+
+test("datacenter upgrade balance centralizes topology, tuneable costs, and per-blueprint limits", () => {
+	assert.deepEqual(Object.keys(DATACENTER_UPGRADE_BALANCE).sort(), ["garage", "hyperscale", "warehouse"]);
+	assert.equal(DATACENTER_UPGRADE_FABRIC_NETWORK_TYPE, "fiber");
+	assert.deepEqual(
+		DATACENTER_UPGRADE_BALANCE.garage.tracks.networkType.nodes.map((node) => node.id),
+		["cat6", "cat8", "fiber"],
+	);
+	assert.deepEqual(
+		DATACENTER_UPGRADE_BALANCE.warehouse.tracks.cooling.nodes.map((node) => node.id),
+		["air", "hybrid", "liquid"],
+	);
+	assert.deepEqual(
+		DATACENTER_UPGRADE_BALANCE.hyperscale.tracks.onsiteGeneration.nodes.map((node) => node.id),
+		["gen-0", "gen-1", "gen-2", "gen-3", "gen-4"],
+	);
+	assert.equal(DATACENTER_UPGRADE_BALANCE.garage.tracks.cooling.nodes[1]?.fixedMonthlyOpex, 900);
+	assert.equal(DATACENTER_UPGRADE_BALANCE.warehouse.tracks.networkType.nodes[1]?.capexCost, 275_000);
+	assert.equal(DATACENTER_UPGRADE_BALANCE.hyperscale.tracks.onsiteGeneration.nodes[4]?.infrastructure.onsiteGenerationCapacityKw, 1_600);
 });
 
 test("datacenter upgrade catalog defines monotonic cooling, network, and generator tracks per blueprint", () => {
