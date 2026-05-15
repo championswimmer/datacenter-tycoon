@@ -4,8 +4,10 @@ import type {
 	Contract,
 	Datacenter,
 	DatacenterCapacityFromStateSummary,
+	DatacenterInfrastructureView,
 	DatacenterMaintenanceStaffingView,
 	DatacenterSpec,
+	DatacenterUpgradeView,
 	GameState,
 	LedgerEntry,
 	RackHealthStatus,
@@ -137,6 +139,8 @@ export interface DatacenterListItem {
 	datacenter: Datacenter;
 	capacity: Capacity;
 	capacitySummary: DatacenterCapacityFromStateSummary;
+	infrastructure: DatacenterInfrastructureView;
+	upgrades: DatacenterUpgradeView;
 	powerKw: number;
 	powerCapacityKw: number;
 	heatOutputBtuPerHr: number;

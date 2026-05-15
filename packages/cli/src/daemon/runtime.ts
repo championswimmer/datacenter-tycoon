@@ -11,6 +11,8 @@ import {
 	selectLiveContractsFromState,
 	selectOpenMarketContractsFromState,
 	summarizeDatacenterCapacityFromState,
+	summarizeDatacenterInfrastructureFromState,
+	summarizeDatacenterUpgradeViewFromState,
 	VERSION,
 	type Datacenter,
 	type GameState,
@@ -84,18 +86,22 @@ function createStatusView(state: GameState, runtimeStatus: RuntimeStatus): Statu
 function createDatacenterList(state: GameState): DatacenterListItem[] {
 	return state.datacenters.map((datacenter) => {
 		const capacitySummary = summarizeDatacenterCapacityFromState(state, datacenter.id);
+		const infrastructure = summarizeDatacenterInfrastructureFromState(state, datacenter.id);
+		const upgrades = summarizeDatacenterUpgradeViewFromState(state, datacenter.id);
 		const usage = datacenterUsage(datacenter);
 
 		return {
 			datacenter,
 			capacity: capacitySummary.installed,
 			capacitySummary,
+			infrastructure,
+			upgrades,
 			powerKw: usage.powerKw,
-			powerCapacityKw: datacenter.spec.powerCapacityKw,
+			powerCapacityKw: infrastructure.effective.rackPowerCapacityKw,
 			heatOutputBtuPerHr: usage.heatOutputBtuPerHr,
-			coolingCapacityBtuPerHr: datacenter.spec.coolingCapacityBtuPerHr,
+			coolingCapacityBtuPerHr: infrastructure.effective.coolingCapacityBtuPerHr,
 			bandwidthGbps: usage.bandwidthGbps,
-			bandwidthCapacityGbps: datacenter.spec.bandwidthGbps,
+			bandwidthCapacityGbps: infrastructure.effective.bandwidthGbps,
 			slotsUsed: usage.slotsUsed,
 			totalSlots: datacenter.spec.rows * datacenter.spec.positionsPerRow,
 			maintenance: selectDatacenterMaintenanceStaffingViewFromState(state, datacenter.id),

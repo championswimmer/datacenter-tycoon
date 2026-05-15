@@ -200,6 +200,12 @@ async function listDatacenters(parsed: ParsedArgv, clientFactory: CommandClientF
 					`    Bounds: rows 0-${dc.spec.rows - 1}, cols 0-${dc.spec.positionsPerRow - 1} | Power: ${item.powerKw.toFixed(1)}/${item.powerCapacityKw}kW | Cooling: ${Math.round(item.heatOutputBtuPerHr)}/${item.coolingCapacityBtuPerHr} BTU/hr | BW: ${item.bandwidthGbps}/${item.bandwidthCapacityGbps}Gbps`,
 				);
 				lines.push(
+					`    Infra: grid ${item.infrastructure.effective.gridImportCapacityKw}kW + onsite ${item.infrastructure.effective.onsiteGenerationCapacityKw}kW | Cooling mode ${item.infrastructure.effective.coolingType} | Network ${item.infrastructure.effective.networkType} | Fabric ${item.upgrades.fabricEligible ? "READY" : "NOT READY"}`,
+				);
+				lines.push(
+					`    Upgrades: cooling ${item.upgrades.tracks.find((track) => track.trackId === "cooling")?.currentNode.label ?? "n/a"} | network ${item.upgrades.tracks.find((track) => track.trackId === "networkType")?.currentNode.label ?? "n/a"} | generators ${item.upgrades.tracks.find((track) => track.trackId === "onsiteGeneration")?.currentNode.label ?? "n/a"}`,
+				);
+				lines.push(
 					`    Capacity: installed ${formatContractRequirements({ requirements: item.capacitySummary.installed })} | committed ${formatContractRequirements({ requirements: item.capacitySummary.committed })} | available ${formatContractRequirements({ requirements: item.capacitySummary.available })}`,
 				);
 				lines.push(

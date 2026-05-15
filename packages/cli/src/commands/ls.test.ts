@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { DATACENTER_CATALOG, RACK_CATALOG } from "@datacenter-tycoon/game-logic";
-import type { DatacenterListItem, DatacenterMaintenanceStaffingView } from "../protocol/messages.js";
+import type {
+	DatacenterInfrastructureView,
+	DatacenterListItem,
+	DatacenterMaintenanceStaffingView,
+	DatacenterUpgradeView,
+} from "../protocol/messages.js";
 import { parseArgv } from "../argv.js";
 import type { CatalogResult, ListResult, QueryParams, StatusView } from "../protocol/messages.js";
 import type { CommandClient } from "./common.js";
@@ -43,6 +48,78 @@ function createCatalogClient(): CommandClient {
 		},
 		control: async () => ({ ok: true }),
 		close: async () => undefined,
+	};
+}
+
+function makeInfrastructureView(): DatacenterInfrastructureView {
+	return {
+		dcId: "dc-1" as never,
+		base: {
+			gridImportCapacityKw: DATACENTER_CATALOG.garage.powerCapacityKw,
+			onsiteGenerationCapacityKw: 0,
+			rackPowerCapacityKw: DATACENTER_CATALOG.garage.powerCapacityKw,
+			coolingCapacityBtuPerHr: DATACENTER_CATALOG.garage.coolingCapacityBtuPerHr,
+			coolingType: DATACENTER_CATALOG.garage.coolingType,
+			networkType: DATACENTER_CATALOG.garage.networkType,
+			bandwidthGbps: DATACENTER_CATALOG.garage.bandwidthGbps,
+		},
+		effective: {
+			gridImportCapacityKw: DATACENTER_CATALOG.garage.powerCapacityKw,
+			onsiteGenerationCapacityKw: 25,
+			rackPowerCapacityKw: DATACENTER_CATALOG.garage.powerCapacityKw + 25,
+			coolingCapacityBtuPerHr: 250_000,
+			coolingType: "hybrid",
+			networkType: "fiber",
+			bandwidthGbps: 320,
+		},
+		fabricEligible: true,
+	};
+}
+
+function makeUpgradeView(): DatacenterUpgradeView {
+	return {
+		dcId: "dc-1" as never,
+		infrastructure: makeInfrastructureView(),
+		fixedMonthlyUpgradeOpex: 3_750,
+		fabricEligible: true,
+		tracks: [
+			{
+				dcId: "dc-1" as never,
+				trackId: "cooling",
+				label: "Cooling loop",
+				presentation: "level",
+				currentNode: { id: "hybrid", label: "Hybrid cooling", capexCost: 180_000, fixedMonthlyOpex: 900, infrastructure: { coolingType: "hybrid", coolingCapacityBtuPerHr: 250_000 } },
+				nextNode: null,
+				maxNode: { id: "hybrid", label: "Hybrid cooling", capexCost: 180_000, fixedMonthlyOpex: 900, infrastructure: { coolingType: "hybrid", coolingCapacityBtuPerHr: 250_000 } },
+				currentNodeIndex: 1,
+				totalNodes: 2,
+				maxed: true,
+			},
+			{
+				dcId: "dc-1" as never,
+				trackId: "networkType",
+				label: "Network uplink",
+				presentation: "level",
+				currentNode: { id: "fiber", label: "Fiber uplink", capexCost: 180_000, fixedMonthlyOpex: 1_250, infrastructure: { networkType: "fiber", bandwidthGbps: 320 } },
+				nextNode: null,
+				maxNode: { id: "fiber", label: "Fiber uplink", capexCost: 180_000, fixedMonthlyOpex: 1_250, infrastructure: { networkType: "fiber", bandwidthGbps: 320 } },
+				currentNodeIndex: 2,
+				totalNodes: 3,
+				maxed: true,
+			},
+			{
+				dcId: "dc-1" as never,
+				trackId: "onsiteGeneration",
+				label: "Gas generators",
+				presentation: "slots",
+				currentNode: { id: "gen-1", label: "1 generator installed", capexCost: 120_000, fixedMonthlyOpex: 1_600, infrastructure: { onsiteGenerationCapacityKw: 25 } },
+				nextNode: null,
+				maxNode: { id: "gen-1", label: "1 generator installed", capexCost: 120_000, fixedMonthlyOpex: 1_600, infrastructure: { onsiteGenerationCapacityKw: 25 } },
+				currentNodeIndex: 1,
+				totalNodes: 2,
+				maxed: true,
+			},
+		],
 	};
 }
 
@@ -137,12 +214,14 @@ test("runLsCommand datacenters text output shows layout bounds", async () => {
 							committed: { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 },
 							available: { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 },
 						},
+						infrastructure: makeInfrastructureView(),
+						upgrades: makeUpgradeView(),
 						powerKw: 0,
-						powerCapacityKw: DATACENTER_CATALOG.garage.powerCapacityKw,
+						powerCapacityKw: DATACENTER_CATALOG.garage.powerCapacityKw + 25,
 						heatOutputBtuPerHr: 0,
-						coolingCapacityBtuPerHr: DATACENTER_CATALOG.garage.coolingCapacityBtuPerHr,
+						coolingCapacityBtuPerHr: 250_000,
 						bandwidthGbps: 0,
-						bandwidthCapacityGbps: DATACENTER_CATALOG.garage.bandwidthGbps,
+						bandwidthCapacityGbps: 320,
 						slotsUsed: 1,
 						totalSlots: DATACENTER_CATALOG.garage.rows * DATACENTER_CATALOG.garage.positionsPerRow,
 						maintenance: makeMaintenance({ currentStaff: 2, extraWagesMonthly: 10000 }),
@@ -159,6 +238,9 @@ test("runLsCommand datacenters text output shows layout bounds", async () => {
 	assert.match(logged[0] ?? "", /Maintenance:/, "should show maintenance line");
 	assert.match(logged[0] ?? "", /2 staff/, "should show staff count");
 	assert.match(logged[0] ?? "", /Repair speed/, "should show repair speed");
+	assert.match(logged[0] ?? "", /Fabric READY/, "should show fabric eligibility");
+	assert.match(logged[0] ?? "", /Cooling mode hybrid/, "should show effective cooling mode");
+	assert.match(logged[0] ?? "", /network Fiber uplink|network Fiber/i, "should show upgrade track state");
 });
 
 import { newGame } from "@datacenter-tycoon/game-logic";

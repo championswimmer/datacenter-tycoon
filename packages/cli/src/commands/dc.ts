@@ -3,6 +3,7 @@ import type { ParsedArgv } from "../argv.js";
 import type { CommandClientFactory } from "./common.js";
 import { runBuildDatacenterCommand } from "./build-dc.js";
 import { runDcMaintCommand } from "./dc-maint.js";
+import { runDcUpgradeCommand } from "./dc-upgrade.js";
 
 function withShiftedPositionals(parsed: ParsedArgv, count: number): ParsedArgv {
 	return {
@@ -28,6 +29,11 @@ export async function runDcCommand(
 		return;
 	}
 
+	if (subcommand === "upgrade") {
+		await runDcUpgradeCommand(nestedParsed, clientFactory);
+		return;
+	}
+
 	if (subcommand === "decom") {
 		throw new Error("Usage: dct dc decom <dcId>\n\nDatacenter decommissioning is not implemented yet.");
 	}
@@ -40,6 +46,8 @@ export async function runDcCommand(
 			"  maint inc <dcId> [--by <n>]                          Increase maintenance staff\n" +
 			"  maint dec <dcId> [--by <n>]                          Decrease maintenance staff\n" +
 			"  maint set <dcId> <count>                             Set absolute maintenance staff level\n" +
+			"  upgrade <dcId>                                       Inspect upgrade tracks\n" +
+			"  upgrade apply <dcId> <trackId> <targetNodeId>        Apply an upgrade node\n" +
 			"  decom <dcId>                                         Not implemented yet",
 	);
 }
