@@ -16,6 +16,8 @@ import {
   selectLiveContractsFromState,
   selectOpenMarketContractsFromState,
   summarizeDatacenterCapacityFromState,
+  summarizeDatacenterInfrastructureFromState,
+  summarizeDatacenterUpgradeViewFromState,
   summarizeNetworkCapacityFromState,
   summarizeOpenMarketContractFits,
   tickOpex,
@@ -34,7 +36,9 @@ import type {
   Money,
   OpexTickResult,
   DatacenterCapacityFromStateSummary,
+  DatacenterInfrastructureView,
   DatacenterMaintenanceStaffingView,
+  DatacenterUpgradeView,
   MoveRackTarget,
   RackActivityView,
   RackHealthStatus,
@@ -378,6 +382,30 @@ export function selectDatacenterCapacitySummary(
   }
 
   return summarizeDatacenterCapacityFromState(state, id);
+}
+
+export function selectDatacenterInfrastructureSummary(
+  state: GameState,
+  id: DatacenterId,
+): DatacenterInfrastructureView | undefined {
+  const datacenter = selectDatacenter(state, id);
+  if (!datacenter) {
+    return undefined;
+  }
+
+  return summarizeDatacenterInfrastructureFromState(state, id);
+}
+
+export function selectDatacenterUpgradeSummary(
+  state: GameState,
+  id: DatacenterId,
+): DatacenterUpgradeView | undefined {
+  const datacenter = selectDatacenter(state, id);
+  if (!datacenter) {
+    return undefined;
+  }
+
+  return summarizeDatacenterUpgradeViewFromState(state, id);
 }
 
 /** Total installed and per-DC installed capacity (vCPU / RAM / Storage / GPU). */

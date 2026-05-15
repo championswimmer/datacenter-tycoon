@@ -1,10 +1,11 @@
-import type { Datacenter, DatacenterResourceUsage } from "@datacenter-tycoon/game-logic";
+import type { Datacenter, DatacenterInfrastructureView, DatacenterResourceUsage } from "@datacenter-tycoon/game-logic";
 import { ProgressBar } from "../../theme/primitives/index.js";
 import styles from "./ResourceBars.module.css";
 
 interface ResourceBarsProps {
   datacenter: Datacenter;
   usage:      DatacenterResourceUsage;
+  infrastructure?: DatacenterInfrastructureView;
   /** "compact" = slim bars only, "full" = bars with labels and numbers */
   mode?: "compact" | "full";
 }
@@ -23,30 +24,31 @@ function fmtBtu(n: number) {
   return String(n);
 }
 
-export function ResourceBars({ datacenter, usage, mode = "full" }: ResourceBarsProps) {
+export function ResourceBars({ datacenter, usage, infrastructure, mode = "full" }: ResourceBarsProps) {
   const spec = datacenter.spec;
+  const effective = infrastructure?.effective;
 
   const bars = [
     {
       label:    "POWER",
       used:     usage.powerKw,
-      cap:      spec.powerCapacityKw,
+      cap:      effective?.rackPowerCapacityKw ?? spec.powerCapacityKw,
       unitUsed: fmt(usage.powerKw, "kW"),
-      unitCap:  fmt(spec.powerCapacityKw, "kW"),
+      unitCap:  fmt(effective?.rackPowerCapacityKw ?? spec.powerCapacityKw, "kW"),
     },
     {
       label:    "COOLING",
       used:     usage.heatOutputBtuPerHr,
-      cap:      spec.coolingCapacityBtuPerHr,
+      cap:      effective?.coolingCapacityBtuPerHr ?? spec.coolingCapacityBtuPerHr,
       unitUsed: `${fmtBtu(usage.heatOutputBtuPerHr)} BTU/hr`,
-      unitCap:  `${fmtBtu(spec.coolingCapacityBtuPerHr)} BTU/hr`,
+      unitCap:  `${fmtBtu(effective?.coolingCapacityBtuPerHr ?? spec.coolingCapacityBtuPerHr)} BTU/hr`,
     },
     {
       label:    "BANDWIDTH",
       used:     usage.bandwidthGbps,
-      cap:      spec.bandwidthGbps,
+      cap:      effective?.bandwidthGbps ?? spec.bandwidthGbps,
       unitUsed: fmt(usage.bandwidthGbps, "Gbps"),
-      unitCap:  fmt(spec.bandwidthGbps, "Gbps"),
+      unitCap:  fmt(effective?.bandwidthGbps ?? spec.bandwidthGbps, "Gbps"),
     },
     {
       label:    "SLOTS",

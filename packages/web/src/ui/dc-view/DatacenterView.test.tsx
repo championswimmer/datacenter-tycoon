@@ -63,6 +63,27 @@ describe("DatacenterView maintenance staffing controls", () => {
     expect(screen.getByText("MAINT 0")).toBeTruthy();
   });
 
+  it("shows upgrade and fabric status badges sourced from canonical selectors", () => {
+    const { state: builtState, dcId } = buildState();
+    let state = reduce(builtState, {
+      type: "UpgradeDatacenter",
+      dcId,
+      trackId: "networkType",
+      targetNodeId: "cat8",
+    });
+    state = reduce(state, {
+      type: "UpgradeDatacenter",
+      dcId,
+      trackId: "networkType",
+      targetNodeId: "fiber",
+    });
+
+    renderView(state, dcId);
+
+    expect(screen.getByText(/FABRIC READY/)).toBeTruthy();
+    expect(screen.getByText(/NETWORK UPLINK: FIBER UPLINK/)).toBeTruthy();
+  });
+
   it("disables the increase control when the region has no spare staff", () => {
     const { state, dcId } = buildState();
     const constrainedState = {

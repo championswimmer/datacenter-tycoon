@@ -2,9 +2,11 @@ import { useGameDispatch, useSelector } from "../../store/storeContext.js";
 import {
   selectActiveContracts,
   selectDatacenter,
+  selectDatacenterInfrastructureSummary,
   selectDatacenterMaintenanceStaffingView,
   selectDatacenterMaintenanceView,
   selectDatacenterRackPowerSummary,
+  selectDatacenterUpgradeSummary,
   selectRegionById,
   selectResourceUsage,
 } from "../../store/selectors.js";
@@ -33,6 +35,8 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
   const datacenter = useSelector((state) => selectDatacenter(state, dcId as DatacenterId));
   const maintenance = useSelector((state) => selectDatacenterMaintenanceView(state, dcId as DatacenterId));
   const maintenanceStaffing = useSelector((state) => selectDatacenterMaintenanceStaffingView(state, dcId as DatacenterId));
+  const infrastructure = useSelector((state) => selectDatacenterInfrastructureSummary(state, dcId as DatacenterId));
+  const upgradeSummary = useSelector((state) => selectDatacenterUpgradeSummary(state, dcId as DatacenterId));
   const rackPowerSummary = useSelector((state) => selectDatacenterRackPowerSummary(state, dcId as DatacenterId));
   const usageAgg = useSelector(selectResourceUsage);
   const region = useSelector((state) => datacenter ? selectRegionById(state, datacenter.regionId) : undefined);
@@ -71,7 +75,7 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
           {region && <span className={styles.dcRegion}>{region.name}</span>}
         </div>
         <div className={styles.resourceStrip}>
-          <ResourceBars datacenter={datacenter} usage={usage} mode="compact" />
+          <ResourceBars datacenter={datacenter} usage={usage} infrastructure={infrastructure} mode="compact" />
         </div>
         {maintenance && (
           <div className={styles.maintenanceStrip}>
@@ -80,6 +84,26 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
             <span className={styles.maintenanceMeta}>
               {maintenance.repairingRackCount} REPAIRING / {maintenance.totalRackCount} TOTAL
             </span>
+            {infrastructure && (
+              <span className={styles.maintenanceMeta}>
+                {infrastructure.effective.coolingType.toUpperCase()} · {infrastructure.effective.networkType.toUpperCase()}
+              </span>
+            )}
+            {upgradeSummary && (
+              <span className={styles.maintenanceMeta}>
+                FABRIC {upgradeSummary.fabricEligible ? "READY" : "LOCKED"} · UPKEEP ${upgradeSummary.fixedMonthlyUpgradeOpex.toLocaleString()}/MO
+              </span>
+            )}
+          </div>
+        )}
+        {upgradeSummary && (
+          <div className={styles.upgradeStrip}>
+            {upgradeSummary.tracks.map((track) => (
+              <span key={track.trackId} className={styles.upgradeMeta}>
+                {track.label.toUpperCase()}: {track.currentNode.label.toUpperCase()}
+                {track.nextNode ? ` → ${track.nextNode.label.toUpperCase()}` : " · MAXED"}
+              </span>
+            ))}
           </div>
         )}
         {rackPowerSummary && rackPowerSummary.totalRackCount > 0 && (
