@@ -1,0 +1,246 @@
+.page {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	overflow-y: auto;
+	padding: var(--space-6);
+	gap: var(--space-5);
+}
+
+.header {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--space-4);
+}
+
+.title {
+	font-family: var(--font-display);
+	font-size: var(--text-xl);
+	font-weight: 800;
+	letter-spacing: 0.18em;
+	color: var(--neon-cyan);
+	text-shadow: var(--glow-cyan);
+	margin: 0;
+}
+
+.subtitle {
+	color: var(--fg-2);
+	font-size: var(--text-sm);
+	letter-spacing: 0.08em;
+}
+
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+	padding: var(--space-5);
+}
+
+.sectionHeading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-3);
+	margin: 0 0 var(--space-2) 0;
+	font-family: var(--font-display);
+	font-size: var(--text-md);
+	letter-spacing: 0.15em;
+	color: var(--fg-0);
+	text-transform: uppercase;
+}
+
+.sectionBadge {
+	font-family: var(--font-display);
+	font-size: var(--text-xs);
+	letter-spacing: 0.12em;
+	color: var(--fg-2);
+	background: var(--bg-2);
+	padding: 2px 8px;
+	border-radius: 2px;
+}
+
+.empty {
+	color: var(--fg-3);
+	font-size: var(--text-sm);
+	font-style: italic;
+}
+
+.row {
+	display: grid;
+	grid-template-columns: auto 1fr auto;
+	align-items: center;
+	gap: var(--space-3);
+	padding: var(--space-3);
+	border: 1px solid var(--grid);
+	background: var(--bg-1);
+	border-radius: 2px;
+}
+
+.rowAccept {
+	border-left: 3px solid var(--neon-lime);
+}
+
+.rowCancel {
+	border-left: 3px solid var(--neon-red);
+}
+
+.rowSwap {
+	border-left: 3px solid var(--neon-amber);
+}
+
+.rowBuy {
+	border-left: 3px solid var(--neon-cyan);
+}
+
+.rowReplace {
+	border-left: 3px solid var(--neon-magenta);
+}
+
+.rowUpgrade {
+	border-left: 3px solid var(--neon-amber);
+}
+
+.tag {
+	font-family: var(--font-display);
+	font-size: var(--text-xs);
+	letter-spacing: 0.14em;
+	color: var(--fg-1);
+	background: var(--bg-2);
+	padding: 4px 10px;
+	border-radius: 2px;
+	min-width: 80px;
+	text-align: center;
+}
+
+.tagAccept { color: var(--neon-lime); }
+.tagCancel { color: var(--neon-red); }
+.tagSwap { color: var(--neon-amber); }
+.tagBuy { color: var(--neon-cyan); }
+.tagReplace { color: var(--neon-magenta); }
+.tagUpgrade { color: var(--neon-amber); }
+
+.body {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.delta {
+	font-family: var(--font-display);
+	font-weight: 700;
+	color: var(--neon-lime);
+}
+
+.deltaNegative {
+	color: var(--neon-red);
+}
+
+.reason {
+	font-size: var(--text-sm);
+	color: var(--fg-1);
+	line-height: 1.4;
+}
+
+.meta {
+	font-size: var(--text-xs);
+	color: var(--fg-3);
+	letter-spacing: 0.04em;
+}
+
+.autopilotCard {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+	padding: var(--space-5);
+}
+
+.autopilotHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-4);
+}
+
+.autopilotTitle {
+	font-family: var(--font-display);
+	font-size: var(--text-lg);
+	letter-spacing: 0.18em;
+	color: var(--neon-amber);
+	text-shadow: var(--glow-amber);
+	margin: 0;
+}
+
+.toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	padding: var(--space-2) var(--space-4);
+	background: var(--bg-2);
+	border: 1px solid var(--grid);
+	font-family: var(--font-display);
+	font-size: var(--text-sm);
+	letter-spacing: 0.16em;
+	cursor: pointer;
+	color: var(--fg-1);
+}
+
+.toggleOn {
+	background: var(--bg-1);
+	border-color: var(--neon-lime);
+	color: var(--neon-lime);
+	box-shadow: var(--glow-lime);
+}
+
+.statusGrid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: var(--space-3);
+}
+
+.statusItem {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: var(--space-3);
+	background: var(--bg-0);
+	border: 1px solid var(--grid);
+}
+
+.statusLabel {
+	font-size: var(--text-xs);
+	color: var(--fg-3);
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+}
+
+.statusValue {
+	font-family: var(--font-display);
+	font-size: var(--text-md);
+	font-weight: 700;
+	color: var(--fg-0);
+}
+
+.controlsRow {
+	display: flex;
+	gap: var(--space-3);
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.controlLabel {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	font-size: var(--text-xs);
+	color: var(--fg-2);
+}
+
+.controlInput {
+	width: 80px;
+	background: var(--bg-0);
+	border: 1px solid var(--grid);
+	color: var(--fg-0);
+	font-family: var(--font-display);
+	padding: 4px 8px;
+}

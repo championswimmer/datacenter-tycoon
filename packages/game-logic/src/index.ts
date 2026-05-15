@@ -15,3 +15,4 @@ export * from "./query/index.js";
 export * from "./sim/index.js";
 export * from "./state/index.js";
 export * from "./save/index.js";
+export * from "./algorithms/index.js";

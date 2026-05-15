@@ -31,6 +31,7 @@ export function DatacenterList({ currentRoute, onNewDatacenter }: DatacenterList
   const selectedDcId = currentRoute.view === "dc" ? currentRoute.dcId : null;
 
   const openContracts = () => navigate({ view: "contracts" });
+  const openStrategy = () => navigate({ view: "strategy" });
 
   const regionMap = new Map(regions.map(r => [r.id, r]));
 
@@ -43,6 +44,15 @@ export function DatacenterList({ currentRoute, onNewDatacenter }: DatacenterList
         aria-label="Open contracts market"
       >
         📋 CONTRACTS
+      </button>
+
+      <button
+        className={styles.contractsBtn}
+        onClick={openStrategy}
+        title="Open strategy page (autopilot & advisors)"
+        aria-label="Open strategy page"
+      >
+        🧠 STRATEGY
       </button>
 
       <div className={styles.header}>

@@ -3,6 +3,7 @@ import type { ContractId, DatacenterId, GameState } from "@datacenter-tycoon/gam
 import { DctClient } from "../client/client.js";
 import type { ParsedArgv } from "../argv.js";
 import { requirePositional, withClient, writeCommandResult, type CommandClientFactory } from "./common.js";
+import { runAdviseContractsCommand, runAutopilotContractsCommand } from "./contract-algorithms.js";
 import { formatContractRequirements, presentContractById } from "./contracts-view.js";
 
 const contractId = (value: string): ContractId => value as ContractId;
@@ -127,12 +128,24 @@ export async function runContractCommand(
 		return;
 	}
 
+	if (subcommand === "advise") {
+		await runAdviseContractsCommand(nestedParsed, clientFactory);
+		return;
+	}
+
+	if (subcommand === "autopilot") {
+		await runAutopilotContractsCommand(nestedParsed, clientFactory);
+		return;
+	}
+
 	throw new Error(
 		"Usage: dct contract <subcommand>\n\n" +
 			"Subcommands:\n" +
 			"  accept <contractId> <dcId>   Accept a market contract onto a datacenter\n" +
 			"  cancel <contractId>          Cancel an active contract\n" +
-			"  details <contractId>         Show one contract plus recent SLA history\n\n" +
+			"  details <contractId>         Show one contract plus recent SLA history\n" +
+			"  advise [--limit N]           Show ranked recommendations (advisor algorithm)\n" +
+			"  autopilot [--apply]          Plan & optionally dispatch contract actions\n\n" +
 			"To list all contracts, use: dct ls contracts",
 	);
 }

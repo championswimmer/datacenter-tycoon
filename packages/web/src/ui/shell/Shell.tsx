@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef, type SetStateAction } from "react";
 import { useSelector, useTickDriver, useGameDispatch } from "../../store/storeContext.js";
+import { useAutopilotRunner } from "../../store/useAutopilotRunner.js";
 import { selectAllDatacenters } from "../../store/selectors.js";
 import { useRoute, navigate, navigateToDc, navigateToMap } from "../../router/hashRouter.js";
 import type { Speed } from "../../store/tickDriver.js";
@@ -11,6 +12,7 @@ import { DatacenterView } from "../dc-view/DatacenterView.js";
 import { EmptyState } from "../dc-view/EmptyState.js";
 import { LogFeed } from "../log/LogFeed.js";
 import { ContractsPage } from "../contracts/ContractsPage.js";
+import { StrategyPage } from "../strategy/StrategyPage.js";
 import { TutorialModal } from "../help/TutorialModal.js";
 import { MapView } from "../map/MapView.js";
 import styles from "./Shell.module.css";
@@ -38,6 +40,9 @@ export function Shell({ shouldAutoOpenTutorial = false }: ShellProps) {
 
   const getSpeed = useCallback(() => speed, [speed]);
   useTickDriver(getSpeed);
+  // Drive contract autopilot — pure no-op when the preference is off, but
+  // mounted here so it keeps acting regardless of which page is visible.
+  useAutopilotRunner();
 
   const route       = useRoute();
   const datacenters = useSelector(selectAllDatacenters);
@@ -237,6 +242,9 @@ function MainContent({ route, datacenters, onNewDatacenter }: MainContentProps) 
 
     case "contracts":
       return <ContractsPage />;
+
+    case "strategy":
+      return <StrategyPage />;
 
     case "map":
       return <MapView />;
