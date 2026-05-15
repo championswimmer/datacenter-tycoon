@@ -25,7 +25,7 @@ interface DatacenterViewProps {
 
 const TABS: { id: DcTab; label: string }[] = [
   { id: "floor", label: "FLOOR" },
-  { id: "power", label: "POWER" },
+  { id: "power", label: "RESOURCES" },
   { id: "contracts", label: "CONTRACTS" },
 ];
 
