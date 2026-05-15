@@ -19,7 +19,8 @@ It must consume `@datacenter-tycoon/game-logic` rather than reimplementing rules
 - Prefer pure render helpers for TUI output so they are easy to snapshot test.
 - Respect `--json` and machine-readable envelopes for all one-shot commands.
 - TUI state should be derived from daemon snapshots and events, not from duplicate game rules.
-- Shared gameplay interpretation (contract buckets, live/history classification, datacenter capacity availability, maintenance staffing affordances) must come from exported `@datacenter-tycoon/game-logic` queries or daemon payloads derived from those queries — never from CLI-local status filters over raw state layout.
+- Shared gameplay interpretation (contract buckets, live/history classification, datacenter capacity availability, maintenance staffing affordances, upgrade affordances, effective infrastructure envelopes) must come from exported `@datacenter-tycoon/game-logic` queries or daemon payloads derived from those queries — never from CLI-local status filters over raw state layout.
+- Treat `datacenter.spec.powerCapacityKw`, `coolingCapacityBtuPerHr`, `bandwidthGbps`, `networkType`, and `coolingType` as blueprint-display fields only. Command/TUI logic must read live upgrade-aware values from canonical daemon/query payloads.
 
 ## TUI ADR
 
