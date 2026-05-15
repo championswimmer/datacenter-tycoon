@@ -42,6 +42,37 @@ describe("DatacenterList", () => {
     expect(screen.getByText("Garage Datacenter")).toBeTruthy();
   });
 
+  it("shows fabric readiness and effective network info after upgrades", () => {
+    const base = newGame(42, { startingCash: 4_000_000 });
+    const dcId = nextDcId();
+    const firstRegionId = base.map.regions[0]!.id;
+    let state = reduce(base, {
+      type: "BuildDatacenter",
+      specId: DATACENTER_CATALOG["garage"]!.id,
+      dcId,
+      regionId: firstRegionId,
+    });
+    state = reduce(state, {
+      type: "UpgradeDatacenter",
+      dcId,
+      trackId: "networkType",
+      targetNodeId: "cat8",
+    });
+    state = reduce(state, {
+      type: "UpgradeDatacenter",
+      dcId,
+      trackId: "networkType",
+      targetNodeId: "fiber",
+    });
+    render(
+      <Wrapper state={state}>
+        <DatacenterList currentRoute={{ view: "home" }} />
+      </Wrapper>,
+    );
+    expect(screen.getByText(/FABRIC READY/)).toBeTruthy();
+    expect(screen.getByText("FIBER")).toBeTruthy();
+  });
+
   it("renders the New Datacenter button", () => {
     render(
       <Wrapper>

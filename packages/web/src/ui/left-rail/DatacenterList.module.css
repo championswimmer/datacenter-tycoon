@@ -141,6 +141,25 @@
 .dcStats {
   display: flex;
   gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.dcFlags {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.dcFlag {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(94, 240, 255, 0.18);
+  background: rgba(94, 240, 255, 0.08);
 }
 
 .dcStat {

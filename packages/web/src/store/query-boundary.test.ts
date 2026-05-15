@@ -8,6 +8,8 @@ import {
   selectLiveContractsFromState,
   selectOpenMarketContractsFromState,
   summarizeDatacenterCapacityFromState,
+  summarizeDatacenterInfrastructureFromState,
+  summarizeDatacenterUpgradeViewFromState,
   summarizeNetworkCapacityFromState,
   summarizeOpenMarketContractFits,
   type Contract,
@@ -24,7 +26,9 @@ import {
 import {
   selectActiveContracts,
   selectDatacenterCapacitySummary,
+  selectDatacenterInfrastructureSummary,
   selectDatacenterMaintenanceStaffingView,
+  selectDatacenterUpgradeSummary,
   selectFreeCapacity,
   selectHistoricalContracts,
   selectMarket,
@@ -184,6 +188,12 @@ describe("web query-boundary selectors", () => {
     expect(selectFreeCapacity(state)).toEqual(summarizeNetworkCapacityFromState(state).available);
     expect(selectDatacenterMaintenanceStaffingView(state, dc1.id)).toEqual(
       selectDatacenterMaintenanceStaffingViewFromState(state, dc1.id),
+    );
+    expect(selectDatacenterInfrastructureSummary(state, dc1.id)).toEqual(
+      summarizeDatacenterInfrastructureFromState(state, dc1.id),
+    );
+    expect(selectDatacenterUpgradeSummary(state, dc1.id)).toEqual(
+      summarizeDatacenterUpgradeViewFromState(state, dc1.id),
     );
   });
 

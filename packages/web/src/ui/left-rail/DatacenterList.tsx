@@ -1,5 +1,11 @@
 import { useSelector } from "../../store/storeContext.js";
-import { selectAllDatacenters, selectResourceUsage, selectRegions } from "../../store/selectors.js";
+import {
+  selectAllDatacenters,
+  selectDatacenterInfrastructureSummary,
+  selectDatacenterUpgradeSummary,
+  selectResourceUsage,
+  selectRegions,
+} from "../../store/selectors.js";
 import { LedSegment } from "../../theme/primitives/index.js";
 import { navigateToDc, navigate } from "../../router/hashRouter.js";
 import type { Route } from "../../router/hashRouter.js";
@@ -14,6 +20,12 @@ interface DatacenterListProps {
 export function DatacenterList({ currentRoute, onNewDatacenter }: DatacenterListProps) {
   const datacenters  = useSelector(selectAllDatacenters);
   const usageAggreg  = useSelector(selectResourceUsage);
+  const infrastructureSummaries = useSelector((state) =>
+    state.datacenters.map((dc) => ({ dcId: dc.id, summary: selectDatacenterInfrastructureSummary(state, dc.id) })),
+  );
+  const upgradeSummaries = useSelector((state) =>
+    state.datacenters.map((dc) => ({ dcId: dc.id, summary: selectDatacenterUpgradeSummary(state, dc.id) })),
+  );
   const regions      = useSelector(selectRegions);
 
   const selectedDcId = currentRoute.view === "dc" ? currentRoute.dcId : null;
@@ -46,8 +58,10 @@ export function DatacenterList({ currentRoute, onNewDatacenter }: DatacenterList
         {datacenters.map(dc => {
           const usageEntry = usageAggreg.perDc.find(u => u.dcId === dc.id);
           const usage      = usageEntry?.usage;
-          const powerPct   = usage
-            ? usage.powerKw / dc.spec.powerCapacityKw
+          const infrastructure = infrastructureSummaries.find((entry) => entry.dcId === dc.id)?.summary;
+          const upgrades = upgradeSummaries.find((entry) => entry.dcId === dc.id)?.summary;
+          const powerPct   = usage && infrastructure
+            ? usage.powerKw / infrastructure.effective.rackPowerCapacityKw
             : 0;
           const slotsTotal = dc.spec.rows * dc.spec.positionsPerRow;
           const slotsUsed  = usage?.slotsUsed ?? 0;
@@ -86,7 +100,20 @@ export function DatacenterList({ currentRoute, onNewDatacenter }: DatacenterList
                     {powerPct > 0 ? `${Math.round(powerPct * 100)}%` : "idle"}
                   </span>
                 </span>
+                {infrastructure && (
+                  <span className={styles.dcStat}>
+                    <span className={styles.statKey}>NET</span>
+                    <span className={styles.statVal}>{infrastructure.effective.networkType.toUpperCase()}</span>
+                  </span>
+                )}
               </div>
+
+              {upgrades && (
+                <div className={styles.dcFlags}>
+                  <span className={styles.dcFlag}>FABRIC {upgrades.fabricEligible ? "READY" : "LOCKED"}</span>
+                  <span className={styles.dcFlag}>UPKEEP ${upgrades.fixedMonthlyUpgradeOpex.toLocaleString()}/MO</span>
+                </div>
+              )}
 
               {/* Slim power utilization bar */}
               <div className={styles.powerBar}>

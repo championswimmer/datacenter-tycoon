@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import {
   DATACENTER_CATALOG,
   RACK_CATALOG,
@@ -67,6 +67,20 @@ describe("PowerView", () => {
     expect(screen.getByText("Idle baseline")).toBeTruthy();
     expect(screen.getByText("Active draw")).toBeTruthy();
     expect(screen.getByText(/idle and repairing racks pay only baseline power/i)).toBeTruthy();
+  });
+
+  it("renders canonical upgrade affordances and applies the next node through store dispatch", () => {
+    const { state, dcId } = stateWithDatacenterAndRack();
+    renderPowerView(state, dcId);
+
+    expect(screen.getByText("UPGRADE TRACKS")).toBeTruthy();
+    expect(screen.getByText(/FABRIC LOCKED/)).toBeTruthy();
+    const button = screen.getByRole("button", { name: /Upgrade to Hybrid cooling/i });
+    fireEvent.click(button);
+
+    expect(screen.getByText(/COOLING MODE/)).toBeTruthy();
+    expect(screen.getAllByText(/HYBRID/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/UPKEEP \$900\/mo/)).toBeTruthy();
   });
 
   it("keeps reserved power stable while billed power increases when workload is active", () => {

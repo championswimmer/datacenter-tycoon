@@ -19,10 +19,10 @@ owner: game-logic, web, cli
   - [x] 2.2 Route rack placement, move validation, and capacity checks through effective infrastructure
   - [x] 2.3 Add upgrade-aware opex and split grid-vs-onsite power semantics for generators
   - [x] 2.4 Add focused game-logic tests for upgrade progression, tier unlocks, and power/economy envelopes
-- [ ] **Phase 3 — Expose an authoritative upgrade query surface and cross-package transport**
+- [x] **Phase 3 — Expose an authoritative upgrade query surface and cross-package transport**
   - [x] 3.1 Add read-only game-logic queries for current upgrade status, effective infrastructure, and next-node affordances
   - [x] 3.2 Extend CLI daemon/protocol/list views and add `dct dc upgrade` commands using canonical queries
-  - [ ] 3.3 Update web selectors and datacenter screens to inspect/apply upgrades without UI-local rule copies
+  - [x] 3.3 Update web selectors and datacenter screens to inspect/apply upgrades without UI-local rule copies
 - [ ] **Phase 4 — Balance scaffolding, UX polish, and guardrails**
   - [ ] 4.1 Centralize upgrade balance constants and per-blueprint limits in tunable catalog data
   - [ ] 4.2 Update docs, AGENTS guidance, and plan index so future upgrades extend tracks instead of patching specs ad hoc
