@@ -93,6 +93,10 @@
 	border-left: 3px solid var(--neon-cyan);
 }
 
+.rowRebalance {
+	border-left: 3px solid var(--neon-purple);
+}
+
 .rowReplace {
 	border-left: 3px solid var(--neon-magenta);
 }
@@ -117,6 +121,7 @@
 .tagCancel { color: var(--neon-red); }
 .tagSwap { color: var(--neon-amber); }
 .tagBuy { color: var(--neon-cyan); }
+.tagRebalance { color: var(--neon-purple); }
 .tagReplace { color: var(--neon-magenta); }
 .tagUpgrade { color: var(--neon-amber); }
 

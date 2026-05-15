@@ -120,6 +120,134 @@ test("rack advisor — respects limit option", () => {
 	assert.ok(report.recommendations.length <= 2);
 });
 
+test("rack advisor — forecast mix weights market higher than live (forward-looking)", () => {
+	const dc = makeDatacenter("dc-1");
+	// Live mix is mostly compute, but the market is heavily memory — forecast should lean memory.
+	const live = makeLiveContract("live-compute", dc.id, {
+		requirements: makeRequirements({ vCpu: 500, ramGb: 100, storageTb: 0, gpuFlops: 0 }),
+	});
+	const offer = makeMarketContract("offer-memory", {
+		requirements: makeRequirements({ vCpu: 50, ramGb: 4_000, storageTb: 0, gpuFlops: 0 }),
+	});
+	const state = makeState({ datacenters: [dc], contracts: [live, offer] });
+
+	const report = recommendRackActions(state);
+
+	assert.ok(report.marketDemandMix.memory > report.liveDemandMix.memory, "market mix should show more memory than live mix");
+	assert.ok(report.forecastDemandMix.memory > report.liveDemandMix.memory, "forecast should be shifted toward market memory share");
+});
+
+test("rack advisor — recommends rebalancing when demand has shifted toward an under-represented kind", () => {
+	// DC over-equipped on storage and starved for memory; the market is now
+	// memory-heavy with no GPU demand and modest compute. Algorithm should
+	// surface storage→memory and compute→memory swaps and the top swap
+	// should land on a memory rack.
+	const dc: Datacenter = makeDatacenter("dc-1", [
+		makePlacement("dc-1-s1", "S2", 0, 0),
+		makePlacement("dc-1-s2", "S2", 0, 1),
+		makePlacement("dc-1-c1", "C2", 1, 0),
+		makePlacement("dc-1-m1", "M2", 1, 1),
+	]);
+	// Strong memory-heavy market signal (no GPU demand, low storage, low compute)
+	const memoryOffers = Array.from({ length: 3 }, (_, i) =>
+		makeMarketContract(`mem-${i}`, {
+			requirements: makeRequirements({ vCpu: 50, ramGb: 6_000, storageTb: 5, gpuFlops: 0 }),
+			monthlyPayment: 35_000,
+			termMonths: 8,
+		}),
+	);
+	const state = makeState({
+		datacenters: [dc],
+		contracts: memoryOffers,
+		tick: 4 as Tick,
+	});
+
+	const report = recommendRackActions(state);
+	const rebalances = report.recommendations.filter((rec) => rec.kind === "rebalance");
+
+	assert.ok(rebalances.length > 0, "expected at least one rebalance recommendation");
+	// Top recommendation should swap toward the dominant-demand kind.
+	const first = rebalances[0]!;
+	if (first.kind === "rebalance") {
+		assert.equal(first.newRackKind, "memory", "should swap in toward the dominant memory demand");
+		assert.ok(first.expectedMonthlyNet > 0);
+		assert.ok(first.paybackMonths > 0 && first.paybackMonths <= 18);
+		assert.equal(first.actions.length, 2);
+		assert.equal(first.actions[0]!.type, "RemoveRack");
+		assert.equal(first.actions[1]!.type, "PlaceRack");
+	}
+	// The storage→memory swap the user specifically asked about must also surface.
+	const storageToMemory = rebalances.some(
+		(rec) => rec.kind === "rebalance" && rec.oldRackKind === "storage" && rec.newRackKind === "memory",
+	);
+	assert.ok(storageToMemory, "expected a storage→memory swap among the rebalance suggestions");
+});
+
+test("rack advisor — refuses to rebalance away capacity that live contracts depend on", () => {
+	// DC with one storage rack and a live storage-heavy contract that needs
+	// most of that capacity. Even if memory demand is rising, swapping the
+	// storage rack would breach the live contract. Advisor must skip.
+	const dc: Datacenter = makeDatacenter("dc-1", [
+		makePlacement("dc-1-s1", "S2", 0, 0),
+		makePlacement("dc-1-c1", "C2", 0, 1),
+		makePlacement("dc-1-m1", "M2", 1, 0),
+		makePlacement("dc-1-g1", "G1", 1, 1),
+	]);
+	const liveStorage = makeLiveContract("live-storage", dc.id, {
+		requirements: makeRequirements({ vCpu: 16, ramGb: 64, storageTb: 1_100, gpuFlops: 0 }),
+		termMonths: 24,
+		startedAtTick: 0 as Tick,
+	});
+	const memoryOffer = makeMarketContract("offer-mem", {
+		requirements: makeRequirements({ vCpu: 50, ramGb: 5_000, storageTb: 5, gpuFlops: 0 }),
+		monthlyPayment: 40_000,
+		termMonths: 8,
+	});
+	const state = makeState({
+		datacenters: [dc],
+		contracts: [liveStorage, memoryOffer],
+		tick: 1 as Tick,
+	});
+
+	const report = recommendRackActions(state);
+	const rebalances = report.recommendations.filter(
+		(rec) => rec.kind === "rebalance" && rec.oldRackKind === "storage",
+	);
+
+	assert.equal(
+		rebalances.length,
+		0,
+		"must not propose swapping out the storage rack that the live contract depends on",
+	);
+});
+
+test("rack advisor — rebalance suggestion reports the demand drift in the reason", () => {
+	const dc: Datacenter = makeDatacenter("dc-1", [
+		makePlacement("dc-1-s1", "S2", 0, 0),
+		makePlacement("dc-1-c1", "C2", 0, 1),
+		makePlacement("dc-1-m1", "M2", 1, 0),
+		makePlacement("dc-1-g1", "G1", 1, 1),
+	]);
+	const memoryOffers = Array.from({ length: 3 }, (_, i) =>
+		makeMarketContract(`mem-${i}`, {
+			requirements: makeRequirements({ vCpu: 50, ramGb: 6_000, storageTb: 5, gpuFlops: 0 }),
+			monthlyPayment: 35_000,
+			termMonths: 8,
+		}),
+	);
+	const state = makeState({ datacenters: [dc], contracts: memoryOffers });
+
+	const report = recommendRackActions(state);
+	const rebalance = report.recommendations.find((rec) => rec.kind === "rebalance");
+
+	assert.ok(rebalance, "expected a rebalance recommendation");
+	if (rebalance?.kind === "rebalance") {
+		assert.match(rebalance.reason, /MEMORY|STORAGE/, "reason should call out the kinds involved");
+		assert.match(rebalance.reason, /\/mo/, "reason should quantify monthly impact");
+		assert.match(rebalance.reason, /payback/, "reason should include payback");
+	}
+});
+
 test("rack advisor — unmet demand reflects oversized contracts", () => {
 	const dc = makeDatacenter("dc-1", [
 		makePlacement("dc-1-r1", "C2", 0, 0),

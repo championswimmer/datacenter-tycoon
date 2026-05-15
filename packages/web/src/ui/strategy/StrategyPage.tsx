@@ -45,6 +45,8 @@ function rackTagClass(kind: RackRecommendation["kind"]): string {
 	switch (kind) {
 		case "buy":
 			return styles.tagBuy!;
+		case "rebalance":
+			return styles.tagRebalance!;
 		case "replace":
 			return styles.tagReplace!;
 		case "upgrade":
@@ -56,6 +58,8 @@ function rackRowClass(kind: RackRecommendation["kind"]): string {
 	switch (kind) {
 		case "buy":
 			return styles.rowBuy!;
+		case "rebalance":
+			return styles.rowRebalance!;
 		case "replace":
 			return styles.rowReplace!;
 		case "upgrade":
@@ -101,6 +105,7 @@ export function StrategyPage() {
 			case "upgrade":
 				dispatch(recommendation.action);
 				break;
+			case "rebalance":
 			case "replace":
 				for (const action of recommendation.actions) {
 					dispatch(action);
@@ -237,6 +242,13 @@ export function StrategyPage() {
 					Unmet demand signal — vCPU: {Math.round(rackReport.unmetDemand.vCpu)} · RAM: {Math.round(rackReport.unmetDemand.ramGb)}GB · Storage:
 					{" "}{Math.round(rackReport.unmetDemand.storageTb)}TB · GPU: {Math.round(rackReport.unmetDemand.gpuFlops)} FLOPS
 				</p>
+				<p className={styles.meta}>
+					Forecast demand mix (market vs live) —{" "}
+					COMPUTE {Math.round(rackReport.forecastDemandMix.compute * 100)}% ({rackReport.marketDemandMix.compute > rackReport.liveDemandMix.compute ? "↑" : rackReport.marketDemandMix.compute < rackReport.liveDemandMix.compute ? "↓" : "→"})
+					{" · "}MEMORY {Math.round(rackReport.forecastDemandMix.memory * 100)}% ({rackReport.marketDemandMix.memory > rackReport.liveDemandMix.memory ? "↑" : rackReport.marketDemandMix.memory < rackReport.liveDemandMix.memory ? "↓" : "→"})
+					{" · "}STORAGE {Math.round(rackReport.forecastDemandMix.storage * 100)}% ({rackReport.marketDemandMix.storage > rackReport.liveDemandMix.storage ? "↑" : rackReport.marketDemandMix.storage < rackReport.liveDemandMix.storage ? "↓" : "→"})
+					{" · "}GPU {Math.round(rackReport.forecastDemandMix.gpu * 100)}% ({rackReport.marketDemandMix.gpu > rackReport.liveDemandMix.gpu ? "↑" : rackReport.marketDemandMix.gpu < rackReport.liveDemandMix.gpu ? "↓" : "→"})
+				</p>
 				{rackReport.recommendations.length === 0 ? (
 					<p className={styles.empty}>No rack changes recommended. Capacity matches the current market mix.</p>
 				) : (
@@ -249,9 +261,11 @@ export function StrategyPage() {
 								<span className={styles.delta}>
 									{recommendation.kind === "buy"
 										? `${formatMoney(recommendation.expectedMonthlyNet, true)}/mo · payback ${recommendation.paybackMonths.toFixed(1)} mo`
-										: recommendation.kind === "upgrade"
-											? `${formatMoney(-recommendation.capexCost)} capex`
-											: `${formatMoney(-recommendation.netCapex)} rebuild`}
+										: recommendation.kind === "rebalance"
+											? `${recommendation.oldRackName} → ${recommendation.newRackName} · ${formatMoney(recommendation.expectedMonthlyNet, true)}/mo · payback ${recommendation.paybackMonths.toFixed(1)} mo`
+											: recommendation.kind === "upgrade"
+												? `${formatMoney(-recommendation.capexCost)} capex`
+												: `${formatMoney(-recommendation.netCapex)} rebuild`}
 								</span>
 								<span className={styles.reason}>{recommendation.reason}</span>
 							</div>
