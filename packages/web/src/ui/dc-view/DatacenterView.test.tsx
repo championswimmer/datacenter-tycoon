@@ -32,6 +32,14 @@ function renderView(state: GameState, dcId: ReturnType<typeof nextDcId>) {
 }
 
 describe("DatacenterView maintenance staffing controls", () => {
+  it("shows the datacenter region code, city, and name in the header", () => {
+    const { state, dcId } = buildState();
+
+    renderView(state, dcId);
+
+    expect(screen.getByText("IAD · Ashburn · US East")).toBeTruthy();
+  });
+
   it("shows rack activity and billed-vs-reserved power summary badges", () => {
     const { state: builtState, dcId } = buildState();
     const state = reduce(builtState, {

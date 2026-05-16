@@ -24,7 +24,7 @@ updated: 2026-05-17
   - [x] 3.3 Ensure bidirectional synchronization: selecting a region on the map updates the table highlight, and selecting a row in the table updates the map highlight. Triggering a selection from either must successfully open the `RegionPanel`.
 
 - [ ] **Phase 4 — Formatting & CLI Updates**
-  - [ ] 4.1 Update `RegionPanel` in `packages/web/src/ui/map/RegionPanel.tsx` and datacenter info cards to display the new City and 3-digit Code prominently alongside the Region name.
+  - [x] 4.1 Update `RegionPanel` in `packages/web/src/ui/map/RegionPanel.tsx` and datacenter info cards to display the new City and 3-digit Code prominently alongside the Region name.
   - [ ] 4.2 Review `packages/cli` commands (e.g. `dct build-dc`, `dct ls`) and the TUI screens to ensure the new 3-digit region codes or city names are cleanly integrated where regional info is displayed.
 
 ## Overview
@@ -155,3 +155,4 @@ The 8 new regions will be:
 - 2026-05-17 — Completed Step 3.1 by adding a sortable `RegionTable` component and focused coverage for its sort/selection behaviour.
 - 2026-05-17 — Completed Step 3.2 by refactoring `MapView` into a two-panel map/economics layout and embedding the region detail panel alongside the world map.
 - 2026-05-17 — Completed Step 3.3 by wiring shared selection state through the map/table pair and adding coverage for synchronized selection + region panel opening.
+- 2026-05-17 — Completed Step 4.1 by surfacing region codes and cities in the region detail panel plus datacenter-facing web headers/cards.

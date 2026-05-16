@@ -40,6 +40,8 @@ describe("DatacenterList", () => {
       </Wrapper>,
     );
     expect(screen.getByText("Garage Datacenter")).toBeTruthy();
+    expect(screen.getByText("IAD · Ashburn")).toBeTruthy();
+    expect(screen.getByText("US East")).toBeTruthy();
   });
 
   it("shows fabric readiness and effective network info after upgrades", () => {

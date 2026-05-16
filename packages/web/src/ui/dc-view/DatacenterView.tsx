@@ -72,7 +72,7 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
         <div className={styles.dcTitleRow}>
           <h2 className={styles.dcName}>{datacenter.name}</h2>
           <span className={styles.dcSpec}>{datacenter.spec.name}</span>
-          {region && <span className={styles.dcRegion}>{region.name}</span>}
+          {region && <span className={styles.dcRegion}>{region.code} · {region.city} · {region.name}</span>}
         </div>
         <div className={styles.resourceStrip}>
           <ResourceBars datacenter={datacenter} usage={usage} infrastructure={infrastructure} mode="compact" />

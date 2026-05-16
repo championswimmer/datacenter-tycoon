@@ -83,7 +83,10 @@ export function DatacenterList({ currentRoute, onNewDatacenter }: DatacenterList
               </div>
 
               {region && (
-                <div className={styles.dcRegion}>{region.name}</div>
+                <div className={styles.dcRegionBlock}>
+                  <div className={styles.dcRegionMeta}>{region.code} · {region.city}</div>
+                  <div className={styles.dcRegion}>{region.name}</div>
+                </div>
               )}
 
               <div className={styles.dcStats}>
