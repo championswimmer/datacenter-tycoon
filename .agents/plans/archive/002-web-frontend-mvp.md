@@ -1,9 +1,9 @@
 ---
 name: Web Frontend MVP - Neon Control Center
 description: Initial React+Vite web UI for Datacenter Tycoon with a dark neon "control center" theme, rack grid placement, contracts panel, and live game stats - all driven by `@datacenter-tycoon/game-logic`.
-status: started
+status: completed
 created: 2026-05-01
-updated: 2026-05-01
+updated: 2026-05-17
 owner: web
 ---
 
@@ -41,25 +41,25 @@ owner: web
   - [x] 6.4 RackTile visual: bezel + blade stripes + LED row (power/activity/fault) + kind badge + tier pips, boot animation on mount
   - [x] 6.5 Placement action: dispatches `PlaceRack` with fresh `placementId`; rack mounts with 600 ms boot animation
   - [x] 6.6 Decommission: hover-reveal × button → inline confirm → dispatches `RemoveRack`
-- [ ] **Phase 7 - Stats & resource panels**
-  - [ ] 7.1 Datacenter header strip: power used/cap, cooling used/cap, bandwidth used/cap, slots used/cap (segmented neon bars)
-  - [ ] 7.2 Capacity tiles: vCPU / RAM / Storage / GPU totals across all DCs and per-DC
-  - [ ] 7.3 Opex breakdown card (power, cooling, bandwidth, staff, maintenance) updated each tick
-  - [ ] 7.4 Capex/cash sparkline over last 60 ticks (canvas, no chart lib)
+- [-] **Phase 7 - Stats & resource panels**
+  - [-] 7.1 Datacenter header strip: power used/cap, cooling used/cap, bandwidth used/cap, slots used/cap (segmented neon bars)
+  - [-] 7.2 Capacity tiles: vCPU / RAM / Storage / GPU totals across all DCs and per-DC
+  - [-] 7.3 Opex breakdown card (power, cooling, bandwidth, staff, maintenance) updated each tick
+  - [-] 7.4 Capex/cash sparkline over last 60 ticks (canvas, no chart lib)
 - [x] **Phase 8 - Contracts panel**
   - [x] 8.1 Market list: offered contracts with requirements vs. our free capacity, payment, term, expiry countdown
   - [x] 8.2 Accept flow: select a target datacenter, confirm; dispatches `AcceptContract`
   - [x] 8.3 Active contracts list: progress bars (months elapsed / term), status pill (active/breached), cancel button
   - [x] 8.4 Upcoming/expiring banner in top bar when a contract is about to start or expire
-- [ ] **Phase 9 - Polish, accessibility, and persistence**
-  - [ ] 9.1 Keyboard nav across grid (arrow keys + enter to place), focus rings in neon style
-  - [ ] 9.2 Sound-off-by-default LED hum + click SFX (single small audio sprite, optional)
-  - [ ] 9.3 Save slot UI: New / Save / Load / Export JSON / Import JSON
-  - [ ] 9.4 README with screenshots, dev instructions, theme tokens documented
-- [ ] **Phase 10 - Testing**
-  - [ ] 10.1 Unit tests for store reducer wrapper, selectors, tick driver (node:test)
-  - [ ] 10.2 Component smoke tests for `RackTile`, `Grid`, `ContractCard` using `@testing-library/react` + `vitest` (or jsdom + node:test)
-  - [ ] 10.3 Manual QA checklist in plan References
+- [-] **Phase 9 - Polish, accessibility, and persistence**
+  - [-] 9.1 Keyboard nav across grid (arrow keys + enter to place), focus rings in neon style
+  - [-] 9.2 Sound-off-by-default LED hum + click SFX (single small audio sprite, optional)
+  - [-] 9.3 Save slot UI: New / Save / Load / Export JSON / Import JSON
+  - [-] 9.4 README with screenshots, dev instructions, theme tokens documented
+- [-] **Phase 10 - Testing**
+  - [-] 10.1 Unit tests for store reducer wrapper, selectors, tick driver (node:test)
+  - [-] 10.2 Component smoke tests for `RackTile`, `Grid`, `ContractCard` using `@testing-library/react` + `vitest` (or jsdom + node:test)
+  - [-] 10.3 Manual QA checklist in plan References
 
 ## Overview
 

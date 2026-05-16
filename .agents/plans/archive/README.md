@@ -5,6 +5,7 @@ This folder contains completed Datacenter Tycoon plans that were moved out of th
 ## Index
 
 - [`001-initial-game-logic.md`](./001-initial-game-logic.md) — First-draft deterministic core for Datacenter Tycoon — entities, catalogs, capacity math, economy, contracts, and the monthly simulation tick. _status: completed_
+- [`002-web-frontend-mvp.md`](./002-web-frontend-mvp.md) — Initial React+Vite web UI for Datacenter Tycoon with a dark neon "control center" theme, rack grid placement, contracts panel, and live game stats - all driven by `@datacenter-tycoon/game-logic`. _status: completed_
 - [`003-github-pages-deploy.md`](./003-github-pages-deploy.md) — Set up a GitHub Actions workflow to build the web package and deploy to the gh-pages branch with a custom CNAME. _status: completed_
 - [`004-first-time-help-screen.md`](./004-first-time-help-screen.md) — Introduce a step-by-step onboarding tutorial modal that explains racks, contracts, datacenter resources, and the revenue loop to first-time players. _status: completed_
 - [`007-electron-desktop-wrapper.md`](./007-electron-desktop-wrapper.md) — Build the planned Electron desktop app in packages/desktop by wrapping the existing web frontend with a secure main/preload shell and workspace-aware build scripts. _status: completed_

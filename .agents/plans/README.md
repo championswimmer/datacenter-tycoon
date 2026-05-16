@@ -6,7 +6,6 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 
 ## Index
 
-- [`002-web-frontend-mvp.md`](./002-web-frontend-mvp.md) — Initial React+Vite web UI for Datacenter Tycoon with a dark neon "control center" theme, rack grid placement, contracts panel, and live game stats - all driven by `@datacenter-tycoon/game-logic`. _status: started_
 - [`005-contracts-ux-overhaul.md`](./005-contracts-ux-overhaul.md) — Redesign the contract market and lifecycle to fix unfair expiry windows, add strategic depth (partial fulfillment, renewals, filtering), and eliminate UX friction in the accept/cancel flow. _status: started_
 - [`006-generative-audio-effects.md`](./006-generative-audio-effects.md) — Implement procedurally generated sound effects for game events using Web Audio API instead of static audio files. _status: created_
 - [`016-regional-fabric-and-pooled-capacity.md`](./016-regional-fabric-and-pooled-capacity.md) — Add a region-local fabric investment layer that pools connected datacenter capacity for contract fulfilment. _status: created_
