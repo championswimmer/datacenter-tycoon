@@ -7,7 +7,8 @@ import { renderDatacentersTab } from "./datacenters.js";
 
 test("renderDatacentersTab shows the list and rack grid for the selected datacenter", () => {
 	let snapshot = newGame(1, { startingCash: 3_000_000 });
-	const firstRegionId = snapshot.map.regions[0]!.id;
+	const firstRegion = snapshot.map.regions[0]!;
+	const firstRegionId = firstRegion.id;
 	snapshot = reduce(snapshot, {
 		type: "BuildDatacenter",
 		specId: DATACENTER_CATALOG.garage.id,
@@ -25,7 +26,8 @@ test("renderDatacentersTab shows the list and rack grid for the selected datacen
 
 	const rendered = renderDatacentersTab(snapshot, 0).join("\n");
 	assert.match(rendered, /Datacenters \(1\)/);
-	assert.match(rendered, /> dc-1/);
+	assert.match(rendered, new RegExp(`> dc-1 .*\\[${firstRegion.code}\\]`));
+	assert.match(rendered, new RegExp(`Region ${firstRegion.code} · ${firstRegion.city} · ${firstRegion.name}`));
 	assert.match(rendered, /Rack grid/);
 	assert.match(rendered, /\[C1\]/);
 });

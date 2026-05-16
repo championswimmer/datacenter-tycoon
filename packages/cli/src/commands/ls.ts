@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { deserialize } from "@datacenter-tycoon/game-logic";
+import { deserialize, REGION_CATALOG } from "@datacenter-tycoon/game-logic";
 
 import type { ParsedArgv } from "../argv.js";
 import { DctClient } from "../client/client.js";
@@ -52,6 +52,15 @@ export async function runLsCommand(
 function formatDatacenterLayout(spec: Pick<DatacenterSpec, "rows" | "positionsPerRow">): string {
 	const slots = spec.rows * spec.positionsPerRow;
 	return `${spec.rows} rows × ${spec.positionsPerRow} cols (${slots} slots)`;
+}
+
+function formatRegionLabel(regionId: string): string {
+	const region = REGION_CATALOG[regionId] ?? Object.values(REGION_CATALOG).find((entry) => entry.id === regionId);
+	if (!region) {
+		return regionId;
+	}
+
+	return `${region.code} · ${region.city} · ${region.name}`;
 }
 
 async function listSaves(parsed: ParsedArgv): Promise<void> {
@@ -194,7 +203,7 @@ async function listDatacenters(parsed: ParsedArgv, clientFactory: CommandClientF
 						? "AT STAFF CAP"
 						: "REGIONAL LABOR FULL";
 				lines.push(
-					`  ${dc.id} | ${dc.spec.id} | Region: ${dc.regionId} | Slots: ${item.slotsUsed}/${item.totalSlots} | Layout: ${formatDatacenterLayout(dc.spec)}`,
+					`  ${dc.id} | ${dc.spec.id} | Region: ${formatRegionLabel(dc.regionId)} | Slots: ${item.slotsUsed}/${item.totalSlots} | Layout: ${formatDatacenterLayout(dc.spec)}`,
 				);
 				lines.push(
 					`    Bounds: rows 0-${dc.spec.rows - 1}, cols 0-${dc.spec.positionsPerRow - 1} | Power: ${item.powerKw.toFixed(1)}/${item.powerCapacityKw}kW | Cooling: ${Math.round(item.heatOutputBtuPerHr)}/${item.coolingCapacityBtuPerHr} BTU/hr | BW: ${item.bandwidthGbps}/${item.bandwidthCapacityGbps}Gbps`,

@@ -20,13 +20,32 @@ function createFakeClient(actions: Action[]): CommandClient {
 	};
 }
 
-const FIRST_REGION_ID = Object.values(REGION_CATALOG)[0]!.id;
+const FIRST_REGION = Object.values(REGION_CATALOG)[0]!;
+const FIRST_REGION_ID = FIRST_REGION.id;
 
 test("runBuildDatacenterCommand dispatches BuildDatacenter and honors --id", async () => {
 	const actions: Action[] = [];
 	await runBuildDatacenterCommand(parseArgv(["build-dc", "garage", "--id", "dc-custom", "--quiet"]), () => createFakeClient(actions));
 
 	assert.deepEqual(actions, [{ type: "BuildDatacenter", specId: "garage", dcId: "dc-custom", regionId: FIRST_REGION_ID }]);
+});
+
+test("runBuildDatacenterCommand prints region label in text output", async () => {
+	const actions: Action[] = [];
+	const printed: string[] = [];
+	const originalConsoleLog = console.log;
+	console.log = (message?: unknown) => {
+		printed.push(String(message ?? ""));
+	};
+
+	try {
+		await runBuildDatacenterCommand(parseArgv(["build-dc", "garage", "--id", "dc-custom"]), () => createFakeClient(actions));
+	} finally {
+		console.log = originalConsoleLog;
+	}
+
+	assert.deepEqual(actions, [{ type: "BuildDatacenter", specId: "garage", dcId: "dc-custom", regionId: FIRST_REGION_ID }]);
+	assert.match(printed[0] ?? "", new RegExp(`Built datacenter dc-custom in ${FIRST_REGION.code} .* ${FIRST_REGION.name}`));
 });
 
 test("runBuildDatacenterCommand prints json output when --json is set", async () => {
@@ -46,7 +65,15 @@ test("runBuildDatacenterCommand prints json output when --json is set", async ()
 	assert.deepEqual(actions, [{ type: "BuildDatacenter", specId: "garage", dcId: "dc-custom", regionId: FIRST_REGION_ID }]);
 	assert.deepEqual(JSON.parse(printed[0] ?? "{}"), {
 		ok: true,
-		data: { dcId: "dc-custom", specId: "garage", region: FIRST_REGION_ID },
+		data: {
+			dcId: "dc-custom",
+			specId: "garage",
+			region: FIRST_REGION_ID,
+			regionCode: FIRST_REGION.code,
+			regionCity: FIRST_REGION.city,
+			regionName: FIRST_REGION.name,
+			regionLabel: `${FIRST_REGION.code} · ${FIRST_REGION.city} · ${FIRST_REGION.name}`,
+		},
 	});
 });
 
