@@ -1,16 +1,12 @@
 .panel {
-  position: absolute;
-  right: var(--space-4);
-  top: var(--space-4);
-  bottom: var(--space-4);
-  width: 320px;
-  z-index: var(--z-raised);
+  min-width: 0;
+  min-height: 0;
   animation: slideIn var(--duration-normal) var(--ease-out-expo);
 }
 
 @keyframes slideIn {
-  from { transform: translateX(24px); opacity: 0; }
-  to   { transform: translateX(0);    opacity: 1; }
+  from { transform: translateX(16px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
 }
 
 .panelInner {
@@ -18,7 +14,7 @@
   border: 1px solid var(--neon-cyan);
   border-radius: var(--radius-lg);
   box-shadow: var(--glow-cyan), var(--shadow-float);
-  height: 100%;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -254,15 +250,6 @@
 }
 
 @media (max-width: 767px) {
-  .panel {
-    left: var(--mobile-shell-gutter);
-    right: var(--mobile-shell-gutter);
-    top: auto;
-    bottom: var(--space-4);
-    width: auto;
-    max-height: min(72vh, calc(var(--app-viewport-height) - var(--safe-area-top) - var(--safe-area-bottom) - 32px));
-  }
-
   .econGrid {
     grid-template-columns: 1fr;
   }

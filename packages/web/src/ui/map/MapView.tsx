@@ -5,6 +5,7 @@ import { selectRegions, selectAllDatacenters, selectCash } from "../../store/sel
 import { RegionPanel } from "./RegionPanel.js";
 import { NewDatacenterModal } from "../onboarding/NewDatacenterModal.js";
 import { WorldMap } from "./WorldMap.js";
+import { RegionTable } from "./RegionTable.js";
 import styles from "./MapView.module.css";
 
 export function MapView() {
@@ -21,37 +22,74 @@ export function MapView() {
 
   const openBuildModal = useCallback(() => setShowBuildModal(true), []);
   const closeBuildModal = useCallback(() => setShowBuildModal(false), []);
+  const selectRegion = useCallback((id: RegionId) => setSelectedRegionId(id), []);
 
   return (
     <div className={styles.mapView}>
-      {/* ── Header ── */}
       <div className={styles.header}>
         <h2 className={styles.title}>WORLD MAP</h2>
         <span className={styles.subtitle}>
-          {regions.length} regions &middot; {datacenters.length} datacenters
+          {regions.length} regions &middot; {datacenters.length} datacenters &middot; ${cash.toLocaleString()} cash
         </span>
       </div>
 
-      {/* ── World map ── */}
-      <div className={styles.mapArea}>
-        <WorldMap
-          regions={regions}
-          selectedRegionId={selectedRegionId}
-          onSelectRegion={(id) => setSelectedRegionId(id)}
-        />
+      <div className={styles.contentGrid}>
+        <section className={styles.surface}>
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionCopyBlock}>
+              <h3 className={styles.sectionTitle}>GLOBAL FOOTPRINT</h3>
+              <p className={styles.sectionCopy}>
+                Scan the world view for geography, then drill into any region to inspect build headroom.
+              </p>
+            </div>
+            <span className={styles.sectionMeta}>
+              {selectedRegion ? `${selectedRegion.code} · ${selectedRegion.city}` : "Select any marker to inspect a region"}
+            </span>
+          </div>
+
+          <div className={[styles.mapBody, selectedRegion ? styles.mapBodyWithPanel : ""].join(" ")}>
+            <div className={styles.mapStage}>
+              <WorldMap
+                regions={regions}
+                selectedRegionId={selectedRegionId}
+                onSelectRegion={selectRegion}
+              />
+            </div>
+
+            {selectedRegion && (
+              <div className={styles.panelStage}>
+                <RegionPanel
+                  region={selectedRegion}
+                  datacenters={datacenters}
+                  onClose={() => setSelectedRegionId(null)}
+                  onBuild={openBuildModal}
+                />
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className={styles.surface}>
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionCopyBlock}>
+              <h3 className={styles.sectionTitle}>REGION ECONOMICS</h3>
+              <p className={styles.sectionCopy}>
+                Sort by cost, power, staff, or tax to compare expansion targets before you commit capex.
+              </p>
+            </div>
+            <span className={styles.sectionMeta}>Clickable rows stay synchronized with the map</span>
+          </div>
+
+          <div className={styles.tableStage}>
+            <RegionTable
+              regions={regions}
+              selectedRegionId={selectedRegionId}
+              onSelectRegion={selectRegion}
+            />
+          </div>
+        </section>
       </div>
 
-      {/* ── Region detail panel ── */}
-      {selectedRegion && (
-        <RegionPanel
-          region={selectedRegion}
-          datacenters={datacenters}
-          onClose={() => setSelectedRegionId(null)}
-          onBuild={openBuildModal}
-        />
-      )}
-
-      {/* ── Build modal ── */}
       {showBuildModal && selectedRegion && (
         <NewDatacenterModal
           onClose={closeBuildModal}
