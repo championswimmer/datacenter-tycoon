@@ -6,7 +6,6 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 
 ## Index
 
-- [`001-initial-game-logic.md`](./001-initial-game-logic.md) — First-draft deterministic core for Datacenter Tycoon — entities, catalogs, capacity math, economy, contracts, and the monthly simulation tick. _status: started_
 - [`002-web-frontend-mvp.md`](./002-web-frontend-mvp.md) — Initial React+Vite web UI for Datacenter Tycoon with a dark neon "control center" theme, rack grid placement, contracts panel, and live game stats - all driven by `@datacenter-tycoon/game-logic`. _status: started_
 - [`005-contracts-ux-overhaul.md`](./005-contracts-ux-overhaul.md) — Redesign the contract market and lifecycle to fix unfair expiry windows, add strategic depth (partial fulfillment, renewals, filtering), and eliminate UX friction in the accept/cancel flow. _status: started_
 - [`006-generative-audio-effects.md`](./006-generative-audio-effects.md) — Implement procedurally generated sound effects for game events using Web Audio API instead of static audio files. _status: created_

@@ -1,9 +1,9 @@
 ---
 name: Initial Game Logic
 description: First-draft deterministic core for Datacenter Tycoon — entities, catalogs, capacity math, economy, contracts, and the monthly simulation tick.
-status: started
+status: completed
 created: 2026-04-30
-updated: 2026-05-01
+updated: 2026-05-17
 owner: game-logic
 ---
 
