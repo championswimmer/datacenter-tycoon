@@ -20,7 +20,7 @@ updated: 2026-05-17
 
 - [ ] **Phase 3 — UI: Sortable List & MapView Refactor**
   - [x] 3.1 Create `packages/web/src/ui/map/RegionTable.tsx` to display regions in a tabular format, showing the 3-digit Code, City, Region Name, Power Cost, Total Power, Total Staff, and Tax Rate. Ensure the columns are sortable.
-  - [ ] 3.2 Refactor `packages/web/src/ui/map/MapView.tsx` (and `.module.css`) to lay out both the interactive `WorldMap` and the new sortable `RegionTable` side-by-side or stacked cleanly.
+  - [x] 3.2 Refactor `packages/web/src/ui/map/MapView.tsx` (and `.module.css`) to lay out both the interactive `WorldMap` and the new sortable `RegionTable` side-by-side or stacked cleanly.
   - [ ] 3.3 Ensure bidirectional synchronization: selecting a region on the map updates the table highlight, and selecting a row in the table updates the map highlight. Triggering a selection from either must successfully open the `RegionPanel`.
 
 - [ ] **Phase 4 — Formatting & CLI Updates**
@@ -153,3 +153,4 @@ The 8 new regions will be:
 - 2026-05-05 — Created initial plan.
 - 2026-05-05 — Refined plan to add 3-digit codes (IAD, PDX, etc.) and city names to the `Region` model, and added Phase 4 for UI/CLI display integration.
 - 2026-05-17 — Completed Step 3.1 by adding a sortable `RegionTable` component and focused coverage for its sort/selection behaviour.
+- 2026-05-17 — Completed Step 3.2 by refactoring `MapView` into a two-panel map/economics layout and embedding the region detail panel alongside the world map.

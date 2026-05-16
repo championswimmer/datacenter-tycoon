@@ -65,6 +65,7 @@ export function WorldMap({
               }}
               onClick={() => onSelectRegion(region.id)}
               title={`${region.name} — ${region.city} (${region.code})`}
+              aria-label={`Select region marker ${region.code} — ${region.city}, ${region.name}`}
               aria-pressed={isSelected}
             >
               <span className={styles.markerDot} />
