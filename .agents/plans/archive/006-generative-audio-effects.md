@@ -1,23 +1,23 @@
 ---
 name: Generative Audio Effects
 description: Implement procedurally generated sound effects for game events using Web Audio API instead of static audio files.
-status: created
+status: completed
 created: 2026-05-01
-updated: 2026-05-01
+updated: 2026-05-17
 ---
 
 ## Progress
 
-- [ ] **Phase 1 — Audio Subsystem & Synthesizer**
-  - [ ] 1.1 Create `AudioEngine` utility using Web Audio API (or a micro-library like ZzFX).
-  - [ ] 1.2 Implement sound profiles for different events (positive chime, negative buzzer, neutral blip).
-  - [ ] 1.3 Add a global mute toggle in the game store to allow users to disable sounds.
-- [ ] **Phase 2 — UI Event Integration**
-  - [ ] 2.1 Trigger sound on `addRack` (e.g., in `RackPicker` or `Grid`).
-  - [ ] 2.2 Trigger sound on `acceptContract` (e.g., in `MarketList`).
-- [ ] **Phase 3 — State Event Integration**
-  - [ ] 3.1 Subscribe to the game store to detect when an active contract expires.
-  - [ ] 3.2 Trigger the negative tone when an expiration event is detected.
+- [x] **Phase 1 — Audio Subsystem & Synthesizer**
+  - [x] 1.1 Create `AudioEngine` utility using Web Audio API (or a micro-library like ZzFX).
+  - [x] 1.2 Implement sound profiles for different events (positive chime, negative buzzer, neutral blip).
+  - [x] 1.3 Add a global mute toggle in the game store to allow users to disable sounds.
+- [x] **Phase 2 — UI Event Integration**
+  - [x] 2.1 Trigger sound on `addRack` (e.g., in `RackPicker` or `Grid`).
+  - [x] 2.2 Trigger sound on `acceptContract` (e.g., in `MarketList`).
+- [x] **Phase 3 — State Event Integration**
+  - [x] 3.1 Subscribe to the game store to detect when an active contract expires.
+  - [x] 3.2 Trigger the negative tone when an expiration event is detected.
 
 ## Overview
 
@@ -132,4 +132,5 @@ export function playSound(type: 'success' | 'error' | 'click', isMuted: boolean)
 
 ## Changelog
 
+- 2026-05-17 — completed and archived.
 - 2026-05-01 — created.

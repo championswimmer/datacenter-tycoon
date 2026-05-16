@@ -6,7 +6,6 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 
 ## Index
 
-- [`006-generative-audio-effects.md`](./006-generative-audio-effects.md) — Implement procedurally generated sound effects for game events using Web Audio API instead of static audio files. _status: created_
 - [`016-regional-fabric-and-pooled-capacity.md`](./016-regional-fabric-and-pooled-capacity.md) — Add a region-local fabric investment layer that pools connected datacenter capacity for contract fulfilment. _status: created_
 - [`018-map-based-region-selector.md`](./018-map-based-region-selector.md) — Overhaul the region selection mechanism to feature an interactive world map and a sortable list of 8 realistic top-tier cloud regions with city names and codes. _status: started_
 - [`034-contract-region-affinity.md`](./034-contract-region-affinity.md) — Add optional region-affinity rules so some contracts can only be accepted in specific regional whitelists, then surface those constraints in game-logic, CLI, and web. _status: created_
