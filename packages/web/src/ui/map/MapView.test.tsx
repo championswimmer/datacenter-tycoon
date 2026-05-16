@@ -44,6 +44,7 @@ describe("MapView", () => {
         .getAttribute("aria-pressed"),
     ).toBe("true");
     expect(screen.getByRole("heading", { name: "EU Central" })).toBeTruthy();
+    expect(screen.getAllByText("FRA · Frankfurt")).toHaveLength(2);
 
     fireEvent.click(
       screen.getByRole("button", { name: "Select region marker DXB — Dubai, ME Central" }),
@@ -54,6 +55,7 @@ describe("MapView", () => {
         .getAttribute("aria-pressed"),
     ).toBe("true");
     expect(screen.getByRole("heading", { name: "ME Central" })).toBeTruthy();
+    expect(screen.getAllByText("DXB · Dubai")).toHaveLength(2);
     expect(screen.getByRole("button", { name: "BUILD HERE" })).toBeTruthy();
   });
 });

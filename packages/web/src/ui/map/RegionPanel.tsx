@@ -54,7 +54,10 @@ export function RegionPanel({ region, datacenters, onClose, onBuild }: RegionPan
       <div className={styles.panelInner}>
         {/* ── Header ── */}
         <div className={styles.header}>
-          <h3 className={styles.name}>{region.name}</h3>
+          <div className={styles.headerCopy}>
+            <span className={styles.regionMeta}>{region.code} · {region.city}</span>
+            <h3 className={styles.name}>{region.name}</h3>
+          </div>
           <button className={styles.closeBtn} onClick={onClose} aria-label="Close panel">
             ✕
           </button>
