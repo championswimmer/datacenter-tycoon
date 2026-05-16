@@ -1,9 +1,9 @@
 ---
 name: Contracts UX & Depth Overhaul
 description: Redesign the contract market and lifecycle to fix unfair expiry windows, add strategic depth (partial fulfillment, renewals, filtering), and eliminate UX friction in the accept/cancel flow.
-status: started
+status: completed
 created: 2026-05-01
-updated: 2026-05-01
+updated: 2026-05-17
 owner: game-logic, web
 ---
 
