@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { DATACENTER_CATALOG, RACK_CATALOG } from "@datacenter-tycoon/game-logic";
+import { DATACENTER_CATALOG, RACK_CATALOG, REGION_CATALOG } from "@datacenter-tycoon/game-logic";
 import type {
 	DatacenterInfrastructureView,
 	DatacenterListItem,
@@ -203,7 +203,7 @@ test("runLsCommand datacenters text output shows layout bounds", async () => {
 							spec: DATACENTER_CATALOG.garage,
 							placements: [],
 							builtAtTick: 0,
-							regionId: "us-west",
+							regionId: REGION_CATALOG.us_west.id,
 							maintenanceStaff: 2,
 						},
 						capacity: { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 },
@@ -233,6 +233,7 @@ test("runLsCommand datacenters text output shows layout bounds", async () => {
 	}
 
 	assert.equal(logged.length, 1);
+	assert.match(logged[0] ?? "", /Region: PDX · Boardman · US West/);
 	assert.match(logged[0] ?? "", /Layout: 2 rows × 4 cols \(8 slots\)/);
 	assert.match(logged[0] ?? "", /Bounds: rows 0-1, cols 0-3/);
 	assert.match(logged[0] ?? "", /Maintenance:/, "should show maintenance line");

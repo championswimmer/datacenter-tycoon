@@ -22,7 +22,29 @@ function getOptionalStringFlag(parsed: ParsedArgv, flag: string): string | undef
 	return typeof value === "string" ? value : undefined;
 }
 
-const FIRST_REGION_ID = Object.values(REGION_CATALOG)[0]!.id;
+const FIRST_REGION = Object.values(REGION_CATALOG)[0]!;
+const FIRST_REGION_ID = FIRST_REGION.id;
+
+function describeRegion(regionIdValue: string): {
+	id: string;
+	code?: string;
+	city?: string;
+	name?: string;
+	label: string;
+} {
+	const region = REGION_CATALOG[regionIdValue] ?? Object.values(REGION_CATALOG).find((entry) => entry.id === regionIdValue);
+	if (!region) {
+		return { id: regionIdValue, label: regionIdValue };
+	}
+
+	return {
+		id: region.id,
+		code: region.code,
+		city: region.city,
+		name: region.name,
+		label: `${region.code} · ${region.city} · ${region.name}`,
+	};
+}
 
 export async function runBuildDatacenterCommand(
 	parsed: ParsedArgv,
@@ -31,15 +53,24 @@ export async function runBuildDatacenterCommand(
 	const specId = requirePositional(parsed, 0, "dct dc build <specId> [--id <dcId>] [--region <regionId>]");
 	const dcId = getOptionalStringFlag(parsed, "--id") ?? createShortId("dc");
 	const region = getOptionalStringFlag(parsed, "--region") ?? FIRST_REGION_ID;
+	const regionDetails = describeRegion(region);
 	await withClient(
 		parsed,
 		async (client) => {
-			await client.dispatch({ type: "BuildDatacenter", specId: datacenterSpecId(specId), dcId: datacenterId(dcId), regionId: regionId(region) });
+			await client.dispatch({ type: "BuildDatacenter", specId: datacenterSpecId(specId), dcId: datacenterId(dcId), regionId: regionId(regionDetails.id) });
 		},
 		clientFactory,
 	);
 
-	writeCommandResult(parsed, `Built datacenter ${dcId}`, { dcId, specId, region });
+	writeCommandResult(parsed, `Built datacenter ${dcId} in ${regionDetails.label}`, {
+		dcId,
+		specId,
+		region: regionDetails.id,
+		regionCode: regionDetails.code,
+		regionCity: regionDetails.city,
+		regionName: regionDetails.name,
+		regionLabel: regionDetails.label,
+	});
 }
 
 export async function runAddRackCommand(

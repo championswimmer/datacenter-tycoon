@@ -15,7 +15,8 @@ export function renderDatacentersTab(snapshot: GameState, selectedIndex: number)
 		return ["Datacenters", "", "No datacenters yet."];
 	}
 
-	const region = snapshot.map.regions.find((r) => r.id === selected.regionId);
+	const regionById = new Map(snapshot.map.regions.map((region) => [region.id, region]));
+	const region = regionById.get(selected.regionId);
 	const maintenance = region
 		? datacenterMaintenanceStaffingView(selected, region, snapshot.datacenters, snapshot.tick)
 		: null;
@@ -51,9 +52,14 @@ export function renderDatacentersTab(snapshot: GameState, selectedIndex: number)
 	return [
 		`Datacenters (${snapshot.datacenters.length})`,
 		"",
-		...snapshot.datacenters.map((datacenter, index) => `${index === selectedIndex ? ">" : " "} ${datacenter.id}  ${datacenter.name}  racks ${datacenter.placements.length}`),
+		...snapshot.datacenters.map((datacenter, index) => {
+			const datacenterRegion = regionById.get(datacenter.regionId);
+			const regionBadge = datacenterRegion ? `[${datacenterRegion.code}]` : `[${datacenter.regionId}]`;
+			return `${index === selectedIndex ? ">" : " "} ${datacenter.id}  ${datacenter.name}  ${regionBadge}  racks ${datacenter.placements.length}`;
+		}),
 		"",
 		`Selected: ${selected.id} · ${selected.name}`,
+		`Region ${region ? `${region.code} · ${region.city} · ${region.name}` : selected.regionId}`,
 		`Power ${infrastructure.effective.rackPowerCapacityKw}kW (${infrastructure.effective.gridImportCapacityKw} grid + ${infrastructure.effective.onsiteGenerationCapacityKw} onsite) · Cooling ${infrastructure.effective.coolingCapacityBtuPerHr} BTU/h (${infrastructure.effective.coolingType}) · Bandwidth ${infrastructure.effective.bandwidthGbps} Gbps (${infrastructure.effective.networkType})`,
 		`Fabric ${upgrades.fabricEligible ? "READY" : "NOT READY"} · Upgrade upkeep $${upgrades.fixedMonthlyUpgradeOpex.toLocaleString()}/mo`,
 		`Tracks: cooling ${upgrades.tracks.find((track) => track.trackId === "cooling")?.currentNode.id ?? "n/a"} · network ${upgrades.tracks.find((track) => track.trackId === "networkType")?.currentNode.id ?? "n/a"} · gen ${upgrades.tracks.find((track) => track.trackId === "onsiteGeneration")?.currentNode.id ?? "n/a"}`,
