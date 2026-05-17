@@ -10,6 +10,7 @@ import { refreshContractMarket } from "../contracts/market.js";
 import { tickOpex, tickRevenue } from "../economy/opex.js";
 import { advanceRackRepair, rackAgeMonths, rackFailureChance } from "./maintenance.js";
 import { rngFromState } from "./rng.js";
+import { advanceSubtick } from "./subtick.js";
 import type {
 	Contract,
 	Datacenter,
@@ -208,8 +209,15 @@ export function settleMonthlyTick(state: GameState): GameState {
 }
 
 export function tick(state: GameState): GameState {
-	return settleMonthlyTick({
-		...state,
-		subtick: 0,
-	});
+	if (state.subtick === 0) {
+		return settleMonthlyTick(state);
+	}
+
+	const targetTick = state.tick + 1;
+	let nextState = state;
+	while (nextState.tick < targetTick) {
+		nextState = advanceSubtick(nextState);
+	}
+
+	return nextState;
 }

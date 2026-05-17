@@ -3,9 +3,11 @@ import test from "node:test";
 
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
+import { DAYS_PER_TICK } from "../balance/maintenance.js";
 import { RELIABILITY_BASELINE_SCORE, RELIABILITY_MARKET_OFFER_COUNT, reliabilityBandForScore } from "../balance/reliability.js";
 import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
 import { tickOpex } from "../economy/opex.js";
+import { advanceSubtick } from "./subtick.js";
 import { tick } from "./tick.js";
 import type {
 	Contract,
@@ -108,6 +110,7 @@ function makeContract(id: string, datacenter: Datacenter, overrides: Partial<Con
 function makeState(overrides: Partial<GameState> = {}): GameState {
 	return {
 		tick: tickValue(0),
+		subtick: 0,
 		seed: 123,
 		rngState: 123,
 		difficulty: "hard",
@@ -153,6 +156,28 @@ test("tick advances time, applies opex and revenue, and refreshes the contract m
 	);
 	assert.equal(nextState.contractMarket.length, MARKET_REFRESH_SIZE);
 	assert.equal(nextState.contractMarket[0]?.offeredAtTick, 1);
+});
+
+test("advanceSubtick increments the day counter without settling the month early", () => {
+	const state = makeState();
+
+	const nextState = advanceSubtick(state);
+
+	assert.equal(nextState.tick, 0);
+	assert.equal(nextState.subtick, 1);
+	assert.deepEqual(nextState.ledger, state.ledger);
+});
+
+test("advanceSubtick rolls the month boundary into exactly one monthly settlement", () => {
+	let state = makeState();
+
+	for (let day = 0; day < DAYS_PER_TICK; day += 1) {
+		state = advanceSubtick(state);
+	}
+
+	assert.equal(state.tick, 1);
+	assert.equal(state.subtick, 0);
+	assert.equal(state.contractMarket.length, MARKET_REFRESH_SIZE);
 });
 
 test("tick honors pooled regional fabric capacity during monthly contract settlement", () => {
@@ -407,6 +432,20 @@ test("tick increases reliability and records fulfilled SLA outcomes for healthy 
 			kind: "fulfilled",
 		},
 	]);
+});
+
+test("tick from mid-month advances remaining subticks and settles exactly one month", () => {
+	const start = makeState({ subtick: 5 });
+	let advancedBySubticks = start;
+	for (let day = start.subtick; day < DAYS_PER_TICK; day += 1) {
+		advancedBySubticks = advanceSubtick(advancedBySubticks);
+	}
+
+	const viaTick = tick(start);
+
+	assert.deepEqual(viaTick, advancedBySubticks);
+	assert.equal(viaTick.tick, start.tick + 1);
+	assert.equal(viaTick.subtick, 0);
 });
 
 test("tick lowers reliability for repeated breached SLA months without auto-cancelling", () => {
