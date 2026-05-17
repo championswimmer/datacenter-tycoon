@@ -41,6 +41,7 @@ export type ContractStatus = "offered" | "active" | "breached" | "expired" | "ca
 export type ContractUrgency = "standard" | "rush" | "anchor";
 export type ContractTier = 1 | 2 | 3;
 export type ContractRegionAffinityKey = "eu" | "asia" | "usa";
+export type ContractSlaTargetPercent = 80 | 90 | 95;
 export type LedgerEntryType = "capex" | "opex" | "revenue" | "penalty" | "adjustment";
 export type RackHealthStatus = "healthy" | "repairing";
 export type ReliabilityBand = "bronze" | "silver" | "gold" | "platinum" | "diamond";
@@ -160,6 +161,12 @@ export interface ContractRegionAffinity {
 	allowedRegionIds: RegionId[];
 }
 
+export interface ContractSlaWindow {
+	sampledDays: number;
+	servedDays: number;
+	failedDays: number;
+}
+
 export interface Contract {
 	id: ContractId;
 	name: string;
@@ -167,6 +174,8 @@ export interface Contract {
 	monthlyPayment: Money;
 	penaltyPerMonth: Money;
 	termMonths: number;
+	slaTargetPercent: ContractSlaTargetPercent;
+	currentSlaWindow: ContractSlaWindow;
 	lifecycleState: ContractLifecycleState;
 	/** @deprecated Temporary compatibility bridge for legacy consumers. */
 	status: ContractStatus;

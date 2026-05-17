@@ -18,7 +18,7 @@ owner: game-logic, web, cli
   - [x] 2.2 Convert rack failure probability from monthly rolls to daily hazard rolls
   - [x] 2.3 Retune repair duration constants for 2–3 day outages
 - [ ] **Phase 3 — Day-level contract SLA accounting**
-  - [ ] 3.1 Add contract SLA target and current-window data model
+  - [x] 3.1 Add contract SLA target and current-window data model
   - [ ] 3.2 Sample contract service health once per subtick
   - [ ] 3.3 Settle revenue, penalties, lifecycle, and reliability from SLA windows at month end
 - [ ] **Phase 4 — Build on existing web tick-fraction clocking**

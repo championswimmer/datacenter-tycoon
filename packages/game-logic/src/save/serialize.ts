@@ -1,7 +1,8 @@
+import { withContractSlaDefaults } from "../contracts/sla.js";
 import { createEmptyRegionFabric } from "../entities/fabric.js";
 import type { GameState, Subtick } from "../types.js";
 
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 
 export interface SaveEnvelope {
 	saveVersion: number;
@@ -36,32 +37,52 @@ function attachInitialSubtick(state: GameState): GameState {
 	};
 }
 
+function attachContractSlaDefaults(state: GameState): GameState {
+	return {
+		...state,
+		contracts: state.contracts.map(withContractSlaDefaults),
+		contractMarket: state.contractMarket.map(withContractSlaDefaults),
+		activeContracts: state.activeContracts.map(withContractSlaDefaults),
+	};
+}
+
+function attachModernDefaults(state: GameState): GameState {
+	return attachContractSlaDefaults(attachInitialSubtick(state));
+}
+
 export function migrate(envelope: SaveEnvelope): SaveEnvelope {
 	if (envelope.saveVersion === SAVE_VERSION) {
 		return {
 			...envelope,
-			state: attachInitialSubtick(envelope.state),
+			state: attachModernDefaults(envelope.state),
+		};
+	}
+
+	if (envelope.saveVersion === 10) {
+		return {
+			saveVersion: SAVE_VERSION,
+			state: attachModernDefaults(envelope.state),
 		};
 	}
 
 	if (envelope.saveVersion === 9) {
 		return {
 			saveVersion: SAVE_VERSION,
-			state: attachInitialSubtick(envelope.state),
+			state: attachModernDefaults(envelope.state),
 		};
 	}
 
 	if (envelope.saveVersion === 8) {
 		return {
 			saveVersion: SAVE_VERSION,
-			state: attachInitialSubtick(envelope.state),
+			state: attachModernDefaults(envelope.state),
 		};
 	}
 
 	if (envelope.saveVersion === 7) {
 		return {
 			saveVersion: SAVE_VERSION,
-			state: attachInitialSubtick(attachEmptyRegionalFabrics(envelope.state)),
+			state: attachModernDefaults(attachEmptyRegionalFabrics(envelope.state)),
 		};
 	}
 

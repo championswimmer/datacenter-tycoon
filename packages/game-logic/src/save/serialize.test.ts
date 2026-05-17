@@ -33,6 +33,8 @@ test("serialize and deserialize round-trip contracts with and without region aff
 		monthlyPayment: 3_000,
 		penaltyPerMonth: 800,
 		termMonths: 3,
+		slaTargetPercent: 95,
+		currentSlaWindow: { sampledDays: 4, servedDays: 4, failedDays: 0 },
 		lifecycleState: "market_open",
 		status: "offered",
 		urgency: "standard",
@@ -51,6 +53,8 @@ test("serialize and deserialize round-trip contracts with and without region aff
 		monthlyPayment: 1_500,
 		penaltyPerMonth: 400,
 		termMonths: 2,
+		slaTargetPercent: 90,
+		currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
 		lifecycleState: "market_open",
 		status: "offered",
 		urgency: "standard",
@@ -128,6 +132,8 @@ test("serialize and deserialize preserve every supported region affinity family"
 				monthlyPayment: 500,
 				penaltyPerMonth: 100,
 				termMonths: 1,
+				slaTargetPercent: 90,
+				currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
 				lifecycleState: "market_open" as const,
 				status: "offered" as const,
 				urgency: "standard" as const,
@@ -146,6 +152,8 @@ test("serialize and deserialize preserve every supported region affinity family"
 				monthlyPayment: 500,
 				penaltyPerMonth: 100,
 				termMonths: 1,
+				slaTargetPercent: 90,
+				currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
 				lifecycleState: "market_open" as const,
 				status: "offered" as const,
 				urgency: "standard" as const,
@@ -164,6 +172,8 @@ test("serialize and deserialize preserve every supported region affinity family"
 				monthlyPayment: 500,
 				penaltyPerMonth: 100,
 				termMonths: 1,
+				slaTargetPercent: 90,
+				currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
 				lifecycleState: "market_open" as const,
 				status: "offered" as const,
 				urgency: "standard" as const,
@@ -243,6 +253,38 @@ test("migrate is a no-op for current-version envelopes", () => {
 	const envelope = { saveVersion: SAVE_VERSION, state };
 
 	assert.deepEqual(migrate(envelope), envelope);
+});
+
+test("migrate upgrades v10 saves by attaching default contract SLA state", () => {
+	const state = newGame(7);
+	const legacyState = {
+		...state,
+		contracts: [
+			{
+				id: contractId("legacy-offer"),
+				name: "Legacy Offer",
+				requirements: { vCpu: 8, ramGb: 16, storageTb: 2, gpuFlops: 0 },
+				monthlyPayment: 500,
+				penaltyPerMonth: 100,
+				termMonths: 1,
+				lifecycleState: "market_open" as const,
+				status: "offered" as const,
+				urgency: "standard" as const,
+				tier: 1 as const,
+				offeredAtTick: 0,
+				expiresAtTick: 1,
+			},
+		],
+		contractMarket: [],
+		activeContracts: [],
+	};
+
+	const migrated = migrate({ saveVersion: 10, state: legacyState as typeof legacyState & { contracts: Contract[] } });
+
+	assert.equal(migrated.saveVersion, SAVE_VERSION);
+	assert.equal(migrated.state.subtick, 0);
+	assert.equal(migrated.state.contracts[0]?.slaTargetPercent, 90);
+	assert.deepEqual(migrated.state.contracts[0]?.currentSlaWindow, { sampledDays: 0, servedDays: 0, failedDays: 0 });
 });
 
 test("migrate upgrades v9 saves by attaching an initial subtick", () => {

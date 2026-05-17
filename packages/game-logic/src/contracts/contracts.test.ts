@@ -98,6 +98,9 @@ function makeContract(id: string, overrides: Partial<Contract> = {}): Contract {
 		monthlyPayment: 20_000,
 		penaltyPerMonth: 8_000,
 		termMonths: 6,
+		slaTargetPercent: 90,
+		currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
+		lifecycleState: "market_open",
 		status: "offered",
 		urgency: "standard",
 		tier: 1,
@@ -156,6 +159,8 @@ test("generateContract is deterministic for the same seed and difficulty", () =>
 	assert.equal(first.status, "offered");
 	assert.equal(first.name, "Global Cloud Orion Streaming Encode Farm");
 	assert.ok(first.monthlyPayment > first.penaltyPerMonth);
+	assert.ok([80, 90, 95].includes(first.slaTargetPercent));
+	assert.deepEqual(first.currentSlaWindow, { sampledDays: 0, servedDays: 0, failedDays: 0 });
 	assert.ok(first.requirements.vCpu > 0 || first.requirements.ramGb > 0 || first.requirements.storageTb > 0);
 });
 
@@ -349,6 +354,7 @@ test("acceptContract moves an offered contract into the active list with assignm
 		acceptedAtTick: state.tick,
 		assignedDcId: state.datacenters[0]!.id,
 	});
+	assert.deepEqual(nextState.activeContracts[0]?.currentSlaWindow, { sampledDays: 0, servedDays: 0, failedDays: 0 });
 });
 
 test("acceptContract rejects unknown datacenters and already active contracts", () => {
