@@ -6,13 +6,13 @@ import { contractsFromState, selectLiveContracts } from "../contracts/lifecycle.
 import {
 	datacenterBaseInfrastructure,
 	datacenterCommittedContractDemand,
-	datacenterContractCapacitySummary,
 	datacenterMaintenanceStaffingView,
 	datacenterRackActivityView,
 	datacenterRackPowerSummary,
 	resolveDatacenterInfrastructure,
 	resolveDatacenterUpgradeEconomics,
 	resolveDatacenterUpgradeState,
+	summarizeAllDatacenterOperationalCapacities,
 	type DatacenterContractCapacitySummary,
 	type DatacenterMaintenanceStaffingView,
 } from "../entities/datacenter.js";
@@ -173,12 +173,11 @@ export function summarizeDatacenterCapacityFromState(
 	state: Pick<GameState, "datacenters" | "contracts" | "contractMarket" | "activeContracts">,
 	dcId: DatacenterId,
 ): DatacenterCapacityFromStateSummary {
-	const datacenter = getDatacenterOrThrow(state.datacenters, dcId);
-	const liveContracts = selectLiveContracts(contractsFromState(state));
-	return {
-		dcId,
-		...datacenterContractCapacitySummary(datacenter, liveContracts),
-	};
+	const summary = summarizeAllDatacenterCapacitiesFromState(state).find((candidate) => candidate.dcId === dcId);
+	if (!summary) {
+		throw new Error(`Unknown datacenter: ${dcId}`);
+	}
+	return summary;
 }
 
 function toUpgradeNodeView(node: DatacenterUpgradeTrackNode): DatacenterUpgradeNodeView {
@@ -307,10 +306,15 @@ export function summarizeAllDatacenterUpgradeViewsFromState(
 export function summarizeAllDatacenterCapacitiesFromState(
 	state: Pick<GameState, "datacenters" | "contracts" | "contractMarket" | "activeContracts">,
 ): DatacenterCapacityFromStateSummary[] {
-	const liveContracts = selectLiveContracts(contractsFromState(state));
-	return state.datacenters.map((datacenter) => ({
-		dcId: datacenter.id,
-		...datacenterContractCapacitySummary(datacenter, liveContracts),
+	return summarizeAllDatacenterOperationalCapacities(
+		state.datacenters,
+		selectLiveContracts(contractsFromState(state)),
+	).map(({ dcId, installed, usable, committed, available }) => ({
+		dcId,
+		installed,
+		usable,
+		committed,
+		available,
 	}));
 }
 
@@ -318,11 +322,21 @@ export function summarizeNetworkCapacityFromState(
 	state: Pick<GameState, "datacenters" | "contracts" | "contractMarket" | "activeContracts">,
 ): NetworkCapacitySummary {
 	const perDc = summarizeAllDatacenterCapacitiesFromState(state);
+	let installed = { ...EMPTY_CAPACITY };
+	let usable = { ...EMPTY_CAPACITY };
+	let committed = { ...EMPTY_CAPACITY };
+	let available = { ...EMPTY_CAPACITY };
+	for (const summary of perDc) {
+		installed = addCapacity(installed, summary.installed);
+		usable = addCapacity(usable, summary.usable);
+		committed = addCapacity(committed, summary.committed);
+		available = addCapacity(available, summary.available);
+	}
 	return {
-		installed: perDc.reduce((total, summary) => addCapacity(total, summary.installed), EMPTY_CAPACITY),
-		usable: perDc.reduce((total, summary) => addCapacity(total, summary.usable), EMPTY_CAPACITY),
-		committed: perDc.reduce((total, summary) => addCapacity(total, summary.committed), EMPTY_CAPACITY),
-		available: perDc.reduce((total, summary) => addCapacity(total, summary.available), EMPTY_CAPACITY),
+		installed,
+		usable,
+		committed,
+		available,
 		perDc,
 	};
 }

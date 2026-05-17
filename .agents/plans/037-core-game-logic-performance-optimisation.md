@@ -22,7 +22,7 @@ owner: game-logic
   - [x] 3.2 Cache per-datacenter opex inputs within a tick
   - [x] 3.3 Preserve deterministic maintenance and ledger behavior under benchmarks
 - [ ] **Phase 4 — Capacity and fabric query optimisation**
-  - [ ] 4.1 Add reusable capacity summaries for all datacenters in one pass
+  - [x] 4.1 Add reusable capacity summaries for all datacenters in one pass
   - [ ] 4.2 Optimise fabric capacity summaries to avoid nested pool recomputation
   - [ ] 4.3 Optimise open-market contract fit summaries across all visible offers
 - [ ] **Phase 5 — Data-shape and allocation cleanup**
