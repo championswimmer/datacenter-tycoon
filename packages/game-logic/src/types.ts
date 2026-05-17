@@ -89,6 +89,7 @@ export interface Rack {
 	health: RackHealthStatus;
 	repairProgressDays?: number;
 	lastFailureAtTick?: Tick;
+	lastFailureAtSubtick?: Subtick;
 }
 
 export interface RackPlacement extends Rack, GridPosition {}

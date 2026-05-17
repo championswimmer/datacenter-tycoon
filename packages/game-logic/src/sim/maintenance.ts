@@ -23,6 +23,17 @@ export function rackFailureChance(ageMonths: number, difficulty: Difficulty = DE
 	return failureCurve[clampedYearIndex]! / 100;
 }
 
+export function rackDailyFailureChance(monthlyChance: number): number {
+	if (monthlyChance <= 0) {
+		return 0;
+	}
+	if (monthlyChance >= 1) {
+		return 1;
+	}
+
+	return 1 - (1 - monthlyChance) ** (1 / DAYS_PER_TICK);
+}
+
 export function repairSpeedMultiplier(maintenanceStaff: number): number {
 	const extraStaff = Math.max(0, maintenanceStaff);
 	return clamp(
@@ -91,6 +102,18 @@ export function rackFailureRiskView(
 		// Repairing racks have already failed — they cannot newly fail while
 		// under repair, so we return 0 rather than the age-curve value.
 		failureProbability: rack.health === "repairing" ? 0 : rackFailureChance(ageMonths, difficulty),
+	};
+}
+
+export function rackDailyFailureRiskView(
+	currentTick: Tick,
+	rack: Pick<Rack, "id" | "installedAtTick" | "health">,
+	difficulty: Difficulty = DEFAULT_DIFFICULTY,
+): RackFailureRiskView {
+	const monthlyRisk = rackFailureRiskView(currentTick, rack, difficulty);
+	return {
+		...monthlyRisk,
+		failureProbability: rack.health === "repairing" ? 0 : rackDailyFailureChance(monthlyRisk.failureProbability),
 	};
 }
 

@@ -289,9 +289,42 @@ test("tick rolls deterministic late-life failures for healthy racks", () => {
 	const failedRack = nextState.datacenters[0]?.placements[0];
 
 	assert.equal(failedRack?.health, "repairing");
-	assert.equal(failedRack?.repairProgressDays, 0);
-	assert.equal(failedRack?.lastFailureAtTick, 60);
+	assert.ok((failedRack?.repairProgressDays ?? 0) > 0);
+	assert.equal(failedRack?.lastFailureAtTick, 59);
+	assert.ok(failedRack?.lastFailureAtSubtick !== undefined);
 	assert.notEqual(nextState.rngState, state.rngState);
+});
+
+test("daily failure rolls land on the same subtick for identical seed histories", () => {
+	const agedDatacenter = makeDatacenter("dc-1", [
+		{
+			...placement("rack-1", "C1", 0, 0),
+			installedAtTick: tickValue(0),
+		},
+	]);
+	const initial = makeState({
+		tick: tickValue(59),
+		rngState: 99,
+		datacenters: [agedDatacenter],
+	});
+	let first = initial;
+	let second = initial;
+
+	for (let day = 0; day < DAYS_PER_TICK; day += 1) {
+		if (first.datacenters[0]?.placements[0]?.health === "repairing") {
+			break;
+		}
+		first = advanceSubtick(first);
+		second = advanceSubtick(second);
+	}
+
+	const firstRack = first.datacenters[0]?.placements[0];
+	const secondRack = second.datacenters[0]?.placements[0];
+	assert.equal(firstRack?.health, "repairing");
+	assert.equal(secondRack?.health, "repairing");
+	assert.equal(firstRack?.lastFailureAtTick, secondRack?.lastFailureAtTick);
+	assert.equal(firstRack?.lastFailureAtSubtick, secondRack?.lastFailureAtSubtick);
+	assert.deepEqual(first, second);
 });
 
 test("higher maintenance staffing restores repairing racks in fewer ticks", () => {
@@ -326,6 +359,32 @@ test("higher maintenance staffing restores repairing racks in fewer ticks", () =
 
 	assert.equal(lowStaffState.datacenters[0]?.placements[0]?.health, "repairing");
 	assert.equal(highStaffState.datacenters[0]?.placements[0]?.health, "healthy");
+});
+
+test("repairing racks do not roll a second failure while already down", () => {
+	const state = makeState({
+		tick: tickValue(59),
+		rngState: 99,
+		datacenters: [
+			{
+				...makeDatacenter("dc-1", [
+					{
+						...placement("rack-1", "C1", 0, 0),
+						health: "repairing" as const,
+						repairProgressDays: 0,
+						lastFailureAtTick: tickValue(58),
+						lastFailureAtSubtick: 12,
+					},
+				]),
+			},
+		],
+	});
+
+	const nextState = advanceSubtick(state);
+	const rack = nextState.datacenters[0]?.placements[0];
+	assert.equal(rack?.health, "repairing");
+	assert.equal(rack?.lastFailureAtTick, 58);
+	assert.equal(rack?.lastFailureAtSubtick, 12);
 });
 
 test("a late-life rack failure can breach an overcommitted contract in the same tick", () => {

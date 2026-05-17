@@ -8,19 +8,15 @@ import {
 } from "../contracts/lifecycle.js";
 import { refreshContractMarket } from "../contracts/market.js";
 import { tickOpex, tickRevenue } from "../economy/opex.js";
-import { rackAgeMonths, rackFailureChance } from "./maintenance.js";
-import { rngFromState } from "./rng.js";
 import { advanceSubtick } from "./subtick.js";
 import type {
 	Contract,
-	Datacenter,
 	DatacenterId,
 	GameState,
 	LedgerEntry,
 	LedgerEntryType,
 	Money,
 	OpexTickResult,
-	RackPlacement,
 	Tick,
 } from "../types.js";
 
@@ -79,48 +75,12 @@ function getRegionForDatacenter(state: GameState, dcId: string) {
 	return state.map.regions.find((r) => r.id === datacenter.regionId);
 }
 
-function processRackMaintenance(
-	datacenter: Datacenter,
-	currentTick: Tick,
-	difficulty: GameState["difficulty"],
-	rng: ReturnType<typeof rngFromState>,
-): Datacenter {
-	const placements = datacenter.placements.map((placement): RackPlacement => {
-		if (placement.health === "repairing") {
-			return placement;
-		}
-
-		const failureChance = rackFailureChance(rackAgeMonths(currentTick, placement), difficulty);
-		if (rng.next() >= failureChance) {
-			return placement;
-		}
-
-		return {
-			...placement,
-			health: "repairing",
-			repairProgressDays: 0,
-			lastFailureAtTick: currentTick,
-		};
-	});
-
-	return {
-		...datacenter,
-		placements,
-	};
-}
-
 export function settleMonthlyTick(state: GameState): GameState {
 	const nextTick = (state.tick + 1) as Tick;
-	const rng = rngFromState(state.rngState);
-	const datacentersAfterMaintenance = state.datacenters.map((datacenter) =>
-		processRackMaintenance(datacenter, nextTick, state.difficulty, rng),
-	);
 	const maintenanceState: GameState = {
 		...state,
 		tick: nextTick,
 		subtick: 0,
-		rngState: rng.state(),
-		datacenters: datacentersAfterMaintenance,
 		contracts: contractsFromState(state),
 	};
 

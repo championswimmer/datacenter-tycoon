@@ -10,6 +10,7 @@ import {
 import {
 	advanceRackRepair,
 	rackAgeMonths,
+	rackDailyFailureChance,
 	rackFailureChance,
 	rackFailureRiskView,
 	repairDurationDays,
@@ -56,6 +57,18 @@ test("rackFailureChance halves the yearly failure curve in easy mode", () => {
 	assert.equal(rackFailureChance(24, "easy"), DIFFICULTY_CONFIG.easy.failureCurvePct[2]! / 100);
 	assert.equal(rackFailureChance(60, "easy"), DIFFICULTY_CONFIG.easy.failureCurvePct.at(-1)! / 100);
 	assert.equal(rackFailureChance(24, "easy"), rackFailureChance(24, "hard") / 2);
+});
+
+test("rackDailyFailureChance preserves the equivalent monthly hazard", () => {
+	const monthlyChance = 0.32;
+	const dailyChance = rackDailyFailureChance(monthlyChance);
+	const recomposedMonthlyChance = 1 - (1 - dailyChance) ** DAYS_PER_TICK;
+
+	assert.ok(dailyChance > 0);
+	assert.ok(dailyChance < monthlyChance);
+	assert.ok(Math.abs(recomposedMonthlyChance - monthlyChance) < 1e-12);
+	assert.equal(rackDailyFailureChance(0), 0);
+	assert.equal(rackDailyFailureChance(1), 1);
 });
 
 test("repair speed scales with maintenance staff and clamps at the configured max", () => {
