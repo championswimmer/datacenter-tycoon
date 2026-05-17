@@ -9,10 +9,10 @@ owner: game-logic
 
 ## Progress
 
-- [ ] **Phase 1 — Measurement baseline**
+- [x] **Phase 1 — Measurement baseline**
   - [x] 1.1 Add deterministic large-state fixture builders for performance tests
   - [x] 1.2 Add benchmark coverage for tick, capacity, fabric, and contract-fit paths
-  - [ ] 1.3 Record baseline budgets and regression thresholds
+  - [x] 1.3 Record baseline budgets and regression thresholds
 - [ ] **Phase 2 — State lookup and contract-view reuse**
   - [ ] 2.1 Introduce ephemeral indexed game-state views
   - [ ] 2.2 Reuse a single normalized contract list inside reducers and ticks
