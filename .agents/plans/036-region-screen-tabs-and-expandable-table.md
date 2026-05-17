@@ -1,7 +1,7 @@
 ---
 name: Region Screen Tabs and Expandable Table
 description: Rename the rail CTA to Regions, split the region screen into map/table tabs, and show per-region datacenter rows inside the table view.
-status: started
+status: completed
 created: 2026-05-17
 updated: 2026-05-17
 owner: web
@@ -18,9 +18,9 @@ owner: web
 - [x] **Phase 3 — Expandable datacenter rows in table view**
   - [x] 3.1 Extend `RegionTable` to accept datacenters and render expandable child rows beneath regions that already host datacenters
   - [x] 3.2 Add responsive styling and focused table tests for nested rows, toggling, and region-selection behavior
-- [ ] **Phase 4 — Verification and wrap-up**
-  - [ ] 4.1 Run targeted web tests and typecheck for the touched region/rail components
-  - [ ] 4.2 Mark the plan complete and note any deferred region-screen polish follow-ups
+- [x] **Phase 4 — Verification and wrap-up**
+  - [x] 4.1 Run targeted web tests and typecheck for the touched region/rail components
+  - [x] 4.2 Mark the plan complete and note any deferred region-screen polish follow-ups
 
 ## Overview
 
@@ -134,3 +134,4 @@ type RegionScreenTab = "map" | "table";
 ## Changelog
 
 - 2026-05-17 — created.
+- 2026-05-17 — completed implementation; no additional region-screen follow-up captured in this plan.
