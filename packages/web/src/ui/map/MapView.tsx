@@ -127,6 +127,7 @@ export function MapView() {
               <div className={styles.tableStage}>
                 <RegionTable
                   regions={regions}
+                  datacenters={datacenters}
                   selectedRegionId={selectedRegionId}
                   onSelectRegion={selectRegion}
                 />

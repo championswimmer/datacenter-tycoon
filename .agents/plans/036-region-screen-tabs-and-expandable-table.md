@@ -15,9 +15,9 @@ owner: web
 - [x] **Phase 2 — Region screen tab split**
   - [x] 2.1 Refactor `MapView` to render separate Map and Table tabs with shared selected-region state
   - [x] 2.2 Update `MapView` styles and tests for tab switching, selection persistence, and region panel rendering per tab
-- [ ] **Phase 3 — Expandable datacenter rows in table view**
-  - [ ] 3.1 Extend `RegionTable` to accept datacenters and render expandable child rows beneath regions that already host datacenters
-  - [ ] 3.2 Add responsive styling and focused table tests for nested rows, toggling, and region-selection behavior
+- [x] **Phase 3 — Expandable datacenter rows in table view**
+  - [x] 3.1 Extend `RegionTable` to accept datacenters and render expandable child rows beneath regions that already host datacenters
+  - [x] 3.2 Add responsive styling and focused table tests for nested rows, toggling, and region-selection behavior
 - [ ] **Phase 4 — Verification and wrap-up**
   - [ ] 4.1 Run targeted web tests and typecheck for the touched region/rail components
   - [ ] 4.2 Mark the plan complete and note any deferred region-screen polish follow-ups

@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import type { Region, RegionId } from "@datacenter-tycoon/game-logic";
+import { Fragment, useMemo, useState } from "react";
+import type { Datacenter, Region, RegionId } from "@datacenter-tycoon/game-logic";
 import styles from "./RegionTable.module.css";
 
 type SortKey = "code" | "city" | "name" | "powerCost" | "power" | "staff" | "tax";
@@ -7,6 +7,7 @@ type SortDirection = "asc" | "desc";
 
 interface RegionTableProps {
   regions: Region[];
+  datacenters: Datacenter[];
   selectedRegionId: RegionId | null;
   onSelectRegion: (id: RegionId) => void;
 }
@@ -68,9 +69,26 @@ const COLUMNS: ColumnDefinition[] = [
   },
 ];
 
-export function RegionTable({ regions, selectedRegionId, onSelectRegion }: RegionTableProps) {
+export function RegionTable({ regions, datacenters, selectedRegionId, onSelectRegion }: RegionTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("powerCost");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [expandedRegionIds, setExpandedRegionIds] = useState<RegionId[]>([]);
+
+  const datacentersByRegionId = useMemo(() => {
+    const grouped = new Map<RegionId, Datacenter[]>();
+
+    datacenters.forEach((datacenter) => {
+      const existing = grouped.get(datacenter.regionId);
+      if (existing) {
+        existing.push(datacenter);
+        return;
+      }
+
+      grouped.set(datacenter.regionId, [datacenter]);
+    });
+
+    return grouped;
+  }, [datacenters]);
 
   const sortedRegions = useMemo(() => {
     const column = COLUMNS.find((entry) => entry.key === sortKey) ?? COLUMNS[0]!;
@@ -105,6 +123,14 @@ export function RegionTable({ regions, selectedRegionId, onSelectRegion }: Regio
 
     setSortKey(key);
     setSortDirection(key === "power" || key === "staff" ? "desc" : "asc");
+  };
+
+  const toggleExpandedRegion = (regionId: RegionId) => {
+    setExpandedRegionIds((current) =>
+      current.includes(regionId)
+        ? current.filter((candidate) => candidate !== regionId)
+        : [...current, regionId],
+    );
   };
 
   return (
@@ -146,32 +172,90 @@ export function RegionTable({ regions, selectedRegionId, onSelectRegion }: Regio
         <tbody>
           {sortedRegions.map((region) => {
             const isSelected = region.id === selectedRegionId;
+            const regionDatacenters = datacentersByRegionId.get(region.id) ?? [];
+            const hasDatacenters = regionDatacenters.length > 0;
+            const isExpanded = expandedRegionIds.includes(region.id);
 
             return (
-              <tr
-                key={region.id}
-                role="button"
-                tabIndex={0}
-                aria-pressed={isSelected}
-                aria-label={`Select region row ${region.code} — ${region.city}, ${region.name}`}
-                className={[styles.row, isSelected ? styles.rowSelected : ""].join(" ")}
-                onClick={() => onSelectRegion(region.id)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onSelectRegion(region.id);
-                  }
-                }}
-              >
-                {COLUMNS.map((column) => (
-                  <td
-                    key={column.key}
-                    className={column.align === "right" ? styles.numericCell : undefined}
-                  >
-                    {column.render(region)}
-                  </td>
-                ))}
-              </tr>
+              <Fragment key={region.id}>
+                <tr
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isSelected}
+                  aria-label={`Select region row ${region.code} — ${region.city}, ${region.name}`}
+                  className={[styles.row, isSelected ? styles.rowSelected : ""].join(" ")}
+                  onClick={() => onSelectRegion(region.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onSelectRegion(region.id);
+                    }
+                  }}
+                >
+                  {COLUMNS.map((column) => (
+                    <td
+                      key={column.key}
+                      className={column.align === "right" ? styles.numericCell : undefined}
+                    >
+                      {column.key === "code" ? (
+                        <div className={styles.codeCell}>
+                          {hasDatacenters ? (
+                            <button
+                              type="button"
+                              className={styles.expandButton}
+                              aria-expanded={isExpanded}
+                              aria-label={`${isExpanded ? "Collapse" : "Expand"} datacenters in ${region.name}`}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                toggleExpandedRegion(region.id);
+                              }}
+                            >
+                              {isExpanded ? "▾" : "▸"}
+                            </button>
+                          ) : (
+                            <span className={styles.expandSpacer} aria-hidden="true" />
+                          )}
+                          <span data-region-code={region.code}>{region.code}</span>
+                          {hasDatacenters ? (
+                            <span className={styles.countBadge}>{regionDatacenters.length} DC{regionDatacenters.length === 1 ? "" : "s"}</span>
+                          ) : null}
+                        </div>
+                      ) : (
+                        column.render(region)
+                      )}
+                    </td>
+                  ))}
+                </tr>
+                {hasDatacenters && isExpanded ? (
+                  <tr className={styles.detailRow}>
+                    <td colSpan={COLUMNS.length}>
+                      <div className={styles.detailPanel}>
+                        <div className={styles.detailHeader}>
+                          <span className={styles.detailTitle}>Datacenters in {region.name}</span>
+                          <span className={styles.detailMeta}>{regionDatacenters.length} {regionDatacenters.length === 1 ? "facility" : "facilities"}</span>
+                        </div>
+                        <ul className={styles.detailList}>
+                          {regionDatacenters.map((datacenter) => {
+                            const slotCapacity = datacenter.spec.rows * datacenter.spec.positionsPerRow;
+                            return (
+                              <li key={datacenter.id} className={styles.detailItem}>
+                                <div className={styles.detailPrimary}>
+                                  <span className={styles.detailName}>{datacenter.name}</span>
+                                  <span className={styles.detailSpec}>{datacenter.spec.name}</span>
+                                </div>
+                                <div className={styles.detailSecondary}>
+                                  <span>{datacenter.placements.length}/{slotCapacity} rack slots used</span>
+                                  <span>Built tick {datacenter.builtAtTick}</span>
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    </td>
+                  </tr>
+                ) : null}
+              </Fragment>
             );
           })}
         </tbody>
