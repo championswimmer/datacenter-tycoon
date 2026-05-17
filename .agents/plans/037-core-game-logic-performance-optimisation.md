@@ -23,7 +23,7 @@ owner: game-logic
   - [x] 3.3 Preserve deterministic maintenance and ledger behavior under benchmarks
 - [ ] **Phase 4 — Capacity and fabric query optimisation**
   - [x] 4.1 Add reusable capacity summaries for all datacenters in one pass
-  - [ ] 4.2 Optimise fabric capacity summaries to avoid nested pool recomputation
+  - [x] 4.2 Optimise fabric capacity summaries to avoid nested pool recomputation
   - [ ] 4.3 Optimise open-market contract fit summaries across all visible offers
 - [ ] **Phase 5 — Data-shape and allocation cleanup**
   - [ ] 5.1 Reduce capacity and usage aggregation allocation churn
