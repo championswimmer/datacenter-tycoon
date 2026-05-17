@@ -17,6 +17,7 @@ import type {
 } from "../types.js";
 import {
 	resolveDatacenterCapacityPoolMemberIds,
+	summarizeAllDatacenterFabricCapacities,
 	summarizeDistinctCapacityPools,
 	summarizeFabricCapacityForDatacenter,
 } from "./fabric.js";
@@ -112,12 +113,16 @@ test("summarizeFabricCapacityForDatacenter pools linked member capacity and keep
 	});
 
 	const summary = summarizeFabricCapacityForDatacenter(state, dcA.id);
+	const allSummaries = summarizeAllDatacenterFabricCapacities(state);
 
 	assert.equal(summary.connected, true);
 	assert.deepEqual(summary.memberDcIds, [dcA.id, dcB.id]);
 	assert.deepEqual(summary.local.available, { vCpu: 64, ramGb: 384, storageTb: 12, gpuFlops: 0 });
 	assert.deepEqual(summary.usable, { vCpu: 256, ramGb: 1024, storageTb: 32, gpuFlops: 0 });
 	assert.deepEqual(summary.available, { vCpu: 192, ramGb: 896, storageTb: 28, gpuFlops: 0 });
+	assert.equal(allSummaries.length, 2);
+	assert.deepEqual(allSummaries.map((entry) => entry.memberDcIds), [[dcA.id, dcB.id], [dcA.id, dcB.id]]);
+	assert.deepEqual(allSummaries.find((entry) => entry.dcId === dcB.id)?.available, summary.available);
 });
 
 test("summarizeFabricCapacityForDatacenter leaves isolated sites independent and distinct pools are deduped", () => {

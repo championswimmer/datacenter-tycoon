@@ -1,7 +1,13 @@
 import { REGIONAL_FABRIC_JOIN_COST } from "../balance/fabric.js";
 import { contractsFromState, selectLiveContracts } from "../contracts/lifecycle.js";
 import { createEntityIndexView } from "../state/indexed-view.js";
-import { datacenterContractCapacitySummary, resolveDatacenterUpgradeState, type DatacenterContractCapacitySummary } from "./datacenter.js";
+import {
+	datacenterContractCapacitySummary,
+	resolveDatacenterUpgradeState,
+	summarizeAllDatacenterOperationalCapacities,
+	type DatacenterContractCapacitySummary,
+	type DatacenterOperationalCapacitySummary,
+} from "./datacenter.js";
 import type {
 	Capacity,
 	Contract,
@@ -41,19 +47,31 @@ function subtractCapacity(total: Capacity, reserved: Capacity): Capacity {
 	};
 }
 
-function aggregateCapacitySummaries(
-	summaries: readonly DatacenterContractCapacitySummary[],
-): DatacenterContractCapacitySummary {
-	const installed = summaries.reduce((total, summary) => addCapacity(total, summary.installed), EMPTY_CAPACITY);
-	const usable = summaries.reduce((total, summary) => addCapacity(total, summary.usable), EMPTY_CAPACITY);
-	const committed = summaries.reduce((total, summary) => addCapacity(total, summary.committed), EMPTY_CAPACITY);
-	const available = subtractCapacity(usable, committed);
+function capacitySummaryOf(summary: Pick<DatacenterContractCapacitySummary, "installed" | "usable" | "committed" | "available">): DatacenterContractCapacitySummary {
+	return {
+		installed: { ...summary.installed },
+		usable: { ...summary.usable },
+		committed: { ...summary.committed },
+		available: { ...summary.available },
+	};
+}
 
+function aggregateCapacitySummaries(
+	summaries: readonly Pick<DatacenterContractCapacitySummary, "installed" | "usable" | "committed">[],
+): DatacenterContractCapacitySummary {
+	let installed = { ...EMPTY_CAPACITY };
+	let usable = { ...EMPTY_CAPACITY };
+	let committed = { ...EMPTY_CAPACITY };
+	for (const summary of summaries) {
+		installed = addCapacity(installed, summary.installed);
+		usable = addCapacity(usable, summary.usable);
+		committed = addCapacity(committed, summary.committed);
+	}
 	return {
 		installed,
 		usable,
 		committed,
-		available,
+		available: subtractCapacity(usable, committed),
 	};
 }
 
@@ -144,6 +162,77 @@ export interface FabricCapacitySummary extends DatacenterContractCapacitySummary
 	local: DatacenterContractCapacitySummary;
 }
 
+function fabricPoolKey(memberDcIds: readonly DatacenterId[]): string {
+	return memberDcIds.join("\u0000");
+}
+
+function toOperationalCapacitySummaryMap(
+	summaries: readonly DatacenterOperationalCapacitySummary[],
+): ReadonlyMap<DatacenterId, DatacenterOperationalCapacitySummary> {
+	return new Map(summaries.map((summary) => [summary.dcId, summary]));
+}
+
+export function summarizeAllDatacenterFabricCapacities(
+	state: Pick<GameState, "datacenters" | "map" | "contracts" | "contractMarket" | "activeContracts">,
+	contracts: readonly (Pick<Contract, "lifecycleState" | "requirements"> & Partial<Pick<Contract, "assignedDcId" | "status">>)[] = contractsFromState(state),
+): FabricCapacitySummary[] {
+	const indexedState = createEntityIndexView(state);
+	const localSummaries = summarizeAllDatacenterOperationalCapacities(
+		state.datacenters,
+		selectLiveContracts(contracts),
+	);
+	const localSummaryByDcId = toOperationalCapacitySummaryMap(localSummaries);
+	const pooledSummaryByKey = new Map<string, { memberDcIds: DatacenterId[]; summary: DatacenterContractCapacitySummary }>();
+
+	return localSummaries.map((localSummary) => {
+		const datacenter = indexedState.datacenterById.get(localSummary.dcId);
+		if (!datacenter) {
+			throw new Error(`Unknown datacenter: ${localSummary.dcId}`);
+		}
+		const region = indexedState.regionById.get(datacenter.regionId);
+		const memberDcIds = region && isDatacenterInRegionFabric(region, datacenter.id)
+			? getRegionFabricMemberIds(region)
+			: [datacenter.id];
+		const connected = memberDcIds.length > 1;
+		const local = capacitySummaryOf(localSummary);
+		if (!connected) {
+			return {
+				dcId: datacenter.id,
+				connected: false,
+				memberDcIds,
+				local,
+				...local,
+			};
+		}
+
+		const poolKey = fabricPoolKey(memberDcIds);
+		let pooled = pooledSummaryByKey.get(poolKey);
+		if (!pooled) {
+			pooled = {
+				memberDcIds: [...memberDcIds],
+				summary: aggregateCapacitySummaries(
+					memberDcIds.map((memberDcId) => {
+						const memberSummary = localSummaryByDcId.get(memberDcId);
+						if (!memberSummary) {
+							throw new Error(`Unknown datacenter in fabric pool: ${memberDcId}`);
+						}
+						return memberSummary;
+					}),
+				),
+			};
+			pooledSummaryByKey.set(poolKey, pooled);
+		}
+
+		return {
+			dcId: datacenter.id,
+			connected: true,
+			memberDcIds: [...pooled.memberDcIds],
+			local,
+			...capacitySummaryOf(pooled.summary),
+		};
+	});
+}
+
 export function summarizeFabricCapacityForDatacenter(
 	state: Pick<GameState, "datacenters" | "map" | "contracts" | "contractMarket" | "activeContracts">,
 	dcId: DatacenterId,
@@ -190,24 +279,18 @@ export function summarizeDistinctCapacityPools(
 	const seen = new Set<DatacenterId>();
 	const pools: CapacityPoolSummary[] = [];
 
-	for (const datacenter of state.datacenters) {
-		if (seen.has(datacenter.id)) {
+	for (const summary of summarizeAllDatacenterFabricCapacities(state, contracts)) {
+		if (seen.has(summary.dcId)) {
 			continue;
 		}
-
-		const summary = summarizeFabricCapacityForDatacenter(state, datacenter.id, contracts);
 		for (const memberDcId of summary.memberDcIds) {
 			seen.add(memberDcId);
 		}
-
 		pools.push({
-			anchorDcId: datacenter.id,
-			memberDcIds: summary.memberDcIds,
+			anchorDcId: summary.dcId,
+			memberDcIds: [...summary.memberDcIds],
 			connected: summary.connected,
-			installed: summary.installed,
-			usable: summary.usable,
-			committed: summary.committed,
-			available: summary.available,
+			...capacitySummaryOf(summary),
 		});
 	}
 

@@ -1,6 +1,6 @@
 import { DAYS_PER_TICK } from "../balance/maintenance.js";
+import { summarizeAllDatacenterFabricCapacities } from "../entities/fabric.js";
 import { selectLiveContracts } from "./lifecycle.js";
-import { summarizeFabricCapacityForDatacenter } from "../entities/fabric.js";
 import type {
 	Contract,
 	ContractSlaTargetPercent,
@@ -56,15 +56,12 @@ export function withContractSlaDefaults<T extends Contract>(contract: T): T {
 }
 
 function canServeContractPool(
-	state: Pick<GameState, "datacenters" | "map" | "contracts" | "contractMarket" | "activeContracts">,
 	dcId: DatacenterId,
-	liveContracts: readonly Contract[],
-	cache: Map<DatacenterId, ReturnType<typeof summarizeFabricCapacityForDatacenter>>,
+	capacitySummaryByDcId: ReadonlyMap<DatacenterId, ReturnType<typeof summarizeAllDatacenterFabricCapacities>[number]>,
 ): boolean {
-	const cached = cache.get(dcId);
-	const summary = cached ?? summarizeFabricCapacityForDatacenter(state, dcId, liveContracts);
-	if (!cached) {
-		cache.set(dcId, summary);
+	const summary = capacitySummaryByDcId.get(dcId);
+	if (!summary) {
+		return false;
 	}
 
 	return (
@@ -80,7 +77,9 @@ export function sampleContractSlaWindows(
 	contracts: readonly Contract[],
 ): Contract[] {
 	const liveContracts = selectLiveContracts(contracts);
-	const capacitySummaryByDcId = new Map<DatacenterId, ReturnType<typeof summarizeFabricCapacityForDatacenter>>();
+	const capacitySummaryByDcId = new Map(
+		summarizeAllDatacenterFabricCapacities(state, liveContracts).map((summary) => [summary.dcId, summary]),
+	);
 
 	return contracts.map((contract) => {
 		if (
@@ -102,7 +101,7 @@ export function sampleContractSlaWindows(
 			};
 		}
 
-		const served = canServeContractPool(state, normalized.assignedDcId, liveContracts, capacitySummaryByDcId);
+		const served = canServeContractPool(normalized.assignedDcId, capacitySummaryByDcId);
 		return {
 			...normalized,
 			currentSlaWindow: {
