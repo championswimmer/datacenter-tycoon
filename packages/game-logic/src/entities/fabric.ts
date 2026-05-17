@@ -1,5 +1,6 @@
 import { REGIONAL_FABRIC_JOIN_COST } from "../balance/fabric.js";
 import { contractsFromState, selectLiveContracts } from "../contracts/lifecycle.js";
+import { createEntityIndexView } from "../state/indexed-view.js";
 import { datacenterContractCapacitySummary, resolveDatacenterUpgradeState, type DatacenterContractCapacitySummary } from "./datacenter.js";
 import type {
 	Capacity,
@@ -64,8 +65,16 @@ function getDatacenterOrThrow(datacenters: readonly Datacenter[], dcId: Datacent
 	return datacenter;
 }
 
-function getRegionOrThrow(regions: readonly Region[], regionId: RegionId): Region {
-	const region = regions.find((candidate) => candidate.id === regionId);
+function getRegionOrThrow(
+	regions: readonly Region[] | ReadonlyMap<RegionId, Region>,
+	regionId: RegionId,
+): Region {
+	let region: Region | undefined;
+	if (Array.isArray(regions)) {
+		region = regions.find((candidate) => candidate.id === regionId);
+	} else {
+		region = (regions as ReadonlyMap<RegionId, Region>).get(regionId);
+	}
 	if (!region) {
 		throw new Error(`Unknown region: ${regionId}`);
 	}
@@ -250,12 +259,13 @@ export function validateFabricLinkRequest(
 	sourceDcId: DatacenterId,
 	targetDcId: DatacenterId,
 ): ValidatedFabricLink {
-	const sourceDc = state.datacenters.find((candidate) => candidate.id === sourceDcId);
+	const indexedState = createEntityIndexView(state);
+	const sourceDc = indexedState.datacenterById.get(sourceDcId);
 	if (!sourceDc) {
 		throw unknownDatacenterError(sourceDcId, targetDcId, sourceDcId);
 	}
 
-	const targetDc = state.datacenters.find((candidate) => candidate.id === targetDcId);
+	const targetDc = indexedState.datacenterById.get(targetDcId);
 	if (!targetDc) {
 		throw unknownDatacenterError(sourceDcId, targetDcId, targetDcId);
 	}
@@ -301,7 +311,7 @@ export function validateFabricLinkRequest(
 		});
 	}
 
-	const region = getRegionOrThrow(state.map.regions, sourceDc.regionId);
+	const region = getRegionOrThrow(indexedState.regionById, sourceDc.regionId);
 	const memberDcIds = getRegionFabricMemberIds(region);
 	const sourceMember = memberDcIds.includes(sourceDc.id);
 	const targetMember = memberDcIds.includes(targetDc.id);
