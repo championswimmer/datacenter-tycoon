@@ -199,11 +199,20 @@
   color: var(--fg-2);
 }
 
-.fabricHint {
+.fabricHint,
+.fabricWarning {
   margin: 0;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
+}
+
+.fabricHint {
   color: var(--fg-2);
+}
+
+.fabricWarning {
+  color: var(--neon-amber);
+  text-shadow: 0 0 6px rgba(255, 177, 60, 0.22);
 }
 
 .fabricMembers {
@@ -292,6 +301,14 @@
 
 .fabricActionBtn:hover {
   box-shadow: var(--glow-lime);
+}
+
+.fabricActionBtn:disabled {
+  cursor: not-allowed;
+  color: var(--fg-2);
+  background: rgba(255, 177, 60, 0.12);
+  border-color: rgba(255, 177, 60, 0.32);
+  box-shadow: none;
 }
 
 /* ── DC List ────────────────────────────────────────────────── */

@@ -62,6 +62,38 @@ describe("RegionPanel", () => {
     expect(screen.queryByRole("button", { name: /Connect .* to regional fabric/i })).toBeNull();
   });
 
+  it("shows an explicit insufficient-funds warning and disables fabric actions when the join cost is unaffordable", () => {
+    let state = newGame(42, { startingCash: 8_000_000 });
+    const dcA = nextDcId();
+    const dcB = nextDcId();
+    const firstRegionId = state.map.regions[0]!.id;
+
+    for (const dcId of [dcA, dcB] as const) {
+      state = reduce(state, {
+        type: "BuildDatacenter",
+        specId: DATACENTER_CATALOG.garage!.id,
+        dcId,
+        regionId: firstRegionId,
+      });
+      state = upgradeDatacenterToFiber(state, dcId);
+    }
+
+    state = {
+      ...state,
+      player: {
+        ...state.player,
+        cash: 0,
+      },
+    };
+
+    renderRegionPanel(state);
+
+    const createButton = screen.getByRole("button", { name: /Create fabric with Garage Datacenter and Garage Datacenter/i });
+    expect(createButton.getAttribute("disabled")).not.toBeNull();
+    expect(screen.getAllByText(/Need \$150,000 cash to create or extend the regional fabric/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Current cash: \$0/).length).toBeGreaterThan(0);
+  });
+
   it("creates a regional fabric from the region panel when two fiber-ready datacenters are available", () => {
     let state = newGame(42, { startingCash: 8_000_000 });
     const dcA = nextDcId();
