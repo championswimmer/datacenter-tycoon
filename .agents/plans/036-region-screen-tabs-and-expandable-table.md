@@ -12,9 +12,9 @@ owner: web
 - [x] **Phase 1 — Region navigation CTA cleanup**
   - [x] 1.1 Rename the left-rail region entry button from a build-specific CTA to a region-navigation CTA
   - [x] 1.2 Update shell/left-rail tests so the button semantics and routing match the new intent
-- [ ] **Phase 2 — Region screen tab split**
-  - [ ] 2.1 Refactor `MapView` to render separate Map and Table tabs with shared selected-region state
-  - [ ] 2.2 Update `MapView` styles and tests for tab switching, selection persistence, and region panel rendering per tab
+- [x] **Phase 2 — Region screen tab split**
+  - [x] 2.1 Refactor `MapView` to render separate Map and Table tabs with shared selected-region state
+  - [x] 2.2 Update `MapView` styles and tests for tab switching, selection persistence, and region panel rendering per tab
 - [ ] **Phase 3 — Expandable datacenter rows in table view**
   - [ ] 3.1 Extend `RegionTable` to accept datacenters and render expandable child rows beneath regions that already host datacenters
   - [ ] 3.2 Add responsive styling and focused table tests for nested rows, toggling, and region-selection behavior
