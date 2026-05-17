@@ -33,6 +33,7 @@ test("newGame creates a deterministic initial state with a primed contract marke
 	assert.equal(first.activeContracts.length, 0);
 	assert.equal(first.ledger.length, 0);
 	assert.ok(first.contractMarket.every((contract) => contract.status === "offered"));
+	assert.ok(first.map.regions.every((region) => region.fabric?.memberDcIds.length === 0));
 });
 
 test("newGame accepts option overrides", () => {

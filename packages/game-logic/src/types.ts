@@ -269,6 +269,10 @@ export interface AudioSettings {
 	ambient: boolean; // Server hum
 }
 
+export interface RegionFabric {
+	memberDcIds: DatacenterId[];
+}
+
 export interface Region {
 	id: RegionId;
 	name: string;
@@ -282,6 +286,7 @@ export interface Region {
 	totalStaffAvailable: number;
 	powerUsed: number;
 	staffUsed: number;
+	fabric?: RegionFabric;
 }
 
 export interface MapState {
