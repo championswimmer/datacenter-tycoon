@@ -31,7 +31,7 @@ owner: game-logic, web, cli
   - [x] 5.3 Preserve script compatibility for one-shot monthly advancement
 - [ ] **Phase 6 — Persistence, docs, tests, and performance guardrails**
   - [x] 6.1 Migrate saves and update public package docs
-  - [ ] 6.2 Add deterministic simulation and replay tests across subtick/month boundaries
+  - [x] 6.2 Add deterministic simulation and replay tests across subtick/month boundaries
   - [ ] 6.3 Add performance tests or assertions proving monthly-only work stays monthly
 
 ## Overview

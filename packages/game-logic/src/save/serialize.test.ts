@@ -9,6 +9,8 @@ import type { Contract, ContractId, DatacenterId, RackPlacementId } from "../typ
 import { serialize, deserialize, migrate, SAVE_VERSION } from "./serialize.js";
 import { newGame } from "../state/newGame.js";
 import { reduce } from "../state/reduce.js";
+import { advanceSubtick } from "../sim/subtick.js";
+import { DAYS_PER_TICK } from "../balance/maintenance.js";
 
 const datacenterId = (value: string): DatacenterId => value as DatacenterId;
 const rackPlacementId = (value: string): RackPlacementId => value as RackPlacementId;
@@ -374,4 +376,77 @@ test("deserialize rejects invalid envelopes", () => {
 	assert.throws(() => deserialize(JSON.stringify({ nope: true })), {
 		message: /Invalid save envelope/,
 	});
+});
+
+test("serialize mid-month state resumes deterministic failures, repairs, SLA outcomes, and market refresh", () => {
+	let state = newGame(42, { startingCash: 3_000_000 });
+	state = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-midmonth"),
+		regionId: REGION_CATALOG.us_east.id,
+	});
+	state = reduce(state, {
+		type: "PlaceRack",
+		dcId: datacenterId("dc-midmonth"),
+		specId: RACK_CATALOG.C1.id,
+		row: 0,
+		position: 0,
+		placementId: rackPlacementId("rack-midmonth"),
+	});
+	const contract: Contract = {
+		id: contractId("resume-contract"),
+		name: "Resume Contract",
+		requirements: { vCpu: 64, ramGb: 128, storageTb: 8, gpuFlops: 0 },
+		monthlyPayment: 5_000,
+		penaltyPerMonth: 2_000,
+		termMonths: 12,
+		slaTargetPercent: 80,
+		currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
+		lifecycleState: "serving",
+		status: "active",
+		urgency: "standard",
+		tier: 1,
+		offeredAtTick: 0,
+		expiresAtTick: 12,
+		startedAtTick: 59,
+		acceptedAtTick: 59,
+		assignedDcId: datacenterId("dc-midmonth"),
+	};
+	state = {
+		...state,
+		tick: 59,
+		subtick: 0,
+		rngState: 99,
+		datacenters: state.datacenters.map((datacenter) => ({
+			...datacenter,
+			placements: datacenter.placements.map((placement) => ({
+				...placement,
+				installedAtTick: 0 as typeof placement.installedAtTick,
+			})),
+		})),
+		contracts: [contract],
+		contractMarket: [],
+		activeContracts: [contract],
+	};
+
+	let midMonth = state;
+	for (let day = 0; day < 2; day += 1) {
+		midMonth = advanceSubtick(midMonth);
+	}
+	let fromOriginal = midMonth;
+	let fromRestored = deserialize(serialize(midMonth));
+
+	for (let day = midMonth.subtick; day < DAYS_PER_TICK; day += 1) {
+		fromOriginal = advanceSubtick(fromOriginal);
+		fromRestored = advanceSubtick(fromRestored);
+	}
+
+	assert.deepEqual(fromRestored, fromOriginal);
+	assert.equal(fromOriginal.tick, 60);
+	assert.equal(fromOriginal.subtick, 0);
+	assert.equal(fromOriginal.datacenters[0]?.placements[0]?.lastFailureAtSubtick, 4);
+	assert.equal(fromOriginal.player.reliability.recentOutcomes.at(-1)?.kind, "fulfilled");
+	assert.ok(fromOriginal.ledger.length > 0);
+	assert.ok(fromOriginal.contractMarket.length > 0);
 });
