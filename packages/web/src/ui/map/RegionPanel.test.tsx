@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { DATACENTER_CATALOG, newGame, reduce } from "@datacenter-tycoon/game-logic";
+import { DATACENTER_CATALOG, FabricLinkError, newGame, reduce } from "@datacenter-tycoon/game-logic";
+
+import type { GameStore } from "../../store/gameStore.js";
 
 import { createGameStore } from "../../store/gameStore.js";
 import { nextDcId } from "../../store/ids.js";
@@ -24,8 +26,8 @@ function upgradeDatacenterToFiber(state: ReturnType<typeof newGame>, dcId: Retur
   );
 }
 
-function renderRegionPanel(state: ReturnType<typeof newGame>) {
-  const store = createGameStore(state);
+function renderRegionPanel(state: ReturnType<typeof newGame>, storeOverride?: GameStore) {
+  const store = storeOverride ?? createGameStore(state);
   const region = state.map.regions[0]!;
   return render(
     <StoreProvider store={store}>
@@ -92,6 +94,45 @@ describe("RegionPanel", () => {
     expect(createButton.getAttribute("disabled")).not.toBeNull();
     expect(screen.getAllByText(/Need \$150,000 cash to create or extend the regional fabric/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Current cash: \$0/).length).toBeGreaterThan(0);
+  });
+
+  it("shows a recoverable inline warning when a fabric link dispatch throws a validation error", () => {
+    let state = newGame(42, { startingCash: 8_000_000 });
+    const dcA = nextDcId();
+    const dcB = nextDcId();
+    const firstRegionId = state.map.regions[0]!.id;
+
+    for (const dcId of [dcA, dcB] as const) {
+      state = reduce(state, {
+        type: "BuildDatacenter",
+        specId: DATACENTER_CATALOG.garage!.id,
+        dcId,
+        regionId: firstRegionId,
+      });
+      state = upgradeDatacenterToFiber(state, dcId);
+    }
+
+    const throwingStore: GameStore = {
+      getState: () => state,
+      subscribe: () => () => {},
+      dispatch: () => {
+        throw new FabricLinkError(
+          `Datacenters ${dcA} and ${dcB} are already linked to the regional fabric`,
+          {
+            code: "duplicate_join",
+            sourceDcId: dcA,
+            targetDcId: dcB,
+            regionId: firstRegionId,
+          },
+        );
+      },
+    };
+
+    renderRegionPanel(state, throwingStore);
+
+    fireEvent.click(screen.getByRole("button", { name: /Create fabric with Garage Datacenter and Garage Datacenter/i }));
+
+    expect(screen.getByText(new RegExp(`Datacenters ${dcA} and ${dcB} are already linked to the regional fabric`))).toBeTruthy();
   });
 
   it("creates a regional fabric from the region panel when two fiber-ready datacenters are available", () => {
