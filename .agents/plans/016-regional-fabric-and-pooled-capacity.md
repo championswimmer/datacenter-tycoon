@@ -1,16 +1,16 @@
 ---
 name: Regional Fabric & Pooled Capacity
 description: Add a region-local fabric investment layer that pools connected datacenter capacity for contract fulfilment.
-status: created
+status: started
 created: 2026-05-04
-updated: 2026-05-11
+updated: 2026-05-17
 owner: game-logic, web
 ---
 
 ## Progress
 
 - [ ] **Phase 1 - Game-logic model, persistence, and exports**
-  - [ ] 1.1 Add serializable region-fabric state to the core types and initialize it in `newGame()`
+  - [x] 1.1 Add serializable region-fabric state to the core types and initialize it in `newGame()`
   - [ ] 1.2 Bump save version and migrate legacy saves to empty regional fabrics
   - [ ] 1.3 Re-export any new public symbols from the `game-logic` barrels
 - [ ] **Phase 2 - Fabric investment and reducer flow**

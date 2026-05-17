@@ -19,6 +19,18 @@ function normalizeSeed(seed: number): number {
 	return seed >>> 0;
 }
 
+function initializeRegionalFabric(map: GameState["map"]): GameState["map"] {
+	return {
+		...map,
+		regions: map.regions.map((region) => ({
+			...region,
+			fabric: {
+				memberDcIds: [],
+			},
+		})),
+	};
+}
+
 export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 	const effectiveSeed = normalizeSeed(options.seed ?? seed);
 	const difficulty = options.difficulty ?? DEFAULT_DIFFICULTY;
@@ -27,6 +39,8 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 	if (!Number.isFinite(startingCash) || startingCash < 0) {
 		throw new Error(`Invalid starting cash: ${startingCash}`);
 	}
+
+	const initialMap = initializeRegionalFabric(generateMap(effectiveSeed));
 
 	const initialState: GameState = {
 		gameId: crypto.randomUUID() as GameId,
@@ -60,7 +74,7 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 			money: true,
 			ambient: true,
 		},
-		map: generateMap(effectiveSeed),
+		map: initialMap,
 	};
 
 	return withDerivedContractViews(refreshContractMarket(initialState));
