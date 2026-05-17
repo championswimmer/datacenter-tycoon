@@ -108,7 +108,7 @@ function processRackMaintenance(
 	};
 }
 
-export function tick(state: GameState): GameState {
+export function settleMonthlyTick(state: GameState): GameState {
 	const nextTick = (state.tick + 1) as Tick;
 	const rng = rngFromState(state.rngState);
 	const datacentersAfterMaintenance = state.datacenters.map((datacenter) =>
@@ -117,6 +117,7 @@ export function tick(state: GameState): GameState {
 	const maintenanceState: GameState = {
 		...state,
 		tick: nextTick,
+		subtick: 0,
 		rngState: rng.state(),
 		datacenters: datacentersAfterMaintenance,
 		contracts: contractsFromState(state),
@@ -204,4 +205,11 @@ export function tick(state: GameState): GameState {
 	};
 
 	return refreshContractMarket(withDerivedContractViews(advancedState));
+}
+
+export function tick(state: GameState): GameState {
+	return settleMonthlyTick({
+		...state,
+		subtick: 0,
+	});
 }

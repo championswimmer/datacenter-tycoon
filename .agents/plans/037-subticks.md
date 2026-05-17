@@ -11,7 +11,7 @@ owner: game-logic, web, cli
 
 - [ ] **Phase 1 — Canonical time model and compatibility scaffolding**
   - [x] 1.1 Add subtick vocabulary, constants, and persisted state
-  - [ ] 1.2 Split the monthly tick pipeline from intra-month advancement
+  - [x] 1.2 Split the monthly tick pipeline from intra-month advancement
   - [ ] 1.3 Add reducer actions and compatibility semantics for `Tick`
 - [ ] **Phase 2 — Daily rack maintenance and repair simulation**
   - [ ] 2.1 Move rack repair progress onto daily subticks
