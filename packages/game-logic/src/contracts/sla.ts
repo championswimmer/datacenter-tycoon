@@ -1,3 +1,4 @@
+import { DAYS_PER_TICK } from "../balance/maintenance.js";
 import { summarizeFabricCapacityForDatacenter } from "../entities/fabric.js";
 import type {
 	Contract,
@@ -123,6 +124,46 @@ export function contractMeetsSlaTarget(
 	contract: Pick<Contract, "currentSlaWindow" | "slaTargetPercent">,
 ): boolean {
 	return contractSlaServedPercent(contract) >= contract.slaTargetPercent;
+}
+
+export interface ContractSlaProgressView {
+	contractId: Contract["id"];
+	slaTargetPercent: ContractSlaTargetPercent;
+	sampledDays: number;
+	servedDays: number;
+	failedDays: number;
+	servedPercent: number;
+	maxFailedDays: number;
+	remainingFailureBudgetDays: number;
+	status: "recoverable" | "at_risk" | "missed";
+}
+
+export function summarizeContractSlaProgress(
+	contract: Pick<Contract, "id" | "slaTargetPercent" | "currentSlaWindow">,
+): ContractSlaProgressView {
+	const sampledDays = contract.currentSlaWindow.sampledDays;
+	const servedDays = contract.currentSlaWindow.servedDays;
+	const failedDays = contract.currentSlaWindow.failedDays;
+	const remainingDays = Math.max(0, DAYS_PER_TICK - sampledDays);
+	const maxFailedDays = Math.floor(DAYS_PER_TICK * ((100 - contract.slaTargetPercent) / 100));
+	const remainingFailureBudgetDays = Math.max(0, maxFailedDays - failedDays);
+	const servedPercent = contractSlaServedPercent(contract);
+	const bestCasePercent = ((servedDays + remainingDays) / Math.max(1, DAYS_PER_TICK)) * 100;
+	return {
+		contractId: contract.id,
+		slaTargetPercent: contract.slaTargetPercent,
+		sampledDays,
+		servedDays,
+		failedDays,
+		servedPercent,
+		maxFailedDays,
+		remainingFailureBudgetDays,
+		status: bestCasePercent < contract.slaTargetPercent
+			? "missed"
+			: servedPercent >= contract.slaTargetPercent
+				? "recoverable"
+				: "at_risk",
+	};
 }
 
 export function resetContractSlaWindow<T extends Contract>(contract: T): T {

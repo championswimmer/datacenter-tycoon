@@ -1,4 +1,6 @@
 import { DAYS_PER_TICK } from "../balance/index.js";
+import { sampleContractSlaWindows } from "../contracts/sla.js";
+import { contractsFromState, withDerivedContractViews } from "../contracts/lifecycle.js";
 import type { Datacenter, GameState, RackPlacement, Subtick } from "../types.js";
 import { advanceRackRepair, rackAgeMonths, rackDailyFailureChance, rackFailureChance } from "./maintenance.js";
 import { rngFromState } from "./rng.js";
@@ -43,15 +45,20 @@ export function advanceSubtick(state: GameState): GameState {
 		datacenters: maintenance.datacenters,
 		rngState: maintenance.rngState,
 	};
+	const contracts = sampleContractSlaWindows(maintenanceState, contractsFromState(maintenanceState));
+	const sampledState = withDerivedContractViews({
+		...maintenanceState,
+		contracts,
+	});
 	if (nextSubtick < DAYS_PER_TICK) {
 		return {
-			...maintenanceState,
+			...sampledState,
 			subtick: nextSubtick,
 		};
 	}
 
 	return settleMonthlyTick({
-		...maintenanceState,
+		...sampledState,
 		subtick: 0,
 	});
 }
