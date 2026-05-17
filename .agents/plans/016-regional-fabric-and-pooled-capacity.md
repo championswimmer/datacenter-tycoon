@@ -15,7 +15,7 @@ owner: game-logic, web
   - [x] 1.3 Re-export any new public symbols from the `game-logic` barrels
 - [ ] **Phase 2 - Fabric investment and reducer flow**
   - [x] 2.1 Add a fabric-link action with region-local validation and capex debit
-  - [ ] 2.2 Persist fabric membership changes and ledger the investment consistently
+  - [x] 2.2 Persist fabric membership changes and ledger the investment consistently
   - [ ] 2.3 Add explicit errors for invalid joins, duplicate joins, and cross-region joins
 - [ ] **Phase 3 - Pooled capacity and contract evaluation**
   - [ ] 3.1 Add pure helpers for fabric membership and pooled capacity lookup

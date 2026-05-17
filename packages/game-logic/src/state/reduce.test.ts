@@ -22,6 +22,7 @@ import type {
 import { newGame } from "./newGame.js";
 import { reduce } from "./reduce.js";
 import { canPlaceRack, resolveDatacenterInfrastructure, resolveDatacenterUpgradeState } from "../entities/datacenter.js";
+import { FabricLinkError } from "../entities/fabric.js";
 
 const contractId = (value: string): ContractId => value as ContractId;
 const datacenterId = (value: string): DatacenterId => value as DatacenterId;
@@ -392,6 +393,171 @@ test("reduce rejects regional fabric joins until every participating datacenter 
 	assert.deepEqual(
 		partiallyUpgradedState.map.regions.find((region) => region.id === firstRegionId)?.fabric?.memberDcIds,
 		[],
+	);
+});
+
+test("reduce persists later regional fabric joins and records capex entries for each investment", () => {
+	const state = newGame(42, { startingCash: 12_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const dcA = datacenterId("dc-fabric-join-a");
+	const dcB = datacenterId("dc-fabric-join-b");
+	const dcC = datacenterId("dc-fabric-join-c");
+	const builtState = reduce(
+		reduce(
+			reduce(state, {
+				type: "BuildDatacenter",
+				specId: DATACENTER_CATALOG.garage.id,
+				dcId: dcA,
+				regionId: firstRegionId,
+			}),
+			{
+				type: "BuildDatacenter",
+				specId: DATACENTER_CATALOG.garage.id,
+				dcId: dcB,
+				regionId: firstRegionId,
+			},
+		),
+		{
+			type: "BuildDatacenter",
+			specId: DATACENTER_CATALOG.garage.id,
+			dcId: dcC,
+			regionId: firstRegionId,
+		},
+	);
+	const fiberReadyState = [dcA, dcB, dcC].reduce((currentState, dcId) => upgradeDatacenterToFiber(currentState, dcId), builtState);
+	const bootstrappedState = reduce(fiberReadyState, {
+		type: "FabricLink",
+		sourceDcId: dcA,
+		targetDcId: dcB,
+	});
+	const joinedState = reduce(bootstrappedState, {
+		type: "FabricLink",
+		sourceDcId: dcA,
+		targetDcId: dcC,
+	});
+
+	assert.deepEqual(
+		joinedState.map.regions.find((region) => region.id === firstRegionId)?.fabric?.memberDcIds,
+		[dcA, dcB, dcC],
+	);
+	assert.equal(joinedState.ledger.at(-1)?.type, "capex");
+	assert.equal(joinedState.ledger.at(-1)?.amount, -REGIONAL_FABRIC_JOIN_COST);
+	assert.match(joinedState.ledger.at(-1)?.reason ?? "", /Join regional fabric/);
+	assert.equal(joinedState.player.cash, bootstrappedState.player.cash - REGIONAL_FABRIC_JOIN_COST);
+});
+
+test("reduce surfaces explicit regional fabric validation errors for duplicate, cross-region, and unknown joins", () => {
+	const state = newGame(42, { startingCash: 12_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const secondRegionId = state.map.regions[1]!.id;
+	const dcA = datacenterId("dc-fabric-error-a");
+	const dcB = datacenterId("dc-fabric-error-b");
+	const dcCross = datacenterId("dc-fabric-error-cross");
+	const dcExtraA = datacenterId("dc-fabric-error-extra-a");
+	const dcExtraB = datacenterId("dc-fabric-error-extra-b");
+	const missingDc = datacenterId("dc-fabric-missing");
+	const builtState = reduce(
+		reduce(
+			reduce(
+				reduce(
+					reduce(state, {
+				type: "BuildDatacenter",
+				specId: DATACENTER_CATALOG.garage.id,
+				dcId: dcA,
+				regionId: firstRegionId,
+			}),
+					{
+						type: "BuildDatacenter",
+						specId: DATACENTER_CATALOG.garage.id,
+						dcId: dcB,
+						regionId: firstRegionId,
+					},
+				),
+				{
+					type: "BuildDatacenter",
+					specId: DATACENTER_CATALOG.garage.id,
+					dcId: dcExtraA,
+					regionId: firstRegionId,
+				},
+			),
+			{
+				type: "BuildDatacenter",
+				specId: DATACENTER_CATALOG.garage.id,
+				dcId: dcExtraB,
+				regionId: firstRegionId,
+			},
+		),
+		{
+			type: "BuildDatacenter",
+			specId: DATACENTER_CATALOG.garage.id,
+			dcId: dcCross,
+			regionId: secondRegionId,
+		},
+	);
+	const fiberReadyState = [dcA, dcB, dcCross, dcExtraA, dcExtraB].reduce(
+		(currentState, dcId) => upgradeDatacenterToFiber(currentState, dcId),
+		builtState,
+	);
+	const linkedState = reduce(fiberReadyState, {
+		type: "FabricLink",
+		sourceDcId: dcA,
+		targetDcId: dcB,
+	});
+
+	assert.throws(
+		() => reduce(linkedState, { type: "FabricLink", sourceDcId: dcA, targetDcId: dcB }),
+		(error: unknown) => {
+			assert.ok(error instanceof FabricLinkError);
+			assert.deepEqual(error.data, {
+				code: "duplicate_join",
+				sourceDcId: dcA,
+				targetDcId: dcB,
+				regionId: firstRegionId,
+			});
+			return true;
+		},
+	);
+
+	assert.throws(
+		() => reduce(linkedState, { type: "FabricLink", sourceDcId: dcA, targetDcId: dcCross }),
+		(error: unknown) => {
+			assert.ok(error instanceof FabricLinkError);
+			assert.deepEqual(error.data, {
+				code: "cross_region",
+				sourceDcId: dcA,
+				targetDcId: dcCross,
+				regionId: firstRegionId,
+			});
+			return true;
+		},
+	);
+
+	assert.throws(
+		() => reduce(linkedState, { type: "FabricLink", sourceDcId: dcExtraA, targetDcId: dcExtraB }),
+		(error: unknown) => {
+			assert.ok(error instanceof FabricLinkError);
+			assert.deepEqual(error.data, {
+				code: "invalid_join",
+				sourceDcId: dcExtraA,
+				targetDcId: dcExtraB,
+				regionId: firstRegionId,
+			});
+			return true;
+		},
+	);
+
+	assert.throws(
+		() => reduce(linkedState, { type: "FabricLink", sourceDcId: dcA, targetDcId: missingDc }),
+		(error: unknown) => {
+			assert.ok(error instanceof FabricLinkError);
+			assert.deepEqual(error.data, {
+				code: "unknown_datacenter",
+				sourceDcId: dcA,
+				targetDcId: missingDc,
+				dcId: missingDc,
+			});
+			return true;
+		},
 	);
 });
 
