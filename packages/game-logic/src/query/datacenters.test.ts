@@ -97,6 +97,10 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
 	});
 }
 
+function trackNodeStatuses(state: GameState, dcId: DatacenterId, trackId: "cooling" | "networkType" | "onsiteGeneration") {
+	return summarizeDatacenterUpgradeViewFromState(state, dcId).tracks.find((track) => track.trackId === trackId)?.nodes.map((node) => node.status);
+}
+
 test("summarizeDatacenterCapacityFromState reports installed, usable, committed, and available capacity", () => {
 	const dc1 = makeDatacenter("dc-1", "region-a", [
 		placement("rack-a", "C1", 0, 0),
@@ -190,13 +194,16 @@ test("summarizeDatacenterUpgradeViewFromState exposes track affordances, upgrade
 	assert.equal(summary.fixedMonthlyUpgradeOpex, 3_750);
 	assert.equal(summary.tracks.find((track) => track.trackId === "cooling")?.currentNode.id, "hybrid");
 	assert.equal(summary.tracks.find((track) => track.trackId === "cooling")?.nextNode, null);
+	assert.deepEqual(trackNodeStatuses(state, upgradedDc.id, "cooling"), ["completed", "current"]);
 	assert.equal(summary.tracks.find((track) => track.trackId === "networkType")?.currentNode.id, "fiber");
+	assert.deepEqual(trackNodeStatuses(state, upgradedDc.id, "networkType"), ["completed", "completed", "current"]);
 	assert.equal(summary.tracks.find((track) => track.trackId === "onsiteGeneration")?.nextNode?.id ?? null, null);
 	assert.equal(summary.tracks.find((track) => track.trackId === "onsiteGeneration")?.totalNodes, 2);
 	assert.equal(summary.tracks.find((track) => track.trackId === "onsiteGeneration")?.maxed, true);
+	assert.deepEqual(trackNodeStatuses(state, upgradedDc.id, "onsiteGeneration"), ["completed", "current"]);
 });
 
-test("summarizeDatacenterUpgradeViewFromState exposes next-node capex and opex deltas for default datacenters", () => {
+test("summarizeDatacenterUpgradeViewFromState exposes next-node capex, opex deltas, and ladder states for default datacenters", () => {
 	const dc1 = makeDatacenter("dc-1", "region-a", []);
 	const state = makeState({ datacenters: [dc1] });
 	const summary = summarizeDatacenterUpgradeViewFromState(state, dc1.id);
@@ -208,9 +215,30 @@ test("summarizeDatacenterUpgradeViewFromState exposes next-node capex and opex d
 	assert.equal(cooling?.nextNode?.id, "hybrid");
 	assert.equal(cooling?.nextNode?.capexCost, 180_000);
 	assert.equal(cooling?.nextNode?.fixedMonthlyOpexDelta, 900);
+	assert.deepEqual(trackNodeStatuses(state, dc1.id, "cooling"), ["current", "available"]);
 	assert.equal(network?.currentNode.id, "cat6");
 	assert.equal(network?.nextNode?.id, "cat8");
 	assert.equal(network?.nextNode?.fixedMonthlyOpexDelta, 350);
+	assert.deepEqual(trackNodeStatuses(state, dc1.id, "networkType"), ["current", "available", "locked"]);
+	assert.deepEqual(trackNodeStatuses(state, dc1.id, "onsiteGeneration"), ["current", "available"]);
+});
+
+test("summarizeDatacenterUpgradeViewFromState marks intermediate ladder progress on partially upgraded tracks", () => {
+	const partiallyUpgradedDc: Datacenter = {
+		...makeDatacenter("dc-partial", "region-a", []),
+		upgrades: {
+			currentNodeByTrack: {
+				networkType: "cat8",
+			},
+		},
+	};
+	const state = makeState({ datacenters: [partiallyUpgradedDc] });
+	const summary = summarizeDatacenterUpgradeViewFromState(state, partiallyUpgradedDc.id);
+	const network = summary.tracks.find((track) => track.trackId === "networkType");
+
+	assert.equal(network?.currentNode.id, "cat8");
+	assert.equal(network?.nextNode?.id, "fiber");
+	assert.deepEqual(trackNodeStatuses(state, partiallyUpgradedDc.id, "networkType"), ["completed", "current", "available"]);
 });
 
 test("summarizeDatacenterFabric* selectors expose pooled capacity and fiber-gated status views", () => {

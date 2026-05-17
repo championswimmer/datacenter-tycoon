@@ -9,9 +9,9 @@ owner: game-logic, web
 
 ## Progress
 
-- [ ] **Phase 1 — Canonical upgrade ladder summaries**
+- [x] **Phase 1 — Canonical upgrade ladder summaries**
   - [x] 1.1 Extend the game-logic datacenter upgrade query with ladder-node status metadata for every track node
-  - [ ] 1.2 Add regression tests for default, partially upgraded, and maxed upgrade tracks
+  - [x] 1.2 Add regression tests for default, partially upgraded, and maxed upgrade tracks
 - [ ] **Phase 2 — Web ladder visualization**
   - [ ] 2.1 Render the upgrade ladder in `UpgradePanel` so each track shows completed, current, next, and locked nodes
   - [ ] 2.2 Add/update web tests and styles for the ladder presentation across desktop and narrow layouts
