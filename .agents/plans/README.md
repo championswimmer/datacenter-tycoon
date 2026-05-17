@@ -8,6 +8,7 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 
 - [`016-regional-fabric-and-pooled-capacity.md`](./016-regional-fabric-and-pooled-capacity.md) — Add a region-local fabric investment layer that pools connected datacenter capacity for contract fulfilment. _status: created_
 - [`018-map-based-region-selector.md`](./018-map-based-region-selector.md) — Overhaul the region selection mechanism to feature an interactive world map and a sortable list of 8 realistic top-tier cloud regions with city names and codes. _status: started_
+- [`037-web-ui-performance-optimisation.md`](./037-web-ui-performance-optimisation.md) — Audit and optimise the React web UI for render frequency, derived-data churn, DOM size, persistence jank, and asset weight. _status: created_
 
 ## Archive
 
