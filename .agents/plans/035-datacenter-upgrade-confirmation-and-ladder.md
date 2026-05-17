@@ -20,7 +20,7 @@ owner: game-logic, web
   - [x] 3.2 Wire upgrade buttons to open the modal, require explicit confirmation, and block unaffordable upgrades in the UI
   - [x] 3.3 Add interaction coverage for confirm, cancel, and insufficient-funds upgrade states
 - [ ] **Phase 4 — Verification and plan wrap-up**
-  - [ ] 4.1 Run targeted game-logic/web tests plus typecheck for the touched packages
+  - [x] 4.1 Run targeted game-logic/web tests plus typecheck for the touched packages
   - [ ] 4.2 Mark the plan complete and capture any follow-up notes if more upgrade UX work remains
 
 ## Overview

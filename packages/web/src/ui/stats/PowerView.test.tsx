@@ -111,7 +111,7 @@ describe("PowerView", () => {
     expect(screen.getByRole("dialog", { name: /CONFIRM UPGRADE/i })).toBeTruthy();
     expect(screen.getByText(/Cooling loop · Air cooling → Hybrid cooling/i)).toBeTruthy();
     expect(screen.getByText(/Spend required to unlock Hybrid cooling/i)).toBeTruthy();
-    expect(store.getState().datacenters.find((dc) => dc.id === dcId)?.upgrades.currentNodeByTrack.cooling).toBe("air");
+    expect(store.getState().datacenters.find((dc) => dc.id === dcId)?.upgrades?.currentNodeByTrack.cooling).toBe("air");
   });
 
   it("cancels upgrade confirmation without mutating datacenter upgrades", () => {
@@ -123,7 +123,7 @@ describe("PowerView", () => {
 
     expect(screen.queryByRole("dialog", { name: /CONFIRM UPGRADE/i })).toBeNull();
     expect(screen.getByRole("button", { name: /Review upgrade to Hybrid cooling/i })).toBeTruthy();
-    expect(store.getState().datacenters.find((dc) => dc.id === dcId)?.upgrades.currentNodeByTrack.cooling).toBe("air");
+    expect(store.getState().datacenters.find((dc) => dc.id === dcId)?.upgrades?.currentNodeByTrack.cooling).toBe("air");
   });
 
   it("confirms the selected upgrade from the modal", () => {
@@ -137,7 +137,7 @@ describe("PowerView", () => {
     expect(screen.getAllByText(/HYBRID/).length).toBeGreaterThan(0);
     expect(screen.getByText(/UPKEEP \$900\/mo/)).toBeTruthy();
     expect(screen.getByText("MAXED")).toBeTruthy();
-    expect(store.getState().datacenters.find((dc) => dc.id === dcId)?.upgrades.currentNodeByTrack.cooling).toBe("hybrid");
+    expect(store.getState().datacenters.find((dc) => dc.id === dcId)?.upgrades?.currentNodeByTrack.cooling).toBe("hybrid");
   });
 
   it("shows insufficient-funds copy and disables unaffordable upgrade review actions", () => {
