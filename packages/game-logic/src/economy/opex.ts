@@ -125,12 +125,14 @@ export function tickOpex(
 	};
 }
 
-export function tickRevenue(state: GameState): RevenueTickResult {
+export function tickRevenue(
+	state: GameState,
+	contracts: readonly Contract[] = contractsFromState(state),
+): RevenueTickResult {
 	const breachPenaltyMultiplier = DIFFICULTY_CONFIG[state.difficulty].breachPenaltyMultiplier;
 	let revenue = 0;
 	const perDcRevenue: Record<DatacenterId, Money> = {};
 
-	const contracts = contractsFromState(state);
 	const liveContracts = selectLiveContracts(contracts);
 	const outcomes = [] as RevenueTickResult["outcomes"];
 	const updatedLiveContracts = liveContracts.map((contract): Contract => {

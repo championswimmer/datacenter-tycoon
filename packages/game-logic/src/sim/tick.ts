@@ -1,13 +1,12 @@
 import { updatePlayerReliability } from "../contracts/reliability.js";
 import {
 	CONTRACT_BREACH_AUTO_CANCEL_MONTHS,
-	contractsFromState,
 	isLiveContract,
-	selectLiveContracts,
 	withDerivedContractViews,
 } from "../contracts/lifecycle.js";
 import { refreshContractMarket } from "../contracts/market.js";
 import { tickOpex, tickRevenue } from "../economy/opex.js";
+import { createIndexedGameStateView } from "../state/indexed-view.js";
 import { advanceSubtick } from "./subtick.js";
 import type {
 	Contract,
@@ -77,11 +76,12 @@ function getRegionForDatacenter(state: GameState, dcId: string) {
 
 export function settleMonthlyTick(state: GameState): GameState {
 	const nextTick = (state.tick + 1) as Tick;
+	const maintenanceView = createIndexedGameStateView(state);
 	const maintenanceState: GameState = {
 		...state,
 		tick: nextTick,
 		subtick: 0,
-		contracts: contractsFromState(state),
+		contracts: [...maintenanceView.contracts],
 	};
 
 	// Calculate base opex per datacenter
@@ -92,12 +92,12 @@ export function settleMonthlyTick(state: GameState): GameState {
 		if (!region) {
 			throw new Error(`Region not found for datacenter: ${datacenter.regionId}`);
 		}
-		const opex = tickOpex(datacenter, region, selectLiveContracts(contractsFromState(maintenanceState)));
+		const opex = tickOpex(datacenter, region, maintenanceView.liveContracts);
 		perDcOpex.set(datacenter.id, opex);
 		baseOpexTotal += opex.total;
 	}
 
-	const revenueResult = tickRevenue(maintenanceState);
+	const revenueResult = tickRevenue(maintenanceState, maintenanceView.contracts);
 
 	// Calculate tax per datacenter
 	let totalTax = 0;
