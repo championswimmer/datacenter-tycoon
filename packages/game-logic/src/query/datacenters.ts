@@ -1,3 +1,4 @@
+import { REGIONAL_FABRIC_JOIN_COST } from "../balance/fabric.js";
 import { getDatacenterUpgradeTrackDefinition } from "../catalog/datacenter-upgrades.js";
 import { contractsFromState, selectLiveContracts } from "../contracts/lifecycle.js";
 import {
@@ -13,6 +14,16 @@ import {
 	type DatacenterContractCapacitySummary,
 	type DatacenterMaintenanceStaffingView,
 } from "../entities/datacenter.js";
+import {
+	getRegionFabricMemberIds,
+	isDatacenterFiberEligible,
+	isDatacenterInRegionFabric,
+	listRegionDatacenters,
+	summarizeDistinctCapacityPools,
+	summarizeFabricCapacityForDatacenter,
+	type CapacityPoolSummary,
+	type FabricCapacitySummary,
+} from "../entities/fabric.js";
 import type {
 	Capacity,
 	Datacenter,
@@ -21,8 +32,10 @@ import type {
 	DatacenterUpgradeTrackId,
 	DatacenterUpgradeTrackNode,
 	GameState,
+	Money,
 	RackActivityView,
 	RackPowerSummary,
+	RegionId,
 } from "../types.js";
 
 const EMPTY_CAPACITY: Capacity = {
@@ -48,6 +61,15 @@ function getDatacenterOrThrow(datacenters: readonly Datacenter[], dcId: Datacent
 	}
 
 	return datacenter;
+}
+
+function getRegionOrThrow(state: Pick<GameState, "map">, regionId: RegionId) {
+	const region = state.map.regions.find((candidate) => candidate.id === regionId);
+	if (!region) {
+		throw new Error(`Unknown region: ${regionId}`);
+	}
+
+	return region;
 }
 
 export interface DatacenterCapacityFromStateSummary extends DatacenterContractCapacitySummary {
@@ -96,6 +118,30 @@ export interface NetworkCapacitySummary {
 	committed: Capacity;
 	available: Capacity;
 	perDc: DatacenterCapacityFromStateSummary[];
+}
+
+export interface DatacenterFabricStatusView {
+	dcId: DatacenterId;
+	regionId: RegionId;
+	joinCost: Money;
+	fabricActive: boolean;
+	fabricConnected: boolean;
+	memberDcIds: DatacenterId[];
+	fabricEligible: boolean;
+	fabricIneligibilityReason: string | null;
+	linkMode: "bootstrap" | "join" | null;
+	suggestedTargetDcId: DatacenterId | null;
+	linkBlockedReason: string | null;
+}
+
+export interface RegionFabricView {
+	regionId: RegionId;
+	active: boolean;
+	joinCost: Money;
+	memberDcIds: DatacenterId[];
+	eligibleDcIds: DatacenterId[];
+	blockedDcIds: DatacenterId[];
+	datacenters: DatacenterFabricStatusView[];
 }
 
 export function summarizeDatacenterCapacityFromState(
@@ -210,6 +256,125 @@ export function summarizeNetworkCapacityFromState(
 		available: perDc.reduce((total, summary) => addCapacity(total, summary.available), EMPTY_CAPACITY),
 		perDc,
 	};
+}
+
+export function summarizeDatacenterFabricCapacityFromState(
+	state: Pick<GameState, "datacenters" | "map" | "contracts" | "contractMarket" | "activeContracts">,
+	dcId: DatacenterId,
+): FabricCapacitySummary {
+	return summarizeFabricCapacityForDatacenter(state, dcId);
+}
+
+export function summarizeDistinctCapacityPoolsFromState(
+	state: Pick<GameState, "datacenters" | "map" | "contracts" | "contractMarket" | "activeContracts">,
+): CapacityPoolSummary[] {
+	return summarizeDistinctCapacityPools(state);
+}
+
+export function summarizeDatacenterFabricStatusFromState(
+	state: Pick<GameState, "datacenters" | "map">,
+	dcId: DatacenterId,
+): DatacenterFabricStatusView {
+	const datacenter = getDatacenterOrThrow(state.datacenters, dcId);
+	const region = getRegionOrThrow(state, datacenter.regionId);
+	const regionDatacenters = listRegionDatacenters(state, region.id);
+	const memberDcIds = getRegionFabricMemberIds(region);
+	const fabricActive = memberDcIds.length > 0;
+	const fabricConnected = isDatacenterInRegionFabric(region, dcId);
+	const fabricEligible = isDatacenterFiberEligible(datacenter);
+	const joinCost = REGIONAL_FABRIC_JOIN_COST;
+	const fiberReadyDcIds = regionDatacenters
+		.filter((candidate) => isDatacenterFiberEligible(candidate))
+		.map((candidate) => candidate.id);
+
+	if (fabricConnected) {
+		return {
+			dcId,
+			regionId: region.id,
+			joinCost,
+			fabricActive,
+			fabricConnected,
+			memberDcIds,
+			fabricEligible,
+			fabricIneligibilityReason: null,
+			linkMode: null,
+			suggestedTargetDcId: null,
+			linkBlockedReason: "Already connected to the regional fabric.",
+		};
+	}
+
+	if (!fabricEligible) {
+		return {
+			dcId,
+			regionId: region.id,
+			joinCost,
+			fabricActive,
+			fabricConnected,
+			memberDcIds,
+			fabricEligible,
+			fabricIneligibilityReason: "Upgrade network to fiber to join the regional fabric.",
+			linkMode: null,
+			suggestedTargetDcId: null,
+			linkBlockedReason: "Upgrade network to fiber to join the regional fabric.",
+		};
+	}
+
+	if (fabricActive) {
+		return {
+			dcId,
+			regionId: region.id,
+			joinCost,
+			fabricActive,
+			fabricConnected,
+			memberDcIds,
+			fabricEligible,
+			fabricIneligibilityReason: null,
+			linkMode: "join",
+			suggestedTargetDcId: memberDcIds[0] ?? null,
+			linkBlockedReason: memberDcIds.length > 0 ? null : "No connected datacenter is available as a fabric anchor.",
+		};
+	}
+
+	const bootstrapPeerDcId = fiberReadyDcIds.find((candidateId) => candidateId !== dcId) ?? null;
+	return {
+		dcId,
+		regionId: region.id,
+		joinCost,
+		fabricActive,
+		fabricConnected,
+		memberDcIds,
+		fabricEligible,
+		fabricIneligibilityReason: null,
+		linkMode: bootstrapPeerDcId ? "bootstrap" : null,
+		suggestedTargetDcId: bootstrapPeerDcId,
+		linkBlockedReason: bootstrapPeerDcId ? null : "Need two fiber-ready datacenters to create a regional fabric.",
+	};
+}
+
+export function summarizeRegionFabricViewFromState(
+	state: Pick<GameState, "datacenters" | "map">,
+	regionId: RegionId,
+): RegionFabricView {
+	const region = getRegionOrThrow(state, regionId);
+	const memberDcIds = getRegionFabricMemberIds(region);
+	const datacenters = listRegionDatacenters(state, regionId).map((datacenter) =>
+		summarizeDatacenterFabricStatusFromState(state, datacenter.id)
+	);
+	return {
+		regionId,
+		active: memberDcIds.length > 0,
+		joinCost: REGIONAL_FABRIC_JOIN_COST,
+		memberDcIds,
+		eligibleDcIds: datacenters.filter((entry) => entry.fabricEligible).map((entry) => entry.dcId),
+		blockedDcIds: datacenters.filter((entry) => !entry.fabricEligible).map((entry) => entry.dcId),
+		datacenters,
+	};
+}
+
+export function summarizeAllRegionFabricViewsFromState(
+	state: Pick<GameState, "datacenters" | "map">,
+): RegionFabricView[] {
+	return state.map.regions.map((region) => summarizeRegionFabricViewFromState(state, region.id));
 }
 
 export function selectAssignedDemandForDatacenterFromState(

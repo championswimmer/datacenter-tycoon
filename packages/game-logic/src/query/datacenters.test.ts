@@ -6,9 +6,12 @@ import { RACK_CATALOG } from "../catalog/racks.js";
 import {
 	selectDatacenterMaintenanceStaffingViewFromState,
 	summarizeDatacenterCapacityFromState,
+	summarizeDatacenterFabricCapacityFromState,
+	summarizeDatacenterFabricStatusFromState,
 	summarizeDatacenterInfrastructureFromState,
 	summarizeDatacenterUpgradeViewFromState,
 	summarizeNetworkCapacityFromState,
+	summarizeRegionFabricViewFromState,
 	type Contract,
 	type ContractId,
 	type Datacenter,
@@ -208,6 +211,63 @@ test("summarizeDatacenterUpgradeViewFromState exposes next-node capex and opex d
 	assert.equal(network?.currentNode.id, "cat6");
 	assert.equal(network?.nextNode?.id, "cat8");
 	assert.equal(network?.nextNode?.fixedMonthlyOpexDelta, 350);
+});
+
+test("summarizeDatacenterFabric* selectors expose pooled capacity and fiber-gated status views", () => {
+	const dcA: Datacenter = {
+		...makeDatacenter("dc-a", "region-a", [placement("rack-a", "C1", 0, 0)]),
+		upgrades: { currentNodeByTrack: { networkType: "fiber" } },
+	};
+	const dcB: Datacenter = {
+		...makeDatacenter("dc-b", "region-a", [placement("rack-b", "C1", 0, 0)]),
+		upgrades: { currentNodeByTrack: { networkType: "fiber" } },
+	};
+	const dcC = makeDatacenter("dc-c", "region-a", [placement("rack-c", "C1", 0, 0)]);
+	const state = makeState({
+		datacenters: [dcA, dcB, dcC],
+		contracts: [
+			makeContract("live-1", {
+				assignedDcId: dcA.id,
+				requirements: { vCpu: 64, ramGb: 128, storageTb: 4, gpuFlops: 0 },
+			}),
+		],
+		map: {
+			regions: [
+				{
+					id: "region-a",
+					name: "Region A",
+					code: "RA",
+					city: "A City",
+					coordinates: { x: 0, y: 0 },
+					powerCostPerKwh: 0.1,
+					staffWage: 1_200,
+					taxRate: 0.1,
+					totalPowerAvailable: 100,
+					totalStaffAvailable: 5,
+					powerUsed: 0,
+					staffUsed: 0,
+					fabric: { memberDcIds: [dcA.id, dcB.id] },
+				},
+			],
+		},
+	});
+
+	const pooled = summarizeDatacenterFabricCapacityFromState(state, dcA.id);
+	const linkedStatus = summarizeDatacenterFabricStatusFromState(state, dcA.id);
+	const blockedStatus = summarizeDatacenterFabricStatusFromState(state, dcC.id);
+	const regionView = summarizeRegionFabricViewFromState(state, "region-a" as Datacenter["regionId"]);
+
+	assert.equal(pooled.connected, true);
+	assert.deepEqual(pooled.memberDcIds, [dcA.id, dcB.id]);
+	assert.deepEqual(pooled.available, { vCpu: 192, ramGb: 896, storageTb: 28, gpuFlops: 0 });
+	assert.equal(linkedStatus.fabricConnected, true);
+	assert.equal(linkedStatus.fabricEligible, true);
+	assert.equal(blockedStatus.fabricEligible, false);
+	assert.equal(blockedStatus.fabricIneligibilityReason, "Upgrade network to fiber to join the regional fabric.");
+	assert.equal(regionView.active, true);
+	assert.deepEqual(regionView.memberDcIds, [dcA.id, dcB.id]);
+	assert.deepEqual(regionView.eligibleDcIds, [dcA.id, dcB.id]);
+	assert.deepEqual(regionView.blockedDcIds, [dcC.id]);
 });
 
 test("selectDatacenterMaintenanceStaffingViewFromState flags exhausted regional labor pools", () => {

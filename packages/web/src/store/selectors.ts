@@ -16,10 +16,14 @@ import {
   selectLiveContractsFromState,
   selectOpenMarketContractsFromState,
   summarizeDatacenterCapacityFromState,
+  summarizeDatacenterFabricCapacityFromState,
+  summarizeDatacenterFabricStatusFromState,
   summarizeDatacenterInfrastructureFromState,
   summarizeDatacenterUpgradeViewFromState,
+  summarizeAllRegionFabricViewsFromState,
   summarizeNetworkCapacityFromState,
   summarizeOpenMarketContractFits,
+  summarizeRegionFabricViewFromState,
   tickOpex,
 } from "@datacenter-tycoon/game-logic";
 import type {
@@ -36,14 +40,17 @@ import type {
   Money,
   OpexTickResult,
   DatacenterCapacityFromStateSummary,
+  DatacenterFabricStatusView,
   DatacenterInfrastructureView,
   DatacenterMaintenanceStaffingView,
   DatacenterUpgradeView,
+  FabricCapacitySummary,
   MoveRackTarget,
   RackActivityView,
   RackHealthStatus,
   RackPlacementId,
   RackPowerSummary,
+  RegionFabricView,
   ReliabilityBand,
   Tick,
 } from "@datacenter-tycoon/game-logic";
@@ -406,6 +413,46 @@ export function selectDatacenterUpgradeSummary(
   }
 
   return summarizeDatacenterUpgradeViewFromState(state, id);
+}
+
+export function selectDatacenterFabricCapacitySummary(
+  state: GameState,
+  id: DatacenterId,
+): FabricCapacitySummary | undefined {
+  const datacenter = selectDatacenter(state, id);
+  if (!datacenter) {
+    return undefined;
+  }
+
+  return summarizeDatacenterFabricCapacityFromState(state, id);
+}
+
+export function selectDatacenterFabricSummary(
+  state: GameState,
+  id: DatacenterId,
+): DatacenterFabricStatusView | undefined {
+  const datacenter = selectDatacenter(state, id);
+  if (!datacenter) {
+    return undefined;
+  }
+
+  return summarizeDatacenterFabricStatusFromState(state, id);
+}
+
+export function selectRegionFabricSummary(
+  state: GameState,
+  regionId: string,
+): RegionFabricView | undefined {
+  const region = selectRegionById(state, regionId);
+  if (!region) {
+    return undefined;
+  }
+
+  return summarizeRegionFabricViewFromState(state, region.id);
+}
+
+export function selectAllRegionFabricSummaries(state: GameState): RegionFabricView[] {
+  return summarizeAllRegionFabricViewsFromState(state);
 }
 
 /** Total installed and per-DC installed capacity (vCPU / RAM / Storage / GPU). */

@@ -17,10 +17,10 @@ owner: game-logic, web
   - [x] 2.1 Add a fabric-link action with region-local validation and capex debit
   - [x] 2.2 Persist fabric membership changes and ledger the investment consistently
   - [x] 2.3 Add explicit errors for invalid joins, duplicate joins, and cross-region joins
-- [ ] **Phase 3 - Pooled capacity and contract evaluation**
+- [x] **Phase 3 - Pooled capacity and contract evaluation**
   - [x] 3.1 Add pure helpers for fabric membership and pooled capacity lookup
   - [x] 3.2 Route contract acceptance and fulfilment through pooled fabric capacity
-  - [ ] 3.3 Update selectors and tick summaries to expose fabric-aware totals
+  - [x] 3.3 Update selectors and tick summaries to expose fabric-aware totals
 - [ ] **Phase 4 - Web UI and feedback**
   - [ ] 4.1 Surface fabric status and join cost in map, region, and datacenter views
   - [ ] 4.2 Update capacity displays to show pooled block capacity for fabric-connected sites
