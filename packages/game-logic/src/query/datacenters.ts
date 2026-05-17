@@ -49,13 +49,11 @@ const EMPTY_CAPACITY: Capacity = {
 	gpuFlops: 0,
 };
 
-function addCapacity(total: Capacity, delta: Capacity): Capacity {
-	return {
-		vCpu: total.vCpu + delta.vCpu,
-		ramGb: total.ramGb + delta.ramGb,
-		storageTb: total.storageTb + delta.storageTb,
-		gpuFlops: total.gpuFlops + delta.gpuFlops,
-	};
+function accumulateCapacity(total: Capacity, delta: Capacity): void {
+	total.vCpu += delta.vCpu;
+	total.ramGb += delta.ramGb;
+	total.storageTb += delta.storageTb;
+	total.gpuFlops += delta.gpuFlops;
 }
 
 function getDatacenterOrThrow(datacenters: readonly Datacenter[], dcId: DatacenterId): Datacenter {
@@ -322,15 +320,15 @@ export function summarizeNetworkCapacityFromState(
 	state: Pick<GameState, "datacenters" | "contracts" | "contractMarket" | "activeContracts">,
 ): NetworkCapacitySummary {
 	const perDc = summarizeAllDatacenterCapacitiesFromState(state);
-	let installed = { ...EMPTY_CAPACITY };
-	let usable = { ...EMPTY_CAPACITY };
-	let committed = { ...EMPTY_CAPACITY };
-	let available = { ...EMPTY_CAPACITY };
+	const installed = { ...EMPTY_CAPACITY };
+	const usable = { ...EMPTY_CAPACITY };
+	const committed = { ...EMPTY_CAPACITY };
+	const available = { ...EMPTY_CAPACITY };
 	for (const summary of perDc) {
-		installed = addCapacity(installed, summary.installed);
-		usable = addCapacity(usable, summary.usable);
-		committed = addCapacity(committed, summary.committed);
-		available = addCapacity(available, summary.available);
+		accumulateCapacity(installed, summary.installed);
+		accumulateCapacity(usable, summary.usable);
+		accumulateCapacity(committed, summary.committed);
+		accumulateCapacity(available, summary.available);
 	}
 	return {
 		installed,
