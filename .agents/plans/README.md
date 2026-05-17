@@ -8,6 +8,7 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 
 - [`016-regional-fabric-and-pooled-capacity.md`](./016-regional-fabric-and-pooled-capacity.md) — Add a region-local fabric investment layer that pools connected datacenter capacity for contract fulfilment. _status: created_
 - [`018-map-based-region-selector.md`](./018-map-based-region-selector.md) — Overhaul the region selection mechanism to feature an interactive world map and a sortable list of 8 realistic top-tier cloud regions with city names and codes. _status: started_
+- [`037-core-game-logic-performance-optimisation.md`](./037-core-game-logic-performance-optimisation.md) — Profile and optimise core game-logic hot paths across tick processing, capacity queries, state lookups, and derived views. _status: created_
 
 ## Archive
 
