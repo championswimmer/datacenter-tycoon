@@ -110,6 +110,7 @@ export class GameDaemonServer extends EventEmitter<{ shutdownRequested: [] }> {
 		this.transport.on("disconnect", this.handleDisconnect);
 		this.transport.on("invalidMessage", this.handleInvalidMessage);
 		this.runtime.on("state", this.handleRuntimeEvent("state"));
+		this.runtime.on("subtick", this.handleRuntimeEvent("subtick"));
 		this.runtime.on("tick", this.handleRuntimeEvent("tick"));
 		this.runtime.on("ledger", this.handleRuntimeEvent("ledger"));
 		await this.transport.start();
