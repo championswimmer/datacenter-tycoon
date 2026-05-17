@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { newGame, type Action, type GameState } from "@datacenter-tycoon/game-logic";
+import { REGION_CATALOG, newGame, type Action, type GameState } from "@datacenter-tycoon/game-logic";
 
 import { parseArgv } from "../argv.js";
 import type { CommandClient } from "./common.js";
@@ -164,7 +164,14 @@ test("runContractDetailsCommand returns snapshot-backed contract details as json
 	const parsed = JSON.parse(logged[0] ?? "{}") as {
 		ok: boolean;
 		data: {
-			contract: { id: string; status: string; assignedDcId: string | null; bucket: string; monthlyPayment: number };
+			contract: {
+				id: string;
+				status: string;
+				assignedDcId: string | null;
+				bucket: string;
+				monthlyPayment: number;
+				regionAffinity?: { key: string; label: string; allowedRegionIds: string[]; allowedRegions: string[] };
+			};
 			recentOutcomes: Array<{ contractId: string; kind: string; tick: number }>;
 		};
 	};
@@ -174,6 +181,7 @@ test("runContractDetailsCommand returns snapshot-backed contract details as json
 	assert.equal(parsed.data.contract.status, "breached");
 	assert.equal(parsed.data.contract.assignedDcId, "dc-1");
 	assert.equal(typeof parsed.data.contract.monthlyPayment, "number");
+	assert.equal(parsed.data.contract.regionAffinity, undefined);
 	assert.equal(parsed.data.recentOutcomes.length, 1);
 	assert.equal(parsed.data.recentOutcomes[0]?.kind, "breached");
 	assert.equal(parsed.data.recentOutcomes[0]?.tick, 4);
@@ -266,6 +274,84 @@ test("contract list and details json use the same canonical monthlyPayment schem
 		Object.keys(detailPayload.data.contract).sort(),
 		Object.keys(listPayload.data.active[0] ?? {}).sort(),
 	);
+});
+
+test("contract list and details json include region affinity only for restricted contracts", async () => {
+	const base = newGame(7);
+	const restrictedContract = {
+		...base.contractMarket[0]!,
+		id: "offer-eu" as typeof base.contractMarket[number]["id"],
+		regionAffinity: {
+			key: "eu" as const,
+			allowedRegionIds: [REGION_CATALOG.eu_west.id, REGION_CATALOG.eu_central.id],
+		},
+	};
+	const unrestrictedContract = {
+		...base.contractMarket[1]!,
+		id: "offer-global" as typeof base.contractMarket[number]["id"],
+	};
+	const snapshot: GameState = {
+		...base,
+		contracts: [restrictedContract, unrestrictedContract],
+		contractMarket: [restrictedContract, unrestrictedContract],
+		activeContracts: [],
+	};
+	const actions: Action[] = [];
+	const logged: string[] = [];
+	const originalLog = console.log;
+	console.log = (message?: unknown) => {
+		logged.push(String(message ?? ""));
+	};
+
+	const affinityAwareClient = () => ({
+		...createFakeClient(actions, snapshot),
+		query: async (params: { kind: string; target?: string }) => {
+			if (params.kind === "snapshot") {
+				return snapshot;
+			}
+			if (params.kind === "list" && params.target === "contracts") {
+				return {
+					kind: "contracts" as const,
+					market: snapshot.contractMarket,
+					active: snapshot.activeContracts,
+					history: [],
+				};
+			}
+			return { tick: 0 };
+		},
+	});
+
+	try {
+		await runLsCommand(parseArgv(["ls", "contracts", "--json"]), affinityAwareClient);
+		await runContractCommand(parseArgv(["contract", "details", restrictedContract.id, "--json"]), affinityAwareClient);
+	} finally {
+		console.log = originalLog;
+	}
+
+	const listPayload = JSON.parse(logged[0] ?? "{}") as {
+		data: {
+			market: Array<Record<string, unknown>>;
+		};
+	};
+	const detailsPayload = JSON.parse(logged[1] ?? "{}") as {
+		data: {
+			contract: Record<string, unknown>;
+		};
+	};
+	const restrictedListEntry = listPayload.data.market.find((contract) => contract.id === restrictedContract.id);
+	const unrestrictedListEntry = listPayload.data.market.find((contract) => contract.id === unrestrictedContract.id);
+
+	assert.deepEqual(restrictedListEntry?.regionAffinity, {
+		key: "eu",
+		label: "EU only",
+		allowedRegionIds: [REGION_CATALOG.eu_west.id, REGION_CATALOG.eu_central.id],
+		allowedRegions: [
+			`${REGION_CATALOG.eu_west.code} · ${REGION_CATALOG.eu_west.city} · ${REGION_CATALOG.eu_west.name}`,
+			`${REGION_CATALOG.eu_central.code} · ${REGION_CATALOG.eu_central.city} · ${REGION_CATALOG.eu_central.name}`,
+		],
+	});
+	assert.equal("regionAffinity" in (unrestrictedListEntry ?? {}), false);
+	assert.deepEqual(detailsPayload.data.contract.regionAffinity, restrictedListEntry?.regionAffinity);
 });
 
 test("runAcceptContractCommand preserves structured capacity errors from the daemon", async () => {
