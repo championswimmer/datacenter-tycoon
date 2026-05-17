@@ -2,6 +2,7 @@ import { DEFAULT_DIFFICULTY, DIFFICULTY_CONFIG } from "../balance/difficulty.js"
 import { RELIABILITY_BASELINE_SCORE } from "../balance/reliability.js";
 import { withDerivedContractViews } from "../contracts/lifecycle.js";
 import { refreshContractMarket } from "../contracts/market.js";
+import { createEmptyRegionFabric } from "../entities/fabric.js";
 import { generateMap } from "../sim/mapgen.js";
 import type { Difficulty, GameId, GameState, Money, PlayerId, Tick } from "../types.js";
 
@@ -24,9 +25,7 @@ function initializeRegionalFabric(map: GameState["map"]): GameState["map"] {
 		...map,
 		regions: map.regions.map((region) => ({
 			...region,
-			fabric: {
-				memberDcIds: [],
-			},
+			fabric: createEmptyRegionFabric(),
 		})),
 	};
 }

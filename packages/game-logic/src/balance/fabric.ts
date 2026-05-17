@@ -1,0 +1,1 @@
+export const REGIONAL_FABRIC_JOIN_COST = 150_000;
