@@ -5,8 +5,10 @@ import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import {
 	bucketContractsFromState,
+	contractAllowsRegion,
 	contractDealScore,
 	summarizeContractAssignmentFit,
+	summarizeContractRegionAffinity,
 	type Contract,
 	type ContractId,
 	type Datacenter,
@@ -34,14 +36,18 @@ function placement(id: string, specId: keyof typeof RACK_CATALOG, row: number, p
 	};
 }
 
-function makeDatacenter(id: string, placements: RackPlacement[]): Datacenter {
+function makeDatacenter(
+	id: string,
+	placements: RackPlacement[],
+	regionId: Datacenter["regionId"] = "region-a" as Datacenter["regionId"],
+): Datacenter {
 	return {
 		id: datacenterId(id),
 		name: id,
 		spec: DATACENTER_CATALOG.garage,
 		placements,
 		builtAtTick: 0,
-		regionId: "us-east" as Datacenter["regionId"],
+		regionId,
 		maintenanceStaff: 0,
 	};
 }
@@ -116,12 +122,41 @@ test("bucketContractsFromState derives market, live, and historical buckets from
 	assert.deepEqual(buckets.historical.map((contract) => contract.id), [contractId("history")]);
 });
 
+test("summarizeContractRegionAffinity reports unrestricted and restricted contracts consistently", () => {
+	const unrestricted = makeContract("unrestricted");
+	const restricted = makeContract("restricted", {
+		regionAffinity: {
+			key: "eu",
+			allowedRegionIds: ["region-b" as GameState["map"]["regions"][number]["id"]],
+		},
+	});
+	const regions = [
+		{ id: "region-a" as GameState["map"]["regions"][number]["id"] },
+		{ id: "region-b" as GameState["map"]["regions"][number]["id"] },
+	];
+
+	assert.deepEqual(summarizeContractRegionAffinity(unrestricted, regions), {
+		restricted: false,
+		key: null,
+		allowedRegionIds: regions.map((region) => region.id),
+	});
+	assert.deepEqual(summarizeContractRegionAffinity(restricted), {
+		restricted: true,
+		key: "eu",
+		allowedRegionIds: restricted.regionAffinity!.allowedRegionIds,
+	});
+	assert.equal(contractAllowsRegion(unrestricted, regions[0]!.id), true);
+	assert.equal(contractAllowsRegion(restricted, regions[0]!.id), false);
+});
+
 test("summarizeContractAssignmentFit distinguishes exact, partial, and impossible fits", () => {
 	const exactState = makeState({
 		datacenters: [makeDatacenter("dc-exact", [placement("rack-a", "C1", 0, 0)])],
 		contracts: [makeContract("exact")],
 	});
-	assert.equal(summarizeContractAssignmentFit(exactState, contractId("exact"))?.fitStatus, "fits");
+	const exactFit = summarizeContractAssignmentFit(exactState, contractId("exact"));
+	assert.equal(exactFit?.fitStatus, "fits");
+	assert.deepEqual(exactFit?.eligibleDcIds, [datacenterId("dc-exact")]);
 
 	const partialState = makeState({
 		datacenters: [
@@ -151,6 +186,34 @@ test("summarizeContractAssignmentFit distinguishes exact, partial, and impossibl
 		],
 	});
 	assert.equal(summarizeContractAssignmentFit(noneState, contractId("none"))?.fitStatus, "none");
+});
+
+test("summarizeContractAssignmentFit filters eligible datacenters by contract region affinity", () => {
+	const state = makeState({
+		datacenters: [
+			makeDatacenter("dc-usa", [placement("rack-a", "C1", 0, 0)], "region-a" as GameState["map"]["regions"][number]["id"]),
+			makeDatacenter("dc-eu", [placement("rack-b", "C1", 0, 0)], "region-b" as GameState["map"]["regions"][number]["id"]),
+		],
+		contracts: [
+			makeContract("regional", {
+				requirements: { vCpu: 64, ramGb: 256, storageTb: 8, gpuFlops: 0 },
+				regionAffinity: {
+					key: "eu",
+					allowedRegionIds: ["region-b" as GameState["map"]["regions"][number]["id"]],
+				},
+			}),
+		],
+	});
+	const fit = summarizeContractAssignmentFit(state, contractId("regional"));
+
+	assert.deepEqual(fit?.regionAffinity, {
+		restricted: true,
+		key: "eu",
+		allowedRegionIds: ["region-b" as GameState["map"]["regions"][number]["id"]],
+	});
+	assert.deepEqual(fit?.eligibleDcIds, [datacenterId("dc-eu")]);
+	assert.equal(fit?.candidates.find((candidate) => candidate.dcId === datacenterId("dc-usa"))?.regionEligible, false);
+	assert.equal(fit?.candidates.find((candidate) => candidate.dcId === datacenterId("dc-eu"))?.regionEligible, true);
 });
 
 test("contractDealScore stays in game-logic for consumer sorting and filtering", () => {

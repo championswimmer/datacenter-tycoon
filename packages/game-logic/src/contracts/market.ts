@@ -1,22 +1,45 @@
 import { reliabilityMarketPolicyForScore } from "../balance/reliability.js";
 import { summarizeFabricCapacityForDatacenter } from "../entities/fabric.js";
 import { rngFromState } from "../sim/rng.js";
-import type { Capacity, Contract, ContractId, ContractRequirements, DatacenterId, GameState } from "../types.js";
+import type {
+	Capacity,
+	Contract,
+	ContractId,
+	ContractRegionAffinityKey,
+	ContractRequirements,
+	DatacenterId,
+	GameState,
+	RegionId,
+} from "../types.js";
 import { contractTermBand, generateContractForTermBand, type ContractTermBand } from "./generator.js";
 import { contractsFromState, selectLiveContracts, selectOpenMarketContracts, withDerivedContractViews } from "./lifecycle.js";
 
-export interface ContractAcceptanceFailure {
+export interface ContractCapacityFailure {
 	code: "insufficient_capacity";
 	dcId: DatacenterId;
 	required: ContractRequirements;
 	available: Capacity;
 }
 
+export interface ContractRegionFailure {
+	code: "region_not_allowed";
+	dcId: DatacenterId;
+	dcRegionId: RegionId;
+	affinityKey: ContractRegionAffinityKey;
+	allowedRegionIds: RegionId[];
+}
+
+export type ContractAcceptanceFailure = ContractCapacityFailure | ContractRegionFailure;
+
 export class ContractAcceptanceError extends Error {
 	readonly data: ContractAcceptanceFailure;
 
 	constructor(data: ContractAcceptanceFailure) {
-		super(`Datacenter ${data.dcId} lacks available capacity for this contract`);
+		super(
+			data.code === "insufficient_capacity"
+				? `Datacenter ${data.dcId} lacks available capacity for this contract`
+				: `Datacenter ${data.dcId} is in region ${data.dcRegionId}, but this contract only allows ${data.allowedRegionIds.join(", ")}`,
+		);
 		this.name = "ContractAcceptanceError";
 		this.data = data;
 	}
@@ -29,6 +52,10 @@ function canCoverRequirements(capacity: Capacity, requirements: ContractRequirem
 		capacity.storageTb >= requirements.storageTb &&
 		capacity.gpuFlops >= requirements.gpuFlops
 	);
+}
+
+function datacenterRegionAllowed(contract: Pick<Contract, "regionAffinity">, regionId: RegionId): boolean {
+	return contract.regionAffinity ? contract.regionAffinity.allowedRegionIds.includes(regionId) : true;
 }
 
 // Reliability never changes the core difficulty curve itself. It only affects how many
@@ -112,7 +139,7 @@ function fillMarketOffers(
 	while (offers.length < offerTarget) {
 		const difficulty = marketDifficulty(state.tick, rng.next());
 		const desiredBand = nextDesiredMarketBand(offers, offerTarget);
-		const generatedContract = generateContractForTermBand(rng, difficulty, desiredBand, marketPolicy);
+		const generatedContract = generateContractForTermBand(rng, difficulty, desiredBand, marketPolicy, state.map.regions);
 		offers.push({
 			...generatedContract,
 			offeredAtTick: state.tick,
@@ -169,6 +196,16 @@ export function acceptContract(
 	const contractToAccept = selectOpenMarketContracts(contracts).find((contract) => contract.id === contractId);
 	if (!contractToAccept) {
 		throw new Error(`Unknown market contract: ${contractId}`);
+	}
+
+	if (!datacenterRegionAllowed(contractToAccept, datacenter.regionId)) {
+		throw new ContractAcceptanceError({
+			code: "region_not_allowed",
+			dcId,
+			dcRegionId: datacenter.regionId,
+			affinityKey: contractToAccept.regionAffinity!.key,
+			allowedRegionIds: [...contractToAccept.regionAffinity!.allowedRegionIds],
+		});
 	}
 
 	const capacitySummary = summarizeFabricCapacityForDatacenter(state, dcId);

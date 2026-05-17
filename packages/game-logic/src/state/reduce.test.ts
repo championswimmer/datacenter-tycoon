@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { createDatacenterUpgradeProgress } from "../catalog/datacenter-upgrades.js";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
+import { REGION_CATALOG } from "../catalog/regions.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { DEFAULT_MAINTENANCE_STAFF, MAX_MAINTENANCE_STAFF } from "../balance/maintenance.js";
 import { REGIONAL_FABRIC_JOIN_COST } from "../balance/fabric.js";
@@ -831,6 +832,56 @@ test("reduce handles AcceptContract and delegates validation", () => {
 				dcId: datacenterId("dc-1"),
 			}),
 		{ message: /Unknown market contract/ },
+	);
+});
+
+test("reduce rejects AcceptContract when the selected datacenter is outside the contract region whitelist", () => {
+	const state = {
+		...newGame(42, { startingCash: 3_000_000 }),
+		datacenters: [{
+			...makeDatacenter("dc-1", [placement("rack-1", "C1", 0, 0)]),
+			regionId: REGION_CATALOG.us_west.id,
+		}],
+		contractMarket: [
+			{
+				id: contractId("offer-region"),
+				name: "EU Only Offer",
+				requirements: { vCpu: 16, ramGb: 64, storageTb: 5, gpuFlops: 0 },
+				monthlyPayment: 1_000,
+				penaltyPerMonth: 250,
+				termMonths: 2,
+				status: "offered",
+				urgency: "standard",
+				tier: 1,
+				regionAffinity: {
+					key: "eu",
+					allowedRegionIds: [REGION_CATALOG.eu_west.id, REGION_CATALOG.eu_central.id],
+				},
+				offeredAtTick: tick(0),
+				expiresAtTick: tick(6),
+			},
+		],
+	};
+
+	assert.throws(
+		() =>
+			reduce(state, {
+				type: "AcceptContract",
+				contractId: contractId("offer-region"),
+				dcId: datacenterId("dc-1"),
+			}),
+		(error: unknown) => {
+			assert.ok(error instanceof Error);
+			assert.equal(error.message, "Datacenter dc-1 is in region us_west, but this contract only allows eu_west, eu_central");
+			assert.deepEqual((error as Error & { data?: unknown }).data, {
+				code: "region_not_allowed",
+				dcId: datacenterId("dc-1"),
+				dcRegionId: REGION_CATALOG.us_west.id,
+				affinityKey: "eu",
+				allowedRegionIds: [REGION_CATALOG.eu_west.id, REGION_CATALOG.eu_central.id],
+			});
+			return true;
+		},
 	);
 });
 
