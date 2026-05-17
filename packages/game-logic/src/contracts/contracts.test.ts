@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
-import { REGION_CATALOG } from "../catalog/regions.js";
+import { REGION_CATALOG, regionIdsForContractAffinity } from "../catalog/regions.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import {
 	RELIABILITY_BASELINE_SCORE,
@@ -254,6 +254,34 @@ test("generateContract biases affinity selection toward workload themes", () => 
 	assert.ok((countsByTheme.get("ai_training")?.usa ?? 0) > (countsByTheme.get("ai_training")?.asia ?? 0));
 	assert.ok((countsByTheme.get("enterprise_db")?.eu ?? 0) > (countsByTheme.get("enterprise_db")?.usa ?? 0));
 	assert.ok((countsByTheme.get("video_render")?.asia ?? 0) > (countsByTheme.get("video_render")?.usa ?? 0));
+});
+
+test("generateContract affine whitelists always match the canonical affinity families", () => {
+	const rng = createRng(12_345);
+	const samples = Array.from({ length: 500 }, () => generateContract(rng, 0.7));
+	const affineContracts = samples.filter(
+		(contract): contract is Contract & { regionAffinity: NonNullable<Contract["regionAffinity"]> } => Boolean(contract.regionAffinity),
+	);
+
+	assert.ok(affineContracts.length > 0, "expected affine contracts in the generated sample");
+	for (const contract of affineContracts) {
+		assert.deepEqual(
+			contract.regionAffinity.allowedRegionIds,
+			regionIdsForContractAffinity(contract.regionAffinity.key, Object.values(REGION_CATALOG)),
+		);
+	}
+});
+
+test("generateContract downgrades unsupported affinity families to unrestricted offers on smaller maps", () => {
+	const rng = createRng(21_021);
+	const euOnlyRegions = [REGION_CATALOG.eu_west, REGION_CATALOG.eu_central];
+	const samples = Array.from({ length: 320 }, () => generateContract(rng, 0.7, undefined, euOnlyRegions));
+
+	assert.ok(samples.some((contract) => contract.regionAffinity?.key === "eu"), "expected EU-affine offers on the reduced map");
+	assert.ok(
+		samples.every((contract) => !contract.regionAffinity || contract.regionAffinity.key === "eu"),
+		"expected unsupported families to fall back to unrestricted offers",
+	);
 });
 
 test("refreshContractMarket is deterministic, removes expired offers, and tops up to the configured size", () => {

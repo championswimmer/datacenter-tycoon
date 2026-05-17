@@ -117,6 +117,77 @@ test("serialize and deserialize round-trip contracts with and without region aff
 });
 
 
+test("serialize and deserialize preserve every supported region affinity family", () => {
+	const state = {
+		...newGame(17),
+		contracts: [
+			{
+				id: contractId("offer-eu"),
+				name: "EU Offer",
+				requirements: { vCpu: 8, ramGb: 16, storageTb: 2, gpuFlops: 0 },
+				monthlyPayment: 500,
+				penaltyPerMonth: 100,
+				termMonths: 1,
+				lifecycleState: "market_open" as const,
+				status: "offered" as const,
+				urgency: "standard" as const,
+				tier: 1 as const,
+				regionAffinity: {
+					key: "eu" as const,
+					allowedRegionIds: [REGION_CATALOG.eu_west.id, REGION_CATALOG.eu_central.id],
+				},
+				offeredAtTick: 0,
+				expiresAtTick: 1,
+			},
+			{
+				id: contractId("offer-asia"),
+				name: "Asia Offer",
+				requirements: { vCpu: 8, ramGb: 16, storageTb: 2, gpuFlops: 0 },
+				monthlyPayment: 500,
+				penaltyPerMonth: 100,
+				termMonths: 1,
+				lifecycleState: "market_open" as const,
+				status: "offered" as const,
+				urgency: "standard" as const,
+				tier: 1 as const,
+				regionAffinity: {
+					key: "asia" as const,
+					allowedRegionIds: [REGION_CATALOG.ap_northeast.id, REGION_CATALOG.ap_southeast.id],
+				},
+				offeredAtTick: 0,
+				expiresAtTick: 1,
+			},
+			{
+				id: contractId("offer-usa"),
+				name: "USA Offer",
+				requirements: { vCpu: 8, ramGb: 16, storageTb: 2, gpuFlops: 0 },
+				monthlyPayment: 500,
+				penaltyPerMonth: 100,
+				termMonths: 1,
+				lifecycleState: "market_open" as const,
+				status: "offered" as const,
+				urgency: "standard" as const,
+				tier: 1 as const,
+				regionAffinity: {
+					key: "usa" as const,
+					allowedRegionIds: [REGION_CATALOG.us_east.id, REGION_CATALOG.us_west.id],
+				},
+				offeredAtTick: 0,
+				expiresAtTick: 1,
+			},
+		],
+		contractMarket: [],
+		activeContracts: [],
+	};
+
+	const restored = deserialize(serialize(state));
+
+	assert.deepEqual(
+		restored.contracts.map((contract) => contract.regionAffinity),
+		state.contracts.map((contract) => contract.regionAffinity),
+	);
+});
+
 test("serialize persists default datacenter upgrade progress after build", () => {
 	let state = newGame(42, { startingCash: 3_000_000 });
 	const firstRegionId = state.map.regions[0]!.id;

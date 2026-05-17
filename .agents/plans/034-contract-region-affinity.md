@@ -26,7 +26,7 @@ owner: game-logic, cli, web
   - [x] 4.2 Surface affinity badges and region-whitelist copy in market, active, and historical contract views
   - [x] 4.3 Update accept/assignment UI so only region-eligible datacenters are presented as valid targets
 - [ ] **Phase 5 — Regression coverage and follow-on docs**
-  - [ ] 5.1 Add game-logic tests for unrestricted vs affine generation, save round-trips, and invalid-region acceptance
+  - [x] 5.1 Add game-logic tests for unrestricted vs affine generation, save round-trips, and invalid-region acceptance
   - [ ] 5.2 Add CLI and web tests for affinity rendering, JSON payloads, and region-mismatch messaging
   - [ ] 5.3 Update plan/docs indexes and contributor guidance for future contract-market work
 
@@ -219,6 +219,7 @@ export interface Contract {
 
 ## Changelog
 
+- 2026-05-17 — completed step 5.1 by adding game-logic regressions for canonical affinity whitelists, reduced-map fallback behavior, and round-tripping every supported affinity family.
 - 2026-05-17 — completed phase 4 by adding affinity-aware selectors, web card rendering, and assignment UI that only offers valid regional datacenters while explaining blocked regions.
 - 2026-05-17 — completed step 4.2 by surfacing region-affinity badges and allowed-region copy across market, active, and history cards in the web UI with component regression coverage.
 - 2026-05-17 — completed step 4.1 by adding web selectors that summarize affinity badges, allowed regions, and eligible datacenter assignment options from canonical game-logic fit data.
