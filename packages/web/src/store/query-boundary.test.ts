@@ -7,11 +7,15 @@ import {
   selectHistoricalContractsFromState,
   selectLiveContractsFromState,
   selectOpenMarketContractsFromState,
+  summarizeAllRegionFabricViewsFromState,
   summarizeDatacenterCapacityFromState,
+  summarizeDatacenterFabricCapacityFromState,
+  summarizeDatacenterFabricStatusFromState,
   summarizeDatacenterInfrastructureFromState,
   summarizeDatacenterUpgradeViewFromState,
   summarizeNetworkCapacityFromState,
   summarizeOpenMarketContractFits,
+  summarizeRegionFabricViewFromState,
   type Contract,
   type ContractId,
   type Datacenter,
@@ -25,7 +29,10 @@ import {
 
 import {
   selectActiveContracts,
+  selectAllRegionFabricSummaries,
   selectDatacenterCapacitySummary,
+  selectDatacenterFabricCapacitySummary,
+  selectDatacenterFabricSummary,
   selectDatacenterInfrastructureSummary,
   selectDatacenterMaintenanceStaffingView,
   selectDatacenterUpgradeSummary,
@@ -34,6 +41,7 @@ import {
   selectMarket,
   selectMarketFitSummaries,
   selectRackMoveTargets,
+  selectRegionFabricSummary,
 } from "./selectors.js";
 
 const contractId = (value: string): ContractId => value as ContractId;
@@ -214,6 +222,41 @@ describe("web query-boundary selectors", () => {
 
     expect(selectRackMoveTargets(state, source.id, rackPlacementId("rack-source"))).toEqual(
       listRackMoveTargets(state, source.id, rackPlacementId("rack-source")),
+    );
+  });
+
+  it("mirrors canonical regional fabric summaries for pooled-capacity UI", () => {
+    const fiberUpgrades = { currentNodeByTrack: { networkType: "fiber" as const } };
+    const dcA: Datacenter = {
+      ...makeDatacenter("dc-a", "region-a", [placement("rack-a", "C1", 0, 0)]),
+      upgrades: fiberUpgrades,
+    };
+    const dcB: Datacenter = {
+      ...makeDatacenter("dc-b", "region-a", [placement("rack-b", "C1", 0, 0)]),
+      upgrades: fiberUpgrades,
+    };
+    const dcC = makeDatacenter("dc-c", "region-a", [placement("rack-c", "C1", 0, 0)]);
+    const state = makeState({
+      datacenters: [dcA, dcB, dcC],
+      map: {
+        regions: [
+          { id: regionId("region-a"), name: "Region A", code: "RA", city: "A City", coordinates: { x: 0, y: 0 }, powerCostPerKwh: 0.1, staffWage: 1_000, taxRate: 0.1, totalPowerAvailable: 100, totalStaffAvailable: 5, powerUsed: 0, staffUsed: 0, fabric: { memberDcIds: [dcA.id, dcB.id] } },
+          { id: regionId("region-b"), name: "Region B", code: "RB", city: "B City", coordinates: { x: 1, y: 1 }, powerCostPerKwh: 0.1, staffWage: 1_000, taxRate: 0.1, totalPowerAvailable: 100, totalStaffAvailable: 5, powerUsed: 0, staffUsed: 0 },
+        ],
+      },
+    });
+
+    expect(selectDatacenterFabricCapacitySummary(state, dcA.id)).toEqual(
+      summarizeDatacenterFabricCapacityFromState(state, dcA.id),
+    );
+    expect(selectDatacenterFabricSummary(state, dcC.id)).toEqual(
+      summarizeDatacenterFabricStatusFromState(state, dcC.id),
+    );
+    expect(selectRegionFabricSummary(state, dcA.regionId)).toEqual(
+      summarizeRegionFabricViewFromState(state, dcA.regionId),
+    );
+    expect(selectAllRegionFabricSummaries(state)).toEqual(
+      summarizeAllRegionFabricViewsFromState(state),
     );
   });
 });

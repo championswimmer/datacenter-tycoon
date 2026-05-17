@@ -18,15 +18,19 @@ import {
   selectReliabilityMarketEffectSummary,
   selectAllDatacenters,
   selectDatacenter,
+  selectDatacenterFabricCapacitySummary,
+  selectDatacenterFabricSummary,
   selectDatacenterMaintenanceView,
   selectDatacenterRackMaintenanceViews,
   selectActiveContracts,
+  selectAllRegionFabricSummaries,
   selectMarket,
   selectLedger,
   selectMaintenanceViews,
   selectCapacity,
   selectOpexBreakdown,
   selectRackPowerSummary,
+  selectRegionFabricSummary,
   selectResourceUsage,
   selectMonthlyPnl,
   selectFreeCapacity,
@@ -72,6 +76,56 @@ function stateWithDcAndRack(): GameState {
     placementId: nextRackPlacementId(),
   });
   return state;
+}
+
+function upgradeDatacenterToFiber(state: GameState, dcId: ReturnType<typeof nextDcId>): GameState {
+  return reduce(
+    reduce(state, {
+      type: "UpgradeDatacenter",
+      dcId,
+      trackId: "networkType",
+      targetNodeId: "cat8",
+    }),
+    {
+      type: "UpgradeDatacenter",
+      dcId,
+      trackId: "networkType",
+      targetNodeId: "fiber",
+    },
+  );
+}
+
+function stateWithLinkedFabric(): { state: GameState; dcIds: [ReturnType<typeof nextDcId>, ReturnType<typeof nextDcId>] } {
+  let state = newGame(42, { startingCash: 8_000_000, playerName: "Test Player" });
+  const dcA = nextDcId();
+  const dcB = nextDcId();
+  const firstRegionId = state.map.regions[0]!.id;
+
+  for (const dcId of [dcA, dcB] as const) {
+    state = reduce(state, {
+      type: "BuildDatacenter",
+      specId: DATACENTER_CATALOG.garage!.id,
+      dcId,
+      regionId: firstRegionId,
+    });
+    state = reduce(state, {
+      type: "PlaceRack",
+      dcId,
+      specId: RACK_CATALOG.C1!.id,
+      row: 0,
+      position: 0,
+      placementId: nextRackPlacementId(),
+    });
+    state = upgradeDatacenterToFiber(state, dcId);
+  }
+
+  state = reduce(state, {
+    type: "FabricLink",
+    sourceDcId: dcA,
+    targetDcId: dcB,
+  });
+
+  return { state, dcIds: [dcA, dcB] };
 }
 
 function withReliability(
@@ -539,5 +593,34 @@ describe("selectFreeCapacity", () => {
     expect(free.ramGb).toBeGreaterThanOrEqual(0);
     expect(free.storageTb).toBeGreaterThanOrEqual(0);
     expect(free.gpuFlops).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("fabric selectors", () => {
+  it("exposes pooled capacity and linked status for connected datacenters", () => {
+    const { state, dcIds: [dcA, dcB] } = stateWithLinkedFabric();
+
+    expect(selectDatacenterFabricSummary(state, dcA)).toMatchObject({
+      fabricConnected: true,
+      fabricEligible: true,
+      memberDcIds: [dcA, dcB],
+    });
+    expect(selectDatacenterFabricCapacitySummary(state, dcA)).toMatchObject({
+      connected: true,
+      memberDcIds: [dcA, dcB],
+      usable: { vCpu: 256, ramGb: 1024, storageTb: 32, gpuFlops: 0 },
+    });
+  });
+
+  it("exposes region-level fabric summaries for the world map", () => {
+    const { state } = stateWithLinkedFabric();
+    const regionId = state.map.regions[0]!.id;
+
+    expect(selectRegionFabricSummary(state, regionId)).toMatchObject({
+      regionId,
+      active: true,
+      memberDcIds: state.datacenters.map((dc) => dc.id),
+    });
+    expect(selectAllRegionFabricSummaries(state).some((summary) => summary.regionId === regionId && summary.active)).toBe(true);
   });
 });
