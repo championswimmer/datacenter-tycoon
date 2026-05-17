@@ -21,10 +21,10 @@ owner: game-logic, web
   - [x] 3.1 Add pure helpers for fabric membership and pooled capacity lookup
   - [x] 3.2 Route contract acceptance and fulfilment through pooled fabric capacity
   - [x] 3.3 Update selectors and tick summaries to expose fabric-aware totals
-- [ ] **Phase 4 - Web UI and feedback**
+- [x] **Phase 4 - Web UI and feedback**
   - [x] 4.1 Surface fabric status and join cost in map, region, and datacenter views
   - [x] 4.2 Update capacity displays to show pooled block capacity for fabric-connected sites
-  - [ ] 4.3 Add a UI affordance for connecting datacenters into the regional fabric
+  - [x] 4.3 Add a UI affordance for connecting datacenters into the regional fabric
 - [ ] **Phase 5 - Tests and regression coverage**
   - [ ] 5.1 Add game-logic tests for first link, later links, and invalid joins
   - [ ] 5.2 Add contract tests for pooled fulfilment across multiple datacenters
