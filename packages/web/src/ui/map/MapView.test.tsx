@@ -33,30 +33,38 @@ function upgradeDatacenterToFiber(state: ReturnType<typeof newGame>, dcId: Retur
 }
 
 describe("MapView", () => {
-  it("renders both the world map and the sortable region table", () => {
+  it("defaults to the map tab and lets players switch to the sortable region table tab", () => {
     render(<Wrapper />);
 
+    expect(screen.getByRole("tab", { name: "Map view" }).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByText("GLOBAL FOOTPRINT")).toBeTruthy();
-    expect(screen.getByText("REGION ECONOMICS")).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Select region marker IAD — Ashburn, US East" }),
     ).toBeTruthy();
     expect(
+      screen.queryByRole("button", { name: "Select region row IAD — Ashburn, US East" }),
+    ).toBeNull();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Table view" }));
+
+    expect(screen.getByRole("tab", { name: "Table view" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByText("REGION ECONOMICS")).toBeTruthy();
+    expect(
       screen.getByRole("button", { name: "Select region row IAD — Ashburn, US East" }),
     ).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: "Select region marker IAD — Ashburn, US East" }),
+    ).toBeNull();
   });
 
-  it("keeps marker, table row, and region panel selection in sync", () => {
+  it("keeps region selection and the region panel in sync when switching between tabs", () => {
     render(<Wrapper />);
 
+    fireEvent.click(screen.getByRole("tab", { name: "Table view" }));
     fireEvent.click(
       screen.getByRole("button", { name: "Select region row FRA — Frankfurt, EU Central" }),
     );
 
-    expect(
-      screen.getByRole("button", { name: "Select region marker FRA — Frankfurt, EU Central" })
-        .getAttribute("aria-pressed"),
-    ).toBe("true");
     expect(
       screen.getByRole("button", { name: "Select region row FRA — Frankfurt, EU Central" })
         .getAttribute("aria-pressed"),
@@ -64,17 +72,28 @@ describe("MapView", () => {
     expect(screen.getByRole("heading", { name: "EU Central" })).toBeTruthy();
     expect(screen.getAllByText("FRA · Frankfurt")).toHaveLength(2);
 
+    fireEvent.click(screen.getByRole("tab", { name: "Map view" }));
+
+    expect(
+      screen.getByRole("button", { name: "Select region marker FRA — Frankfurt, EU Central" })
+        .getAttribute("aria-pressed"),
+    ).toBe("true");
+    expect(screen.getByRole("heading", { name: "EU Central" })).toBeTruthy();
+
     fireEvent.click(
       screen.getByRole("button", { name: "Select region marker DXB — Dubai, ME Central" }),
     );
+
+    expect(screen.getByRole("heading", { name: "ME Central" })).toBeTruthy();
+    expect(screen.getAllByText("DXB · Dubai")).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "BUILD HERE" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Table view" }));
 
     expect(
       screen.getByRole("button", { name: "Select region row DXB — Dubai, ME Central" })
         .getAttribute("aria-pressed"),
     ).toBe("true");
-    expect(screen.getByRole("heading", { name: "ME Central" })).toBeTruthy();
-    expect(screen.getAllByText("DXB · Dubai")).toHaveLength(2);
-    expect(screen.getByRole("button", { name: "BUILD HERE" })).toBeTruthy();
   });
 
   it("creates a regional fabric from the region panel and updates the map subtitle", () => {
@@ -95,6 +114,7 @@ describe("MapView", () => {
 
     render(<Wrapper state={state} />);
 
+    fireEvent.click(screen.getByRole("tab", { name: "Table view" }));
     fireEvent.click(screen.getByRole("button", { name: "Select region row IAD — Ashburn, US East" }));
     fireEvent.click(screen.getByRole("button", { name: /Create fabric with Garage Datacenter and Garage Datacenter/i }));
 

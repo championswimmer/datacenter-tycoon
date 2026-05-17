@@ -8,12 +8,15 @@ import { WorldMap } from "./WorldMap.js";
 import { RegionTable } from "./RegionTable.js";
 import styles from "./MapView.module.css";
 
+type RegionScreenTab = "map" | "table";
+
 export function MapView() {
   const regions = useSelector(selectRegions);
   const datacenters = useSelector(selectAllDatacenters);
   const fabricSummaries = useSelector(selectAllRegionFabricSummaries);
   const cash = useSelector(selectCash);
 
+  const [activeTab, setActiveTab] = useState<RegionScreenTab>("map");
   const [selectedRegionId, setSelectedRegionId] = useState<RegionId | null>(null);
   const [showBuildModal, setShowBuildModal] = useState(false);
 
@@ -36,60 +39,112 @@ export function MapView() {
       </div>
 
       <div className={styles.contentGrid}>
-        <section className={styles.surface}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionCopyBlock}>
-              <h3 className={styles.sectionTitle}>GLOBAL FOOTPRINT</h3>
-              <p className={styles.sectionCopy}>
-                Scan the world view for geography, then drill into any region to inspect build headroom.
-              </p>
-            </div>
-            <span className={styles.sectionMeta}>
-              {selectedRegion ? `${selectedRegion.code} · ${selectedRegion.city}` : "Select any marker to inspect a region"}
-            </span>
-          </div>
+        <div className={styles.tabBar} role="tablist" aria-label="Region screen view modes">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "map"}
+            aria-controls="region-screen-map-panel"
+            id="region-screen-map-tab"
+            className={[styles.tabButton, activeTab === "map" ? styles.tabButtonActive : ""].join(" ")}
+            onClick={() => setActiveTab("map")}
+          >
+            Map view
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "table"}
+            aria-controls="region-screen-table-panel"
+            id="region-screen-table-tab"
+            className={[styles.tabButton, activeTab === "table" ? styles.tabButtonActive : ""].join(" ")}
+            onClick={() => setActiveTab("table")}
+          >
+            Table view
+          </button>
+        </div>
 
-          <div className={[styles.mapBody, selectedRegion ? styles.mapBodyWithPanel : ""].join(" ")}>
-            <div className={styles.mapStage}>
-              <WorldMap
-                regions={regions}
-                selectedRegionId={selectedRegionId}
-                onSelectRegion={selectRegion}
-              />
+        {activeTab === "map" ? (
+          <section
+            className={styles.surface}
+            role="tabpanel"
+            id="region-screen-map-panel"
+            aria-labelledby="region-screen-map-tab"
+          >
+            <div className={styles.sectionHeader}>
+              <div className={styles.sectionCopyBlock}>
+                <h3 className={styles.sectionTitle}>GLOBAL FOOTPRINT</h3>
+                <p className={styles.sectionCopy}>
+                  Scan the world view for geography, then drill into any region to inspect build headroom.
+                </p>
+              </div>
+              <span className={styles.sectionMeta}>
+                {selectedRegion ? `${selectedRegion.code} · ${selectedRegion.city}` : "Select any marker to inspect a region"}
+              </span>
             </div>
 
-            {selectedRegion && (
-              <div className={styles.panelStage}>
-                <RegionPanel
-                  region={selectedRegion}
-                  datacenters={datacenters}
-                  onClose={() => setSelectedRegionId(null)}
-                  onBuild={openBuildModal}
+            <div className={[styles.mapBody, selectedRegion ? styles.mapBodyWithPanel : ""].join(" ")}>
+              <div className={styles.mapStage}>
+                <WorldMap
+                  regions={regions}
+                  selectedRegionId={selectedRegionId}
+                  onSelectRegion={selectRegion}
                 />
               </div>
-            )}
-          </div>
-        </section>
 
-        <section className={styles.surface}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionCopyBlock}>
-              <h3 className={styles.sectionTitle}>REGION ECONOMICS</h3>
-              <p className={styles.sectionCopy}>
-                Sort by cost, power, staff, or tax to compare expansion targets before you commit capex.
-              </p>
+              {selectedRegion && (
+                <div className={styles.panelStage}>
+                  <RegionPanel
+                    region={selectedRegion}
+                    datacenters={datacenters}
+                    onClose={() => setSelectedRegionId(null)}
+                    onBuild={openBuildModal}
+                  />
+                </div>
+              )}
             </div>
-            <span className={styles.sectionMeta}>Clickable rows stay synchronized with the map</span>
-          </div>
+          </section>
+        ) : (
+          <section
+            className={styles.surface}
+            role="tabpanel"
+            id="region-screen-table-panel"
+            aria-labelledby="region-screen-table-tab"
+          >
+            <div className={styles.sectionHeader}>
+              <div className={styles.sectionCopyBlock}>
+                <h3 className={styles.sectionTitle}>REGION ECONOMICS</h3>
+                <p className={styles.sectionCopy}>
+                  Sort by cost, power, staff, or tax to compare expansion targets before you commit capex.
+                </p>
+              </div>
+              <span className={styles.sectionMeta}>
+                {selectedRegion ? `${selectedRegion.code} · ${selectedRegion.city}` : "Clickable rows stay synchronized with the map"}
+              </span>
+            </div>
 
-          <div className={styles.tableStage}>
-            <RegionTable
-              regions={regions}
-              selectedRegionId={selectedRegionId}
-              onSelectRegion={selectRegion}
-            />
-          </div>
-        </section>
+            <div className={[styles.tableBody, selectedRegion ? styles.tableBodyWithPanel : ""].join(" ")}>
+              <div className={styles.tableStage}>
+                <RegionTable
+                  regions={regions}
+                  selectedRegionId={selectedRegionId}
+                  onSelectRegion={selectRegion}
+                />
+              </div>
+
+              {selectedRegion && (
+                <div className={styles.panelStage}>
+                  <RegionPanel
+                    region={selectedRegion}
+                    datacenters={datacenters}
+                    onClose={() => setSelectedRegionId(null)}
+                    onBuild={openBuildModal}
+                  />
+                </div>
+              )}
+            </div>
+          </section>
+        )}
       </div>
 
       {showBuildModal && selectedRegion && (
