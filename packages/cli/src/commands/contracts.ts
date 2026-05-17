@@ -3,7 +3,7 @@ import type { ContractId, DatacenterId, GameState } from "@datacenter-tycoon/gam
 import { DctClient } from "../client/client.js";
 import type { ParsedArgv } from "../argv.js";
 import { requirePositional, withClient, writeCommandResult, type CommandClientFactory } from "./common.js";
-import { formatContractRequirements, presentContractById } from "./contracts-view.js";
+import { formatContractRegionAffinity, formatContractRequirements, presentContractById } from "./contracts-view.js";
 
 const contractId = (value: string): ContractId => value as ContractId;
 const datacenterId = (value: string): DatacenterId => value as DatacenterId;
@@ -91,6 +91,7 @@ export async function runContractDetailsCommand(
 		`${contract.name} | status=${contract.status} | urgency=${contract.urgency} | tier=${contract.tier}`,
 		`Payment: $${contract.monthlyPayment.toLocaleString()}/mo | Penalty: $${contract.penaltyPerMonth.toLocaleString()}/mo | Term: ${contract.termMonths} months`,
 		`Requirements: ${formatContractRequirements(contract)}`,
+		`Regions: ${formatContractRegionAffinity(contract)}`,
 		contract.bucket === "history"
 			? `Status: HISTORICAL (${contract.status}) — no longer live, capacity already released`
 			: `Status: LIVE (${contract.status}) — currently commits capacity`,

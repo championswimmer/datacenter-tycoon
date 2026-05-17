@@ -4,6 +4,7 @@ import path from "node:path";
 
 import crypto from "node:crypto";
 
+import { REGION_CATALOG } from "@datacenter-tycoon/game-logic";
 import type { Action, GameState } from "@datacenter-tycoon/game-logic";
 
 import type { QueryParams } from "../protocol/messages.js";
@@ -119,6 +120,11 @@ function normalizeErrorPayload(errorOrMessage: unknown, fallbackCode: string | n
 	return { code: fallbackCode, message: String(errorOrMessage) };
 }
 
+function formatRegionLabel(regionId: string): string {
+	const region = REGION_CATALOG[regionId] ?? Object.values(REGION_CATALOG).find((entry) => entry.id === regionId);
+	return region ? `${region.code} · ${region.city} · ${region.name}` : regionId;
+}
+
 function formatCapacityValue(label: string, value: unknown, suffix = ""): string {
 	return `${label}=${typeof value === "number" ? value : 0}${suffix}`;
 }
@@ -141,6 +147,16 @@ export function formatTextError(errorOrMessage: unknown): string {
 	if (payload.code === "insufficient_capacity") {
 		const dcId = typeof payload.dcId === "string" ? payload.dcId : "unknown-dc";
 		return `Cannot accept contract on ${dcId}: insufficient available capacity (required: ${formatCapacityBundle(payload.required)}; available: ${formatCapacityBundle(payload.available)})`;
+	}
+
+	if (payload.code === "region_not_allowed") {
+		const dcId = typeof payload.dcId === "string" ? payload.dcId : "unknown-dc";
+		const dcRegionId = typeof payload.dcRegionId === "string" ? payload.dcRegionId : "unknown-region";
+		const affinityKey = typeof payload.affinityKey === "string" ? payload.affinityKey.toUpperCase() : "REGION";
+		const allowedRegionIds = Array.isArray(payload.allowedRegionIds)
+			? payload.allowedRegionIds.filter((value): value is string => typeof value === "string")
+			: [];
+		return `Cannot accept contract on ${dcId}: ${formatRegionLabel(dcRegionId)} is not allowed (${affinityKey} only: ${allowedRegionIds.map((regionId) => formatRegionLabel(regionId)).join(", ")})`;
 	}
 
 	if (payload.code === "out_of_bounds") {

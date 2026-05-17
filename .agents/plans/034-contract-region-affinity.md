@@ -19,7 +19,7 @@ owner: game-logic, cli, web
   - [x] 2.3 Reject contract acceptance onto datacenters outside the contract’s allowed regions with a stable error shape
 - [ ] **Phase 3 — CLI contract reporting and guardrails**
   - [x] 3.1 Extend CLI/protocol contract views and JSON output with affinity labels and allowed regions
-  - [ ] 3.2 Update one-shot contract list/details/accept flows to explain region affinity and region-mismatch failures
+  - [x] 3.2 Update one-shot contract list/details/accept flows to explain region affinity and region-mismatch failures
   - [ ] 3.3 Update TUI contract surfaces and CLI regression tests for affinity-aware presentation
 - [ ] **Phase 4 — Web contract UX and assignment flow**
   - [ ] 4.1 Add selectors that summarize contract affinity and eligible datacenters from game-logic state
@@ -219,6 +219,7 @@ export interface Contract {
 
 ## Changelog
 
+- 2026-05-17 — completed step 3.2 by surfacing region affinity in CLI list/detail text output and formatting wrong-region accept failures for both humans and JSON callers.
 - 2026-05-17 — completed step 3.1 by extending CLI contract presenters/protocol types so JSON views expose affinity labels and allowed regions for restricted contracts.
 - 2026-05-17 — completed phase 2 by generating deterministic region-affine offers, carrying explicit whitelists through lifecycle/query views, and rejecting wrong-region contract acceptance with a structured error.
 - 2026-05-17 — completed phase 1 / step 1.3 by versioning save migration, adding round-trip coverage, and documenting contract region affinity in the game-logic README.

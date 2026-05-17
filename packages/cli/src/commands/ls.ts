@@ -19,7 +19,7 @@ import {
 	writeCommandResult,
 	type CommandClientFactory,
 } from "./common.js";
-import { formatContractRequirements, presentContracts } from "./contracts-view.js";
+import { formatContractRegionAffinity, formatContractRequirements, presentContracts } from "./contracts-view.js";
 
 export async function runLsCommand(
 	parsed: ParsedArgv,
@@ -130,6 +130,7 @@ async function listContracts(parsed: ParsedArgv, clientFactory: CommandClientFac
 						`    ${contract.name} | $${contract.monthlyPayment.toLocaleString()}/mo | ${contract.termMonths}mo | ${contract.urgency} | Tier ${contract.tier} | Expires tick ${contract.expiresAtTick}`,
 					);
 					lines.push(`    Reqs: ${formatContractRequirements(contract)}`);
+					lines.push(`    Regions: ${formatContractRegionAffinity(contract)}`);
 					lines.push(`    Penalty: $${contract.penaltyPerMonth.toLocaleString()}/mo`);
 				}
 			} else {
@@ -146,6 +147,7 @@ async function listContracts(parsed: ParsedArgv, clientFactory: CommandClientFac
 						`    ${contract.name} | $${contract.monthlyPayment.toLocaleString()}/mo | DC: ${contract.assignedDcId ?? "unassigned"} | Tier ${contract.tier}`,
 					);
 					lines.push(`    Reqs: ${formatContractRequirements(contract)}`);
+					lines.push(`    Regions: ${formatContractRegionAffinity(contract)}`);
 				}
 			} else {
 				lines.push("No active contracts.");
@@ -159,6 +161,7 @@ async function listContracts(parsed: ParsedArgv, clientFactory: CommandClientFac
 					lines.push(
 						`    ${contract.name} | ${contract.status.toUpperCase()} | DC: ${contract.assignedDcId ?? "unassigned"} | Tier ${contract.tier}`,
 					);
+					lines.push(`    Regions: ${formatContractRegionAffinity(contract)}`);
 				}
 			}
 
