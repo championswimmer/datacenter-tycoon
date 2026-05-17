@@ -3,8 +3,9 @@ import test from "node:test";
 
 import { RELIABILITY_MARKET_OFFER_COUNT } from "../balance/reliability.js";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
+import { REGION_CATALOG } from "../catalog/regions.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
-import type { ContractId, DatacenterId, RackPlacementId } from "../types.js";
+import type { Contract, ContractId, DatacenterId, RackPlacementId } from "../types.js";
 import { serialize, deserialize, migrate, SAVE_VERSION } from "./serialize.js";
 import { newGame } from "../state/newGame.js";
 import { reduce } from "../state/reduce.js";
@@ -22,14 +23,46 @@ test("serialize wraps state in a versioned envelope", () => {
 	});
 });
 
-test("serialize and deserialize round-trip a non-trivial game state", () => {
+test("serialize and deserialize round-trip contracts with and without region affinity", () => {
 	let state = newGame(42, { difficulty: "easy", startingCash: 3_000_000, playerName: "Alex" });
-	const firstRegionId = state.map.regions[0]!.id;
+	const usEastRegionId = REGION_CATALOG.us_east.id;
+	const regionalOffer: Contract = {
+		id: contractId("offer-1"),
+		name: "Starter Contract",
+		requirements: { vCpu: 32, ramGb: 64, storageTb: 8, gpuFlops: 0 },
+		monthlyPayment: 3_000,
+		penaltyPerMonth: 800,
+		termMonths: 3,
+		lifecycleState: "market_open",
+		status: "offered",
+		urgency: "standard",
+		tier: 1,
+		regionAffinity: {
+			key: "usa",
+			allowedRegionIds: [REGION_CATALOG.us_east.id, REGION_CATALOG.us_west.id],
+		},
+		offeredAtTick: 0,
+		expiresAtTick: 3,
+	};
+	const unrestrictedOffer: Contract = {
+		id: contractId("offer-2"),
+		name: "Global Contract",
+		requirements: { vCpu: 16, ramGb: 32, storageTb: 4, gpuFlops: 0 },
+		monthlyPayment: 1_500,
+		penaltyPerMonth: 400,
+		termMonths: 2,
+		lifecycleState: "market_open",
+		status: "offered",
+		urgency: "standard",
+		tier: 1,
+		offeredAtTick: 0,
+		expiresAtTick: 2,
+	};
 	state = reduce(state, {
 		type: "BuildDatacenter",
 		specId: DATACENTER_CATALOG.garage.id,
 		dcId: datacenterId("dc-1"),
-		regionId: firstRegionId,
+		regionId: usEastRegionId,
 	});
 	state = reduce(state, {
 		type: "PlaceRack",
@@ -41,23 +74,13 @@ test("serialize and deserialize round-trip a non-trivial game state", () => {
 	});
 	state = {
 		...state,
-		contractMarket: [
-			{
-				id: contractId("offer-1"),
-				name: "Starter Contract",
-				requirements: { vCpu: 32, ramGb: 64, storageTb: 8, gpuFlops: 0 },
-				monthlyPayment: 3_000,
-				penaltyPerMonth: 800,
-				termMonths: 3,
-				status: "offered",
-				offeredAtTick: 0,
-				expiresAtTick: 3,
-			},
-		],
+		contracts: [regionalOffer, unrestrictedOffer],
+		contractMarket: [regionalOffer, unrestrictedOffer],
+		activeContracts: [],
 	};
 	state = reduce(state, {
 		type: "AcceptContract",
-		contractId: contractId("offer-1"),
+		contractId: regionalOffer.id,
 		dcId: datacenterId("dc-1"),
 	});
 	state = {
@@ -69,8 +92,8 @@ test("serialize and deserialize round-trip a non-trivial game state", () => {
 				lastDelta: 3,
 				recentOutcomes: [
 					{
-						contractId: contractId("offer-1"),
-						contractName: "Starter Contract",
+						contractId: regionalOffer.id,
+						contractName: regionalOffer.name,
 						tick: 1,
 						kind: "fulfilled",
 					},
@@ -86,6 +109,11 @@ test("serialize and deserialize round-trip a non-trivial game state", () => {
 	assert.equal(restored.difficulty, "easy");
 	assert.deepEqual(restored.player.reliability, state.player.reliability);
 	assert.deepEqual(restored.datacenters[0]?.upgrades, state.datacenters[0]?.upgrades);
+	assert.deepEqual(restored.contracts.find((contract) => contract.id === regionalOffer.id)?.regionAffinity, regionalOffer.regionAffinity);
+	assert.equal(
+		"regionAffinity" in (restored.contracts.find((contract) => contract.id === unrestrictedOffer.id) ?? {}),
+		false,
+	);
 });
 
 
@@ -144,6 +172,33 @@ test("migrate is a no-op for current-version envelopes", () => {
 	const envelope = { saveVersion: SAVE_VERSION, state };
 
 	assert.deepEqual(migrate(envelope), envelope);
+});
+
+test("migrate upgrades v8 saves without rewriting unrestricted contracts", () => {
+	const state = {
+		...newGame(7),
+		contracts: [
+			{
+				id: contractId("legacy-offer"),
+				name: "Legacy Offer",
+				requirements: { vCpu: 8, ramGb: 16, storageTb: 2, gpuFlops: 0 },
+				monthlyPayment: 500,
+				penaltyPerMonth: 100,
+				termMonths: 1,
+				lifecycleState: "market_open",
+				status: "offered",
+				urgency: "standard",
+				tier: 1,
+				offeredAtTick: 0,
+				expiresAtTick: 1,
+			},
+		],
+	};
+
+	const migrated = migrate({ saveVersion: 8, state });
+
+	assert.equal(migrated.saveVersion, SAVE_VERSION);
+	assert.equal(migrated.state.contracts[0]?.regionAffinity, undefined);
 });
 
 test("migrate upgrades v7 saves by attaching empty regional fabric state", () => {

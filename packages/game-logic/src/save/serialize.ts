@@ -1,7 +1,7 @@
 import { createEmptyRegionFabric } from "../entities/fabric.js";
 import type { GameState } from "../types.js";
 
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 export interface SaveEnvelope {
 	saveVersion: number;
@@ -32,6 +32,13 @@ function attachEmptyRegionalFabrics(state: GameState): GameState {
 export function migrate(envelope: SaveEnvelope): SaveEnvelope {
 	if (envelope.saveVersion === SAVE_VERSION) {
 		return envelope;
+	}
+
+	if (envelope.saveVersion === 8) {
+		return {
+			saveVersion: SAVE_VERSION,
+			state: envelope.state,
+		};
 	}
 
 	if (envelope.saveVersion === 7) {
