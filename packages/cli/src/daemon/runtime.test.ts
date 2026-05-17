@@ -138,12 +138,31 @@ test("GameRuntime pause, resume, and tickNow cooperate with zero-speed schedulin
 
 	const pausedTick = runtime.tickNow(2);
 	assert.equal(pausedTick.tick, 2);
+	assert.equal(pausedTick.subtick, 0);
 
 	assert.deepEqual(runtime.setSpeed(0), { paused: true, speedTps: 0 });
 	assert.equal(scheduler.intervals.size, 0);
 
 	assert.deepEqual(runtime.resume(), { paused: false, speedTps: 2 });
 	assert.equal(scheduler.setCalls.at(-1), 500 / DAYS_PER_TICK);
+});
+
+test("GameRuntime tickNow still advances whole months from mid-month states", () => {
+	const runtime = new GameRuntime({
+		state: {
+			...newGame(17),
+			tick: 3,
+			subtick: 12,
+		},
+		paused: true,
+	});
+
+	const nextState = runtime.tickNow(1);
+
+	assert.equal(nextState.tick, 4);
+	assert.equal(nextState.subtick, 0);
+	assert.equal(runtime.getSnapshot().tick, 4);
+	assert.equal(runtime.getSnapshot().subtick, 0);
 });
 
 test("GameRuntime query returns status, catalogs, and derived listings", () => {

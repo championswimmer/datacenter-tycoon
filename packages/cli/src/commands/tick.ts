@@ -23,5 +23,5 @@ export async function runTickCommand(
 		clientFactory,
 	)) as StatusView;
 
-	writeCommandResult(parsed, `Advanced ${count} tick${count === 1 ? "" : "s"} to tick ${status.tick}`, status);
+	writeCommandResult(parsed, `Advanced ${count} month${count === 1 ? "" : "s"} to tick ${status.tick}`, status);
 }
