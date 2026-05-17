@@ -55,11 +55,16 @@ function upgradeDatacenterToFiber(state: GameState, dcId: ReturnType<typeof next
 
 function renderPowerView(state: GameState, dcId: ReturnType<typeof nextDcId>) {
   const store = createGameStore(state);
-  return render(
+  const renderResult = render(
     <StoreProvider store={store}>
       <PowerView dcId={dcId} />
     </StoreProvider>,
   );
+
+  return {
+    store,
+    ...renderResult,
+  };
 }
 
 function metricValue(label: string): number {
@@ -86,9 +91,9 @@ describe("PowerView", () => {
     expect(screen.getByText(/idle and repairing racks pay only baseline power/i)).toBeTruthy();
   });
 
-  it("renders canonical upgrade ladders and applies the next node through store dispatch", () => {
+  it("renders canonical upgrade ladders and opens a confirmation modal before upgrading", () => {
     const { state, dcId } = stateWithDatacenterAndRack();
-    renderPowerView(state, dcId);
+    const { store } = renderPowerView(state, dcId);
 
     expect(screen.getByText("UPGRADE TRACKS")).toBeTruthy();
     expect(screen.getByText(/FABRIC LOCKED/)).toBeTruthy();
@@ -101,13 +106,56 @@ describe("PowerView", () => {
     expect(within(networkLadder).getByText("Available next")).toBeTruthy();
     expect(within(networkLadder).getByText("Locked")).toBeTruthy();
 
-    const button = screen.getByRole("button", { name: /Upgrade to Hybrid cooling/i });
-    fireEvent.click(button);
+    fireEvent.click(screen.getByRole("button", { name: /Review upgrade to Hybrid cooling/i }));
 
-    expect(screen.getByText(/COOLING MODE/)).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: /CONFIRM UPGRADE/i })).toBeTruthy();
+    expect(screen.getByText(/Cooling loop · Air cooling → Hybrid cooling/i)).toBeTruthy();
+    expect(screen.getByText(/Spend required to unlock Hybrid cooling/i)).toBeTruthy();
+    expect(store.getState().datacenters.find((dc) => dc.id === dcId)?.upgrades.currentNodeByTrack.cooling).toBe("air");
+  });
+
+  it("cancels upgrade confirmation without mutating datacenter upgrades", () => {
+    const { state, dcId } = stateWithDatacenterAndRack();
+    const { store } = renderPowerView(state, dcId);
+
+    fireEvent.click(screen.getByRole("button", { name: /Review upgrade to Hybrid cooling/i }));
+    fireEvent.click(screen.getByRole("button", { name: "CANCEL" }));
+
+    expect(screen.queryByRole("dialog", { name: /CONFIRM UPGRADE/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /Review upgrade to Hybrid cooling/i })).toBeTruthy();
+    expect(store.getState().datacenters.find((dc) => dc.id === dcId)?.upgrades.currentNodeByTrack.cooling).toBe("air");
+  });
+
+  it("confirms the selected upgrade from the modal", () => {
+    const { state, dcId } = stateWithDatacenterAndRack();
+    const { store } = renderPowerView(state, dcId);
+
+    fireEvent.click(screen.getByRole("button", { name: /Review upgrade to Hybrid cooling/i }));
+    fireEvent.click(screen.getByRole("button", { name: /CONFIRM — \$180,000/i }));
+
+    expect(screen.queryByRole("dialog", { name: /CONFIRM UPGRADE/i })).toBeNull();
     expect(screen.getAllByText(/HYBRID/).length).toBeGreaterThan(0);
     expect(screen.getByText(/UPKEEP \$900\/mo/)).toBeTruthy();
     expect(screen.getByText("MAXED")).toBeTruthy();
+    expect(store.getState().datacenters.find((dc) => dc.id === dcId)?.upgrades.currentNodeByTrack.cooling).toBe("hybrid");
+  });
+
+  it("shows insufficient-funds copy and disables unaffordable upgrade review actions", () => {
+    const { state: builtState, dcId } = stateWithDatacenterAndRack();
+    const state: GameState = {
+      ...builtState,
+      player: {
+        ...builtState.player,
+        cash: 100_000,
+      },
+    };
+
+    renderPowerView(state, dcId);
+
+    expect(screen.getByText(/Need \$80,000 more cash to unlock this step\./i)).toBeTruthy();
+    const upgradeButton = screen.getByRole("button", { name: /Need \$80,000 more/i }) as HTMLButtonElement;
+    expect(upgradeButton.disabled).toBe(true);
+    expect(screen.queryByRole("dialog", { name: /CONFIRM UPGRADE/i })).toBeNull();
   });
 
   it("shows completed ladder nodes for already-upgraded tracks", () => {
