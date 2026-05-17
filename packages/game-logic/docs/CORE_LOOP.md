@@ -94,6 +94,8 @@ The settlement pass first:
 - sets `subtick = 0`
 - normalizes contracts through `contractsFromState(state)`
 
+This normalization should happen **once per monthly settlement**. Downstream opex, SLA, lifecycle, and reliability helpers should receive the already-normalized lists or indexed views rather than rebuilding contract buckets in inner loops.
+
 At this point, all daily repair/failure/SLA sampling for the closing month has already happened.
 
 ### 2. Compute monthly opex per datacenter
@@ -108,7 +110,7 @@ For every datacenter, `tickOpex()` calculates:
 - rack maintenance
 - tax (added after revenue is known)
 
-This remains monthly because it is comparatively expensive and naturally month-scoped.
+This remains monthly because it is comparatively expensive and naturally month-scoped. Use per-tick batched helpers and indexed views so the settlement loop does not re-scan all contracts or all regions for every datacenter.
 
 ### 3. Settle contract revenue and penalties from SLA windows
 
@@ -193,6 +195,16 @@ This preserves existing CLI scripts, reducers, and tests that think in month-siz
 If a new system can be described as “this should be observable inside a month,” it probably belongs in `advanceSubtick()`.
 
 If it changes books, market state, taxes, or ledger history only once per month, it belongs in monthly settlement.
+
+## Hot-path invariants
+
+When editing the core loop, preserve these performance rules:
+
+- call `contractsFromState()` once per reducer/tick/query operation, not once per datacenter or once per contract;
+- prefer batched helpers (`summarizeAllDatacenterOperationalCapacities()`, `summarizeAllDatacenterFabricCapacities()`, `summarizeOpenMarketContractFits()`) over repeated single-item wrappers in broad scans;
+- keep `createEntityIndexView()` / `createIndexedGameStateView()` scoped to the current operation;
+- avoid rebuilding compatibility views or refreshing the market anywhere except the month boundary;
+- if a convenience helper hides an all-datacenter or all-contract scan, do not call it from another all-datacenter or all-contract loop without benchmarking.
 
 ## Minimal pseudocode
 

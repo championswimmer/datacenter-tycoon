@@ -178,6 +178,7 @@ erDiagram
 
 - **`GameState.contracts` is the canonical contract collection.**
   - `contractMarket` and `activeContracts` remain compatibility views maintained by `withDerivedContractViews()`.
+  - Newly serialized saves persist canonical `contracts` and rehydrate those compatibility views on load.
 - **`GameState.subtick` is persisted.**
   - Save/load must preserve mid-month state so replay determinism survives serialization.
 - **Contract SLA state is persisted on the contract itself.**
@@ -210,6 +211,16 @@ That relationship is implemented through canonical helpers such as:
 - `tickRevenue(state)`
 
 This keeps daily SLA math, monthly settlement, and UI presentation on the same source of truth.
+
+## Performance invariants
+
+When changing this package, preserve these hot-path assumptions:
+
+- **Batch first, then fan out.** Prefer `summarizeAllDatacenterOperationalCapacities()` and `summarizeAllDatacenterFabricCapacities()` over repeated single-datacenter wrappers inside market-wide scans.
+- **Scope contract normalization to one operation.** `contractsFromState()` exists for compatibility, but reducers, ticks, and query passes should compute it once and pass derived buckets or indexed views downward.
+- **Keep indexed views ephemeral.** `createEntityIndexView()` and `createIndexedGameStateView()` are operation-scoped accelerators, not persisted state.
+- **Keep persisted state canonical.** Compatibility views may exist at runtime, but save/load should preserve the canonical shape and derive duplicated views at boundaries.
+- **Do not hide nested recomputation behind convenience wrappers.** If a helper internally scans all datacenters or all contracts, do not call it again from inside another all-datacenter or all-contract loop without measuring the cost.
 
 ## Runtime command architecture
 

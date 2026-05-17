@@ -91,6 +91,14 @@ These are already implemented and should usually be extended rather than replace
 - rack placement validation via datacenter constraints
 - rack move cost calculation and cross-datacenter relocation (`calculateMoveCost`, `canMoveRack`, `MoveRack` action)
 
+## Performance Guardrails
+
+- **Normalize contract views once per operation.** If a reducer, tick helper, or query needs contract buckets, call `contractsFromState()` once and pass the derived arrays or `createIndexedGameStateView()` downward instead of rebuilding them inside nested loops.
+- **Prefer batched capacity helpers over per-datacenter recomputation.** Use helpers such as `summarizeAllDatacenterOperationalCapacities()`, `summarizeAllDatacenterFabricCapacities()`, and `summarizeOpenMarketContractFits()` when scanning large maps or markets.
+- **Keep indexes ephemeral.** `Map`-based datacenter/region/contract indexes belong in scoped helpers (`createEntityIndexView()`, `createIndexedGameStateView()`), never in persisted `GameState`.
+- **Treat `contractMarket` and `activeContracts` as runtime compatibility views.** New saves persist canonical `contracts` and rehydrate compatibility arrays on load.
+- **Avoid nested helper explosions.** Do not call `contractsFromState()`, fabric summaries, or all-network capacity summaries inside `for each contract × for each datacenter` loops unless the helper is explicitly batch-oriented.
+
 ## Editing Guidelines
 
 - When changing **public API**, update both:
@@ -110,7 +118,7 @@ These are already implemented and should usually be extended rather than replace
   - `docs/ARCHITECTURE.md`
 - When changing **contracts or economy**, keep generation and monthly outcomes deterministic for the same seed and action sequence.
 - When changing **datacenter upgrade topology or tuning**, edit `src/balance/datacenter-upgrades.ts` and reuse the catalog/resolver pipeline instead of hardcoding costs, caps, or fabric eligibility in reducers/UI-facing helpers.
-- Prefer reusing existing helpers like `applyCapex`, `canPlaceRack`, `acceptContract`, `refreshContractMarket`, `tick`, `resolveDatacenterInfrastructure`, and the upgrade query summaries rather than duplicating logic.
+- Prefer reusing existing helpers like `applyCapex`, `canPlaceRack`, `acceptContract`, `refreshContractMarket`, `tick`, `resolveDatacenterInfrastructure`, the upgrade query summaries, and the batched indexed/capacity/fabric query helpers rather than duplicating logic.
 
 ## Testing
 

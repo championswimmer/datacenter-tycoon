@@ -1,7 +1,7 @@
 ---
 name: Core Game Logic Performance Optimisation
 description: Profile and optimise core game-logic hot paths across tick processing, capacity queries, state lookups, and derived views.
-status: started
+status: completed
 created: 2026-05-17
 updated: 2026-05-18
 owner: game-logic
@@ -25,10 +25,10 @@ owner: game-logic
   - [x] 4.1 Add reusable capacity summaries for all datacenters in one pass
   - [x] 4.2 Optimise fabric capacity summaries to avoid nested pool recomputation
   - [x] 4.3 Optimise open-market contract fit summaries across all visible offers
-- [ ] **Phase 5 — Data-shape and allocation cleanup**
+- [x] **Phase 5 — Data-shape and allocation cleanup**
   - [x] 5.1 Reduce capacity and usage aggregation allocation churn
   - [x] 5.2 Audit save-state memory footprint and duplicated compatibility views
-  - [ ] 5.3 Document performance invariants for future game-logic changes
+  - [x] 5.3 Document performance invariants for future game-logic changes
 
 ## Overview
 
