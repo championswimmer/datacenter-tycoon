@@ -19,7 +19,7 @@ owner: game-logic, web
   - [x] 2.3 Add explicit errors for invalid joins, duplicate joins, and cross-region joins
 - [ ] **Phase 3 - Pooled capacity and contract evaluation**
   - [x] 3.1 Add pure helpers for fabric membership and pooled capacity lookup
-  - [ ] 3.2 Route contract acceptance and fulfilment through pooled fabric capacity
+  - [x] 3.2 Route contract acceptance and fulfilment through pooled fabric capacity
   - [ ] 3.3 Update selectors and tick summaries to expose fabric-aware totals
 - [ ] **Phase 4 - Web UI and feedback**
   - [ ] 4.1 Surface fabric status and join cost in map, region, and datacenter views

@@ -35,6 +35,8 @@ import type {
 	PlayerId,
 	RackPlacement,
 	RackPlacementId,
+	Region,
+	RegionId,
 	Tick,
 } from "../types.js";
 
@@ -42,6 +44,7 @@ const contractId = (value: string): ContractId => value as ContractId;
 const datacenterId = (value: string): DatacenterId => value as DatacenterId;
 const playerId = (value: string): PlayerId => value as PlayerId;
 const rackPlacementId = (value: string): RackPlacementId => value as RackPlacementId;
+const regionId = (value: string): RegionId => value as RegionId;
 const tick = (value: number): Tick => value as Tick;
 
 function generatedThemeId(contract: Contract): string {
@@ -100,6 +103,24 @@ function makeContract(id: string, overrides: Partial<Contract> = {}): Contract {
 		offeredAtTick: tick(0),
 		expiresAtTick: tick(6),
 		...overrides,
+	};
+}
+
+function makeRegion(id: RegionId, memberDcIds: DatacenterId[] = []): Region {
+	return {
+		id,
+		name: id,
+		code: id.toUpperCase(),
+		city: `${id} City`,
+		coordinates: { x: 0, y: 0 },
+		powerCostPerKwh: 0.1,
+		staffWage: 1_000,
+		taxRate: 0.1,
+		totalPowerAvailable: 100,
+		totalStaffAvailable: 5,
+		powerUsed: 0,
+		staffUsed: 0,
+		fabric: { memberDcIds },
 	};
 }
 
@@ -321,6 +342,75 @@ test("acceptContract allows an exact-fit contract on remaining available capacit
 		acceptedAtTick: state.tick,
 		assignedDcId: datacenterId("dc-1"),
 	});
+});
+
+test("acceptContract allows split-capacity contracts across a linked regional fabric pool", () => {
+	const regionA = regionId("region-a");
+	const fiberUpgrades = { currentNodeByTrack: { networkType: "fiber" as const } };
+	const dcA: Datacenter = {
+		...makeDatacenter("dc-fabric-a", [placement("rack-a", "C1", 0, 0)]),
+		regionId: regionA,
+		upgrades: fiberUpgrades,
+	};
+	const dcB: Datacenter = {
+		...makeDatacenter("dc-fabric-b", [placement("rack-b", "C1", 0, 0)]),
+		regionId: regionA,
+		upgrades: fiberUpgrades,
+	};
+	const offeredContract = makeContract("market-fabric", {
+		requirements: { vCpu: 192, ramGb: 700, storageTb: 20, gpuFlops: 0 },
+	});
+	const state = makeState({
+		datacenters: [dcA, dcB],
+		contractMarket: [offeredContract],
+		map: { regions: [makeRegion(regionA, [dcA.id, dcB.id])] },
+	});
+
+	const nextState = acceptContract(state, offeredContract.id, dcA.id);
+
+	assert.equal(nextState.activeContracts.length, 1);
+	assert.deepEqual(nextState.activeContracts[0], {
+		...offeredContract,
+		lifecycleState: "serving",
+		status: "active",
+		startedAtTick: state.tick,
+		acceptedAtTick: state.tick,
+		assignedDcId: dcA.id,
+	});
+});
+
+test("acceptContract still rejects split-capacity contracts when the same datacenters are not fabric-linked", () => {
+	const regionA = regionId("region-a");
+	const dcA: Datacenter = {
+		...makeDatacenter("dc-fabric-a", [placement("rack-a", "C1", 0, 0)]),
+		regionId: regionA,
+	};
+	const dcB: Datacenter = {
+		...makeDatacenter("dc-fabric-b", [placement("rack-b", "C1", 0, 0)]),
+		regionId: regionA,
+	};
+	const offeredContract = makeContract("market-fabric", {
+		requirements: { vCpu: 192, ramGb: 700, storageTb: 20, gpuFlops: 0 },
+	});
+	const state = makeState({
+		datacenters: [dcA, dcB],
+		contractMarket: [offeredContract],
+		map: { regions: [makeRegion(regionA)] },
+	});
+
+	assert.throws(
+		() => acceptContract(state, offeredContract.id, dcA.id),
+		(error: unknown) => {
+			assert.ok(error instanceof ContractAcceptanceError);
+			assert.deepEqual(error.data, {
+				code: "insufficient_capacity",
+				dcId: dcA.id,
+				required: offeredContract.requirements,
+				available: { vCpu: 128, ramGb: 512, storageTb: 16, gpuFlops: 0 },
+			});
+			return true;
+		},
+	);
 });
 
 test("evaluateContract reports whether a datacenter can satisfy a contract", () => {

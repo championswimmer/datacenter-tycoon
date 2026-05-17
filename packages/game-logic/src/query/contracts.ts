@@ -8,7 +8,7 @@ import {
 	selectLiveContracts,
 	selectOpenMarketContracts,
 } from "../contracts/lifecycle.js";
-import { datacenterContractCapacitySummary } from "../entities/datacenter.js";
+import { summarizeDistinctCapacityPools, summarizeFabricCapacityForDatacenter } from "../entities/fabric.js";
 import type {
 	Capacity,
 	Contract,
@@ -52,6 +52,8 @@ export interface ContractAssignmentFitCandidate {
 	dcId: DatacenterId;
 	available: Capacity;
 	fits: boolean;
+	fabricConnected: boolean;
+	memberDcIds: DatacenterId[];
 }
 
 export type ContractAssignmentFitStatus = "fits" | "partial" | "none";
@@ -140,20 +142,21 @@ export function selectHistoricalContractsForDatacenter(
 }
 
 export function summarizeContractAssignmentFitForContract(
-	state: Pick<GameState, "contracts" | "contractMarket" | "activeContracts" | "datacenters">,
+	state: Pick<GameState, "contracts" | "contractMarket" | "activeContracts" | "datacenters" | "map">,
 	contract: Pick<Contract, "id" | "requirements">,
 ): ContractAssignmentFitSummary {
-	const liveContracts = selectLiveContractsFromState(state);
 	const candidates = state.datacenters.map((datacenter) => {
-		const available = datacenterContractCapacitySummary(datacenter, liveContracts).available;
+		const summary = summarizeFabricCapacityForDatacenter(state, datacenter.id);
 		return {
 			dcId: datacenter.id,
-			available,
-			fits: canCoverRequirements(available, contract.requirements),
+			available: summary.available,
+			fits: canCoverRequirements(summary.available, contract.requirements),
+			fabricConnected: summary.connected,
+			memberDcIds: summary.memberDcIds,
 		};
 	});
-	const networkAvailable = candidates.reduce<Capacity>(
-		(total, candidate) => addCapacity(total, candidate.available),
+	const networkAvailable = summarizeDistinctCapacityPools(state).reduce<Capacity>(
+		(total, pool) => addCapacity(total, pool.available),
 		EMPTY_CAPACITY,
 	);
 	const fittingDcIds = candidates.filter((candidate) => candidate.fits).map((candidate) => candidate.dcId);
@@ -174,7 +177,7 @@ export function summarizeContractAssignmentFitForContract(
 }
 
 export function summarizeContractAssignmentFit(
-	state: Pick<GameState, "contracts" | "contractMarket" | "activeContracts" | "datacenters">,
+	state: Pick<GameState, "contracts" | "contractMarket" | "activeContracts" | "datacenters" | "map">,
 	contractId: ContractId,
 ): ContractAssignmentFitSummary | undefined {
 	const contract = selectContractByIdFromState(state, contractId);
@@ -186,7 +189,7 @@ export function summarizeContractAssignmentFit(
 }
 
 export function summarizeOpenMarketContractFits(
-	state: Pick<GameState, "contracts" | "contractMarket" | "activeContracts" | "datacenters">,
+	state: Pick<GameState, "contracts" | "contractMarket" | "activeContracts" | "datacenters" | "map">,
 ): ContractAssignmentFitSummary[] {
 	return selectOpenMarketContractsFromState(state).map((contract) => summarizeContractAssignmentFitForContract(state, contract));
 }
