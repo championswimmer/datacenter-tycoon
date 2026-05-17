@@ -1,8 +1,8 @@
 import { useCallback } from "react";
 import { canBuildInRegion, DATACENTER_CATALOG } from "@datacenter-tycoon/game-logic";
-import type { Region, Datacenter } from "@datacenter-tycoon/game-logic";
-import { useSelector } from "../../store/storeContext.js";
-import { selectCash } from "../../store/selectors.js";
+import type { Datacenter, Region } from "@datacenter-tycoon/game-logic";
+import { useGameDispatch, useSelector } from "../../store/storeContext.js";
+import { selectCash, selectRegionFabricSummary } from "../../store/selectors.js";
 import { ProgressBar } from "../../theme/primitives/index.js";
 import { navigateToDc } from "../../router/hashRouter.js";
 import styles from "./RegionPanel.module.css";
@@ -16,6 +16,8 @@ interface RegionPanelProps {
 
 export function RegionPanel({ region, datacenters, onClose, onBuild }: RegionPanelProps) {
   const cash = useSelector(selectCash);
+  const fabricSummary = useSelector((state) => selectRegionFabricSummary(state, region.id));
+  const dispatch = useGameDispatch();
   const regionDcs = datacenters.filter((dc) => dc.regionId === region.id);
 
   const powerRemaining = region.totalPowerAvailable - region.powerUsed;
@@ -48,6 +50,17 @@ export function RegionPanel({ region, datacenters, onClose, onBuild }: RegionPan
     if (!canBuildAnything) return;
     onBuild();
   }, [canBuildAnything, onBuild]);
+
+  const datacenterById = new Map(regionDcs.map((dc) => [dc.id, dc]));
+  const bootstrapAnchorDcId = !fabricSummary?.active ? fabricSummary?.eligibleDcIds[0] ?? null : null;
+
+  const handleFabricLink = useCallback((sourceDcId: Datacenter["id"], targetDcId: Datacenter["id"]) => {
+    dispatch({
+      type: "FabricLink",
+      sourceDcId,
+      targetDcId,
+    });
+  }, [dispatch]);
 
   return (
     <div className={styles.panel}>
@@ -94,6 +107,79 @@ export function RegionPanel({ region, datacenters, onClose, onBuild }: RegionPan
             <ProgressBar value={staffRemainingPct * 100} max={100} segments={20} color={staffColor} height={6} />
           </div>
         </div>
+
+        {/* ── Regional fabric ── */}
+        {fabricSummary && (
+          <div className={styles.fabricSection}>
+            <div className={styles.fabricHeaderRow}>
+              <h4 className={styles.sectionTitle}>REGIONAL FABRIC</h4>
+              <span className={styles.fabricState}>{fabricSummary.active ? "ACTIVE" : "INACTIVE"}</span>
+            </div>
+            <div className={styles.fabricMetaRow}>
+              <span>Join cost ${fabricSummary.joinCost.toLocaleString()}</span>
+              <span>{fabricSummary.memberDcIds.length} linked datacenters</span>
+            </div>
+            {fabricSummary.memberDcIds.length > 0 ? (
+              <div className={styles.fabricMembers}>
+                {fabricSummary.memberDcIds.map((memberDcId) => (
+                  <span key={memberDcId} className={styles.fabricMemberChip}>
+                    {datacenterById.get(memberDcId)?.name ?? memberDcId}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className={styles.fabricHint}>No datacenters are connected yet. Link two fiber-ready sites to create the region fabric.</p>
+            )}
+
+            <div className={styles.fabricStatusList}>
+              {fabricSummary.datacenters.map((fabricDc) => {
+                const dc = datacenterById.get(fabricDc.dcId);
+                if (!dc) {
+                  return null;
+                }
+                const suggestedTarget = fabricDc.suggestedTargetDcId ? datacenterById.get(fabricDc.suggestedTargetDcId) : undefined;
+                const canBootstrapHere = fabricDc.linkMode === "bootstrap" && bootstrapAnchorDcId === fabricDc.dcId && suggestedTarget;
+                const canJoinHere = fabricDc.linkMode === "join" && suggestedTarget;
+                const showAction = canBootstrapHere || canJoinHere;
+                const actionLabel = canBootstrapHere
+                  ? `Create fabric with ${dc.name} and ${suggestedTarget?.name}`
+                  : canJoinHere
+                    ? `Connect ${dc.name} to regional fabric`
+                    : null;
+                const actionDetail = canBootstrapHere
+                  ? `Bootstrap with ${suggestedTarget?.name}`
+                  : canJoinHere
+                    ? `Link via ${suggestedTarget?.name}`
+                    : fabricDc.fabricConnected
+                      ? `Connected with ${fabricDc.memberDcIds.length} sites`
+                      : fabricDc.linkBlockedReason;
+
+                return (
+                  <div key={fabricDc.dcId} className={styles.fabricDcRow}>
+                    <div className={styles.fabricDcCopy}>
+                      <div className={styles.fabricDcTitleRow}>
+                        <span className={styles.fabricDcName}>{dc.name}</span>
+                        <span className={styles.fabricDcBadge}>
+                          {fabricDc.fabricConnected ? "LINKED" : fabricDc.fabricEligible ? "FIBER READY" : "FIBER LOCKED"}
+                        </span>
+                      </div>
+                      <div className={styles.fabricDcMeta}>{actionDetail}</div>
+                    </div>
+                    {showAction && suggestedTarget && actionLabel && (
+                      <button
+                        className={styles.fabricActionBtn}
+                        onClick={() => handleFabricLink(canJoinHere ? suggestedTarget.id : dc.id, canJoinHere ? dc.id : suggestedTarget.id)}
+                        aria-label={actionLabel}
+                      >
+                        {fabricSummary.active ? "CONNECT" : "CREATE"}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* ── Datacenters in region ── */}
         {regionDcs.length > 0 && (
