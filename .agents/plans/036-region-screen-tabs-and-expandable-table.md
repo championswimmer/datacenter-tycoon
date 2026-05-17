@@ -1,7 +1,7 @@
 ---
 name: Region Screen Tabs and Expandable Table
 description: Rename the rail CTA to Regions, split the region screen into map/table tabs, and show per-region datacenter rows inside the table view.
-status: created
+status: started
 created: 2026-05-17
 updated: 2026-05-17
 owner: web
@@ -9,9 +9,9 @@ owner: web
 
 ## Progress
 
-- [ ] **Phase 1 — Region navigation CTA cleanup**
-  - [ ] 1.1 Rename the left-rail region entry button from a build-specific CTA to a region-navigation CTA
-  - [ ] 1.2 Update shell/left-rail tests so the button semantics and routing match the new intent
+- [x] **Phase 1 — Region navigation CTA cleanup**
+  - [x] 1.1 Rename the left-rail region entry button from a build-specific CTA to a region-navigation CTA
+  - [x] 1.2 Update shell/left-rail tests so the button semantics and routing match the new intent
 - [ ] **Phase 2 — Region screen tab split**
   - [ ] 2.1 Refactor `MapView` to render separate Map and Table tabs with shared selected-region state
   - [ ] 2.2 Update `MapView` styles and tests for tab switching, selection persistence, and region panel rendering per tab
