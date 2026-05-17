@@ -120,13 +120,14 @@ describe("DatacenterList", () => {
     expect(screen.getAllByText(/POOL 2 SITES/).length).toBeGreaterThan(0);
   });
 
-  it("renders the New Datacenter button", () => {
+  it("renders the Regions button", () => {
     render(
       <Wrapper>
         <DatacenterList currentRoute={{ view: "home" }} />
       </Wrapper>,
     );
-    expect(screen.getByTitle("Build a new datacenter")).toBeTruthy();
+    expect(screen.getByTitle("Open regions screen")).toBeTruthy();
+    expect(screen.getByText("REGIONS")).toBeTruthy();
   });
 
   it("always renders a contracts button that navigates to contracts", () => {

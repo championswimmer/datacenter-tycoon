@@ -15,11 +15,11 @@ import styles from "./DatacenterList.module.css";
 
 interface DatacenterListProps {
   currentRoute: Route;
-  /** Called when "New Datacenter" is clicked */
-  onNewDatacenter?: () => void;
+  /** Called when the rail footer should open the regions screen. */
+  onOpenRegions?: () => void;
 }
 
-export function DatacenterList({ currentRoute, onNewDatacenter }: DatacenterListProps) {
+export function DatacenterList({ currentRoute, onOpenRegions }: DatacenterListProps) {
   const datacenters  = useSelector(selectAllDatacenters);
   const usageAggreg  = useSelector(selectResourceUsage);
   const infrastructureSummaries = useSelector((state) =>
@@ -169,14 +169,15 @@ export function DatacenterList({ currentRoute, onNewDatacenter }: DatacenterList
         })}
       </div>
 
-      {/* ── New datacenter CTA ── */}
+      {/* ── Regions navigation CTA ── */}
       <button
         className={styles.newDcBtn}
-        onClick={onNewDatacenter}
-        title="Build a new datacenter"
+        onClick={onOpenRegions}
+        title="Open regions screen"
+        aria-label="Open regions screen"
       >
-        <span className={styles.newDcPlus}>+</span>
-        <span>NEW DATACENTER</span>
+        <span className={styles.newDcPlus}>◎</span>
+        <span>REGIONS</span>
       </button>
     </div>
   );

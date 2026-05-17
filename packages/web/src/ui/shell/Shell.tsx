@@ -144,7 +144,7 @@ export function Shell({ shouldAutoOpenTutorial = false }: ShellProps) {
           >
             <DatacenterList
               currentRoute={route}
-              onNewDatacenter={openMap}
+              onOpenRegions={openMap}
             />
           </nav>
         )}
