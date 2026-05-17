@@ -1,9 +1,12 @@
+import { useCallback, useMemo, useState } from "react";
 import type {
   DatacenterId,
+  DatacenterUpgradeTrackId,
   DatacenterUpgradeTrackLadderNodeView,
 } from "@datacenter-tycoon/game-logic";
 import { useGameDispatch, useSelector } from "../../store/storeContext.js";
-import { selectDatacenterInfrastructureSummary, selectDatacenterUpgradeSummary } from "../../store/selectors.js";
+import { selectCash, selectDatacenterInfrastructureSummary, selectDatacenterUpgradeSummary } from "../../store/selectors.js";
+import { UpgradeConfirmationModal } from "./UpgradeConfirmationModal.js";
 import styles from "./UpgradePanel.module.css";
 
 const LADDER_STATUS_LABEL: Record<DatacenterUpgradeTrackLadderNodeView["status"], string> = {
@@ -28,9 +31,34 @@ interface UpgradePanelProps {
 }
 
 export function UpgradePanel({ dcId }: UpgradePanelProps) {
+  const cash = useSelector(selectCash);
   const infrastructure = useSelector((state) => selectDatacenterInfrastructureSummary(state, dcId));
   const upgrades = useSelector((state) => selectDatacenterUpgradeSummary(state, dcId));
   const dispatch = useGameDispatch();
+  const [pendingTrackId, setPendingTrackId] = useState<DatacenterUpgradeTrackId | null>(null);
+
+  const pendingTrack = useMemo(
+    () => upgrades?.tracks.find((track) => track.trackId === pendingTrackId) ?? null,
+    [pendingTrackId, upgrades],
+  );
+
+  const handleCloseModal = useCallback(() => {
+    setPendingTrackId(null);
+  }, []);
+
+  const handleConfirmUpgrade = useCallback(() => {
+    if (!pendingTrack?.nextNode || cash < pendingTrack.nextNode.capexCost) {
+      return;
+    }
+
+    dispatch({
+      type: "UpgradeDatacenter",
+      dcId,
+      trackId: pendingTrack.trackId,
+      targetNodeId: pendingTrack.nextNode.id,
+    });
+    setPendingTrackId(null);
+  }, [cash, dcId, dispatch, pendingTrack]);
 
   if (!infrastructure || !upgrades) {
     return null;
@@ -122,14 +150,7 @@ export function UpgradePanel({ dcId }: UpgradePanelProps) {
                   <button
                     type="button"
                     className={styles.upgradeButton}
-                    onClick={() =>
-                      dispatch({
-                        type: "UpgradeDatacenter",
-                        dcId,
-                        trackId: track.trackId,
-                        targetNodeId: track.nextNode!.id,
-                      })
-                    }
+                    onClick={() => setPendingTrackId(track.trackId)}
                   >
                     Upgrade to {track.nextNode.label}
                   </button>
@@ -141,6 +162,15 @@ export function UpgradePanel({ dcId }: UpgradePanelProps) {
           </article>
         ))}
       </div>
+      {pendingTrack?.nextNode ? (
+        <UpgradeConfirmationModal
+          track={pendingTrack}
+          cash={cash}
+          canAfford={cash >= pendingTrack.nextNode.capexCost}
+          onClose={handleCloseModal}
+          onConfirm={handleConfirmUpgrade}
+        />
+      ) : null}
     </section>
   );
 }
