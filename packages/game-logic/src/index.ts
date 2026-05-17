@@ -3,7 +3,7 @@
 
 export const VERSION = "0.1.0";
 
-// Includes rack activity/power summary types.
+// Includes rack activity/power summary types and contract region-affinity vocabulary.
 export * from "./types.js";
 // Includes power billing helpers (idle baseline + kW→kWh monthly conversion).
 export * from "./balance/index.js";
