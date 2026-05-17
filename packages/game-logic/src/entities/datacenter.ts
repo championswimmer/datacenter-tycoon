@@ -72,15 +72,6 @@ function cloneUsage(usage: DatacenterResourceUsage): DatacenterResourceUsage {
 	};
 }
 
-function addCapacity(total: Capacity, delta: Capacity): Capacity {
-	return {
-		vCpu: total.vCpu + delta.vCpu,
-		ramGb: total.ramGb + delta.ramGb,
-		storageTb: total.storageTb + delta.storageTb,
-		gpuFlops: total.gpuFlops + delta.gpuFlops,
-	};
-}
-
 function subtractCapacity(total: Capacity, reserved: Capacity): Capacity {
 	return {
 		vCpu: Math.max(0, total.vCpu - reserved.vCpu),

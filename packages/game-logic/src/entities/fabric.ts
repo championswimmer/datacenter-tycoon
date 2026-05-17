@@ -29,13 +29,11 @@ const EMPTY_CAPACITY: Capacity = {
 	gpuFlops: 0,
 };
 
-function addCapacity(total: Capacity, delta: Capacity): Capacity {
-	return {
-		vCpu: total.vCpu + delta.vCpu,
-		ramGb: total.ramGb + delta.ramGb,
-		storageTb: total.storageTb + delta.storageTb,
-		gpuFlops: total.gpuFlops + delta.gpuFlops,
-	};
+function accumulateCapacity(total: Capacity, delta: Capacity): void {
+	total.vCpu += delta.vCpu;
+	total.ramGb += delta.ramGb;
+	total.storageTb += delta.storageTb;
+	total.gpuFlops += delta.gpuFlops;
 }
 
 function subtractCapacity(total: Capacity, reserved: Capacity): Capacity {
@@ -59,13 +57,13 @@ function capacitySummaryOf(summary: Pick<DatacenterContractCapacitySummary, "ins
 function aggregateCapacitySummaries(
 	summaries: readonly Pick<DatacenterContractCapacitySummary, "installed" | "usable" | "committed">[],
 ): DatacenterContractCapacitySummary {
-	let installed = { ...EMPTY_CAPACITY };
-	let usable = { ...EMPTY_CAPACITY };
-	let committed = { ...EMPTY_CAPACITY };
+	const installed = { ...EMPTY_CAPACITY };
+	const usable = { ...EMPTY_CAPACITY };
+	const committed = { ...EMPTY_CAPACITY };
 	for (const summary of summaries) {
-		installed = addCapacity(installed, summary.installed);
-		usable = addCapacity(usable, summary.usable);
-		committed = addCapacity(committed, summary.committed);
+		accumulateCapacity(installed, summary.installed);
+		accumulateCapacity(usable, summary.usable);
+		accumulateCapacity(committed, summary.committed);
 	}
 	return {
 		installed,
