@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
+import { REGION_CATALOG } from "../catalog/regions.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import {
 	RELIABILITY_BASELINE_SCORE,
@@ -142,7 +143,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
 		contractMarket: [],
 		activeContracts: [],
 		ledger: [],
-		map: { regions: [] },
+		map: { regions: Object.values(REGION_CATALOG) },
 		...overrides,
 	};
 }
@@ -217,6 +218,44 @@ test("generateContract uses workload-specific duration bands", () => {
 	assert.ok(coldStorage.some((contract) => contract.termMonths >= 24));
 });
 
+test("generateContract deterministically mixes unrestricted and region-affine offers", () => {
+	const firstRng = createRng(7_777);
+	const secondRng = createRng(7_777);
+	const firstSequence = Array.from({ length: 180 }, () => generateContract(firstRng, 0.65)).map(
+		(contract) => contract.regionAffinity?.key ?? "global",
+	);
+	const secondSequence = Array.from({ length: 180 }, () => generateContract(secondRng, 0.65)).map(
+		(contract) => contract.regionAffinity?.key ?? "global",
+	);
+	const counts = firstSequence.reduce<Record<string, number>>((totals, key) => {
+		totals[key] = (totals[key] ?? 0) + 1;
+		return totals;
+	}, {});
+
+	assert.deepEqual(secondSequence, firstSequence);
+	assert.ok((counts.global ?? 0) > 0, "expected unrestricted contracts in the market mix");
+	assert.ok((counts.eu ?? 0) > 0, "expected EU-affine contracts in the market mix");
+	assert.ok((counts.asia ?? 0) > 0, "expected Asia-affine contracts in the market mix");
+	assert.ok((counts.usa ?? 0) > 0, "expected USA-affine contracts in the market mix");
+});
+
+test("generateContract biases affinity selection toward workload themes", () => {
+	const rng = createRng(9_909);
+	const samples = Array.from({ length: 600 }, () => generateContract(rng, 0.65));
+	const countsByTheme = new Map<string, Record<string, number>>();
+	for (const contract of samples) {
+		const themeId = generatedThemeId(contract);
+		const counts = countsByTheme.get(themeId) ?? {};
+		const affinityKey = contract.regionAffinity?.key ?? "global";
+		counts[affinityKey] = (counts[affinityKey] ?? 0) + 1;
+		countsByTheme.set(themeId, counts);
+	}
+
+	assert.ok((countsByTheme.get("ai_training")?.usa ?? 0) > (countsByTheme.get("ai_training")?.asia ?? 0));
+	assert.ok((countsByTheme.get("enterprise_db")?.eu ?? 0) > (countsByTheme.get("enterprise_db")?.usa ?? 0));
+	assert.ok((countsByTheme.get("video_render")?.asia ?? 0) > (countsByTheme.get("video_render")?.usa ?? 0));
+});
+
 test("refreshContractMarket is deterministic, removes expired offers, and tops up to the configured size", () => {
 	const retained = makeContract("retained", {
 		status: "offered",
@@ -242,6 +281,28 @@ test("refreshContractMarket is deterministic, removes expired offers, and tops u
 	assert.ok(first.contractMarket.some((contract) => contract.id === retained.id));
 	assert.ok(first.contractMarket.every((contract) => contract.id !== expired.id));
 	assert.notEqual(first.rngState, input.rngState);
+});
+
+test("refreshContractMarket populates explicit allowed-region whitelists on affine offers", () => {
+	const refreshed = refreshContractMarket(
+		makeState({
+			tick: tick(10),
+			rngState: 777,
+			contractMarket: [],
+		}),
+	);
+	const affineOffers = refreshed.contractMarket.filter((contract) => contract.regionAffinity);
+
+	assert.ok(affineOffers.length > 0, "expected at least one affine offer");
+	assert.ok(refreshed.contractMarket.some((contract) => !contract.regionAffinity), "expected at least one unrestricted offer");
+	assert.ok(
+		affineOffers.every((contract) =>
+			contract.regionAffinity!.allowedRegionIds.length > 0 &&
+			contract.regionAffinity!.allowedRegionIds.every((allowedRegionId) =>
+				refreshed.map.regions.some((region) => region.id === allowedRegionId),
+			),
+		),
+	);
 });
 
 test("acceptContract moves an offered contract into the active list with assignment metadata", () => {
@@ -344,6 +405,55 @@ test("acceptContract allows an exact-fit contract on remaining available capacit
 	});
 });
 
+test("acceptContract preserves region affinity when an eligible datacenter accepts the offer", () => {
+	const offeredContract = makeContract("regional-market", {
+		requirements: { vCpu: 8, ramGb: 64, storageTb: 4, gpuFlops: 0 },
+		regionAffinity: {
+			key: "usa",
+			allowedRegionIds: [REGION_CATALOG.us_east.id, REGION_CATALOG.us_west.id],
+		},
+	});
+	const dc = {
+		...makeDatacenter("dc-usa"),
+		regionId: REGION_CATALOG.us_east.id,
+	};
+	const state = makeState({ datacenters: [dc], contractMarket: [offeredContract] });
+
+	const nextState = acceptContract(state, offeredContract.id, dc.id);
+
+	assert.deepEqual(nextState.activeContracts[0]?.regionAffinity, offeredContract.regionAffinity);
+	assert.equal(nextState.activeContracts[0]?.assignedDcId, dc.id);
+});
+
+test("acceptContract rejects region-restricted contracts on datacenters outside the whitelist", () => {
+	const offeredContract = makeContract("regional-market", {
+		requirements: { vCpu: 8, ramGb: 64, storageTb: 4, gpuFlops: 0 },
+		regionAffinity: {
+			key: "eu",
+			allowedRegionIds: [REGION_CATALOG.eu_west.id, REGION_CATALOG.eu_central.id],
+		},
+	});
+	const state = makeState({
+		datacenters: [{ ...makeDatacenter("dc-usa"), regionId: REGION_CATALOG.us_west.id }],
+		contractMarket: [offeredContract],
+	});
+
+	assert.throws(
+		() => acceptContract(state, offeredContract.id, datacenterId("dc-usa")),
+		(error: unknown) => {
+			assert.ok(error instanceof ContractAcceptanceError);
+			assert.deepEqual(error.data, {
+				code: "region_not_allowed",
+				dcId: datacenterId("dc-usa"),
+				dcRegionId: REGION_CATALOG.us_west.id,
+				affinityKey: "eu",
+				allowedRegionIds: [REGION_CATALOG.eu_west.id, REGION_CATALOG.eu_central.id],
+			});
+			return true;
+		},
+	);
+});
+
 test("acceptContract allows split-capacity contracts across a linked regional fabric pool", () => {
 	const regionA = regionId("region-a");
 	const fiberUpgrades = { currentNodeByTrack: { networkType: "fiber" as const } };
@@ -422,6 +532,28 @@ test("evaluateContract reports whether a datacenter can satisfy a contract", () 
 
 	assert.equal(evaluateContract(healthyDatacenter, contract), "fulfilled");
 	assert.equal(evaluateContract(constrainedDatacenter, contract), "breached");
+});
+
+test("advanceContract preserves region affinity across live and historical transitions", () => {
+	const datacenter = { ...makeDatacenter("dc-1"), regionId: REGION_CATALOG.us_east.id };
+	const affineContract = makeContract("lifecycle-affinity", {
+		status: "active",
+		startedAtTick: tick(2),
+		assignedDcId: datacenter.id,
+		regionAffinity: {
+			key: "usa",
+			allowedRegionIds: [REGION_CATALOG.us_east.id, REGION_CATALOG.us_west.id],
+		},
+		requirements: { vCpu: 16, ramGb: 64, storageTb: 4, gpuFlops: 0 },
+		termMonths: 2,
+	});
+
+	const serving = advanceContract(affineContract, datacenter, 3);
+	const completed = advanceContract(affineContract, datacenter, 4);
+
+	assert.deepEqual(serving.regionAffinity, affineContract.regionAffinity);
+	assert.deepEqual(completed.regionAffinity, affineContract.regionAffinity);
+	assert.equal(completed.status, "expired");
 });
 
 test("advanceContract transitions between active, breached, and expired states", () => {
@@ -515,9 +647,15 @@ test("market refresh and acceptance stay deterministic for identical reliability
 
 	assert.deepEqual(firstRefresh, secondRefresh);
 
-	const acceptedContractId = firstRefresh.contractMarket[0]!.id;
-	const firstAccepted = acceptContract(firstRefresh, acceptedContractId, firstRefresh.datacenters[0]!.id);
-	const secondAccepted = acceptContract(secondRefresh, acceptedContractId, secondRefresh.datacenters[0]!.id);
+	const datacenterIdToUse = firstRefresh.datacenters[0]!.id;
+	const datacenterRegionId = firstRefresh.datacenters[0]!.regionId;
+	const acceptedContractId = firstRefresh.contractMarket.find(
+		(contract) =>
+			(!contract.regionAffinity || contract.regionAffinity.allowedRegionIds.includes(datacenterRegionId)) &&
+			evaluateContract(firstRefresh.datacenters[0]!, contract) === "fulfilled",
+	)!.id;
+	const firstAccepted = acceptContract(firstRefresh, acceptedContractId, datacenterIdToUse);
+	const secondAccepted = acceptContract(secondRefresh, acceptedContractId, datacenterIdToUse);
 
 	assert.deepEqual(firstAccepted, secondAccepted);
 });

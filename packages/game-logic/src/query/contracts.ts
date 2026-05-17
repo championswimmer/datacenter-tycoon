@@ -13,8 +13,12 @@ import type {
 	Capacity,
 	Contract,
 	ContractId,
+	ContractRegionAffinityKey,
+	Datacenter,
 	DatacenterId,
 	GameState,
+	Region,
+	RegionId,
 } from "../types.js";
 
 const EMPTY_CAPACITY: Capacity = {
@@ -48,9 +52,18 @@ export interface ContractBuckets<TContract extends Pick<Contract, "assignedDcId"
 	historical: TContract[];
 }
 
+export interface ContractRegionAffinitySummary {
+	restricted: boolean;
+	key: ContractRegionAffinityKey | null;
+	allowedRegionIds: RegionId[];
+}
+
 export interface ContractAssignmentFitCandidate {
 	dcId: DatacenterId;
+	regionId: RegionId;
 	available: Capacity;
+	fitsCapacity: boolean;
+	regionEligible: boolean;
 	fits: boolean;
 	fabricConnected: boolean;
 	memberDcIds: DatacenterId[];
@@ -61,9 +74,11 @@ export type ContractAssignmentFitStatus = "fits" | "partial" | "none";
 export interface ContractAssignmentFitSummary {
 	contractId: ContractId;
 	requirements: Contract["requirements"];
+	regionAffinity: ContractRegionAffinitySummary;
 	fitStatus: ContractAssignmentFitStatus;
 	networkAvailable: Capacity;
 	candidates: ContractAssignmentFitCandidate[];
+	eligibleDcIds: DatacenterId[];
 	fittingDcIds: DatacenterId[];
 }
 
@@ -84,6 +99,39 @@ export function contractDealScore(contract: Pick<Contract, "requirements" | "mon
 	}
 
 	return contract.monthlyPayment / weightedRequirementValue;
+}
+
+export function summarizeContractRegionAffinity(
+	contract: Pick<Contract, "regionAffinity">,
+	regions: readonly Pick<Region, "id">[] = [],
+): ContractRegionAffinitySummary {
+	if (!contract.regionAffinity) {
+		return {
+			restricted: false,
+			key: null,
+			allowedRegionIds: regions.map((region) => region.id),
+		};
+	}
+
+	return {
+		restricted: true,
+		key: contract.regionAffinity.key,
+		allowedRegionIds: [...contract.regionAffinity.allowedRegionIds],
+	};
+}
+
+export function contractAllowsRegion(
+	contract: Pick<Contract, "regionAffinity">,
+	regionId: RegionId,
+): boolean {
+	return contract.regionAffinity ? contract.regionAffinity.allowedRegionIds.includes(regionId) : true;
+}
+
+export function contractAllowsDatacenter(
+	contract: Pick<Contract, "regionAffinity">,
+	datacenter: Pick<Datacenter, "regionId">,
+): boolean {
+	return contractAllowsRegion(contract, datacenter.regionId);
 }
 
 export function bucketContracts<TContract extends Pick<Contract, "assignedDcId" | "lifecycleState">>(
@@ -143,22 +191,36 @@ export function selectHistoricalContractsForDatacenter(
 
 export function summarizeContractAssignmentFitForContract(
 	state: Pick<GameState, "contracts" | "contractMarket" | "activeContracts" | "datacenters" | "map">,
-	contract: Pick<Contract, "id" | "requirements">,
+	contract: Pick<Contract, "id" | "requirements" | "regionAffinity">,
 ): ContractAssignmentFitSummary {
+	const datacenterById = new Map(state.datacenters.map((datacenter) => [datacenter.id, datacenter]));
+	const regionAffinity = summarizeContractRegionAffinity(contract, state.map.regions);
 	const candidates = state.datacenters.map((datacenter) => {
 		const summary = summarizeFabricCapacityForDatacenter(state, datacenter.id);
+		const fitsCapacity = canCoverRequirements(summary.available, contract.requirements);
+		const regionEligible = contractAllowsDatacenter(contract, datacenter);
 		return {
 			dcId: datacenter.id,
+			regionId: datacenter.regionId,
 			available: summary.available,
-			fits: canCoverRequirements(summary.available, contract.requirements),
+			fitsCapacity,
+			regionEligible,
+			fits: regionEligible && fitsCapacity,
 			fabricConnected: summary.connected,
 			memberDcIds: summary.memberDcIds,
 		};
 	});
-	const networkAvailable = summarizeDistinctCapacityPools(state).reduce<Capacity>(
-		(total, pool) => addCapacity(total, pool.available),
-		EMPTY_CAPACITY,
-	);
+	const networkAvailable = summarizeDistinctCapacityPools(state)
+		.filter((pool) =>
+			contract.regionAffinity
+				? pool.memberDcIds.some((memberDcId) => {
+					const memberDc = datacenterById.get(memberDcId);
+					return memberDc ? contractAllowsDatacenter(contract, memberDc) : false;
+				})
+				: true,
+		)
+		.reduce<Capacity>((total, pool) => addCapacity(total, pool.available), EMPTY_CAPACITY);
+	const eligibleDcIds = candidates.filter((candidate) => candidate.regionEligible).map((candidate) => candidate.dcId);
 	const fittingDcIds = candidates.filter((candidate) => candidate.fits).map((candidate) => candidate.dcId);
 	const fitStatus: ContractAssignmentFitStatus = fittingDcIds.length > 0
 		? "fits"
@@ -169,9 +231,11 @@ export function summarizeContractAssignmentFitForContract(
 	return {
 		contractId: contract.id,
 		requirements: contract.requirements,
+		regionAffinity,
 		fitStatus,
 		networkAvailable,
 		candidates,
+		eligibleDcIds,
 		fittingDcIds,
 	};
 }

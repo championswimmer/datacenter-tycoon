@@ -3,17 +3,30 @@ import {
 	reliabilityMarketPolicyForScore,
 	type ReliabilityMarketPolicy,
 } from "../balance/reliability.js";
+import { regionIdsForContractAffinity, REGION_CATALOG } from "../catalog/regions.js";
 import {
 	CONTRACT_TERM_DISCOUNT_BASELINE_MONTHS,
 	CONTRACT_TERM_DISCOUNT_FLOOR,
 	CONTRACT_TERM_DISCOUNT_PER_EXTRA_MONTH,
 } from "../economy/constants.js";
-import type { Contract, ContractId, ContractRequirements, ContractTier, ContractUrgency, Money } from "../types.js";
+import type {
+	Contract,
+	ContractId,
+	ContractRegionAffinity,
+	ContractRegionAffinityKey,
+	ContractRequirements,
+	ContractTier,
+	ContractUrgency,
+	Money,
+	Region,
+} from "../types.js";
 import type { Rng } from "../sim/rng.js";
 
 type TermRange = readonly [minMonths: number, maxMonths: number];
 
 export type ContractTermBand = "short" | "standard" | "long";
+
+type ContractAffinitySelection = ContractRegionAffinityKey | "global";
 
 interface ContractTheme {
 	id: string;
@@ -22,6 +35,10 @@ interface ContractTheme {
 	standardTermRange: TermRange;
 	anchorTermRange: TermRange;
 	rushTermRange: TermRange;
+	affinityWeights: ReadonlyArray<{
+		key: ContractAffinitySelection;
+		weight: number;
+	}>;
 	weights: {
 		vCpu: number;
 		ramGb: number;
@@ -78,6 +95,11 @@ const CONTRACT_THEMES: readonly ContractTheme[] = [
 		standardTermRange: [4, 10],
 		anchorTermRange: [10, 18],
 		rushTermRange: [1, 2],
+		affinityWeights: [
+			{ key: "global", weight: 3 },
+			{ key: "usa", weight: 6 },
+			{ key: "asia", weight: 1 },
+		],
 		weights: { vCpu: 0.2, ramGb: 0.45, storageTb: 0.15, gpuFlops: 1 },
 	},
 	{
@@ -87,6 +109,11 @@ const CONTRACT_THEMES: readonly ContractTheme[] = [
 		standardTermRange: [2, 6],
 		anchorTermRange: [6, 12],
 		rushTermRange: [1, 2],
+		affinityWeights: [
+			{ key: "global", weight: 5 },
+			{ key: "asia", weight: 3 },
+			{ key: "usa", weight: 2 },
+		],
 		weights: { vCpu: 0.45, ramGb: 0.4, storageTb: 0.15, gpuFlops: 0.55 },
 	},
 	{
@@ -96,6 +123,11 @@ const CONTRACT_THEMES: readonly ContractTheme[] = [
 		standardTermRange: [3, 8],
 		anchorTermRange: [8, 14],
 		rushTermRange: [1, 2],
+		affinityWeights: [
+			{ key: "global", weight: 6 },
+			{ key: "usa", weight: 3 },
+			{ key: "eu", weight: 1 },
+		],
 		weights: { vCpu: 1, ramGb: 0.7, storageTb: 0.2, gpuFlops: 0.3 },
 	},
 	{
@@ -105,6 +137,11 @@ const CONTRACT_THEMES: readonly ContractTheme[] = [
 		standardTermRange: [9, 18],
 		anchorTermRange: [18, 30],
 		rushTermRange: [1, 2],
+		affinityWeights: [
+			{ key: "global", weight: 3 },
+			{ key: "eu", weight: 6 },
+			{ key: "usa", weight: 1 },
+		],
 		weights: { vCpu: 0.55, ramGb: 1, storageTb: 0.45, gpuFlops: 0 },
 	},
 	{
@@ -114,6 +151,11 @@ const CONTRACT_THEMES: readonly ContractTheme[] = [
 		standardTermRange: [12, 24],
 		anchorTermRange: [24, 36],
 		rushTermRange: [1, 2],
+		affinityWeights: [
+			{ key: "global", weight: 4 },
+			{ key: "eu", weight: 5 },
+			{ key: "asia", weight: 1 },
+		],
 		weights: { vCpu: 0.05, ramGb: 0.08, storageTb: 1, gpuFlops: 0 },
 	},
 	{
@@ -123,6 +165,11 @@ const CONTRACT_THEMES: readonly ContractTheme[] = [
 		standardTermRange: [4, 9],
 		anchorTermRange: [9, 16],
 		rushTermRange: [1, 2],
+		affinityWeights: [
+			{ key: "global", weight: 6 },
+			{ key: "asia", weight: 3 },
+			{ key: "eu", weight: 1 },
+		],
 		weights: { vCpu: 0.8, ramGb: 0.3, storageTb: 0.55, gpuFlops: 0 },
 	},
 	{
@@ -132,6 +179,11 @@ const CONTRACT_THEMES: readonly ContractTheme[] = [
 		standardTermRange: [1, 4],
 		anchorTermRange: [4, 6],
 		rushTermRange: [1, 2],
+		affinityWeights: [
+			{ key: "global", weight: 5 },
+			{ key: "asia", weight: 4 },
+			{ key: "usa", weight: 1 },
+		],
 		weights: { vCpu: 0.45, ramGb: 0.35, storageTb: 0.25, gpuFlops: 0.7 },
 	},
 ];
@@ -172,6 +224,23 @@ function contractId(value: string): ContractId {
 function pickOne<T>(rng: Rng, values: readonly T[]): T {
 	const index = Math.floor(rng.next() * values.length);
 	return values[Math.min(index, values.length - 1)] as T;
+}
+
+function pickWeighted<T>(rng: Rng, values: ReadonlyArray<{ value: T; weight: number }>): T {
+	const totalWeight = values.reduce((sum, value) => sum + Math.max(0, value.weight), 0);
+	if (totalWeight <= 0) {
+		return values[0]!.value;
+	}
+
+	let roll = rng.next() * totalWeight;
+	for (const value of values) {
+		roll -= Math.max(0, value.weight);
+		if (roll <= 0) {
+			return value.value;
+		}
+	}
+
+	return values[values.length - 1]!.value;
 }
 
 function availableThemes(difficulty: number): readonly ContractTheme[] {
@@ -246,6 +315,30 @@ function contractValue(requirements: ContractRequirements): number {
 	);
 }
 
+function createRegionAffinity(
+	rng: Rng,
+	theme: ContractTheme,
+	regions: readonly Pick<Region, "id">[],
+): ContractRegionAffinity | undefined {
+	const selectedAffinity = pickWeighted(
+		rng,
+		theme.affinityWeights.map((option) => ({ value: option.key, weight: option.weight })),
+	);
+	if (selectedAffinity === "global") {
+		return undefined;
+	}
+
+	const allowedRegionIds = regionIdsForContractAffinity(selectedAffinity, regions);
+	if (allowedRegionIds.length === 0) {
+		return undefined;
+	}
+
+	return {
+		key: selectedAffinity,
+		allowedRegionIds,
+	};
+}
+
 function rollTermMonths(rng: Rng, range: TermRange, difficulty: number): number {
 	const [minMonths, maxMonths] = range;
 	if (minMonths >= maxMonths) {
@@ -286,6 +379,7 @@ export function generateContract(
 	rng: Rng,
 	difficulty: number,
 	policy: ContractGenerationPolicy = BASELINE_CONTRACT_GENERATION_POLICY,
+	regions: readonly Pick<Region, "id">[] = Object.values(REGION_CATALOG),
 ): Contract {
 	const normalizedDifficulty = clampDifficulty(difficulty);
 	const theme = pickOne(rng, availableThemes(normalizedDifficulty));
@@ -319,6 +413,7 @@ export function generateContract(
 	termMonths = applyTermBias(termMonths, policy);
 
 	const tier: ContractTier = normalizedDifficulty < 0.35 ? 1 : normalizedDifficulty < 0.7 ? 2 : 3;
+	const regionAffinity = createRegionAffinity(rng, theme, regions);
 
 	const termRateMultiplier = monthlyRateMultiplierForTerm(termMonths);
 	const monthlyPayment = roundMoneyToNearest(
@@ -344,6 +439,7 @@ export function generateContract(
 		status: "offered",
 		urgency,
 		tier,
+		...(regionAffinity ? { regionAffinity } : {}),
 		offeredAtTick: 0,
 		expiresAtTick: offerDuration,
 	};
@@ -354,14 +450,15 @@ export function generateContractForTermBand(
 	difficulty: number,
 	desiredBand: ContractTermBand,
 	policy: ContractGenerationPolicy = BASELINE_CONTRACT_GENERATION_POLICY,
+	regions: readonly Pick<Region, "id">[] = Object.values(REGION_CATALOG),
 ): Contract {
-	let fallback = generateContract(rng, difficulty, policy);
+	let fallback = generateContract(rng, difficulty, policy, regions);
 	if (contractTermBand(fallback.termMonths) === desiredBand) {
 		return fallback;
 	}
 
 	for (let attempt = 1; attempt < MARKET_BAND_GENERATION_ATTEMPTS; attempt++) {
-		const candidate = generateContract(rng, difficulty, policy);
+		const candidate = generateContract(rng, difficulty, policy, regions);
 		fallback = candidate;
 		if (contractTermBand(candidate.termMonths) === desiredBand) {
 			return candidate;

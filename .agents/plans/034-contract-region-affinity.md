@@ -13,10 +13,10 @@ owner: game-logic, cli, web
   - [x] 1.1 Add contract region-affinity vocabulary and persisted whitelist fields to game-logic types
   - [x] 1.2 Add region grouping helpers so EU, Asia, and USA affinity sets resolve from the map/catalog
   - [x] 1.3 Update save/versioned public surfaces and package docs for the new contract shape
-- [ ] **Phase 2 — Affinity-aware contract generation and acceptance**
-  - [ ] 2.1 Add deterministic generation rules so some offers are EU-, Asia-, or USA-affine while others remain unrestricted
-  - [ ] 2.2 Persist and expose the allowed-region whitelist on generated contracts
-  - [ ] 2.3 Reject contract acceptance onto datacenters outside the contract’s allowed regions with a stable error shape
+- [x] **Phase 2 — Affinity-aware contract generation and acceptance**
+  - [x] 2.1 Add deterministic generation rules so some offers are EU-, Asia-, or USA-affine while others remain unrestricted
+  - [x] 2.2 Persist and expose the allowed-region whitelist on generated contracts
+  - [x] 2.3 Reject contract acceptance onto datacenters outside the contract’s allowed regions with a stable error shape
 - [ ] **Phase 3 — CLI contract reporting and guardrails**
   - [ ] 3.1 Extend CLI/protocol contract views and JSON output with affinity labels and allowed regions
   - [ ] 3.2 Update one-shot contract list/details/accept flows to explain region affinity and region-mismatch failures
@@ -219,6 +219,7 @@ export interface Contract {
 
 ## Changelog
 
+- 2026-05-17 — completed phase 2 by generating deterministic region-affine offers, carrying explicit whitelists through lifecycle/query views, and rejecting wrong-region contract acceptance with a structured error.
 - 2026-05-17 — completed phase 1 / step 1.3 by versioning save migration, adding round-trip coverage, and documenting contract region affinity in the game-logic README.
 - 2026-05-17 — completed step 1.2 by adding canonical contract-affinity region grouping helpers and tests.
 - 2026-05-17 — completed step 1.1 by adding contract region-affinity types and public exports.
