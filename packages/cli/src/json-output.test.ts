@@ -57,6 +57,23 @@ test("formatTextError expands insufficient-capacity failures for humans", () => 
 	);
 });
 
+test("formatTextError expands region-mismatch failures for humans", () => {
+	const error = Object.assign(new Error("Datacenter dc-1 is in region us_west, but this contract only allows eu_west, eu_central"), {
+		data: {
+			code: "region_not_allowed",
+			dcId: "dc-1",
+			dcRegionId: "us_west",
+			affinityKey: "eu",
+			allowedRegionIds: ["eu_west", "eu_central"],
+		},
+	});
+
+	assert.equal(
+		formatTextError(error),
+		"Cannot accept contract on dc-1: PDX · Boardman · US West is not allowed (EU only: DUB · Dublin · EU West, FRA · Frankfurt · EU Central)",
+	);
+});
+
 test("formatTextError expands out-of-bounds placement failures with valid ranges", () => {
 	const error = Object.assign(new Error("Cannot place rack: out_of_bounds"), {
 		data: {

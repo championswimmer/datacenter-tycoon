@@ -207,6 +207,7 @@ test("runContractDetailsCommand text output shows the assigned datacenter", asyn
 	assert.equal(actions.length, 0);
 	assert.equal(logged.length, 1);
 	assert.match(logged[0] ?? "", /Assigned DC: dc-1/);
+	assert.match(logged[0] ?? "", /Regions: Any region/);
 	assert.doesNotMatch(logged[0] ?? "", /Assigned DC: unassigned/);
 });
 
@@ -228,6 +229,7 @@ test("contract list text output shows the assigned datacenter", async () => {
 	assert.equal(actions.length, 0);
 	assert.equal(logged.length, 1);
 	assert.match(logged[0] ?? "", /DC: dc-1/);
+	assert.match(logged[0] ?? "", /Regions: Any region/);
 	assert.doesNotMatch(logged[0] ?? "", /DC: unassigned/);
 });
 
@@ -354,6 +356,60 @@ test("contract list and details json include region affinity only for restricted
 	assert.deepEqual(detailsPayload.data.contract.regionAffinity, restrictedListEntry?.regionAffinity);
 });
 
+test("contract list and details text show region affinity summaries", async () => {
+	const base = newGame(7);
+	const restrictedContract = {
+		...base.contractMarket[0]!,
+		id: "offer-eu" as typeof base.contractMarket[number]["id"],
+		regionAffinity: {
+			key: "eu" as const,
+			allowedRegionIds: [REGION_CATALOG.eu_west.id, REGION_CATALOG.eu_central.id],
+		},
+	};
+	const snapshot: GameState = {
+		...base,
+		contracts: [restrictedContract],
+		contractMarket: [restrictedContract],
+		activeContracts: [],
+	};
+	const actions: Action[] = [];
+	const logged: string[] = [];
+	const originalLog = console.log;
+	console.log = (message?: unknown) => {
+		logged.push(String(message ?? ""));
+	};
+
+	const affinityAwareClient = () => ({
+		...createFakeClient(actions, snapshot),
+		query: async (params: { kind: string; target?: string }) => {
+			if (params.kind === "snapshot") {
+				return snapshot;
+			}
+			if (params.kind === "list" && params.target === "contracts") {
+				return {
+					kind: "contracts" as const,
+					market: snapshot.contractMarket,
+					active: [],
+					history: [],
+				};
+			}
+			return { tick: 0 };
+		},
+	});
+
+	try {
+		await runLsCommand(parseArgv(["ls", "contracts"]), affinityAwareClient);
+		await runContractCommand(parseArgv(["contract", "details", restrictedContract.id]), affinityAwareClient);
+	} finally {
+		console.log = originalLog;
+	}
+
+	assert.match(logged[0] ?? "", /Regions: EU only/);
+	assert.match(logged[0] ?? "", /DUB · Dublin · EU West/);
+	assert.match(logged[1] ?? "", /Regions: EU only/);
+	assert.match(logged[1] ?? "", /FRA · Frankfurt · EU Central/);
+});
+
 test("runAcceptContractCommand preserves structured capacity errors from the daemon", async () => {
 	const required = { vCpu: 10, ramGb: 20, storageTb: 30, gpuFlops: 40 };
 	const available = { vCpu: 1, ramGb: 2, storageTb: 3, gpuFlops: 4 };
@@ -383,6 +439,40 @@ test("runAcceptContractCommand preserves structured capacity errors from the dae
 				dcId: "dc-1",
 				required,
 				available,
+			});
+			return true;
+		},
+	);
+});
+
+test("runAcceptContractCommand preserves structured region-mismatch errors from the daemon", async () => {
+	await assert.rejects(
+		() =>
+			runAcceptContractCommand(
+				parseArgv(["accept-contract", "offer-1", "dc-1", "--json"]),
+				() => ({
+					...createFakeClient([]),
+					dispatch: async () => {
+						throw Object.assign(new Error("Datacenter dc-1 is in region us_west, but this contract only allows eu_west, eu_central"), {
+							data: {
+								code: "region_not_allowed",
+								dcId: "dc-1",
+								dcRegionId: "us_west",
+								affinityKey: "eu",
+								allowedRegionIds: [REGION_CATALOG.eu_west.id, REGION_CATALOG.eu_central.id],
+							},
+						});
+					},
+				}),
+			),
+		(error: unknown) => {
+			assert.ok(error instanceof Error);
+			assert.deepEqual((error as Error & { data?: unknown }).data, {
+				code: "region_not_allowed",
+				dcId: "dc-1",
+				dcRegionId: "us_west",
+				affinityKey: "eu",
+				allowedRegionIds: [REGION_CATALOG.eu_west.id, REGION_CATALOG.eu_central.id],
 			});
 			return true;
 		},
