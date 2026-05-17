@@ -106,6 +106,55 @@ function buildRegionalAssignmentState(): GameState {
   };
 }
 
+function buildWrongRegionState(): GameState {
+  let state = newGame(42, { playerName: "Acme Corp", startingCash: 4_000_000 });
+  const usaDcId = nextDcId();
+  const usaRegionId = state.map.regions.find((region) => region.id.toString().startsWith("us_"))!.id;
+  const euRegionIds = state.map.regions
+    .filter((region) => region.id.toString().startsWith("eu_"))
+    .map((region) => region.id);
+
+  state = reduce(state, {
+    type: "BuildDatacenter",
+    specId: DATACENTER_CATALOG.garage!.id,
+    dcId: usaDcId,
+    regionId: usaRegionId,
+  });
+  state = reduce(state, {
+    type: "PlaceRack",
+    dcId: usaDcId,
+    specId: RACK_CATALOG.C1!.id,
+    row: 0,
+    position: 0,
+    placementId: nextRackPlacementId(),
+  });
+
+  const contract: Contract = {
+    id: "contract-market-wrong-region" as Contract["id"],
+    name: "EU Sovereignty Compute",
+    requirements: { vCpu: 8, ramGb: 0, storageTb: 0, gpuFlops: 0 },
+    monthlyPayment: 12_000,
+    penaltyPerMonth: 4_000,
+    termMonths: 3,
+    lifecycleState: "market_open",
+    status: "offered",
+    urgency: "standard",
+    tier: 1,
+    regionAffinity: {
+      key: "eu",
+      allowedRegionIds: euRegionIds,
+    },
+    offeredAtTick: state.tick,
+    expiresAtTick: (state.tick + 6) as Contract["expiresAtTick"],
+  };
+
+  return {
+    ...state,
+    contractMarket: [contract],
+    activeContracts: [],
+  };
+}
+
 function renderMarket(state = buildMarketState()) {
   const store = createGameStore(state);
   render(
@@ -195,6 +244,13 @@ describe("MarketList", () => {
     renderMarket(state);
 
     expect(screen.getByText(/Platinum reliability is helping surface longer-term offers like this/i)).toBeTruthy();
+  });
+
+  it("shows a wrong-region fit badge when no datacenter exists in the contract whitelist", () => {
+    renderMarket(buildWrongRegionState());
+
+    expect(screen.getByTitle("No eligible datacenter region")).toBeTruthy();
+    expect(screen.queryByTitle("Insufficient capacity")).toBeNull();
   });
 
   it("shows only region-eligible datacenters in the accept picker for restricted offers", () => {

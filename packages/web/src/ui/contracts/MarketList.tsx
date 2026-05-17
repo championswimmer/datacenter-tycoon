@@ -24,11 +24,18 @@ function fmt(n: number): string {
 }
 
 const ZERO_CAPACITY: Capacity = { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 };
-const FIT_ICON: Record<string, string> = { fits: "✅", partial: "⚠", none: "❌" };
-const FIT_LABEL: Record<string, string> = {
+type FitDisplayStatus = "fits" | "partial" | "none" | "wrong-region";
+const FIT_ICON: Record<FitDisplayStatus, string> = {
+  fits: "✅",
+  partial: "⚠",
+  none: "❌",
+  "wrong-region": "🌍",
+};
+const FIT_LABEL: Record<FitDisplayStatus, string> = {
   fits: "DC available",
   partial: "No single DC fits",
   none: "Insufficient capacity",
+  "wrong-region": "No eligible datacenter region",
 };
 
 const CATEGORY_MAP: Record<string, { abbr: string; color: string }> = {
@@ -45,6 +52,19 @@ function dealScoreLabel(score: number): string {
   if (score >= 1.2) return "★ Good";
   if (score >= 1.0) return "Fair";
   return "Low";
+}
+
+function fitDisplayStatus(
+  restricted: boolean,
+  eligibleDatacenterIds: readonly string[],
+  fitStatus: "fits" | "partial" | "none",
+  datacenterCount: number,
+): FitDisplayStatus {
+  if (restricted && datacenterCount > 0 && eligibleDatacenterIds.length === 0) {
+    return "wrong-region";
+  }
+
+  return fitStatus;
 }
 
 export function MarketList({ contracts }: { contracts: Contract[] }) {
@@ -81,7 +101,12 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
         const contractView = marketViewById.get(contract.id);
         const fitSummary = contractView?.fitSummary;
         const affinity = contractView?.affinity;
-        const fit = fitSummary?.fitStatus ?? "none";
+        const fit = fitDisplayStatus(
+          affinity?.restricted ?? false,
+          contractView?.eligibleDatacenterIds ?? [],
+          fitSummary?.fitStatus ?? "none",
+          datacenters.length,
+        );
         const { months, days } = monthsAndDaysBetween(tick, fraction, contract.expiresAtTick, 0);
         const expired = months <= 0 && days <= 0;
         const expiryLabel = expired ? "EXPIRED" : formatRemaining(months, days);
