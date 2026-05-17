@@ -26,7 +26,7 @@ owner: game-logic, web
   - [x] 4.2 Update capacity displays to show pooled block capacity for fabric-connected sites
   - [x] 4.3 Add a UI affordance for connecting datacenters into the regional fabric
 - [ ] **Phase 5 - Tests and regression coverage**
-  - [ ] 5.1 Add game-logic tests for first link, later links, and invalid joins
+  - [x] 5.1 Add game-logic tests for first link, later links, and invalid joins
   - [ ] 5.2 Add contract tests for pooled fulfilment across multiple datacenters
   - [ ] 5.3 Add UI selector/component tests for pooled capacity and fabric badges
 
