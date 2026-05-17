@@ -170,8 +170,11 @@ test("runContractDetailsCommand returns snapshot-backed contract details as json
 				assignedDcId: string | null;
 				bucket: string;
 				monthlyPayment: number;
+				slaTargetPercent: number;
+				currentSlaWindow: { sampledDays: number; servedDays: number; failedDays: number };
 				regionAffinity?: { key: string; label: string; allowedRegionIds: string[]; allowedRegions: string[] };
 			};
+			slaProgress: { sampledDays: number; servedDays: number; failedDays: number; status: string };
 			recentOutcomes: Array<{ contractId: string; kind: string; tick: number }>;
 		};
 	};
@@ -182,6 +185,9 @@ test("runContractDetailsCommand returns snapshot-backed contract details as json
 	assert.equal(parsed.data.contract.assignedDcId, "dc-1");
 	assert.equal(typeof parsed.data.contract.monthlyPayment, "number");
 	assert.equal(parsed.data.contract.regionAffinity, undefined);
+	assert.equal(parsed.data.contract.slaTargetPercent, snapshot.contracts[0]!.slaTargetPercent);
+	assert.deepEqual(parsed.data.contract.currentSlaWindow, { sampledDays: 0, servedDays: 0, failedDays: 0 });
+	assert.equal(parsed.data.slaProgress.status, "recoverable");
 	assert.equal(parsed.data.recentOutcomes.length, 1);
 	assert.equal(parsed.data.recentOutcomes[0]?.kind, "breached");
 	assert.equal(parsed.data.recentOutcomes[0]?.tick, 4);
@@ -207,6 +213,7 @@ test("runContractDetailsCommand text output shows the assigned datacenter", asyn
 	assert.equal(actions.length, 0);
 	assert.equal(logged.length, 1);
 	assert.match(logged[0] ?? "", /Assigned DC: dc-1/);
+	assert.match(logged[0] ?? "", new RegExp(`SLA: ${snapshot.contracts[0]!.slaTargetPercent}% target`));
 	assert.match(logged[0] ?? "", /Regions: Any region/);
 	assert.doesNotMatch(logged[0] ?? "", /Assigned DC: unassigned/);
 });

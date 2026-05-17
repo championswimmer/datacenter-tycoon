@@ -151,6 +151,8 @@ test("GameRuntime query returns status, catalogs, and derived listings", () => {
 
 	const status = runtime.query({ kind: "status" });
 	assert.equal(status.tick, 0);
+	assert.equal(status.subtick, 0);
+	assert.equal(status.dayOfMonth, 1);
 	assert.equal(status.datacenterCount, 1);
 	assert.equal(status.rackCount, 1);
 	assert.equal(status.paused, true);

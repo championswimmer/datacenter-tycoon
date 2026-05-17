@@ -1,3 +1,4 @@
+import { DAYS_PER_TICK } from "@datacenter-tycoon/game-logic";
 import type { ParsedArgv } from "../argv.js";
 import { DctClient, type DctClientOptions } from "../client/client.js";
 import type { QueryResult, StatusView } from "../protocol/messages.js";
@@ -21,6 +22,7 @@ function formatMoney(amount: number): string {
 export function formatStatusLine(status: StatusView): string {
 	return [
 		`tick=${status.tick}`,
+		`day=${status.dayOfMonth}/${DAYS_PER_TICK}`,
 		`cash=${formatMoney(status.cash)}`,
 		`difficulty=${status.difficulty}`,
 		`dcs=${status.datacenterCount}`,

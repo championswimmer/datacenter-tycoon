@@ -28,6 +28,8 @@ export interface CliContractView {
 	monthlyPayment: number;
 	penaltyPerMonth: number;
 	termMonths: number;
+	slaTargetPercent: Contract["slaTargetPercent"];
+	currentSlaWindow: Contract["currentSlaWindow"];
 	offeredAtTick: number;
 	expiresAtTick: number;
 	startedAtTick: number | null;
@@ -67,6 +69,8 @@ export function presentContract(contract: Contract, bucket: ContractListBucket):
 		monthlyPayment: contract.monthlyPayment,
 		penaltyPerMonth: contract.penaltyPerMonth,
 		termMonths: contract.termMonths,
+		slaTargetPercent: contract.slaTargetPercent,
+		currentSlaWindow: contract.currentSlaWindow,
 		offeredAtTick: contract.offeredAtTick,
 		expiresAtTick: contract.expiresAtTick,
 		startedAtTick: contract.startedAtTick ?? null,

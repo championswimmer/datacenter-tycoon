@@ -76,6 +76,8 @@ function totalRackCount(datacenters: Datacenter[]): number {
 function createStatusView(state: GameState, runtimeStatus: RuntimeStatus): StatusView {
 	return {
 		tick: state.tick,
+		subtick: state.subtick,
+		dayOfMonth: state.subtick + 1,
 		cash: state.player.cash,
 		difficulty: state.difficulty,
 		datacenterCount: state.datacenters.length,

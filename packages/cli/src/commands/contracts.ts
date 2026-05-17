@@ -1,4 +1,4 @@
-import type { ContractId, DatacenterId, GameState } from "@datacenter-tycoon/game-logic";
+import { summarizeContractSlaProgress, type ContractId, type DatacenterId, type GameState } from "@datacenter-tycoon/game-logic";
 
 import { DctClient } from "../client/client.js";
 import type { ParsedArgv } from "../argv.js";
@@ -64,8 +64,9 @@ export async function runContractDetailsCommand(
 		parsed,
 		async (client) => {
 			const snapshot = (await client.query({ kind: "snapshot" })) as GameState;
+			const rawContract = snapshot.contracts.find((candidate) => candidate.id === targetContractId);
 			const contract = presentContractById(snapshot, targetContractId);
-			if (!contract) {
+			if (!contract || !rawContract) {
 				throw new Error(`Unknown contract: ${targetContractId}`);
 			}
 
@@ -75,14 +76,16 @@ export async function runContractDetailsCommand(
 
 			return {
 				contract,
+				slaProgress: summarizeContractSlaProgress(rawContract),
 				recentOutcomes,
 			};
 		},
 		clientFactory,
 	);
 
-	const { contract, recentOutcomes } = result as {
+	const { contract, slaProgress, recentOutcomes } = result as {
 		contract: NonNullable<ReturnType<typeof presentContractById>>;
+		slaProgress: ReturnType<typeof summarizeContractSlaProgress>;
 		recentOutcomes: GameState["player"]["reliability"]["recentOutcomes"];
 	};
 
@@ -90,6 +93,7 @@ export async function runContractDetailsCommand(
 		`Contract ${contract.id}`,
 		`${contract.name} | status=${contract.status} | urgency=${contract.urgency} | tier=${contract.tier}`,
 		`Payment: $${contract.monthlyPayment.toLocaleString()}/mo | Penalty: $${contract.penaltyPerMonth.toLocaleString()}/mo | Term: ${contract.termMonths} months`,
+		`SLA: ${contract.slaTargetPercent}% target | sampled ${slaProgress.sampledDays} day(s) | served ${slaProgress.servedDays} | failed ${slaProgress.failedDays} | ${slaProgress.status.toUpperCase()} | failure budget ${slaProgress.remainingFailureBudgetDays}/${slaProgress.maxFailedDays} day(s) left`,
 		`Requirements: ${formatContractRequirements(contract)}`,
 		`Regions: ${formatContractRegionAffinity(contract)}`,
 		contract.bucket === "history"

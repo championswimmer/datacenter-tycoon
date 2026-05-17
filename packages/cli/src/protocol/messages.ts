@@ -143,6 +143,8 @@ export interface RuntimeStatus {
 
 export interface StatusView extends RuntimeStatus {
 	tick: number;
+	subtick: number;
+	dayOfMonth: number;
 	cash: number;
 	difficulty: "easy" | "hard";
 	datacenterCount: number;

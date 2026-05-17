@@ -27,7 +27,7 @@ owner: game-logic, web, cli
   - [x] 4.3 Surface rack repair ETAs and contract SLA progress in web UI
 - [ ] **Phase 5 — CLI daemon, command, and event support**
   - [x] 5.1 Update daemon scheduling and events for lightweight subtick advancement
-  - [ ] 5.2 Update CLI status/detail commands to show calendar day and SLA/repair progress
+  - [x] 5.2 Update CLI status/detail commands to show calendar day and SLA/repair progress
   - [ ] 5.3 Preserve script compatibility for one-shot monthly advancement
 - [ ] **Phase 6 — Persistence, docs, tests, and performance guardrails**
   - [ ] 6.1 Migrate saves and update public package docs
