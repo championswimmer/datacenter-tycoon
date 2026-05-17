@@ -245,6 +245,10 @@
 .trackWarning {
   color: var(--neon-amber);
   font-size: var(--text-xs);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid rgba(255, 190, 82, 0.25);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 190, 82, 0.08);
 }
 
 .maxed {
@@ -254,7 +258,7 @@
 
 .upgradeButton {
   margin-top: var(--space-1);
-  min-height: 36px;
+  min-height: 38px;
   border: 1px solid var(--neon-cyan);
   border-radius: var(--radius-sm);
   background: transparent;
@@ -264,11 +268,18 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
 }
 
 .upgradeButton:hover {
   box-shadow: var(--glow-sm-cyan);
   background: rgba(94, 240, 255, 0.08);
+  transform: translateY(-1px);
 }
 
 .upgradeButton:disabled {

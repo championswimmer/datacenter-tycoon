@@ -12,9 +12,13 @@ import styles from "./UpgradePanel.module.css";
 const LADDER_STATUS_LABEL: Record<DatacenterUpgradeTrackLadderNodeView["status"], string> = {
   completed: "Complete",
   current: "Current",
-  available: "Available next",
+  available: "Ready next",
   locked: "Locked",
 };
+
+function formatMoney(value: number): string {
+  return `$${value.toLocaleString()}`;
+}
 
 function ladderNodeClassName(status: DatacenterUpgradeTrackLadderNodeView["status"]): string {
   return [
@@ -70,7 +74,7 @@ export function UpgradePanel({ dcId }: UpgradePanelProps) {
         <div>
           <h3 className={styles.title}>UPGRADE TRACKS</h3>
           <p className={styles.copy}>
-            All affordances come from canonical game-logic queries. Fiber unlocks regional fabric participation.
+            Preview the full infrastructure ladder before committing capex. Fiber is required before this site can join a regional fabric pool.
           </p>
         </div>
         <div className={styles.flags}>
@@ -145,11 +149,11 @@ export function UpgradePanel({ dcId }: UpgradePanelProps) {
               {track.nextNode ? (
                 <>
                   <span className={styles.trackNext}>NEXT · {track.nextNode.label}</span>
-                  <span className={styles.trackStat}>Capex ${track.nextNode.capexCost.toLocaleString()}</span>
-                  <span className={styles.trackStat}>Δ Opex +${track.nextNode.fixedMonthlyOpexDelta.toLocaleString()}/mo</span>
+                  <span className={styles.trackStat}>Capex {formatMoney(track.nextNode.capexCost)}</span>
+                  <span className={styles.trackStat}>Δ Opex +{formatMoney(track.nextNode.fixedMonthlyOpexDelta)}/mo</span>
                   {cash < track.nextNode.capexCost ? (
                     <span className={styles.trackWarning}>
-                      Need ${(track.nextNode.capexCost - cash).toLocaleString()} more cash to unlock this step.
+                      Short {formatMoney(track.nextNode.capexCost - cash)}. This step costs {formatMoney(track.nextNode.capexCost)} upfront.
                     </span>
                   ) : null}
                   <button
@@ -159,13 +163,13 @@ export function UpgradePanel({ dcId }: UpgradePanelProps) {
                     disabled={cash < track.nextNode.capexCost}
                     title={
                       cash < track.nextNode.capexCost
-                        ? `Need $${(track.nextNode.capexCost - cash).toLocaleString()} more`
-                        : `Review upgrade to ${track.nextNode.label}`
+                        ? `Short ${formatMoney(track.nextNode.capexCost - cash)} for ${track.nextNode.label}`
+                        : `Review ${track.nextNode.label} upgrade for ${formatMoney(track.nextNode.capexCost)}`
                     }
                   >
                     {cash < track.nextNode.capexCost
-                      ? `Need $${(track.nextNode.capexCost - cash).toLocaleString()} more`
-                      : `Review upgrade to ${track.nextNode.label}`}
+                      ? `Short ${formatMoney(track.nextNode.capexCost - cash)} · ${track.nextNode.label}`
+                      : `Review ${track.nextNode.label} · ${formatMoney(track.nextNode.capexCost)}`}
                   </button>
                 </>
               ) : (

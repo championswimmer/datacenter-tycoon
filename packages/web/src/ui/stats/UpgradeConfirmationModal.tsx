@@ -15,7 +15,7 @@ function formatMoney(value: number): string {
   return `$${value.toLocaleString()}`;
 }
 
-function formatSignedMoney(value: number): string {
+function formatDeltaMoney(value: number): string {
   return `${value >= 0 ? "+" : "-"}$${Math.abs(value).toLocaleString()}`;
 }
 
@@ -35,6 +35,7 @@ export function UpgradeConfirmationModal({
   }
 
   const resultingCash = cash - nextNode.capexCost;
+  const shortfall = Math.max(0, nextNode.capexCost - cash);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -64,7 +65,7 @@ export function UpgradeConfirmationModal({
       >
         <div className={styles.header}>
           <div className={styles.headerCopy}>
-            <h2 id="upgrade-confirmation-title" className={styles.title}>CONFIRM UPGRADE</h2>
+            <h2 id="upgrade-confirmation-title" className={styles.title}>REVIEW UPGRADE PURCHASE</h2>
             <p className={styles.subtitle}>{track.label} · {track.currentNode.label} → {nextNode.label}</p>
           </div>
           <button
@@ -80,29 +81,29 @@ export function UpgradeConfirmationModal({
 
         <div className={styles.content}>
           <p className={styles.copy}>
-            Review the spend before applying this datacenter infrastructure upgrade. The capex is charged immediately and the new upkeep starts after the upgrade lands.
+            You are about to commit capital to the next infrastructure step. Review the upfront spend, the new monthly upkeep, and the cash you will have left before you lock it in.
           </p>
 
           <div className={styles.summaryGrid}>
             <div className={styles.summaryCard}>
               <span className={styles.summaryLabel}>TRACK</span>
               <span className={styles.summaryValue}>{track.label}</span>
-              <span className={styles.summaryHint}>{track.currentNodeIndex + 1} of {track.totalNodes} active now</span>
+              <span className={styles.summaryHint}>Currently at step {track.currentNodeIndex + 1} of {track.totalNodes}</span>
             </div>
             <div className={styles.summaryCard}>
-              <span className={styles.summaryLabel}>CAPEX</span>
+              <span className={styles.summaryLabel}>UPFRONT COST</span>
               <span className={styles.summaryValue}>{formatMoney(nextNode.capexCost)}</span>
-              <span className={styles.summaryHint}>Spend required to unlock {nextNode.label}</span>
+              <span className={styles.summaryHint}>Spend required right now to unlock {nextNode.label}</span>
             </div>
             <div className={styles.summaryCard}>
-              <span className={styles.summaryLabel}>UPKEEP Δ</span>
-              <span className={styles.summaryValue}>{formatSignedMoney(nextNode.fixedMonthlyOpexDelta)}/mo</span>
-              <span className={styles.summaryHint}>{formatMoney(track.currentNode.fixedMonthlyOpex)} → {formatMoney(nextNode.fixedMonthlyOpex)}/mo</span>
+              <span className={styles.summaryLabel}>MONTHLY UPKEEP</span>
+              <span className={styles.summaryValue}>{formatDeltaMoney(nextNode.fixedMonthlyOpexDelta)}/mo</span>
+              <span className={styles.summaryHint}>{formatMoney(track.currentNode.fixedMonthlyOpex)} → {formatMoney(nextNode.fixedMonthlyOpex)}/mo after the upgrade</span>
             </div>
             <div className={styles.summaryCard}>
-              <span className={styles.summaryLabel}>CASH AFTER</span>
-              <span className={styles.summaryValue}>{formatSignedMoney(resultingCash)}</span>
-              <span className={styles.summaryHint}>Current cash {formatMoney(cash)}</span>
+              <span className={styles.summaryLabel}>CASH AFTER PURCHASE</span>
+              <span className={styles.summaryValue}>{formatMoney(resultingCash)}</span>
+              <span className={styles.summaryHint}>Current cash on hand: {formatMoney(cash)}</span>
             </div>
           </div>
 
@@ -123,11 +124,11 @@ export function UpgradeConfirmationModal({
 
         <div className={styles.footer}>
           {!canAfford && (
-            <span className={styles.warning}>This upgrade costs {formatMoney(nextNode.capexCost)} but you only have {formatMoney(cash)}.</span>
+            <span className={styles.warning}>Short {formatMoney(shortfall)}. Add more cash before applying this upgrade.</span>
           )}
           <div className={styles.actions}>
             <button type="button" className={styles.cancelButton} onClick={onClose}>
-              CANCEL
+              Back
             </button>
             <button
               type="button"
@@ -135,7 +136,7 @@ export function UpgradeConfirmationModal({
               onClick={onConfirm}
               disabled={!canAfford}
             >
-              CONFIRM — {formatMoney(nextNode.capexCost)}
+              Apply upgrade · {formatMoney(nextNode.capexCost)}
             </button>
           </div>
         </div>
