@@ -119,7 +119,11 @@ export function resolveDatacenterCapacityPoolMemberIds(
 	dcId: DatacenterId,
 ): DatacenterId[] {
 	const datacenter = getDatacenterOrThrow(state.datacenters, dcId);
-	const region = getRegionOrThrow(state.map.regions, datacenter.regionId);
+	const region = state.map.regions.find((candidate) => candidate.id === datacenter.regionId);
+	if (!region) {
+		return [dcId];
+	}
+
 	return isDatacenterInRegionFabric(region, dcId) ? getRegionFabricMemberIds(region) : [dcId];
 }
 
