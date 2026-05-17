@@ -132,6 +132,16 @@ export function withDerivedContractViews<T extends GameState>(state: T): T {
 	};
 }
 
+export function stripDerivedContractViews<T extends GameState>(
+	state: T,
+): Omit<T, "contractMarket" | "activeContracts"> & Pick<GameState, "contracts"> {
+	const { contractMarket: _contractMarket, activeContracts: _activeContracts, ...rest } = state;
+	return {
+		...rest,
+		contracts: contractsFromState(state),
+	};
+}
+
 export function evaluateContract(datacenter: Datacenter, contract: Contract): ContractEvaluationResult {
 	const capacity = datacenterCapacity(datacenter);
 	const { requirements } = contract;
