@@ -36,6 +36,23 @@ function stateWithDatacenterAndRack(): { state: GameState; dcId: ReturnType<type
   return { state, dcId };
 }
 
+function upgradeDatacenterToFiber(state: GameState, dcId: ReturnType<typeof nextDcId>) {
+  return reduce(
+    reduce(state, {
+      type: "UpgradeDatacenter",
+      dcId,
+      trackId: "networkType",
+      targetNodeId: "cat8",
+    }),
+    {
+      type: "UpgradeDatacenter",
+      dcId,
+      trackId: "networkType",
+      targetNodeId: "fiber",
+    },
+  );
+}
+
 function renderPowerView(state: GameState, dcId: ReturnType<typeof nextDcId>) {
   const store = createGameStore(state);
   return render(
@@ -131,5 +148,39 @@ describe("PowerView", () => {
 
     expect(activeReserved).toBe(idleReserved);
     expect(activeBilled).toBeGreaterThan(idleBilled);
+  });
+
+  it("shows pooled regional fabric capacity when a datacenter is linked into a fabric", () => {
+    let state = newGame(42, { startingCash: 8_000_000 });
+    const dcA = nextDcId();
+    const dcB = nextDcId();
+    const firstRegionId = state.map.regions[0]!.id;
+
+    for (const dcId of [dcA, dcB] as const) {
+      state = reduce(state, {
+        type: "BuildDatacenter",
+        specId: DATACENTER_CATALOG.garage!.id,
+        dcId,
+        regionId: firstRegionId,
+      });
+      state = reduce(state, {
+        type: "PlaceRack",
+        dcId,
+        specId: RACK_CATALOG.C1!.id,
+        row: 0,
+        position: 0,
+        placementId: nextRackPlacementId(),
+      });
+      state = upgradeDatacenterToFiber(state, dcId);
+    }
+
+    state = reduce(state, { type: "FabricLink", sourceDcId: dcA, targetDcId: dcB });
+
+    renderPowerView(state, dcA);
+
+    expect(screen.getByText("REGIONAL FABRIC POOL")).toBeTruthy();
+    expect(screen.getByText(/2-site pooled block available to this datacenter/)).toBeTruthy();
+    expect(screen.getByText("REGIONAL FABRIC STATUS")).toBeTruthy();
+    expect(screen.getByText(/LINKED/)).toBeTruthy();
   });
 });

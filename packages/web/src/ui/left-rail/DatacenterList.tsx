@@ -1,6 +1,7 @@
 import { useSelector } from "../../store/storeContext.js";
 import {
   selectAllDatacenters,
+  selectDatacenterFabricSummary,
   selectDatacenterInfrastructureSummary,
   selectDatacenterUpgradeSummary,
   selectResourceUsage,
@@ -25,6 +26,9 @@ export function DatacenterList({ currentRoute, onNewDatacenter }: DatacenterList
   );
   const upgradeSummaries = useSelector((state) =>
     state.datacenters.map((dc) => ({ dcId: dc.id, summary: selectDatacenterUpgradeSummary(state, dc.id) })),
+  );
+  const fabricSummaries = useSelector((state) =>
+    state.datacenters.map((dc) => ({ dcId: dc.id, summary: selectDatacenterFabricSummary(state, dc.id) })),
   );
   const regions      = useSelector(selectRegions);
 
@@ -60,6 +64,7 @@ export function DatacenterList({ currentRoute, onNewDatacenter }: DatacenterList
           const usage      = usageEntry?.usage;
           const infrastructure = infrastructureSummaries.find((entry) => entry.dcId === dc.id)?.summary;
           const upgrades = upgradeSummaries.find((entry) => entry.dcId === dc.id)?.summary;
+          const fabric = fabricSummaries.find((entry) => entry.dcId === dc.id)?.summary;
           const powerPct   = usage && infrastructure
             ? usage.powerKw / infrastructure.effective.rackPowerCapacityKw
             : 0;
@@ -111,10 +116,23 @@ export function DatacenterList({ currentRoute, onNewDatacenter }: DatacenterList
                 )}
               </div>
 
-              {upgrades && (
+              {(upgrades || fabric) && (
                 <div className={styles.dcFlags}>
-                  <span className={styles.dcFlag}>FABRIC {upgrades.fabricEligible ? "READY" : "LOCKED"}</span>
-                  <span className={styles.dcFlag}>UPKEEP ${upgrades.fixedMonthlyUpgradeOpex.toLocaleString()}/MO</span>
+                  {fabric && (
+                    <>
+                      <span className={styles.dcFlag}>
+                        {fabric.fabricConnected ? "FABRIC LINKED" : fabric.fabricEligible ? "FABRIC READY" : "FABRIC LOCKED"}
+                      </span>
+                      <span className={styles.dcFlag}>
+                        {fabric.fabricConnected
+                          ? `POOL ${fabric.memberDcIds.length} SITES`
+                          : fabric.fabricEligible
+                            ? `JOIN $${fabric.joinCost.toLocaleString()}`
+                            : "FIBER REQUIRED"}
+                      </span>
+                    </>
+                  )}
+                  {upgrades && <span className={styles.dcFlag}>UPKEEP ${upgrades.fixedMonthlyUpgradeOpex.toLocaleString()}/MO</span>}
                 </div>
               )}
 
