@@ -1,16 +1,16 @@
 ---
 name: Contract Region Affinity
 description: Add optional region-affinity rules so some contracts can only be accepted in specific regional whitelists, then surface those constraints in game-logic, CLI, and web.
-status: created
+status: started
 created: 2026-05-11
-updated: 2026-05-11
+updated: 2026-05-17
 owner: game-logic, cli, web
 ---
 
 ## Progress
 
 - [ ] **Phase 1 — Region-affinity domain model and persistence**
-  - [ ] 1.1 Add contract region-affinity vocabulary and persisted whitelist fields to game-logic types
+  - [x] 1.1 Add contract region-affinity vocabulary and persisted whitelist fields to game-logic types
   - [ ] 1.2 Add region grouping helpers so EU, Asia, and USA affinity sets resolve from the map/catalog
   - [ ] 1.3 Update save/versioned public surfaces and package docs for the new contract shape
 - [ ] **Phase 2 — Affinity-aware contract generation and acceptance**
@@ -219,4 +219,5 @@ export interface Contract {
 
 ## Changelog
 
+- 2026-05-17 — completed step 1.1 by adding contract region-affinity types and public exports.
 - 2026-05-11 — created.

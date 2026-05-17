@@ -29,6 +29,7 @@ export type ContractLifecycleState =
 export type ContractStatus = "offered" | "active" | "breached" | "expired" | "cancelled";
 export type ContractUrgency = "standard" | "rush" | "anchor";
 export type ContractTier = 1 | 2 | 3;
+export type ContractRegionAffinityKey = "eu" | "asia" | "usa";
 export type LedgerEntryType = "capex" | "opex" | "revenue" | "penalty" | "adjustment";
 export type RackHealthStatus = "healthy" | "repairing";
 export type ReliabilityBand = "bronze" | "silver" | "gold" | "platinum" | "diamond";
@@ -142,6 +143,11 @@ export interface Datacenter {
 
 export interface ContractRequirements extends Capacity {}
 
+export interface ContractRegionAffinity {
+	key: ContractRegionAffinityKey;
+	allowedRegionIds: RegionId[];
+}
+
 export interface Contract {
 	id: ContractId;
 	name: string;
@@ -154,6 +160,7 @@ export interface Contract {
 	status: ContractStatus;
 	urgency: ContractUrgency;
 	tier: ContractTier;
+	regionAffinity?: ContractRegionAffinity;
 	offeredAtTick: Tick;
 	expiresAtTick: Tick;
 	startedAtTick?: Tick;
