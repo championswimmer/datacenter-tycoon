@@ -6,6 +6,7 @@ export type Route =
   | { view: "home" }
   | { view: "dc"; dcId: string; tab: DcTab }
   | { view: "contracts" }
+  | { view: "strategy" }
   | { view: "log" }
   | { view: "map" }
   | { view: "theme-playground" }; // dev-only
@@ -25,6 +26,7 @@ export function parseRoute(hash: string): Route {
 
   if (seg0 === "__theme") return { view: "theme-playground" };
   if (seg0 === "contracts") return { view: "contracts" };
+  if (seg0 === "strategy") return { view: "strategy" };
   if (seg0 === "log") return { view: "log" };
   if (seg0 === "map") return { view: "map" };
 
@@ -43,6 +45,7 @@ export function routeToHash(route: Route): string {
     case "home":              return "#/";
     case "dc":                return `#/dc/${route.dcId}/${route.tab}`;
     case "contracts":         return "#/contracts";
+    case "strategy":          return "#/strategy";
     case "log":               return "#/log";
     case "map":               return "#/map";
     case "theme-playground":  return "#/__theme";
