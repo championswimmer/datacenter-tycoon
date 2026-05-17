@@ -272,7 +272,7 @@ test("tick keeps a previously breached contract breached while it remains live",
 	assert.equal(nextState.player.cash, state.player.cash - opex - breachedContract.penaltyPerMonth);
 });
 
-test("tick rolls deterministic late-life failures for healthy racks", () => {
+test("tick rolls deterministic late-life failures and can recover them before month end", () => {
 	const agedDatacenter = makeDatacenter("dc-1", [
 		{
 			...placement("rack-1", "C1", 0, 0),
@@ -288,8 +288,8 @@ test("tick rolls deterministic late-life failures for healthy racks", () => {
 	const nextState = tick(state);
 	const failedRack = nextState.datacenters[0]?.placements[0];
 
-	assert.equal(failedRack?.health, "repairing");
-	assert.ok((failedRack?.repairProgressDays ?? 0) > 0);
+	assert.equal(failedRack?.health, "healthy");
+	assert.equal("repairProgressDays" in (failedRack ?? {}), false);
 	assert.equal(failedRack?.lastFailureAtTick, 59);
 	assert.ok(failedRack?.lastFailureAtSubtick !== undefined);
 	assert.notEqual(nextState.rngState, state.rngState);
@@ -327,38 +327,41 @@ test("daily failure rolls land on the same subtick for identical seed histories"
 	assert.deepEqual(first, second);
 });
 
-test("higher maintenance staffing restores repairing racks in fewer ticks", () => {
+test("higher maintenance staffing restores repairing racks in fewer subticks", () => {
 	const repairingRack = {
 		...placement("rack-1", "C1", 0, 0),
 		health: "repairing" as const,
 		repairProgressDays: 0,
 		lastFailureAtTick: tickValue(1),
 	};
-	const lowStaffState = tick(
-		makeState({
-			tick: tickValue(1),
-			datacenters: [
-				{
-					...makeDatacenter("dc-low", [repairingRack]),
-					maintenanceStaff: 0,
-				},
-			],
-		}),
-	);
-	const highStaffState = tick(
-		makeState({
-			tick: tickValue(1),
-			datacenters: [
-				{
-					...makeDatacenter("dc-high", [repairingRack]),
-					maintenanceStaff: 4,
-				},
-			],
-		}),
-	);
+	let lowStaffState = makeState({
+		tick: tickValue(1),
+		datacenters: [
+			{
+				...makeDatacenter("dc-low", [repairingRack]),
+				maintenanceStaff: 0,
+			},
+		],
+	});
+	let highStaffState = makeState({
+		tick: tickValue(1),
+		datacenters: [
+			{
+				...makeDatacenter("dc-high", [repairingRack]),
+				maintenanceStaff: 4,
+			},
+		],
+	});
+
+	for (let day = 0; day < 2; day += 1) {
+		lowStaffState = advanceSubtick(lowStaffState);
+		highStaffState = advanceSubtick(highStaffState);
+	}
 
 	assert.equal(lowStaffState.datacenters[0]?.placements[0]?.health, "repairing");
 	assert.equal(highStaffState.datacenters[0]?.placements[0]?.health, "healthy");
+	lowStaffState = advanceSubtick(lowStaffState);
+	assert.equal(lowStaffState.datacenters[0]?.placements[0]?.health, "healthy");
 });
 
 test("repairing racks do not roll a second failure while already down", () => {
@@ -387,7 +390,7 @@ test("repairing racks do not roll a second failure while already down", () => {
 	assert.equal(rack?.lastFailureAtSubtick, 12);
 });
 
-test("a late-life rack failure can breach an overcommitted contract in the same tick", () => {
+test("a short late-life outage can recover before month-end settlement", () => {
 	const datacenter = makeDatacenter("dc-1", [
 		{
 			...placement("rack-1", "C1", 0, 0),
@@ -408,17 +411,17 @@ test("a late-life rack failure can breach an overcommitted contract in the same 
 		activeContracts: [contract],
 	});
 	const nextState = tick(state);
-	const postFailureDatacenter = nextState.datacenters[0]!;
-	const opex = tickOpex(postFailureDatacenter, TEST_REGION, state.activeContracts).total;
+	const settledDatacenter = nextState.datacenters[0]!;
+	const opex = tickOpex(settledDatacenter, TEST_REGION, state.activeContracts).total;
 
-	assert.equal(nextState.datacenters[0]?.placements[0]?.health, "repairing");
-	assert.equal(nextState.activeContracts[0]?.status, "breached");
-	assert.equal(nextState.player.cash, state.player.cash - opex - contract.penaltyPerMonth);
+	assert.equal(nextState.datacenters[0]?.placements[0]?.health, "healthy");
+	assert.equal(nextState.activeContracts[0]?.status, "active");
+	assert.equal(nextState.player.cash, state.player.cash - opex + contract.monthlyPayment);
 	assert.deepEqual(
 		nextState.ledger.map((entry) => ({ type: entry.type, amount: entry.amount })),
 		[
 			{ type: "opex", amount: -opex },
-			{ type: "penalty", amount: -contract.penaltyPerMonth },
+			{ type: "revenue", amount: contract.monthlyPayment },
 		],
 	);
 });

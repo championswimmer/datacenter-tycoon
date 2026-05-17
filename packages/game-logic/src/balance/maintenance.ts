@@ -10,7 +10,7 @@ export const RACK_FAILURE_CURVE_EXPONENT = 1.5;
 // This is also the canonical number of subticks in one monthly tick.
 export const DAYS_PER_TICK = 30;
 export const SUBTICKS_PER_TICK = DAYS_PER_TICK;
-export const BASE_REPAIR_DAYS = applyRepairDurationMultiplier(DAYS_PER_TICK * 3);
+export const BASE_REPAIR_DAYS = applyRepairDurationMultiplier(6);
 
 export const DEFAULT_MAINTENANCE_STAFF = 0;
 export const MAX_MAINTENANCE_STAFF = 8;

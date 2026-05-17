@@ -85,35 +85,42 @@ test("repair speed scales with maintenance staff and clamps at the configured ma
 });
 
 test("advanceRackRepair uses current staffing and clears repair progress when complete", () => {
-	const inProgress = advanceRackRepair(repairingRack({ repairProgressDays: 5 }), 1);
+	const inProgress = advanceRackRepair(repairingRack({ repairProgressDays: 1 }), 1);
 	assert.equal(inProgress.health, "repairing");
-	assert.equal(inProgress.repairProgressDays, 6.25);
+	assert.equal(inProgress.repairProgressDays, 2.25);
 
 	const completed = advanceRackRepair(repairingRack({ repairProgressDays: BASE_REPAIR_DAYS - 1 }), 1);
 	assert.equal(completed.health, "healthy");
 	assert.equal("repairProgressDays" in completed, false);
 });
 
-test("repairDurationDays halves the repair target in easy mode", () => {
-	assert.equal(BASE_REPAIR_DAYS, 45);
+test("repairDurationDays now targets short multi-day outages", () => {
+	assert.equal(BASE_REPAIR_DAYS, 3);
 	assert.equal(repairDurationDays("hard"), BASE_REPAIR_DAYS);
 	assert.equal(repairDurationDays("easy"), BASE_REPAIR_DAYS * DIFFICULTY_CONFIG.easy.repairTimeMultiplier);
-	assert.equal(repairDurationDays("hard"), 45);
-	assert.equal(repairDurationDays("easy"), 22.5);
+	assert.equal(repairDurationDays("hard"), 3);
+	assert.equal(repairDurationDays("easy"), 2.25);
 
-	const easyRepair = advanceRackRepair(repairingRack({ repairProgressDays: 0 }), 0, "easy");
-	const hardRepair = advanceRackRepair(repairingRack({ repairProgressDays: 0 }), 0, "hard");
-	assert.equal(easyRepair.health, "repairing");
+	const easyRepair = advanceRackRepair(repairingRack({ repairProgressDays: 1.5 }), 0, "easy");
+	const hardRepair = advanceRackRepair(repairingRack({ repairProgressDays: 1.5 }), 0, "hard");
+	assert.equal(easyRepair.health, "healthy");
 	assert.equal(hardRepair.health, "repairing");
 });
 
-test("advanceRackRepair completes once cumulative daily progress reaches the target", () => {
-	let rack = repairingRack();
-	for (let day = 0; day < BASE_REPAIR_DAYS; day += 1) {
-		rack = advanceRackRepair(rack, 0);
+test("advanceRackRepair completes in roughly 2-3 subticks at baseline staffing", () => {
+	let hardRack = repairingRack();
+	let easyRack = repairingRack();
+	for (let day = 0; day < 2; day += 1) {
+		hardRack = advanceRackRepair(hardRack, 0, "hard");
+		easyRack = advanceRackRepair(easyRack, 0, "easy");
 	}
-	assert.equal(rack.health, "healthy");
-	assert.equal("repairProgressDays" in rack, false);
+	assert.equal(hardRack.health, "repairing");
+	assert.equal(easyRack.health, "repairing");
+
+	const hardOnDayThree = advanceRackRepair(hardRack, 0, "hard");
+	const easyOnDayThree = advanceRackRepair(easyRack, 0, "easy");
+	assert.equal(hardOnDayThree.health, "healthy");
+	assert.equal(easyOnDayThree.health, "healthy");
 });
 
 test("advanceRackRepair leaves healthy racks unchanged", () => {

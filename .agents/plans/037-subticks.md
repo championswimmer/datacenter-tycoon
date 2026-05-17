@@ -13,10 +13,10 @@ owner: game-logic, web, cli
   - [x] 1.1 Add subtick vocabulary, constants, and persisted state
   - [x] 1.2 Split the monthly tick pipeline from intra-month advancement
   - [x] 1.3 Add reducer actions and compatibility semantics for `Tick`
-- [ ] **Phase 2 — Daily rack maintenance and repair simulation**
+- [x] **Phase 2 — Daily rack maintenance and repair simulation**
   - [x] 2.1 Move rack repair progress onto daily subticks
   - [x] 2.2 Convert rack failure probability from monthly rolls to daily hazard rolls
-  - [ ] 2.3 Retune repair duration constants for 2–3 day outages
+  - [x] 2.3 Retune repair duration constants for 2–3 day outages
 - [ ] **Phase 3 — Day-level contract SLA accounting**
   - [ ] 3.1 Add contract SLA target and current-window data model
   - [ ] 3.2 Sample contract service health once per subtick
