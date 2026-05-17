@@ -1,6 +1,6 @@
 import type { GameState } from "../types.js";
 
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 export interface SaveEnvelope {
 	saveVersion: number;
@@ -15,9 +15,29 @@ function isSaveEnvelope(value: unknown): value is SaveEnvelope {
 	return "saveVersion" in value && "state" in value;
 }
 
+function attachEmptyRegionalFabrics(state: GameState): GameState {
+	return {
+		...state,
+		map: {
+			...state.map,
+			regions: state.map.regions.map((region) => ({
+				...region,
+				fabric: region.fabric ?? { memberDcIds: [] },
+			})),
+		},
+	};
+}
+
 export function migrate(envelope: SaveEnvelope): SaveEnvelope {
 	if (envelope.saveVersion === SAVE_VERSION) {
 		return envelope;
+	}
+
+	if (envelope.saveVersion === 7) {
+		return {
+			saveVersion: SAVE_VERSION,
+			state: attachEmptyRegionalFabrics(envelope.state),
+		};
 	}
 
 	throw new Error(`Outdated save version: ${envelope.saveVersion}. Start a new game with save version ${SAVE_VERSION}.`);

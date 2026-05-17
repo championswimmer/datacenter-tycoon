@@ -146,7 +146,27 @@ test("migrate is a no-op for current-version envelopes", () => {
 	assert.deepEqual(migrate(envelope), envelope);
 });
 
-test("migrate rejects v6 saves after the datacenter upgrade persistence refactor", () => {
+test("migrate upgrades v7 saves by attaching empty regional fabric state", () => {
+	const state = newGame(7);
+	const legacyState = {
+		...state,
+		map: {
+			...state.map,
+			regions: state.map.regions.map(({ fabric: _fabric, ...region }) => region),
+		},
+	};
+
+	const migrated = migrate({ saveVersion: 7, state: legacyState });
+
+	assert.equal(migrated.saveVersion, SAVE_VERSION);
+	assert.ok(migrated.state.map.regions.every((region) => region.fabric?.memberDcIds.length === 0));
+	assert.deepEqual(
+		migrated.state.map.regions.map((region) => region.id),
+		state.map.regions.map((region) => region.id),
+	);
+});
+
+test("migrate rejects v6 saves after the regional fabric persistence refactor", () => {
 	const state = newGame(7);
 
 	assert.throws(() => migrate({ saveVersion: 6, state }), {
