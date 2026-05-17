@@ -483,6 +483,7 @@ export function selectMarketContractViews(state: GameState): MarketContractView[
       contractMarket: [contract],
       activeContracts: [],
     })[0]!;
+    const candidateByDcId = new Map(fitSummary.candidates.map((candidate) => [candidate.dcId, candidate]));
 
     return {
       contract,
@@ -493,7 +494,7 @@ export function selectMarketContractViews(state: GameState): MarketContractView[
         buildAssignmentOptionView(
           state,
           datacenter,
-          fitSummary.candidates.find((candidate) => candidate.dcId === datacenter.id),
+          candidateByDcId.get(datacenter.id),
         )
       ),
     };
