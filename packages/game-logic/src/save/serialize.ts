@@ -1,3 +1,4 @@
+import { createEmptyRegionFabric } from "../entities/fabric.js";
 import type { GameState } from "../types.js";
 
 export const SAVE_VERSION = 8;
@@ -22,7 +23,7 @@ function attachEmptyRegionalFabrics(state: GameState): GameState {
 			...state.map,
 			regions: state.map.regions.map((region) => ({
 				...region,
-				fabric: region.fabric ?? { memberDcIds: [] },
+				fabric: region.fabric ?? createEmptyRegionFabric(),
 			})),
 		},
 	};
