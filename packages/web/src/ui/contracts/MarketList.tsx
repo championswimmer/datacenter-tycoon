@@ -3,7 +3,6 @@ import { contractDealScore } from "@datacenter-tycoon/game-logic";
 import type {
   Capacity,
   Contract,
-  ContractAssignmentFitSummary,
   Datacenter,
 } from "@datacenter-tycoon/game-logic";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
@@ -12,6 +11,7 @@ import {
   selectMarketContractViews,
   selectReliabilitySummary,
   selectTick,
+  type ContractAssignmentOptionView,
 } from "../../store/selectors.js";
 import { useTickFraction } from "../../store/tickFractionStore.js";
 import { monthsAndDaysBetween, formatRemaining } from "../../store/gameTime.js";
@@ -165,8 +165,7 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
             ) : (
               <DcSelector
                 contract={contract}
-                datacenters={datacenters}
-                fitSummary={fitSummary}
+                assignmentOptions={contractView?.assignmentOptions ?? []}
                 onSelect={(dcId) => handleAccept(contract.id, dcId)}
                 onCancel={() => setAccepting(null)}
               />
@@ -251,39 +250,59 @@ function CapacityComparison({ reqs, free }: { reqs: Contract["requirements"]; fr
 
 function DcSelector({
   contract,
-  datacenters,
-  fitSummary,
+  assignmentOptions,
   onSelect,
   onCancel,
 }: {
   contract: Contract;
-  datacenters: Datacenter[];
-  fitSummary: ContractAssignmentFitSummary | undefined;
+  assignmentOptions: ContractAssignmentOptionView[];
   onSelect: (dcId: string) => void;
   onCancel: () => void;
 }) {
+  const eligibleOptions = assignmentOptions.filter((option) => option.regionEligible);
+  const blockedOptions = assignmentOptions.filter((option) => !option.regionEligible);
+
   return (
     <div className={styles.dcSelector}>
-      <span className={styles.dcSelectorLabel}>Click a datacenter to accept this contract:</span>
-      <span className={styles.dcSelectorHelp}>The datacenter you choose becomes the live assignment immediately.</span>
-      <div className={styles.dcList}>
-        {datacenters.map((dc) => {
-          const candidate = fitSummary?.candidates.find((entry) => entry.dcId === dc.id);
-          const ok = candidate?.fits ?? false;
-          return (
+      <span className={styles.dcSelectorLabel}>Click an eligible datacenter to accept this contract:</span>
+      <span className={styles.dcSelectorHelp}>
+        {blockedOptions.length > 0
+          ? "Only datacenters in the allowed regions can accept this contract."
+          : "The datacenter you choose becomes the live assignment immediately."}
+      </span>
+      {eligibleOptions.length === 0 ? (
+        <div className={styles.dcSelectorWarning}>No datacenters exist in this contract&apos;s allowed regions yet.</div>
+      ) : (
+        <div className={styles.dcList}>
+          {eligibleOptions.map((option) => (
             <button
-              key={dc.id}
-              className={[styles.dcBtn, ok ? styles.dcBtnOk : styles.dcBtnNo].join(" ")}
-              onClick={() => ok && onSelect(dc.id)}
-              disabled={!ok}
-              title={ok ? `Accept with ${dc.name}` : `Insufficient free capacity for ${contract.name}`}
+              key={option.dcId}
+              className={[styles.dcBtn, option.fits ? styles.dcBtnOk : styles.dcBtnNo].join(" ")}
+              onClick={() => option.fits && onSelect(option.dcId)}
+              disabled={!option.fits}
+              title={option.fits ? `Accept with ${option.dcName}` : option.disabledMessage ?? `Insufficient free capacity for ${contract.name}`}
             >
-              {dc.name}
-              <span className={styles.dcBtnStatus}>{ok ? "✓ click to accept" : "✗ no room"}</span>
+              {option.dcName}
+              <span className={styles.dcBtnMeta}>{option.regionLabel}</span>
+              <span className={styles.dcBtnStatus}>{option.fits ? "✓ click to accept" : "✗ no room"}</span>
             </button>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
+      {blockedOptions.length > 0 && (
+        <div className={styles.dcBlockedSection}>
+          <span className={styles.dcBlockedLabel}>Unavailable outside allowed regions</span>
+          <div className={styles.dcBlockedList}>
+            {blockedOptions.map((option) => (
+              <div key={option.dcId} className={styles.dcBlockedItem}>
+                <span className={styles.dcBlockedName}>{option.dcName}</span>
+                <span className={styles.dcBlockedMeta}>{option.regionLabel}</span>
+                <span className={styles.dcBlockedReason}>{option.disabledMessage}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <button className={styles.dcCancelBtn} onClick={onCancel}>Cancel</button>
     </div>
   );

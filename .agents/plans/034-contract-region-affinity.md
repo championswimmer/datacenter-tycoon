@@ -21,10 +21,10 @@ owner: game-logic, cli, web
   - [x] 3.1 Extend CLI/protocol contract views and JSON output with affinity labels and allowed regions
   - [x] 3.2 Update one-shot contract list/details/accept flows to explain region affinity and region-mismatch failures
   - [x] 3.3 Update TUI contract surfaces and CLI regression tests for affinity-aware presentation
-- [ ] **Phase 4 — Web contract UX and assignment flow**
+- [x] **Phase 4 — Web contract UX and assignment flow**
   - [x] 4.1 Add selectors that summarize contract affinity and eligible datacenters from game-logic state
   - [x] 4.2 Surface affinity badges and region-whitelist copy in market, active, and historical contract views
-  - [ ] 4.3 Update accept/assignment UI so only region-eligible datacenters are presented as valid targets
+  - [x] 4.3 Update accept/assignment UI so only region-eligible datacenters are presented as valid targets
 - [ ] **Phase 5 — Regression coverage and follow-on docs**
   - [ ] 5.1 Add game-logic tests for unrestricted vs affine generation, save round-trips, and invalid-region acceptance
   - [ ] 5.2 Add CLI and web tests for affinity rendering, JSON payloads, and region-mismatch messaging
@@ -219,6 +219,7 @@ export interface Contract {
 
 ## Changelog
 
+- 2026-05-17 — completed phase 4 by adding affinity-aware selectors, web card rendering, and assignment UI that only offers valid regional datacenters while explaining blocked regions.
 - 2026-05-17 — completed step 4.2 by surfacing region-affinity badges and allowed-region copy across market, active, and history cards in the web UI with component regression coverage.
 - 2026-05-17 — completed step 4.1 by adding web selectors that summarize affinity badges, allowed regions, and eligible datacenter assignment options from canonical game-logic fit data.
 - 2026-05-17 — completed phase 3 by propagating contract affinity through CLI JSON/text/TUI surfaces and adding regression coverage for wrong-region errors and affinity rendering.
