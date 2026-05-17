@@ -1,7 +1,7 @@
 ---
 name: Regional Fabric & Pooled Capacity
 description: Add a region-local fabric investment layer that pools connected datacenter capacity for contract fulfilment.
-status: started
+status: completed
 created: 2026-05-04
 updated: 2026-05-17
 owner: game-logic, web
@@ -25,10 +25,10 @@ owner: game-logic, web
   - [x] 4.1 Surface fabric status and join cost in map, region, and datacenter views
   - [x] 4.2 Update capacity displays to show pooled block capacity for fabric-connected sites
   - [x] 4.3 Add a UI affordance for connecting datacenters into the regional fabric
-- [ ] **Phase 5 - Tests and regression coverage**
+- [x] **Phase 5 - Tests and regression coverage**
   - [x] 5.1 Add game-logic tests for first link, later links, and invalid joins
   - [x] 5.2 Add contract tests for pooled fulfilment across multiple datacenters
-  - [ ] 5.3 Add UI selector/component tests for pooled capacity and fabric badges
+  - [x] 5.3 Add UI selector/component tests for pooled capacity and fabric badges
 
 ## Overview
 
