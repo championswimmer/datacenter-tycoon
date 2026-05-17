@@ -5,7 +5,7 @@ This document explains the two-layer simulation loop inside `@datacenter-tycoon/
 - `advanceSubtick()` in `src/sim/subtick.ts` handles **daily operational state**.
 - `settleMonthlyTick()` / `tick()` in `src/sim/tick.ts` handle **monthly financial settlement**.
 
-For the static entity model and module responsibilities, see [`./ARCHITECTURE.md`](./ARCHITECTURE.md).
+For the static entity model and module responsibilities, see [`./ARCHITECTURE.md`](./ARCHITECTURE.md). For deterministic benchmark baselines and regression budgets, see [`./PERFORMANCE.md`](./PERFORMANCE.md).
 
 ## What time means
 

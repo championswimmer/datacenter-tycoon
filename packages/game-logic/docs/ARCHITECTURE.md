@@ -2,7 +2,7 @@
 
 This document explains how `@datacenter-tycoon/game-logic` is structured internally, which entities own which data, and how the main subsystems depend on each other.
 
-For the time-progression pipeline, see [`./CORE_LOOP.md`](./CORE_LOOP.md).
+For the time-progression pipeline, see [`./CORE_LOOP.md`](./CORE_LOOP.md). For benchmark baselines, hotspot notes, and regression budgets, see [`./PERFORMANCE.md`](./PERFORMANCE.md).
 
 ## Design principles
 
