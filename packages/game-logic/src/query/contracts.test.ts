@@ -8,6 +8,7 @@ import {
 	contractAllowsRegion,
 	contractDealScore,
 	summarizeContractAssignmentFit,
+	summarizeOpenMarketContractFits,
 	summarizeContractRegionAffinity,
 	type Contract,
 	type ContractId,
@@ -214,6 +215,51 @@ test("summarizeContractAssignmentFit filters eligible datacenters by contract re
 	assert.deepEqual(fit?.eligibleDcIds, [datacenterId("dc-eu")]);
 	assert.equal(fit?.candidates.find((candidate) => candidate.dcId === datacenterId("dc-usa"))?.regionEligible, false);
 	assert.equal(fit?.candidates.find((candidate) => candidate.dcId === datacenterId("dc-eu"))?.regionEligible, true);
+});
+
+test("summarizeOpenMarketContractFits matches per-contract fit summaries across shared pools", () => {
+	const state = makeState({
+		datacenters: [
+			makeDatacenter("dc-a", [placement("rack-a", "C1", 0, 0)], "region-a" as GameState["map"]["regions"][number]["id"]),
+			makeDatacenter("dc-b", [placement("rack-b", "C1", 0, 0)], "region-a" as GameState["map"]["regions"][number]["id"]),
+			makeDatacenter("dc-c", [placement("rack-c", "M1", 0, 0)], "region-b" as GameState["map"]["regions"][number]["id"]),
+		],
+		contracts: [
+			makeContract("offer-a", {
+				requirements: { vCpu: 128, ramGb: 512, storageTb: 12, gpuFlops: 0 },
+			}),
+			makeContract("offer-b", {
+				requirements: { vCpu: 200, ramGb: 800, storageTb: 20, gpuFlops: 0 },
+				regionAffinity: {
+					key: "eu",
+					allowedRegionIds: ["region-b" as GameState["map"]["regions"][number]["id"]],
+				},
+			}),
+			makeContract("live-a", {
+				lifecycleState: "serving",
+				status: "active",
+				assignedDcId: datacenterId("dc-a"),
+				startedAtTick: 1,
+				requirements: { vCpu: 64, ramGb: 128, storageTb: 4, gpuFlops: 0 },
+			}),
+		],
+		map: {
+			regions: [
+				{ id: "region-a" as GameState["map"]["regions"][number]["id"], fabric: { memberDcIds: [datacenterId("dc-a"), datacenterId("dc-b")] } },
+				{ id: "region-b" as GameState["map"]["regions"][number]["id"], fabric: { memberDcIds: [] } },
+			],
+		},
+	});
+
+	const batch = summarizeOpenMarketContractFits(state);
+	const perContract = state.contractMarket.map((contract) => summarizeContractAssignmentFit(state, contract.id));
+
+	assert.equal(batch.length, state.contractMarket.length);
+	assert.deepEqual(batch, perContract);
+	assert.equal(batch[0]?.fitStatus, "fits");
+	assert.equal(batch[1]?.fitStatus, "none");
+	assert.deepEqual(batch[0]?.fittingDcIds, [datacenterId("dc-a"), datacenterId("dc-b")]);
+	assert.deepEqual(batch[1]?.eligibleDcIds, [datacenterId("dc-c")]);
 });
 
 test("contractDealScore stays in game-logic for consumer sorting and filtering", () => {
