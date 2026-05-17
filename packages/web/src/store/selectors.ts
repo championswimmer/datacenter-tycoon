@@ -22,6 +22,7 @@ import {
   summarizeDatacenterUpgradeViewFromState,
   summarizeAllRegionFabricViewsFromState,
   summarizeNetworkCapacityFromState,
+  summarizeContractRegionAffinity,
   summarizeOpenMarketContractFits,
   summarizeRegionFabricViewFromState,
   tickOpex,
@@ -30,6 +31,8 @@ import type {
   Capacity,
   Contract,
   ContractAssignmentFitSummary,
+  ContractId,
+  ContractRegionAffinityKey,
   ContractSlaOutcome,
   DatacenterId,
   Datacenter,
@@ -352,6 +355,172 @@ export function selectMarket(state: GameState): Contract[] {
 
 export function selectMarketFitSummaries(state: GameState): ContractAssignmentFitSummary[] {
   return summarizeOpenMarketContractFits(state);
+}
+
+const CONTRACT_AFFINITY_BADGE_LABELS: Record<ContractRegionAffinityKey, string> = {
+  eu: "EU ONLY",
+  asia: "ASIA ONLY",
+  usa: "USA ONLY",
+};
+
+export interface ContractAffinityView {
+  restricted: boolean;
+  key: ContractRegionAffinityKey | null;
+  badgeLabel: string;
+  allowedRegionIds: RegionId[];
+  allowedRegions: string[];
+  summary: string;
+}
+
+export interface ContractAssignmentOptionView {
+  dcId: DatacenterId;
+  dcName: string;
+  regionId: RegionId;
+  regionLabel: string;
+  regionEligible: boolean;
+  fitsCapacity: boolean;
+  fits: boolean;
+  disabledReason: "wrong_region" | "insufficient_capacity" | null;
+  disabledMessage: string | null;
+}
+
+export interface MarketContractView {
+  contract: Contract;
+  affinity: ContractAffinityView;
+  fitSummary: ContractAssignmentFitSummary;
+  eligibleDatacenterIds: DatacenterId[];
+  assignmentOptions: ContractAssignmentOptionView[];
+}
+
+export interface AssignedContractView {
+  contract: Contract;
+  affinity: ContractAffinityView;
+  assignedDcName: string | null;
+  assignedRegionLabel: string | null;
+}
+
+function formatRegionLabel(state: Pick<GameState, "map">, regionId: RegionId): string {
+  const region = state.map.regions.find((entry) => entry.id === regionId);
+  return region ? `${region.code} · ${region.city} · ${region.name}` : regionId;
+}
+
+function buildContractAffinityView(
+  state: Pick<GameState, "map">,
+  contract: Pick<Contract, "regionAffinity">,
+): ContractAffinityView {
+  const summary = summarizeContractRegionAffinity(contract, state.map.regions);
+  const allowedRegions = summary.allowedRegionIds.map((regionId) => formatRegionLabel(state, regionId));
+
+  if (!summary.restricted) {
+    return {
+      restricted: false,
+      key: null,
+      badgeLabel: "ANY REGION",
+      allowedRegionIds: summary.allowedRegionIds,
+      allowedRegions,
+      summary: "Any region",
+    };
+  }
+
+  return {
+    restricted: true,
+    key: summary.key,
+    badgeLabel: CONTRACT_AFFINITY_BADGE_LABELS[summary.key!],
+    allowedRegionIds: summary.allowedRegionIds,
+    allowedRegions,
+    summary: `${CONTRACT_AFFINITY_BADGE_LABELS[summary.key!]} · ${allowedRegions.join(", ")}`,
+  };
+}
+
+function buildAssignmentOptionView(
+  state: Pick<GameState, "map">,
+  datacenter: Pick<Datacenter, "id" | "name" | "regionId">,
+  candidate: ContractAssignmentFitSummary["candidates"][number] | undefined,
+): ContractAssignmentOptionView {
+  const regionLabel = formatRegionLabel(state, datacenter.regionId);
+  const regionEligible = candidate?.regionEligible ?? true;
+  const fitsCapacity = candidate?.fitsCapacity ?? false;
+  const fits = candidate?.fits ?? false;
+  const disabledReason = fits
+    ? null
+    : regionEligible
+      ? "insufficient_capacity"
+      : "wrong_region";
+
+  return {
+    dcId: datacenter.id,
+    dcName: datacenter.name,
+    regionId: datacenter.regionId,
+    regionLabel,
+    regionEligible,
+    fitsCapacity,
+    fits,
+    disabledReason,
+    disabledMessage: disabledReason === null
+      ? null
+      : disabledReason === "wrong_region"
+        ? `${regionLabel} is outside this contract's allowed regions.`
+        : `Not enough local capacity in ${datacenter.name}.`,
+  };
+}
+
+export function selectContractAffinityView(
+  state: Pick<GameState, "map">,
+  contract: Pick<Contract, "regionAffinity">,
+): ContractAffinityView {
+  return buildContractAffinityView(state, contract);
+}
+
+export function selectMarketContractViews(state: GameState): MarketContractView[] {
+  const marketContracts = selectMarket(state);
+  const fitSummaries = selectMarketFitSummaries(state);
+  const fitSummaryById = new Map(fitSummaries.map((summary) => [summary.contractId, summary]));
+
+  return marketContracts.map((contract) => {
+    const fitSummary = fitSummaryById.get(contract.id) ?? summarizeOpenMarketContractFits({
+      ...state,
+      contracts: [contract],
+      contractMarket: [contract],
+      activeContracts: [],
+    })[0]!;
+
+    return {
+      contract,
+      affinity: buildContractAffinityView(state, contract),
+      fitSummary,
+      eligibleDatacenterIds: [...fitSummary.eligibleDcIds],
+      assignmentOptions: state.datacenters.map((datacenter) =>
+        buildAssignmentOptionView(
+          state,
+          datacenter,
+          fitSummary.candidates.find((candidate) => candidate.dcId === datacenter.id),
+        )
+      ),
+    };
+  });
+}
+
+export function selectAssignedContractViews(
+  state: GameState,
+  contracts: Contract[],
+): AssignedContractView[] {
+  return contracts.map((contract) => {
+    const assignedDc = state.datacenters.find((datacenter) => datacenter.id === contract.assignedDcId);
+    return {
+      contract,
+      affinity: buildContractAffinityView(state, contract),
+      assignedDcName: assignedDc?.name ?? null,
+      assignedRegionLabel: assignedDc ? formatRegionLabel(state, assignedDc.regionId) : null,
+    };
+  });
+}
+
+export function selectActiveContractViews(state: GameState): AssignedContractView[] {
+  return selectAssignedContractViews(state, selectActiveContracts(state));
+}
+
+export function selectHistoricalContractViews(state: GameState): AssignedContractView[] {
+  return selectAssignedContractViews(state, selectHistoricalContracts(state));
 }
 
 export function selectRackMoveTargets(

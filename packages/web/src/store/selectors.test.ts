@@ -5,7 +5,7 @@ import {
   DATACENTER_CATALOG,
   RACK_CATALOG,
 } from "@datacenter-tycoon/game-logic";
-import type { GameState } from "@datacenter-tycoon/game-logic";
+import type { Contract, GameState } from "@datacenter-tycoon/game-logic";
 import {
   selectTick,
   selectCash,
@@ -23,8 +23,11 @@ import {
   selectDatacenterMaintenanceView,
   selectDatacenterRackMaintenanceViews,
   selectActiveContracts,
+  selectActiveContractViews,
   selectAllRegionFabricSummaries,
+  selectContractAffinityView,
   selectMarket,
+  selectMarketContractViews,
   selectLedger,
   selectMaintenanceViews,
   selectCapacity,
@@ -33,6 +36,7 @@ import {
   selectRegionFabricSummary,
   selectResourceUsage,
   selectMonthlyPnl,
+  selectHistoricalContractViews,
   selectFreeCapacity,
   selectTotalRacks,
   selectTotalServers,
@@ -370,6 +374,154 @@ describe("selectDatacenterRackMaintenanceViews", () => {
 describe("selectMarket", () => {
   it("returns non-empty market on fresh game (auto-populated)", () => {
     expect(selectMarket(freshState()).length).toBeGreaterThan(0);
+  });
+});
+
+describe("contract affinity selectors", () => {
+  it("summarizes unrestricted contracts as any-region offers", () => {
+    const state = freshState();
+    const contract = selectMarket(state)[0]!;
+
+    expect(selectContractAffinityView(state, contract)).toMatchObject({
+      restricted: false,
+      key: null,
+      badgeLabel: "ANY REGION",
+      summary: "Any region",
+      allowedRegionIds: state.map.regions.map((region) => region.id),
+    });
+  });
+
+  it("summarizes restricted market contracts and eligible datacenters from mixed fleets", () => {
+    let state = newGame(42, { startingCash: 5_000_000, playerName: "Test Player" });
+    const euDcId = nextDcId();
+    const usaDcId = nextDcId();
+    const euRegionId = state.map.regions.find((region) => region.id.toString().startsWith("eu_"))!.id;
+    const usaRegionId = state.map.regions.find((region) => region.id.toString().startsWith("us_"))!.id;
+    state = reduce(state, {
+      type: "BuildDatacenter",
+      specId: DATACENTER_CATALOG.garage!.id,
+      dcId: euDcId,
+      regionId: euRegionId,
+    });
+    state = reduce(state, {
+      type: "BuildDatacenter",
+      specId: DATACENTER_CATALOG.garage!.id,
+      dcId: usaDcId,
+      regionId: usaRegionId,
+    });
+    state = reduce(state, {
+      type: "PlaceRack",
+      dcId: euDcId,
+      specId: RACK_CATALOG.C1!.id,
+      row: 0,
+      position: 0,
+      placementId: nextRackPlacementId(),
+    });
+    state = reduce(state, {
+      type: "PlaceRack",
+      dcId: usaDcId,
+      specId: RACK_CATALOG.C1!.id,
+      row: 0,
+      position: 0,
+      placementId: nextRackPlacementId(),
+    });
+
+    const restrictedContract: Contract = {
+      id: "contract-eu-only" as Contract["id"],
+      name: "EU Compliance Stack",
+      requirements: { vCpu: 8, ramGb: 0, storageTb: 0, gpuFlops: 0 },
+      monthlyPayment: 12_000,
+      penaltyPerMonth: 4_000,
+      termMonths: 6,
+      lifecycleState: "market_open",
+      status: "offered",
+      urgency: "standard",
+      tier: 1,
+      regionAffinity: {
+        key: "eu",
+        allowedRegionIds: state.map.regions
+          .filter((region) => region.id.toString().startsWith("eu_"))
+          .map((region) => region.id),
+      },
+      offeredAtTick: state.tick,
+      expiresAtTick: (state.tick + 6) as Contract["expiresAtTick"],
+    };
+
+    state = {
+      ...state,
+      contracts: [restrictedContract],
+      contractMarket: [restrictedContract],
+      activeContracts: [],
+    };
+
+    const [view] = selectMarketContractViews(state);
+
+    expect(view?.affinity).toMatchObject({
+      restricted: true,
+      key: "eu",
+      badgeLabel: "EU ONLY",
+    });
+    expect(view?.eligibleDatacenterIds).toEqual([euDcId]);
+    expect(view?.assignmentOptions.find((option) => option.dcId === euDcId)).toMatchObject({
+      regionEligible: true,
+      fits: true,
+      disabledReason: null,
+    });
+    expect(view?.assignmentOptions.find((option) => option.dcId === usaDcId)).toMatchObject({
+      regionEligible: false,
+      fits: false,
+      disabledReason: "wrong_region",
+    });
+  });
+
+  it("propagates affinity summaries into active and historical contract views", () => {
+    let state = newGame(42, { startingCash: 3_000_000, playerName: "Test Player" });
+    const dcId = nextDcId();
+    const regionId = state.map.regions.find((region) => region.id.toString().startsWith("us_"))!.id;
+    state = reduce(state, {
+      type: "BuildDatacenter",
+      specId: DATACENTER_CATALOG.garage!.id,
+      dcId,
+      regionId,
+    });
+
+    const activeContract: Contract = {
+      id: "active-affinity" as Contract["id"],
+      name: "USA Training Pod",
+      requirements: { vCpu: 8, ramGb: 0, storageTb: 0, gpuFlops: 0 },
+      monthlyPayment: 12_000,
+      penaltyPerMonth: 4_000,
+      termMonths: 6,
+      lifecycleState: "serving",
+      status: "active",
+      urgency: "standard",
+      tier: 1,
+      regionAffinity: {
+        key: "usa",
+        allowedRegionIds: state.map.regions
+          .filter((region) => region.id.toString().startsWith("us_"))
+          .map((region) => region.id),
+      },
+      offeredAtTick: state.tick,
+      expiresAtTick: (state.tick + 6) as Contract["expiresAtTick"],
+      startedAtTick: state.tick,
+      assignedDcId: dcId,
+    };
+    const historicalContract: Contract = {
+      ...activeContract,
+      id: "history-affinity" as Contract["id"],
+      lifecycleState: "completed",
+      status: "expired",
+    };
+    const stateWithAssignments: GameState = {
+      ...state,
+      contracts: [activeContract, historicalContract],
+      contractMarket: [],
+      activeContracts: [activeContract],
+    };
+
+    expect(selectActiveContractViews(stateWithAssignments)[0]?.affinity.badgeLabel).toBe("USA ONLY");
+    expect(selectHistoricalContractViews(stateWithAssignments)[0]?.affinity.badgeLabel).toBe("USA ONLY");
   });
 });
 
