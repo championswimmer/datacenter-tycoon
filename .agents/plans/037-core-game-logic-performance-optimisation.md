@@ -13,10 +13,10 @@ owner: game-logic
   - [x] 1.1 Add deterministic large-state fixture builders for performance tests
   - [x] 1.2 Add benchmark coverage for tick, capacity, fabric, and contract-fit paths
   - [x] 1.3 Record baseline budgets and regression thresholds
-- [ ] **Phase 2 — State lookup and contract-view reuse**
+- [x] **Phase 2 — State lookup and contract-view reuse**
   - [x] 2.1 Introduce ephemeral indexed game-state views
   - [x] 2.2 Reuse a single normalized contract list inside reducers and ticks
-  - [ ] 2.3 Replace repeated region/datacenter scans in action handlers
+  - [x] 2.3 Replace repeated region/datacenter scans in action handlers
 - [ ] **Phase 3 — Tick hot-path optimisation**
   - [ ] 3.1 Collapse repeated live-contract and assigned-demand scans during `tick()`
   - [ ] 3.2 Cache per-datacenter opex inputs within a tick

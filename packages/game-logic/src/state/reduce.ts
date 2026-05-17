@@ -1,6 +1,6 @@
 import { DEFAULT_MAINTENANCE_STAFF, MAX_MAINTENANCE_STAFF } from "../balance/maintenance.js";
 import { acceptContract } from "../contracts/market.js";
-import { contractsFromState, isLiveContract, withDerivedContractViews } from "../contracts/lifecycle.js";
+import { isLiveContract, withDerivedContractViews } from "../contracts/lifecycle.js";
 import { createDatacenterUpgradeProgress } from "../catalog/datacenter-upgrades.js";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
@@ -11,7 +11,7 @@ import { applyValidatedFabricLink, validateFabricLinkRequest } from "../entities
 import { canBuildInRegion } from "../entities/region.js";
 import { advanceSubtick } from "../sim/subtick.js";
 import { tick } from "../sim/tick.js";
-import { createIndexedGameStateView } from "./indexed-view.js";
+import { createEntityIndexView, createIndexedGameStateView } from "./indexed-view.js";
 import type {
 	ContractId,
 	Datacenter,
@@ -23,6 +23,7 @@ import type {
 	RackPlacementId,
 	RackSpec,
 	RackSpecId,
+	Region,
 	RegionId,
 } from "../types.js";
 
@@ -75,13 +76,22 @@ function getRackSpec(specId: RackSpecId): RackSpec {
 	return spec;
 }
 
-function getDatacenter(state: GameState, dcId: DatacenterId): Datacenter {
-	const datacenter = state.datacenters.find((candidate) => candidate.id === dcId);
+function getDatacenter(datacenterById: ReadonlyMap<DatacenterId, Datacenter>, dcId: DatacenterId): Datacenter {
+	const datacenter = datacenterById.get(dcId);
 	if (!datacenter) {
 		throw new Error(`Unknown datacenter: ${dcId}`);
 	}
 
 	return datacenter;
+}
+
+function getRegion(regionById: ReadonlyMap<RegionId, Region>, regionId: RegionId): Region {
+	const region = regionById.get(regionId);
+	if (!region) {
+		throw new Error(`Unknown region: ${regionId}`);
+	}
+
+	return region;
 }
 
 function replaceDatacenter(state: GameState, updatedDatacenter: Datacenter): GameState {
@@ -93,8 +103,8 @@ function replaceDatacenter(state: GameState, updatedDatacenter: Datacenter): Gam
 	};
 }
 
-function assertUniqueDatacenterId(state: GameState, dcId: DatacenterId): void {
-	if (state.datacenters.some((datacenter) => datacenter.id === dcId)) {
+function assertUniqueDatacenterId(datacenterById: ReadonlyMap<DatacenterId, Datacenter>, dcId: DatacenterId): void {
+	if (datacenterById.has(dcId)) {
 		throw new Error(`Datacenter already exists: ${dcId}`);
 	}
 }
@@ -110,12 +120,10 @@ function assertUniquePlacementId(state: GameState, placementId: RackPlacementId)
 }
 
 function buildDatacenter(state: GameState, specId: DatacenterSpecId, dcId: DatacenterId, regionId: RegionId): GameState {
-	assertUniqueDatacenterId(state, dcId);
+	const indexedState = createEntityIndexView(state);
+	assertUniqueDatacenterId(indexedState.datacenterById, dcId);
 	const spec = getDatacenterSpec(specId);
-	const region = state.map.regions.find((r) => r.id === regionId);
-	if (!region) {
-		throw new Error(`Unknown region: ${regionId}`);
-	}
+	const region = getRegion(indexedState.regionById, regionId);
 	if (!canBuildInRegion(region, spec, state.datacenters)) {
 		throw new Error(`Insufficient power or staff in region: ${regionId}`);
 	}
@@ -171,8 +179,9 @@ function placeRack(
 	position: number,
 	placementId: RackPlacementId,
 ): GameState {
+	const indexedState = createEntityIndexView(state);
 	assertUniquePlacementId(state, placementId);
-	const datacenter = getDatacenter(state, dcId);
+	const datacenter = getDatacenter(indexedState.datacenterById, dcId);
 	const spec = getRackSpec(specId);
 	const placementCheck = canPlaceRack(datacenter, spec, { row, position });
 	if (!placementCheck.ok) {
@@ -190,7 +199,7 @@ function placeRack(
 	};
 	const debitedState = applyCapex(state, spec.capexCost, `Purchase rack: ${spec.name}`);
 	const refreshedDatacenter = {
-		...getDatacenter(debitedState, dcId),
+		...datacenter,
 		placements: [...datacenter.placements, placement],
 	};
 
@@ -198,7 +207,8 @@ function placeRack(
 }
 
 function removeRack(state: GameState, dcId: DatacenterId, placementId: RackPlacementId): GameState {
-	const datacenter = getDatacenter(state, dcId);
+	const indexedState = createEntityIndexView(state);
+	const datacenter = getDatacenter(indexedState.datacenterById, dcId);
 	const placementExists = datacenter.placements.some((placement) => placement.id === placementId);
 	if (!placementExists) {
 		throw new Error(`Unknown rack placement: ${placementId}`);
@@ -218,7 +228,8 @@ function moveRack(
 	row: number,
 	position: number,
 ): GameState {
-	const sourceDc = getDatacenter(state, dcId);
+	const indexedState = createEntityIndexView(state);
+	const sourceDc = getDatacenter(indexedState.datacenterById, dcId);
 	const placement = sourceDc.placements.find((p) => p.id === placementId);
 	if (!placement) {
 		throw new Error(`Unknown rack placement: ${placementId}`);
@@ -228,7 +239,7 @@ function moveRack(
 		throw new Error("Cannot move rack to the same datacenter");
 	}
 
-	const targetDc = getDatacenter(state, targetDcId);
+	const targetDc = getDatacenter(indexedState.datacenterById, targetDcId);
 	const spec = getRackSpec(placement.specId);
 	const moveCheck = canMoveRack(sourceDc, targetDc, placement, { row, position });
 	if (!moveCheck.ok) {
@@ -274,14 +285,15 @@ function upgradeDatacenter(
 	trackId: import("../types.js").DatacenterUpgradeTrackId,
 	targetNodeId: string,
 ): GameState {
-	const datacenter = getDatacenter(state, dcId);
+	const indexedState = createEntityIndexView(state);
+	const datacenter = getDatacenter(indexedState.datacenterById, dcId);
 	const validated = validateDatacenterUpgradeRequest(datacenter, trackId, targetNodeId);
 	const debitedState = applyCapex(
 		state,
 		validated.capexCost,
 		`Upgrade datacenter: ${datacenter.name} ${validated.trackLabel} → ${validated.targetNode.label}`,
 	);
-	const refreshedDatacenter = applyDatacenterUpgrade(getDatacenter(debitedState, dcId), trackId, targetNodeId);
+	const refreshedDatacenter = applyDatacenterUpgrade(datacenter, trackId, targetNodeId);
 	return replaceDatacenter(debitedState, refreshedDatacenter);
 }
 
@@ -341,7 +353,8 @@ function setMaintenanceStaff(state: GameState, dcId: DatacenterId, maintenanceSt
 		throw new Error(`Invalid maintenance staff: ${maintenanceStaff}`);
 	}
 
-	const datacenter = getDatacenter(state, dcId);
+	const indexedState = createEntityIndexView(state);
+	const datacenter = getDatacenter(indexedState.datacenterById, dcId);
 	const nextMaintenanceStaff = clampMaintenanceStaff(maintenanceStaff);
 	const delta = nextMaintenanceStaff - datacenter.maintenanceStaff;
 	if (delta === 0) {
@@ -351,10 +364,7 @@ function setMaintenanceStaff(state: GameState, dcId: DatacenterId, maintenanceSt
 		});
 	}
 
-	const region = state.map.regions.find((candidate) => candidate.id === datacenter.regionId);
-	if (!region) {
-		throw new Error(`Unknown region: ${datacenter.regionId}`);
-	}
+	const region = getRegion(indexedState.regionById, datacenter.regionId);
 
 	if (delta > 0 && region.staffUsed + delta > region.totalStaffAvailable) {
 		throw new Error(`Insufficient staff available in region: ${region.id}`);
