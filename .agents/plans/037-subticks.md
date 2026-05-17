@@ -22,7 +22,7 @@ owner: game-logic, web, cli
   - [x] 3.2 Sample contract service health once per subtick
   - [x] 3.3 Settle revenue, penalties, lifecycle, and reliability from SLA windows at month end
 - [ ] **Phase 4 — Build on existing web tick-fraction clocking**
-  - [ ] 4.1 Update the web tick driver to dispatch day subticks from the existing month accumulator
+  - [x] 4.1 Update the web tick driver to dispatch day subticks from the existing month accumulator
   - [ ] 4.2 Extend game-time helpers and UI selectors for authoritative day state plus animation fraction
   - [ ] 4.3 Surface rack repair ETAs and contract SLA progress in web UI
 - [ ] **Phase 5 — CLI daemon, command, and event support**

@@ -38,6 +38,8 @@ function buildActiveState(): GameState {
     monthlyPayment: 12000,
     penaltyPerMonth: 4000,
     termMonths: 3,
+    slaTargetPercent: 90,
+    currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
     lifecycleState: "serving",
     status: "active",
     urgency: "standard",

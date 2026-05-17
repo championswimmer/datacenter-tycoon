@@ -22,6 +22,8 @@ function buildHistoricalState(): GameState {
     monthlyPayment: 8000,
     penaltyPerMonth: 3000,
     termMonths: 12,
+    slaTargetPercent: 90,
+    currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
     lifecycleState: "completed",
     status: "expired",
     urgency: "standard",

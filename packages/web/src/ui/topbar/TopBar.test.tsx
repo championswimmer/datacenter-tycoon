@@ -149,6 +149,8 @@ describe("TopBar", () => {
         monthlyPayment: 1000,
         penaltyPerMonth: 100,
         termMonths: 1,
+        slaTargetPercent: 90,
+        currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
         lifecycleState: "market_open",
         status: "offered",
         urgency: "standard",
