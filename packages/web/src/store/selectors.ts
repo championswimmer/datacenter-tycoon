@@ -51,6 +51,7 @@ import type {
   RackPlacementId,
   RackPowerSummary,
   RegionFabricView,
+  RegionId,
   ReliabilityBand,
   Tick,
 } from "@datacenter-tycoon/game-logic";
@@ -441,7 +442,7 @@ export function selectDatacenterFabricSummary(
 
 export function selectRegionFabricSummary(
   state: GameState,
-  regionId: string,
+  regionId: RegionId,
 ): RegionFabricView | undefined {
   const region = selectRegionById(state, regionId);
   if (!region) {
@@ -453,6 +454,17 @@ export function selectRegionFabricSummary(
 
 export function selectAllRegionFabricSummaries(state: GameState): RegionFabricView[] {
   return summarizeAllRegionFabricViewsFromState(state);
+}
+
+export function selectAllDatacenterFabricSummaries(
+  state: GameState,
+): Array<{ dcId: DatacenterId; summary: DatacenterFabricStatusView }> {
+  return selectAllRegionFabricSummaries(state).flatMap((regionSummary) =>
+    regionSummary.datacenters.map((summary) => ({
+      dcId: summary.dcId,
+      summary,
+    })),
+  );
 }
 
 /** Total installed and per-DC installed capacity (vCPU / RAM / Storage / GPU). */
@@ -622,12 +634,12 @@ export function selectRegions(state: GameState): import("@datacenter-tycoon/game
 
 export function selectRegionById(
   state: GameState,
-  regionId: string,
+  regionId: RegionId,
 ): import("@datacenter-tycoon/game-logic").Region | undefined {
   return state.map.regions.find((r) => r.id === regionId);
 }
 
-export function selectDatacentersByRegionId(state: GameState, regionId: string): Datacenter[] {
+export function selectDatacentersByRegionId(state: GameState, regionId: RegionId): Datacenter[] {
   return state.datacenters.filter((dc) => dc.regionId === regionId);
 }
 

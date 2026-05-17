@@ -1,7 +1,8 @@
+import { useMemo } from "react";
 import { useSelector } from "../../store/storeContext.js";
 import {
+  selectAllDatacenterFabricSummaries,
   selectAllDatacenters,
-  selectDatacenterFabricSummary,
   selectDatacenterInfrastructureSummary,
   selectDatacenterUpgradeSummary,
   selectResourceUsage,
@@ -27,16 +28,33 @@ export function DatacenterList({ currentRoute, onNewDatacenter }: DatacenterList
   const upgradeSummaries = useSelector((state) =>
     state.datacenters.map((dc) => ({ dcId: dc.id, summary: selectDatacenterUpgradeSummary(state, dc.id) })),
   );
-  const fabricSummaries = useSelector((state) =>
-    state.datacenters.map((dc) => ({ dcId: dc.id, summary: selectDatacenterFabricSummary(state, dc.id) })),
-  );
+  const fabricSummaries = useSelector(selectAllDatacenterFabricSummaries);
   const regions      = useSelector(selectRegions);
 
   const selectedDcId = currentRoute.view === "dc" ? currentRoute.dcId : null;
 
   const openContracts = () => navigate({ view: "contracts" });
 
-  const regionMap = new Map(regions.map(r => [r.id, r]));
+  const usageByDcId = useMemo(
+    () => new Map(usageAggreg.perDc.map((entry) => [entry.dcId, entry])),
+    [usageAggreg.perDc],
+  );
+  const infrastructureByDcId = useMemo(
+    () => new Map(infrastructureSummaries.map((entry) => [entry.dcId, entry.summary] as const)),
+    [infrastructureSummaries],
+  );
+  const upgradeByDcId = useMemo(
+    () => new Map(upgradeSummaries.map((entry) => [entry.dcId, entry.summary] as const)),
+    [upgradeSummaries],
+  );
+  const fabricByDcId = useMemo(
+    () => new Map(fabricSummaries.map((entry) => [entry.dcId, entry.summary] as const)),
+    [fabricSummaries],
+  );
+  const regionMap = useMemo(
+    () => new Map(regions.map((region) => [region.id, region] as const)),
+    [regions],
+  );
 
   return (
     <div className={styles.rail}>
@@ -60,11 +78,11 @@ export function DatacenterList({ currentRoute, onNewDatacenter }: DatacenterList
         )}
 
         {datacenters.map(dc => {
-          const usageEntry = usageAggreg.perDc.find(u => u.dcId === dc.id);
+          const usageEntry = usageByDcId.get(dc.id);
           const usage      = usageEntry?.usage;
-          const infrastructure = infrastructureSummaries.find((entry) => entry.dcId === dc.id)?.summary;
-          const upgrades = upgradeSummaries.find((entry) => entry.dcId === dc.id)?.summary;
-          const fabric = fabricSummaries.find((entry) => entry.dcId === dc.id)?.summary;
+          const infrastructure = infrastructureByDcId.get(dc.id);
+          const upgrades = upgradeByDcId.get(dc.id);
+          const fabric = fabricByDcId.get(dc.id);
           const powerPct   = usage && infrastructure
             ? usage.powerKw / infrastructure.effective.rackPowerCapacityKw
             : 0;
