@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { contractDealScore } from "@datacenter-tycoon/game-logic";
+import { DAYS_PER_TICK, contractDealScore } from "@datacenter-tycoon/game-logic";
 import type {
   Capacity,
   Contract,
@@ -10,6 +10,7 @@ import {
   selectAllDatacenters,
   selectMarketContractViews,
   selectReliabilitySummary,
+  selectSubtick,
   selectTick,
   type ContractAssignmentOptionView,
 } from "../../store/selectors.js";
@@ -71,6 +72,7 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
   const datacenters = useSelector(selectAllDatacenters);
   const marketContractViews = useSelector(selectMarketContractViews);
   const tick = useSelector(selectTick);
+  const subtick = useSelector(selectSubtick);
   const reliability = useSelector(selectReliabilitySummary);
   const dispatch = useGameDispatch();
   const fraction = useTickFraction();
@@ -107,7 +109,7 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
           fitSummary?.fitStatus ?? "none",
           datacenters.length,
         );
-        const { months, days } = monthsAndDaysBetween(tick, fraction, contract.expiresAtTick, 0);
+        const { months, days } = monthsAndDaysBetween(tick, (subtick + fraction) / DAYS_PER_TICK, contract.expiresAtTick, 0);
         const expired = months <= 0 && days <= 0;
         const expiryLabel = expired ? "EXPIRED" : formatRemaining(months, days);
         const urgent = !expired && months === 0 && days <= 7;

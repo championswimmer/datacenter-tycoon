@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { tickOpex } from "@datacenter-tycoon/game-logic";
+import { DAYS_PER_TICK, tickOpex } from "@datacenter-tycoon/game-logic";
 import type { Contract, ContractStatus } from "@datacenter-tycoon/game-logic";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import {
@@ -7,6 +7,7 @@ import {
   selectAllDatacenters,
   selectDatacenterCapacitySummary,
   selectReliabilitySummary,
+  selectSubtick,
   selectTick,
 } from "../../store/selectors.js";
 import { ProgressBar } from "../../theme/primitives/index.js";
@@ -33,6 +34,7 @@ export function ActiveList() {
   const datacenters = useSelector(selectAllDatacenters);
   const regions = useSelector((state) => state.map.regions);
   const tick = useSelector(selectTick);
+  const subtick = useSelector(selectSubtick);
   const reliability = useSelector(selectReliabilitySummary);
   const capacityByDcId = useSelector((state) => new Map(
     state.datacenters.map((dc) => [dc.id, selectDatacenterCapacitySummary(state, dc.id)]),
@@ -75,7 +77,7 @@ export function ActiveList() {
         const monthsLeft = Math.max(0, contract.termMonths - elapsedMonths);
         const { months: mLeft, days: dLeft } = monthsAndDaysBetween(
           tick,
-          fraction,
+          (subtick + fraction) / DAYS_PER_TICK,
           started + contract.termMonths,
           0,
         );

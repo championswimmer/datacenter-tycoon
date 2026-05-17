@@ -76,6 +76,12 @@ describe("ActiveList", () => {
     expect(screen.getByText("1/3 mo · 2 months left")).toBeTruthy();
   });
 
+  it("uses authoritative subtick plus animation fraction when rendering remaining time", () => {
+    const state = { ...buildActiveState(), tick: 1, subtick: 15 };
+    renderActive(state);
+    expect(screen.getByText("1/3 mo · 1 month 15 days left")).toBeTruthy();
+  });
+
   it("renders affinity badges and allowed-region copy for active contracts", () => {
     const state = buildActiveState();
     const allowedRegionIds = state.map.regions

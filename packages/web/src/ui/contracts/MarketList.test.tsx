@@ -184,6 +184,12 @@ describe("MarketList", () => {
     expect(screen.getByText("6 months left")).toBeTruthy();
   });
 
+  it("uses authoritative subtick plus animation fraction for offer expiry", () => {
+    const state = { ...buildMarketState(), tick: 0, subtick: 10 };
+    renderMarket(state);
+    expect(screen.getByText("5 months 20 days left")).toBeTruthy();
+  });
+
   it("renders affinity badges and allowed-region copy for restricted offers", () => {
     const state = buildMarketState();
     const allowedRegionIds = state.map.regions

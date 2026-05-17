@@ -11,6 +11,7 @@ import {
   selectPlayerName,
   selectReliabilitySummary,
   selectReliabilityMarketEffectSummary,
+  selectSubtick,
   selectTick,
 } from "../../store/selectors.js";
 import { LedSegment } from "../../theme/primitives/index.js";
@@ -46,6 +47,7 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
   const difficulty = useSelector(selectDifficulty);
   const cash = useSelector(selectCash);
   const tick = useSelector(selectTick);
+  const subtick = useSelector(selectSubtick);
   const pnl = useSelector(selectMonthlyPnl);
   const activeContracts = useSelector(selectActiveContracts);
   const market = useSelector(selectMarket);
@@ -53,7 +55,7 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
   const reliability = useSelector(selectReliabilitySummary);
   const reliabilityFx = useSelector(selectReliabilityMarketEffectSummary);
 
-  const gameDate = tickToGameDate(tick, fraction);
+  const gameDate = tickToGameDate(tick, subtick, fraction);
   const isDesktop = isDesktopRuntime();
   const breachedCount = activeContracts.filter((contract) => contract.lifecycleState === "breached").length;
   const expiringOffers = market.filter((contract) => contract.expiresAtTick - tick <= 1).length;

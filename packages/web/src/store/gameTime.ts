@@ -3,16 +3,19 @@
  *
  * Convention: 1 tick = 1 month.
  * Tick 0 = 1 Jan 2025 (EPOCH_YEAR, month 0).
- * Days within a month are derived from the sub-tick fraction (0..1).
+ * Days within a month are derived from the authoritative `subtick` plus an
+ * optional animation fraction from `tickFractionStore`.
  *
  * This module is the *only* place that knows about the tick→calendar mapping.
  * All UI that wants to display time should import from here; it must NOT
  * render `state.tick` directly.
  */
 
+import { DAYS_PER_TICK, type GameTimeView } from "@datacenter-tycoon/game-logic";
+
 export const EPOCH_YEAR = 2025;
 export const MONTHS_PER_YEAR = 12;
-export const DAYS_PER_MONTH = 30; // simplified; no real-world calendar needed
+export const DAYS_PER_MONTH = DAYS_PER_TICK;
 
 export const MONTH_ABBR = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -25,16 +28,39 @@ export interface GameDate {
   day: number;   // 1..30
 }
 
+function clampFraction(fraction: number): number {
+  return Math.min(Math.max(fraction, 0), 0.999999);
+}
+
+/** Build a display-friendly time view from authoritative month/day state. */
+export function toGameTimeView(tick: number, subtick = 0, fraction = 0): GameTimeView {
+  const clampedSubtick = Math.min(Math.max(subtick, 0), DAYS_PER_MONTH - 1);
+  const monthFraction = clampFraction((clampedSubtick + clampFraction(fraction)) / DAYS_PER_MONTH);
+  return {
+    tick,
+    subtick: clampedSubtick,
+    dayOfMonth: clampedSubtick + 1,
+    monthFraction,
+  };
+}
+
+export function tickToGameDate(tick: number, fraction?: number): GameDate;
+export function tickToGameDate(tick: number, subtick: number, fraction: number): GameDate;
 /**
- * Convert an integer tick + optional sub-tick fraction into a GameDate.
+ * Convert authoritative month/day state into a calendar date.
  *
- * @param tick     - integer tick (months elapsed since EPOCH_YEAR-Jan)
- * @param fraction - how far through the current tick we are (0..1); advances day
+ * Compatibility overloads:
+ * - `tickToGameDate(tick, fraction)` for older callers that only know about
+ *   month progress.
+ * - `tickToGameDate(tick, subtick, fraction)` for authoritative day state.
  */
-export function tickToGameDate(tick: number, fraction = 0): GameDate {
+export function tickToGameDate(tick: number, subtickOrFraction = 0, fraction = 0): GameDate {
   const month = tick % MONTHS_PER_YEAR;
-  const year  = EPOCH_YEAR + Math.floor(tick / MONTHS_PER_YEAR);
-  const day   = Math.floor(fraction * DAYS_PER_MONTH) + 1; // 1..30
+  const year = EPOCH_YEAR + Math.floor(tick / MONTHS_PER_YEAR);
+  const timeView = fraction === 0 && subtickOrFraction >= 0 && subtickOrFraction <= 1
+    ? toGameTimeView(tick, Math.floor(clampFraction(subtickOrFraction) * DAYS_PER_MONTH), 0)
+    : toGameTimeView(tick, subtickOrFraction, fraction);
+  const day = Math.min(DAYS_PER_MONTH, Math.floor(timeView.monthFraction * DAYS_PER_MONTH) + 1);
   return { year, month, day };
 }
 

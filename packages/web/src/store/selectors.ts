@@ -1,4 +1,5 @@
 import {
+  DAYS_PER_TICK,
   RELIABILITY_BASELINE_SCORE,
   datacenterMaintenanceSummary,
   datacenterUsage,
@@ -39,9 +40,11 @@ import type {
   DatacenterResourceUsage,
   Difficulty,
   GameState,
+  GameTimeView,
   LedgerEntry,
   Money,
   OpexTickResult,
+  Subtick,
   DatacenterCapacityFromStateSummary,
   DatacenterFabricStatusView,
   DatacenterInfrastructureView,
@@ -63,6 +66,29 @@ import type {
 
 export function selectTick(state: GameState): Tick {
   return state.tick;
+}
+
+export function selectSubtick(state: GameState): Subtick {
+  return state.subtick;
+}
+
+export function selectGameTimeView(state: GameState): GameTimeView {
+  return {
+    tick: state.tick,
+    subtick: state.subtick,
+    dayOfMonth: state.subtick + 1,
+    monthFraction: state.subtick / DAYS_PER_TICK,
+  };
+}
+
+export function selectAnimatedGameTimeView(state: GameState, fraction = 0): GameTimeView {
+  const monthFraction = Math.min(0.999999, (state.subtick + Math.min(Math.max(fraction, 0), 0.999999)) / DAYS_PER_TICK);
+  return {
+    tick: state.tick,
+    subtick: state.subtick,
+    dayOfMonth: state.subtick + 1,
+    monthFraction,
+  };
 }
 
 export function selectCash(state: GameState): Money {
