@@ -162,7 +162,26 @@ interface ContractSlaOutcome {
 }
 ```
 
-The current save policy is **destructive on incompatible format changes**. Version `7` introduced persisted datacenter upgrade progress; older save versions are intentionally rejected and should be recreated.
+The current save policy is **destructive on incompatible format changes**. Version `9` adds optional contract region affinity and migrates version `8` saves losslessly because missing affinity metadata still means “deploy anywhere.” Version `7` saves still migrate forward by attaching empty regional fabric state; older save versions are intentionally rejected and should be recreated.
+
+## Contract region affinity
+
+Contracts can optionally persist a geography constraint alongside their normal capacity and term requirements:
+
+```ts
+type ContractRegionAffinityKey = "eu" | "asia" | "usa";
+
+interface ContractRegionAffinity {
+  key: ContractRegionAffinityKey;
+  allowedRegionIds: RegionId[];
+}
+
+interface Contract {
+  regionAffinity?: ContractRegionAffinity;
+}
+```
+
+When `regionAffinity` is omitted, the contract is unrestricted and may be served from any region. When present, the affinity key provides stable UI copy and the explicit `allowedRegionIds` whitelist keeps historical/generated contracts deterministic even if catalog grouping rules evolve later.
 
 ## Contract lifecycle
 
