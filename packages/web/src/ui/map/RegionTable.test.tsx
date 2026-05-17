@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
-import type { Region, RegionId } from "@datacenter-tycoon/game-logic";
+import { DATACENTER_CATALOG, type Datacenter, type Region, type RegionId } from "@datacenter-tycoon/game-logic";
 import { RegionTable } from "./RegionTable.js";
 
 const regionId = (value: string): RegionId => value as RegionId;
@@ -50,10 +50,40 @@ const regions: Region[] = [
   },
 ];
 
+const datacenters: Datacenter[] = [
+  {
+    id: "dc-ashburn-a" as Datacenter["id"],
+    name: "Ashburn Alpha",
+    spec: DATACENTER_CATALOG.garage!,
+    placements: [],
+    builtAtTick: 3 as Datacenter["builtAtTick"],
+    regionId: regionId("us_east"),
+    maintenanceStaff: 0,
+  },
+  {
+    id: "dc-ashburn-b" as Datacenter["id"],
+    name: "Ashburn Beta",
+    spec: DATACENTER_CATALOG.warehouse!,
+    placements: [],
+    builtAtTick: 9 as Datacenter["builtAtTick"],
+    regionId: regionId("us_east"),
+    maintenanceStaff: 0,
+  },
+  {
+    id: "dc-dublin" as Datacenter["id"],
+    name: "Dublin Docklands",
+    spec: DATACENTER_CATALOG.garage!,
+    placements: [],
+    builtAtTick: 14 as Datacenter["builtAtTick"],
+    regionId: regionId("eu_west"),
+    maintenanceStaff: 0,
+  },
+];
+
 describe("RegionTable", () => {
   it("sorts string columns in ascending then descending order", () => {
     const { container } = render(
-      <RegionTable regions={regions} selectedRegionId={null} onSelectRegion={() => {}} />,
+      <RegionTable regions={regions} datacenters={[]} selectedRegionId={null} onSelectRegion={() => {}} />,
     );
 
     fireEvent.click(screen.getByRole("button", { name: /City/i }));
@@ -65,7 +95,7 @@ describe("RegionTable", () => {
 
   it("sorts numeric columns using their numeric values", () => {
     const { container } = render(
-      <RegionTable regions={regions} selectedRegionId={null} onSelectRegion={() => {}} />,
+      <RegionTable regions={regions} datacenters={[]} selectedRegionId={null} onSelectRegion={() => {}} />,
     );
 
     fireEvent.click(screen.getByRole("button", { name: /Power/i }));
@@ -81,6 +111,7 @@ describe("RegionTable", () => {
     render(
       <RegionTable
         regions={regions}
+        datacenters={datacenters}
         selectedRegionId={regionId("us_west")}
         onSelectRegion={onSelectRegion}
       />,
@@ -99,10 +130,34 @@ describe("RegionTable", () => {
 
     expect(onSelectRegion).toHaveBeenCalledWith(regionId("us_east"));
   });
+
+  it("expands datacenter details beneath regions that already host facilities", () => {
+    const onSelectRegion = vi.fn();
+
+    render(
+      <RegionTable
+        regions={regions}
+        datacenters={datacenters}
+        selectedRegionId={null}
+        onSelectRegion={onSelectRegion}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Expand datacenters in US East" }));
+
+    expect(screen.getByText("Datacenters in US East")).toBeTruthy();
+    expect(screen.getByText("Ashburn Alpha")).toBeTruthy();
+    expect(screen.getByText("Ashburn Beta")).toBeTruthy();
+    expect(onSelectRegion).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Collapse datacenters in US East" }));
+
+    expect(screen.queryByText("Datacenters in US East")).toBeNull();
+  });
 });
 
 function getCodes(container: HTMLElement): string[] {
-  return Array.from(container.querySelectorAll("tbody tr td:first-child"))
+  return Array.from(container.querySelectorAll("[data-region-code]"))
     .map((cell) => cell.textContent ?? "")
     .filter(Boolean);
 }
