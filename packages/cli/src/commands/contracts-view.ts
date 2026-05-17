@@ -1,5 +1,4 @@
 import {
-	REGION_CATALOG,
 	isHistoricalContract,
 	isLiveContract,
 	selectContractByIdFromState,
@@ -10,6 +9,7 @@ import {
 import type { Contract, GameState } from "@datacenter-tycoon/game-logic";
 
 import type { ContractRegionAffinityView } from "../protocol/messages.js";
+import { formatRegionLabel } from "./region-labels.js";
 
 /**
  * `market`  — contract on the market, not yet accepted.
@@ -34,15 +34,6 @@ export interface CliContractView {
 	assignedDcId: string | null;
 	regionAffinity?: ContractRegionAffinityView;
 	bucket: ContractListBucket;
-}
-
-function formatRegionLabel(regionId: string): string {
-	const region = REGION_CATALOG[regionId] ?? Object.values(REGION_CATALOG).find((entry) => entry.id === regionId);
-	if (!region) {
-		return regionId;
-	}
-
-	return `${region.code} · ${region.city} · ${region.name}`;
 }
 
 export function presentContractRegionAffinity(contract: Pick<Contract, "regionAffinity">): ContractRegionAffinityView | undefined {

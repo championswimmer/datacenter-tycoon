@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { deserialize, REGION_CATALOG } from "@datacenter-tycoon/game-logic";
+import { deserialize } from "@datacenter-tycoon/game-logic";
 
 import type { ParsedArgv } from "../argv.js";
 import { DctClient } from "../client/client.js";
@@ -20,6 +20,7 @@ import {
 	type CommandClientFactory,
 } from "./common.js";
 import { formatContractRegionAffinity, formatContractRequirements, presentContracts } from "./contracts-view.js";
+import { formatRegionLabel } from "./region-labels.js";
 
 export async function runLsCommand(
 	parsed: ParsedArgv,
@@ -52,15 +53,6 @@ export async function runLsCommand(
 function formatDatacenterLayout(spec: Pick<DatacenterSpec, "rows" | "positionsPerRow">): string {
 	const slots = spec.rows * spec.positionsPerRow;
 	return `${spec.rows} rows × ${spec.positionsPerRow} cols (${slots} slots)`;
-}
-
-function formatRegionLabel(regionId: string): string {
-	const region = REGION_CATALOG[regionId] ?? Object.values(REGION_CATALOG).find((entry) => entry.id === regionId);
-	if (!region) {
-		return regionId;
-	}
-
-	return `${region.code} · ${region.city} · ${region.name}`;
 }
 
 async function listSaves(parsed: ParsedArgv): Promise<void> {

@@ -4,7 +4,6 @@ import path from "node:path";
 
 import crypto from "node:crypto";
 
-import { REGION_CATALOG } from "@datacenter-tycoon/game-logic";
 import type { Action, GameState } from "@datacenter-tycoon/game-logic";
 
 import type { QueryParams } from "../protocol/messages.js";
@@ -12,6 +11,7 @@ import type { QueryParams } from "../protocol/messages.js";
 import type { ParsedArgv } from "../argv.js";
 import { DctClient, type DctClientOptions } from "../client/client.js";
 import { resolvePaths } from "../paths.js";
+import { formatRegionLabel } from "./region-labels.js";
 
 export interface CommandClient {
 	connect(): Promise<void>;
@@ -118,11 +118,6 @@ function normalizeErrorPayload(errorOrMessage: unknown, fallbackCode: string | n
 	}
 
 	return { code: fallbackCode, message: String(errorOrMessage) };
-}
-
-function formatRegionLabel(regionId: string): string {
-	const region = REGION_CATALOG[regionId] ?? Object.values(REGION_CATALOG).find((entry) => entry.id === regionId);
-	return region ? `${region.code} · ${region.city} · ${region.name}` : regionId;
 }
 
 function formatCapacityValue(label: string, value: unknown, suffix = ""): string {
