@@ -11,7 +11,7 @@ This package now contains the full first-pass playable core: catalogs, placement
 - **Deterministic only**: all randomness must flow through the seeded PRNG in `src/sim/rng.ts`. Never call `Math.random()` in simulation code.
 - **Prefer pure state transitions**: model gameplay as `(state, action) => state` and pure helpers.
 - **Serializable state**: stored game state must round-trip through JSON with plain objects/arrays/primitives only.
-- **Time is integer ticks**: one tick currently represents one in-game month.
+- **Time is deterministic and discrete**: one `tick` represents one in-game month and one `subtick` represents one in-game day inside that month (`0..DAYS_PER_TICK-1`).
 - **Do not write explicit `undefined` optional fields into persisted state** unless there is a strong reason. Omit optional properties instead so save/load round-trips stay structurally stable.
 
 ## Current Module Layout
@@ -68,13 +68,13 @@ docs/
 ## Architectural Expectations
 
 - **For entity/model deep dives, start with `docs/ARCHITECTURE.md`.** It maps the canonical persisted entities, ownership rules, and which modules are responsible for which behavior.
-- **For monthly simulation deep dives, start with `docs/CORE_LOOP.md`.** It documents the exact `tick()` order, including maintenance, opex, revenue, tax, contract finalization, reliability, and market refresh.
+- **For time-progression deep dives, start with `docs/CORE_LOOP.md`.** It documents the split between `advanceSubtick()` for daily operational state and `settleMonthlyTick()`/`tick()` for monthly settlement.
 
 - **`src/index.ts` is the public surface.** If a symbol is intended for consumers, re-export it there via the relevant barrel.
 - **Catalogs are data, not logic containers.** Keep rack/datacenter blueprints in `catalog/` as plain objects.
 - **Upgradeable datacenter resources have a blueprint-vs-effective split.** `DatacenterSpec` is the immutable build-time blueprint; live power/cooling/network/generator answers must flow through the infrastructure/upgrade resolvers and query views.
 - **Reducer remains the main gameplay entry point.** New gameplay interactions should usually become actions in `state/reduce.ts` and delegate to small domain helpers.
-- **Simulation lives in `sim/tick.ts`.** Monthly progression should be orchestrated there, not spread across UI/server code.
+- **Simulation lives in `sim/subtick.ts` and `sim/tick.ts`.** Daily operational progression belongs in `advanceSubtick()`; monthly settlement belongs in `settleMonthlyTick()`/`tick()`, not in UI/server code.
 - **Save/load format is versioned.** Preserve `SAVE_VERSION` semantics and route format changes through `migrate()`.
 
 ## Existing Gameplay Surface
@@ -100,8 +100,9 @@ These are already implemented and should usually be extended rather than replace
   - `src/save/serialize.ts`
   - migration behavior
   - round-trip tests
-- When changing **tick behavior**, verify:
-  - determinism still holds
+- When changing **time progression behavior**, verify:
+  - determinism still holds across both subticks and monthly ticks
+  - monthly-only work still happens only at month boundary
   - ledger entries remain sensible
   - integration test still passes
   - `docs/CORE_LOOP.md` still matches the real execution order

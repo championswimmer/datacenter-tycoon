@@ -83,6 +83,7 @@ describe("DatacenterView maintenance staffing controls", () => {
     fireEvent.click(screen.getByLabelText("Increase maintenance staff"));
     expect(screen.getByText("MAINT 1")).toBeTruthy();
     expect(screen.getByText(/Extra wages \$[\d,]+(?:\.\d+)?\/mo/)).toBeTruthy();
+    expect(screen.getByText(/repair-days\/day/)).toBeTruthy();
 
     fireEvent.click(screen.getByLabelText("Decrease maintenance staff"));
     expect(screen.getByText("MAINT 0")).toBeTruthy();

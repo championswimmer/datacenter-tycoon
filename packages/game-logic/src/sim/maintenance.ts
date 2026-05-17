@@ -23,6 +23,17 @@ export function rackFailureChance(ageMonths: number, difficulty: Difficulty = DE
 	return failureCurve[clampedYearIndex]! / 100;
 }
 
+export function rackDailyFailureChance(monthlyChance: number): number {
+	if (monthlyChance <= 0) {
+		return 0;
+	}
+	if (monthlyChance >= 1) {
+		return 1;
+	}
+
+	return 1 - (1 - monthlyChance) ** (1 / DAYS_PER_TICK);
+}
+
 export function repairSpeedMultiplier(maintenanceStaff: number): number {
 	const extraStaff = Math.max(0, maintenanceStaff);
 	return clamp(
@@ -32,8 +43,12 @@ export function repairSpeedMultiplier(maintenanceStaff: number): number {
 	);
 }
 
+export function repairProgressPerSubtick(maintenanceStaff: number): number {
+	return repairSpeedMultiplier(maintenanceStaff);
+}
+
 export function repairProgressPerTick(maintenanceStaff: number): number {
-	return DAYS_PER_TICK * repairSpeedMultiplier(maintenanceStaff);
+	return DAYS_PER_TICK * repairProgressPerSubtick(maintenanceStaff);
 }
 
 export function repairDurationDays(difficulty: Difficulty = DEFAULT_DIFFICULTY): number {
@@ -90,6 +105,18 @@ export function rackFailureRiskView(
 	};
 }
 
+export function rackDailyFailureRiskView(
+	currentTick: Tick,
+	rack: Pick<Rack, "id" | "installedAtTick" | "health">,
+	difficulty: Difficulty = DEFAULT_DIFFICULTY,
+): RackFailureRiskView {
+	const monthlyRisk = rackFailureRiskView(currentTick, rack, difficulty);
+	return {
+		...monthlyRisk,
+		failureProbability: rack.health === "repairing" ? 0 : rackDailyFailureChance(monthlyRisk.failureProbability),
+	};
+}
+
 export function advanceRackRepair(
 	rack: RackPlacement,
 	maintenanceStaff: number,
@@ -99,7 +126,7 @@ export function advanceRackRepair(
 		return rack;
 	}
 
-	const nextRepairProgressDays = (rack.repairProgressDays ?? 0) + repairProgressPerTick(maintenanceStaff);
+	const nextRepairProgressDays = (rack.repairProgressDays ?? 0) + repairProgressPerSubtick(maintenanceStaff);
 	if (nextRepairProgressDays < repairDurationDays(difficulty)) {
 		return {
 			...rack,

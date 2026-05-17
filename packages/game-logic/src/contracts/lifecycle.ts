@@ -1,5 +1,6 @@
 import { datacenterCapacity } from "../entities/datacenter.js";
 import type { Contract, ContractLifecycleState, ContractSlaOutcomeKind, ContractStatus, Datacenter, GameState } from "../types.js";
+import { withContractSlaDefaults } from "./sla.js";
 
 export type ContractEvaluationResult = "fulfilled" | "breached";
 
@@ -93,12 +94,13 @@ function lifecycleStateFromStatus(contract: Pick<Contract, "status" | "assignedD
 
 function normalizedContract(contract: Contract): Contract {
 	const lifecycleState = lifecycleStateFromStatus(contract);
-	if (contract.lifecycleState === lifecycleState) {
-		return contract;
+	const normalized = withContractSlaDefaults(contract);
+	if (normalized.lifecycleState === lifecycleState) {
+		return normalized;
 	}
 
 	return {
-		...contract,
+		...normalized,
 		lifecycleState,
 	};
 }

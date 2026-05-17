@@ -38,6 +38,8 @@ function buildActiveState(): GameState {
     monthlyPayment: 12000,
     penaltyPerMonth: 4000,
     termMonths: 3,
+    slaTargetPercent: 90,
+    currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
     lifecycleState: "serving",
     status: "active",
     urgency: "standard",
@@ -74,6 +76,12 @@ describe("ActiveList", () => {
     expect(screen.getByText("1/3 mo · 2 months left")).toBeTruthy();
   });
 
+  it("uses authoritative subtick plus animation fraction when rendering remaining time", () => {
+    const state = { ...buildActiveState(), tick: 1, subtick: 15 };
+    renderActive(state);
+    expect(screen.getByText("1/3 mo · 1 month 15 days left")).toBeTruthy();
+  });
+
   it("renders affinity badges and allowed-region copy for active contracts", () => {
     const state = buildActiveState();
     const allowedRegionIds = state.map.regions
@@ -95,6 +103,10 @@ describe("ActiveList", () => {
 
   it("shows positive SLA messaging after a fulfilled month", () => {
     const state = buildActiveState();
+    state.activeContracts = [{
+      ...state.activeContracts[0]!,
+      currentSlaWindow: { sampledDays: 10, servedDays: 9, failedDays: 1 },
+    }];
     state.player.reliability = {
       score: 53,
       lastDelta: 3,
@@ -111,11 +123,19 @@ describe("ActiveList", () => {
     renderActive(state);
 
     expect(screen.getByText(/SLA credit: this contract improved reliability last month/i)).toBeTruthy();
+    expect(screen.getByText(/90% SLA/i)).toBeTruthy();
+    expect(screen.getByText(/RECOVERABLE · 9 served \/ 1 failed day/i)).toBeTruthy();
   });
 
   it("shows breach recovery messaging for damaged contracts", () => {
     const state = buildActiveState();
-    state.activeContracts = [{ ...state.activeContracts[0]!, status: "breached" }];
+    state.activeContracts = [{
+      ...state.activeContracts[0]!,
+      status: "breached",
+      lifecycleState: "breached",
+      slaTargetPercent: 95,
+      currentSlaWindow: { sampledDays: 20, servedDays: 15, failedDays: 5 },
+    }];
     state.player.reliability = {
       score: 42,
       lastDelta: -8,
@@ -132,6 +152,8 @@ describe("ActiveList", () => {
     renderActive(state);
 
     expect(screen.getByText(/SLA hit: this breach already hurt reliability/i)).toBeTruthy();
+    expect(screen.getByText(/95% SLA/i)).toBeTruthy();
+    expect(screen.getByText(/MISSED · 15 served \/ 5 failed days/i)).toBeTruthy();
   });
 
   it("confirms cancellation before dispatching CancelContract", () => {

@@ -10,9 +10,11 @@ import {
 import {
 	advanceRackRepair,
 	rackAgeMonths,
+	rackDailyFailureChance,
 	rackFailureChance,
 	rackFailureRiskView,
 	repairDurationDays,
+	repairProgressPerSubtick,
 	repairProgressPerTick,
 	repairSpeedMultiplier,
 } from "./maintenance.js";
@@ -57,37 +59,68 @@ test("rackFailureChance halves the yearly failure curve in easy mode", () => {
 	assert.equal(rackFailureChance(24, "easy"), rackFailureChance(24, "hard") / 2);
 });
 
+test("rackDailyFailureChance preserves the equivalent monthly hazard", () => {
+	const monthlyChance = 0.32;
+	const dailyChance = rackDailyFailureChance(monthlyChance);
+	const recomposedMonthlyChance = 1 - (1 - dailyChance) ** DAYS_PER_TICK;
+
+	assert.ok(dailyChance > 0);
+	assert.ok(dailyChance < monthlyChance);
+	assert.ok(Math.abs(recomposedMonthlyChance - monthlyChance) < 1e-12);
+	assert.equal(rackDailyFailureChance(0), 0);
+	assert.equal(rackDailyFailureChance(1), 1);
+});
+
 test("repair speed scales with maintenance staff and clamps at the configured max", () => {
 	assert.equal(repairSpeedMultiplier(0), 1);
 	assert.equal(repairSpeedMultiplier(4), 2);
 	assert.equal(repairSpeedMultiplier(40), MAX_REPAIR_SPEED_MULTIPLIER);
 
+	assert.equal(repairProgressPerSubtick(0), 1);
+	assert.equal(repairProgressPerSubtick(4), 2);
+	assert.equal(repairProgressPerSubtick(40), MAX_REPAIR_SPEED_MULTIPLIER);
 	assert.equal(repairProgressPerTick(0), DAYS_PER_TICK);
 	assert.equal(repairProgressPerTick(4), DAYS_PER_TICK * 2);
 	assert.equal(repairProgressPerTick(40), DAYS_PER_TICK * MAX_REPAIR_SPEED_MULTIPLIER);
 });
 
 test("advanceRackRepair uses current staffing and clears repair progress when complete", () => {
-	const inProgress = advanceRackRepair(repairingRack({ repairProgressDays: 5 }), 1);
+	const inProgress = advanceRackRepair(repairingRack({ repairProgressDays: 1 }), 1);
 	assert.equal(inProgress.health, "repairing");
-	assert.equal(inProgress.repairProgressDays, 42.5);
+	assert.equal(inProgress.repairProgressDays, 2.25);
 
-	const completed = advanceRackRepair(repairingRack({ repairProgressDays: BASE_REPAIR_DAYS - 10 }), 1);
+	const completed = advanceRackRepair(repairingRack({ repairProgressDays: BASE_REPAIR_DAYS - 1 }), 1);
 	assert.equal(completed.health, "healthy");
 	assert.equal("repairProgressDays" in completed, false);
 });
 
-test("repairDurationDays halves the repair target in easy mode", () => {
-	assert.equal(BASE_REPAIR_DAYS, 45);
+test("repairDurationDays now targets short multi-day outages", () => {
+	assert.equal(BASE_REPAIR_DAYS, 3);
 	assert.equal(repairDurationDays("hard"), BASE_REPAIR_DAYS);
 	assert.equal(repairDurationDays("easy"), BASE_REPAIR_DAYS * DIFFICULTY_CONFIG.easy.repairTimeMultiplier);
-	assert.equal(repairDurationDays("hard"), 45);
-	assert.equal(repairDurationDays("easy"), 22.5);
+	assert.equal(repairDurationDays("hard"), 3);
+	assert.equal(repairDurationDays("easy"), 2.25);
 
-	const easyRepair = advanceRackRepair(repairingRack({ repairProgressDays: 0 }), 0, "easy");
-	const hardRepair = advanceRackRepair(repairingRack({ repairProgressDays: 0 }), 0, "hard");
+	const easyRepair = advanceRackRepair(repairingRack({ repairProgressDays: 1.5 }), 0, "easy");
+	const hardRepair = advanceRackRepair(repairingRack({ repairProgressDays: 1.5 }), 0, "hard");
 	assert.equal(easyRepair.health, "healthy");
 	assert.equal(hardRepair.health, "repairing");
+});
+
+test("advanceRackRepair completes in roughly 2-3 subticks at baseline staffing", () => {
+	let hardRack = repairingRack();
+	let easyRack = repairingRack();
+	for (let day = 0; day < 2; day += 1) {
+		hardRack = advanceRackRepair(hardRack, 0, "hard");
+		easyRack = advanceRackRepair(easyRack, 0, "easy");
+	}
+	assert.equal(hardRack.health, "repairing");
+	assert.equal(easyRack.health, "repairing");
+
+	const hardOnDayThree = advanceRackRepair(hardRack, 0, "hard");
+	const easyOnDayThree = advanceRackRepair(easyRack, 0, "easy");
+	assert.equal(hardOnDayThree.health, "healthy");
+	assert.equal(easyOnDayThree.health, "healthy");
 });
 
 test("advanceRackRepair leaves healthy racks unchanged", () => {

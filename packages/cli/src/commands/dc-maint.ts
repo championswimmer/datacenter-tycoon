@@ -8,16 +8,27 @@
  *   dct dc maint set <dcId> <count>  set an absolute staffing level
  */
 
-import type { DatacenterMaintenanceStaffingView, DatacenterId } from "@datacenter-tycoon/game-logic";
+import {
+	summarizeDatacenterRackMaintenanceViewsFromState,
+	selectDatacenterMaintenanceStaffingViewFromState,
+	type DatacenterMaintenanceStaffingView,
+	type DatacenterId,
+	type GameState,
+} from "@datacenter-tycoon/game-logic";
 import { getFlagValue } from "../argv.js";
 import type { ParsedArgv } from "../argv.js";
 import { DctClient } from "../client/client.js";
-import type { DatacenterListItem, ListResult } from "../protocol/messages.js";
+import type { QueryResult } from "../protocol/messages.js";
 import { hasBooleanFlag, withClient, writeCommandResult, type CommandClient, type CommandClientFactory } from "./common.js";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function renderMaintenanceView(dcId: string, m: DatacenterMaintenanceStaffingView, detail = false): string[] {
+function renderMaintenanceView(
+	dcId: string,
+	m: DatacenterMaintenanceStaffingView,
+	rackViews: ReturnType<typeof summarizeDatacenterRackMaintenanceViewsFromState>,
+	detail = false,
+): string[] {
 	const riskLabel = m.canIncrease
 		? `Spare regional staff: ${m.availableRegionalStaff}`
 		: m.currentStaff >= m.maxStaff
@@ -27,7 +38,7 @@ function renderMaintenanceView(dcId: string, m: DatacenterMaintenanceStaffingVie
 	const lines: string[] = [
 		`=== Maintenance staffing: ${dcId} ===`,
 		`  Current staff   : ${m.currentStaff} / ${m.maxStaff} (max)`,
-		`  Repair speed    : ${m.repairSpeedDaysPerTick.toFixed(1)} days/tick`,
+		`  Repair speed    : ${m.repairSpeedDaysPerDay.toFixed(2)} repair-days/day`,
 		`  Repairing racks : ${m.repairingRackCount} / ${m.totalRackCount}`,
 		`  Avg rack age    : ${m.averageRackAgeMonths.toFixed(1)} mo`,
 		`  Wage/head/mo    : $${m.staffWagePerHead.toLocaleString()}`,
@@ -43,23 +54,35 @@ function renderMaintenanceView(dcId: string, m: DatacenterMaintenanceStaffingVie
 				: `  [-] cannot increase — ${m.currentStaff >= m.maxStaff ? "at cap" : "regional labor exhausted"}`,
 		);
 		lines.push(m.canDecrease ? `  [-] can decrease` : `  [=] already at 0 staff`);
+		lines.push("");
+		lines.push("  Rack maintenance:");
+		const repairingRacks = rackViews.filter((rack) => rack.status === "repairing");
+		if (repairingRacks.length === 0) {
+			lines.push("    none repairing right now");
+		} else {
+			for (const rack of repairingRacks) {
+				lines.push(
+					`    ${rack.placementId}: ${rack.repairCompletionPercent}% repaired | ETA ${rack.repairEtaDays} ${rack.repairEtaDays === 1 ? "day" : "days"}`,
+				);
+			}
+		}
 	}
 
 	return lines;
 }
 
-/** Resolve the maintenance view for a specific dcId from a datacenter list. */
-function findMaintenanceView(items: DatacenterListItem[], dcId: string): DatacenterMaintenanceStaffingView {
-	const item = items.find((i) => i.datacenter.id === dcId);
-	if (!item) {
-		throw new Error(`Datacenter not found: ${dcId}`);
-	}
-	return item.maintenance;
+function findMaintenanceDetail(snapshot: GameState, dcId: string): {
+	maintenance: DatacenterMaintenanceStaffingView;
+	rackViews: ReturnType<typeof summarizeDatacenterRackMaintenanceViewsFromState>;
+} {
+	return {
+		maintenance: selectDatacenterMaintenanceStaffingViewFromState(snapshot, dcId as DatacenterId),
+		rackViews: summarizeDatacenterRackMaintenanceViewsFromState(snapshot, dcId as DatacenterId),
+	};
 }
 
-async function fetchDatacenterItems(client: CommandClient): Promise<DatacenterListItem[]> {
-	const result = (await client.query({ kind: "list", target: "datacenters" })) as ListResult;
-	return result.kind === "datacenters" ? (result.items as DatacenterListItem[]) : [];
+async function fetchSnapshot(client: CommandClient): Promise<GameState> {
+	return (await client.query({ kind: "snapshot" })) as QueryResult as GameState;
 }
 
 // ── show ─────────────────────────────────────────────────────────────────────
@@ -74,16 +97,16 @@ async function showMaintenance(
 	await withClient(
 		parsed,
 		async (client) => {
-			const items = await fetchDatacenterItems(client);
-			const maintenance = findMaintenanceView(items, dcId);
+			const snapshot = await fetchSnapshot(client);
+			const { maintenance, rackViews } = findMaintenanceDetail(snapshot, dcId);
 
 			if (isJson) {
-				writeCommandResult(parsed, "", { ok: true, dcId, maintenance });
+				writeCommandResult(parsed, "", { ok: true, dcId, maintenance, rackViews });
 				return;
 			}
 
-			const lines = renderMaintenanceView(dcId, maintenance, /* detail */ true);
-			writeCommandResult(parsed, lines.join("\n"), { ok: true, dcId, maintenance });
+			const lines = renderMaintenanceView(dcId, maintenance, rackViews, /* detail */ true);
+			writeCommandResult(parsed, lines.join("\n"), { ok: true, dcId, maintenance, rackViews });
 		},
 		clientFactory,
 	);
@@ -106,8 +129,8 @@ async function mutateMaintenance(
 		parsed,
 		async (client) => {
 			// fetch current view so we can compute the target count
-			const itemsBefore = await fetchDatacenterItems(client);
-			const before = findMaintenanceView(itemsBefore, dcId);
+			const beforeSnapshot = await fetchSnapshot(client);
+			const { maintenance: before } = findMaintenanceDetail(beforeSnapshot, dcId);
 
 			// Check canIncrease before computing the target so the error is user-friendly.
 			if (verb === "inc" && !before.canIncrease) {
@@ -158,8 +181,8 @@ async function mutateMaintenance(
 			await client.dispatch({ type: "SetMaintenanceStaff", dcId: dcId as DatacenterId, maintenanceStaff: target });
 
 			// Fetch updated view
-			const itemsAfter = await fetchDatacenterItems(client);
-			const after = findMaintenanceView(itemsAfter, dcId);
+			const afterSnapshot = await fetchSnapshot(client);
+			const { maintenance: after, rackViews } = findMaintenanceDetail(afterSnapshot, dcId);
 
 			if (isJson) {
 				writeCommandResult(parsed, "", {
@@ -168,13 +191,14 @@ async function mutateMaintenance(
 					dcId,
 					before: { currentStaff: before.currentStaff },
 					maintenance: after,
+					rackViews,
 				});
 				return;
 			}
 
 			const lines = [
 				`Maintenance staff updated: ${before.currentStaff} → ${after.currentStaff}`,
-				...renderMaintenanceView(dcId, after),
+				...renderMaintenanceView(dcId, after, rackViews),
 			];
 			writeCommandResult(parsed, lines.join("\n"), {
 				ok: true,
@@ -182,6 +206,7 @@ async function mutateMaintenance(
 				dcId,
 				before: { currentStaff: before.currentStaff },
 				maintenance: after,
+				rackViews,
 			});
 		},
 		clientFactory,

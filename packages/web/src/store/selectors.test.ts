@@ -8,6 +8,9 @@ import {
 import type { Contract, GameState } from "@datacenter-tycoon/game-logic";
 import {
   selectTick,
+  selectSubtick,
+  selectGameTimeView,
+  selectAnimatedGameTimeView,
   selectCash,
   selectPlayerName,
   selectReliabilityScore,
@@ -150,9 +153,23 @@ function withReliability(
 
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
-describe("selectTick", () => {
-  it("returns 0 on a fresh game", () => {
-    expect(selectTick(freshState())).toBe(0);
+describe("time selectors", () => {
+  it("returns month and day counters from authoritative state", () => {
+    const state = { ...freshState(), tick: 2, subtick: 14 };
+    expect(selectTick(state)).toBe(2);
+    expect(selectSubtick(state)).toBe(14);
+    expect(selectGameTimeView(state)).toEqual({
+      tick: 2,
+      subtick: 14,
+      dayOfMonth: 15,
+      monthFraction: 14 / 30,
+    });
+    expect(selectAnimatedGameTimeView(state, 0.5)).toEqual({
+      tick: 2,
+      subtick: 14,
+      dayOfMonth: 15,
+      monthFraction: 14.5 / 30,
+    });
   });
 
   it("increments after a Tick action", () => {
@@ -348,8 +365,10 @@ describe("selectDatacenterRackMaintenanceViews", () => {
         ageMonths: 6,
         status: "repairing",
         repairProgressDays: 30,
-        repairCompletionPercent: 67,
-        repairEtaTicks: 1,
+        repairCompletionPercent: 100,
+        repairEtaSubticks: 0,
+        repairEtaDays: 0,
+        repairEtaTicks: 0,
         failureProbability: 0,
       },
     ]);
@@ -433,6 +452,8 @@ describe("contract affinity selectors", () => {
       monthlyPayment: 12_000,
       penaltyPerMonth: 4_000,
       termMonths: 6,
+      slaTargetPercent: 90,
+      currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
       lifecycleState: "market_open",
       status: "offered",
       urgency: "standard",
@@ -492,6 +513,8 @@ describe("contract affinity selectors", () => {
       monthlyPayment: 12_000,
       penaltyPerMonth: 4_000,
       termMonths: 6,
+      slaTargetPercent: 90,
+      currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
       lifecycleState: "serving",
       status: "active",
       urgency: "standard",

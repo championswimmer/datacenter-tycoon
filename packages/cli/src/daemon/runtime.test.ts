@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { DATACENTER_CATALOG, RACK_CATALOG, newGame, reduce, type Contract, type ContractId, type DatacenterId, type RackPlacementId } from "@datacenter-tycoon/game-logic";
+import { DAYS_PER_TICK, DATACENTER_CATALOG, RACK_CATALOG, newGame, reduce, type Contract, type ContractId, type DatacenterId, type RackPlacementId } from "@datacenter-tycoon/game-logic";
 
 import { GameRuntime, type IntervalScheduler } from "./runtime.js";
 
@@ -65,9 +65,13 @@ test("GameRuntime dispatching Tick advances state and emits runtime events", () 
 	const tickEvents: number[] = [];
 	const stateEvents: number[] = [];
 	const ledgerEventCounts: number[] = [];
+	const subtickEvents: number[] = [];
 
 	runtime.on("tick", (event) => {
 		tickEvents.push(event.tick);
+	});
+	runtime.on("subtick", (event) => {
+		subtickEvents.push(event.subtick);
 	});
 	runtime.on("state", (event) => {
 		stateEvents.push(event.tick);
@@ -80,6 +84,7 @@ test("GameRuntime dispatching Tick advances state and emits runtime events", () 
 
 	assert.equal(nextState.tick, 1);
 	assert.deepEqual(tickEvents, [1]);
+	assert.deepEqual(subtickEvents, []);
 	assert.deepEqual(stateEvents, [1]);
 	assert.deepEqual(ledgerEventCounts, [1]);
 	assert.equal(runtime.getSnapshot().tick, 1);
@@ -87,19 +92,38 @@ test("GameRuntime dispatching Tick advances state and emits runtime events", () 
 	assert.equal(runtime.getStatus().difficulty, "hard");
 });
 
-test("GameRuntime setSpeed reschedules the tick loop and interval callbacks tick the game", () => {
+test("GameRuntime setSpeed reschedules the subtick loop and interval callbacks advance one day at a time", () => {
 	const scheduler = new FakeScheduler();
 	const runtime = new GameRuntime({ state: newGame(7), scheduler });
+	const subtickEvents: number[] = [];
+	const tickEvents: number[] = [];
+
+	runtime.on("subtick", (event) => {
+		subtickEvents.push(event.subtick);
+	});
+	runtime.on("tick", (event) => {
+		tickEvents.push(event.tick);
+	});
 
 	runtime.start();
-	assert.deepEqual(scheduler.setCalls, [1000]);
+	assert.deepEqual(scheduler.setCalls, [1000 / DAYS_PER_TICK]);
 
 	runtime.setSpeed(4);
-	assert.deepEqual(scheduler.setCalls, [1000, 250]);
+	assert.deepEqual(scheduler.setCalls, [1000 / DAYS_PER_TICK, 250 / DAYS_PER_TICK]);
 	assert.equal(scheduler.clearedHandles.length, 1);
 
 	scheduler.triggerLatest();
+	assert.equal(runtime.getSnapshot().tick, 0);
+	assert.equal(runtime.getSnapshot().subtick, 1);
+	assert.deepEqual(subtickEvents, [1]);
+	assert.deepEqual(tickEvents, []);
+
+	for (let day = 1; day < DAYS_PER_TICK; day += 1) {
+		scheduler.triggerLatest();
+	}
 	assert.equal(runtime.getSnapshot().tick, 1);
+	assert.equal(runtime.getSnapshot().subtick, 0);
+	assert.deepEqual(tickEvents, [1]);
 });
 
 test("GameRuntime pause, resume, and tickNow cooperate with zero-speed scheduling", () => {
@@ -107,19 +131,38 @@ test("GameRuntime pause, resume, and tickNow cooperate with zero-speed schedulin
 	const runtime = new GameRuntime({ state: newGame(9), scheduler, initialSpeedTps: 2 });
 
 	runtime.start();
-	assert.deepEqual(scheduler.setCalls, [500]);
+	assert.deepEqual(scheduler.setCalls, [500 / DAYS_PER_TICK]);
 
 	assert.deepEqual(runtime.pause(), { paused: true, speedTps: 2 });
 	assert.equal(scheduler.intervals.size, 0);
 
 	const pausedTick = runtime.tickNow(2);
 	assert.equal(pausedTick.tick, 2);
+	assert.equal(pausedTick.subtick, 0);
 
 	assert.deepEqual(runtime.setSpeed(0), { paused: true, speedTps: 0 });
 	assert.equal(scheduler.intervals.size, 0);
 
 	assert.deepEqual(runtime.resume(), { paused: false, speedTps: 2 });
-	assert.equal(scheduler.setCalls.at(-1), 500);
+	assert.equal(scheduler.setCalls.at(-1), 500 / DAYS_PER_TICK);
+});
+
+test("GameRuntime tickNow still advances whole months from mid-month states", () => {
+	const runtime = new GameRuntime({
+		state: {
+			...newGame(17),
+			tick: 3,
+			subtick: 12,
+		},
+		paused: true,
+	});
+
+	const nextState = runtime.tickNow(1);
+
+	assert.equal(nextState.tick, 4);
+	assert.equal(nextState.subtick, 0);
+	assert.equal(runtime.getSnapshot().tick, 4);
+	assert.equal(runtime.getSnapshot().subtick, 0);
 });
 
 test("GameRuntime query returns status, catalogs, and derived listings", () => {
@@ -127,6 +170,8 @@ test("GameRuntime query returns status, catalogs, and derived listings", () => {
 
 	const status = runtime.query({ kind: "status" });
 	assert.equal(status.tick, 0);
+	assert.equal(status.subtick, 0);
+	assert.equal(status.dayOfMonth, 1);
 	assert.equal(status.datacenterCount, 1);
 	assert.equal(status.rackCount, 1);
 	assert.equal(status.paused, true);
@@ -164,6 +209,9 @@ function buildStateWithExpiredContract() {
 		monthlyPayment: 1_000,
 		penaltyPerMonth: 500,
 		termMonths: 1,
+		slaTargetPercent: 90,
+		currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
+		lifecycleState: "completed",
 		status: "expired",
 		urgency: "standard",
 		tier: 1,
@@ -195,6 +243,9 @@ test("activeContractCount counts only live (active or breached) contracts", () =
 		monthlyPayment: 1_000,
 		penaltyPerMonth: 500,
 		termMonths: 6,
+		slaTargetPercent: 90,
+		currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
+		lifecycleState: "serving",
 		status: "active",
 		urgency: "standard",
 		tier: 1,
@@ -210,6 +261,9 @@ test("activeContractCount counts only live (active or breached) contracts", () =
 		monthlyPayment: 1_000,
 		penaltyPerMonth: 500,
 		termMonths: 1,
+		slaTargetPercent: 90,
+		currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
+		lifecycleState: "completed",
 		status: "expired",
 		urgency: "standard",
 		tier: 1,

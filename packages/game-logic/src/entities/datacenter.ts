@@ -12,7 +12,7 @@ import {
 	summarizeRackActivity,
 	type RackActivityAllocationResult,
 } from "../economy/rack-activity.js";
-import { rackAgeMonths, repairProgressPerTick } from "../sim/maintenance.js";
+import { rackAgeMonths, repairProgressPerSubtick, repairProgressPerTick } from "../sim/maintenance.js";
 import { maintenanceStaffWagePerHead } from "../balance/easier.js";
 import { MAX_MAINTENANCE_STAFF } from "../balance/maintenance.js";
 import { regionStaffRemaining } from "./region.js";
@@ -459,6 +459,10 @@ export interface DatacenterMaintenanceStaffingView {
 	 * days. Higher means faster repairs.
 	 */
 	repairSpeedDaysPerTick: number;
+	/** Repair progress accumulated per day/subtick at the current staffing level, in days. */
+	repairSpeedDaysPerSubtick: number;
+	/** Alias for `repairSpeedDaysPerSubtick` for consumer copy that prefers day units. */
+	repairSpeedDaysPerDay: number;
 	/** Number of racks currently under repair. */
 	repairingRackCount: number;
 	/** Total number of rack placements in this datacenter. */
@@ -503,6 +507,8 @@ export function datacenterMaintenanceStaffingView(
 		staffWagePerHead,
 		extraWagesMonthly: currentStaff * staffWagePerHead,
 		repairSpeedDaysPerTick: repairProgressPerTick(currentStaff),
+		repairSpeedDaysPerSubtick: repairProgressPerSubtick(currentStaff),
+		repairSpeedDaysPerDay: repairProgressPerSubtick(currentStaff),
 		repairingRackCount,
 		totalRackCount,
 		averageRackAgeMonths,

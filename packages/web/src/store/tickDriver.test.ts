@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { DAYS_PER_TICK, type Action } from "@datacenter-tycoon/game-logic";
 import { startTickDriver, SPEED_INTERVALS_MS, type Speed } from "./tickDriver.js";
-import type { Action } from "@datacenter-tycoon/game-logic";
 
 /** Minimal fake-rAF harness: collects registered callbacks so the test drives frames. */
 function createFakeRaf() {
@@ -39,7 +39,7 @@ describe("startTickDriver", () => {
     speed = 1;
   });
 
-  it("dispatches no ticks when paused (speed 0)", () => {
+  it("dispatches no subticks when paused (speed 0)", () => {
     const { raf, caf, flush } = createFakeRaf();
     speed = 0;
     startTickDriver(dispatch as (a: Action) => void, () => speed, undefined, raf, caf, T0);
@@ -52,40 +52,40 @@ describe("startTickDriver", () => {
     expect(dispatch).not.toHaveBeenCalled();
   });
 
-  it("dispatches ~1 tick per 10000 ms at speed 1", () => {
+  it("dispatches one full month as 30 Subtick actions at speed 1", () => {
     const { raf, caf, flush } = createFakeRaf();
     startTickDriver(dispatch as (a: Action) => void, () => speed, undefined, raf, caf, T0);
 
     let now = T0;
-    for (let i = 0; i < 5; i++) {
-      now += SPEED_INTERVALS_MS[1];
+    for (let i = 0; i < DAYS_PER_TICK; i++) {
+      now += SPEED_INTERVALS_MS[1] / DAYS_PER_TICK;
       flush(now);
     }
-    expect(dispatch).toHaveBeenCalledTimes(5);
-    expect(dispatch).toHaveBeenCalledWith({ type: "Tick" });
+    expect(dispatch).toHaveBeenCalledTimes(DAYS_PER_TICK);
+    expect(dispatch).toHaveBeenLastCalledWith({ type: "Subtick" });
   });
 
-  it("dispatches ~1 tick per 5000 ms at speed 2", () => {
+  it("dispatches one full month as 30 Subtick actions at speed 2", () => {
     const { raf, caf, flush } = createFakeRaf();
     speed = 2;
     startTickDriver(dispatch as (a: Action) => void, () => speed, undefined, raf, caf, T0);
 
     let now = T0;
-    for (let i = 0; i < 5; i++) {
-      now += SPEED_INTERVALS_MS[2];
+    for (let i = 0; i < DAYS_PER_TICK; i++) {
+      now += SPEED_INTERVALS_MS[2] / DAYS_PER_TICK;
       flush(now);
     }
-    expect(dispatch).toHaveBeenCalledTimes(5);
+    expect(dispatch).toHaveBeenCalledTimes(DAYS_PER_TICK);
   });
 
-  it("dispatches multiple ticks per frame when frames are slow", () => {
+  it("dispatches multiple subticks per frame when frames are slow", () => {
     const { raf, caf, flush } = createFakeRaf();
-    speed = 3; // 1 tick / 2500 ms
+    speed = 3; // 1 month / 2500 ms
     startTickDriver(dispatch as (a: Action) => void, () => speed, undefined, raf, caf, T0);
 
-    // One big frame of 10000 ms → 4 ticks (10000 / 2500)
-    flush(T0 + 10000);
-    expect(dispatch).toHaveBeenCalledTimes(4);
+    // 250 ms is three day boundaries at speed 3.
+    flush(T0 + 250);
+    expect(dispatch).toHaveBeenCalledTimes(3);
   });
 
   it("drains accumulator on pause so no burst fires on resume", () => {
@@ -93,14 +93,14 @@ describe("startTickDriver", () => {
     speed = 1;
     startTickDriver(dispatch as (a: Action) => void, () => speed, undefined, raf, caf, T0);
 
-    // Pause while 30000 ms elapse — no ticks should fire
+    // Pause while a whole month elapses — no subticks should fire.
     speed = 0;
-    flush(T0 + 30000);
+    flush(T0 + 10000);
     expect(dispatch).not.toHaveBeenCalled();
 
-    // Resume — should fire exactly 1 tick (10000 ms elapsed since pause frame)
+    // Resume — only the post-resume elapsed time counts, so one day should fire.
     speed = 1;
-    flush(T0 + 40000);
+    flush(T0 + 10000 + SPEED_INTERVALS_MS[1] / DAYS_PER_TICK);
     expect(dispatch).toHaveBeenCalledTimes(1);
   });
 
@@ -114,18 +114,19 @@ describe("startTickDriver", () => {
     expect(caf).toHaveBeenCalledOnce();
   });
 
-  it("caps catchup ticks to MAX_TICKS_PER_FRAME (8) on a very long frame", () => {
+  it("caps catchup subticks to MAX_SUBTICKS_PER_FRAME (8) on a very long frame", () => {
     const { raf, caf, flush } = createFakeRaf();
-    speed = 3; // 2500 ms / tick
+    speed = 3; // 2500 ms / month
     startTickDriver(dispatch as (a: Action) => void, () => speed, undefined, raf, caf, T0);
 
-    // 300 seconds gap → theoretically 120 ticks; should be capped at 8
+    // 300 seconds gap → far more than 8 subticks; should still be capped at 8.
     flush(T0 + 300_000);
     expect(dispatch).toHaveBeenCalledTimes(8);
+    expect(dispatch).toHaveBeenCalledWith({ type: "Subtick" });
   });
 });
 
-describe("startTickDriver onFrame (tick fraction)", () => {
+describe("startTickDriver onFrame (day fraction)", () => {
   let dispatch: ReturnType<typeof vi.fn>;
   let onFrame: ReturnType<typeof vi.fn>;
   let speed: Speed;
@@ -145,35 +146,33 @@ describe("startTickDriver onFrame (tick fraction)", () => {
     expect(onFrame).toHaveBeenCalledWith(0);
   });
 
-  it("onFrame increases monotonically until tick fires, then resets", () => {
+  it("onFrame increases monotonically within a day until a Subtick fires, then resets", () => {
     const { raf, caf, flush } = createFakeRaf();
-    speed = 1; // 10000 ms per tick
+    speed = 1;
     startTickDriver(dispatch as (a: Action) => void, () => speed, onFrame, raf, caf, T0);
+    const dayStep = SPEED_INTERVALS_MS[1] / DAYS_PER_TICK;
 
-    // Half-way through the tick
-    flush(T0 + 5000);
+    flush(T0 + dayStep / 2);
     const halfFraction = onFrame.mock.calls[0]?.[0] as number;
     expect(halfFraction).toBeCloseTo(0.5, 5);
 
-    // Three-quarters through
-    flush(T0 + 7500);
-    const threeFraction = onFrame.mock.calls[1]?.[0] as number;
-    expect(threeFraction).toBeGreaterThan(halfFraction);
+    flush(T0 + dayStep * 0.75);
+    const threeQuarterFraction = onFrame.mock.calls[1]?.[0] as number;
+    expect(threeQuarterFraction).toBeGreaterThan(halfFraction);
 
-    // Full tick fires — accumulator resets, fraction should be small (near 0)
-    flush(T0 + 10000);
+    flush(T0 + dayStep);
     expect(dispatch).toHaveBeenCalledTimes(1);
-    const afterTick = onFrame.mock.calls[2]?.[0] as number;
-    expect(afterTick).toBeCloseTo(0, 5);
+    const afterSubtick = onFrame.mock.calls[2]?.[0] as number;
+    expect(afterSubtick).toBeCloseTo(0, 5);
   });
 
-  it("onFrame is clamped to 1 when acc overshoots just before a tick", () => {
+  it("onFrame is clamped to 1 when acc overshoots just before a subtick", () => {
     const { raf, caf, flush } = createFakeRaf();
-    speed = 1; // 10000 ms per tick
+    speed = 1;
     startTickDriver(dispatch as (a: Action) => void, () => speed, onFrame, raf, caf, T0);
+    const dayStep = SPEED_INTERVALS_MS[1] / DAYS_PER_TICK;
 
-    // Advance 9999 ms without crossing the tick boundary
-    flush(T0 + 9999);
+    flush(T0 + dayStep - 0.001);
     const fraction = onFrame.mock.calls[0]?.[0] as number;
     expect(fraction).toBeLessThanOrEqual(1);
     expect(fraction).toBeGreaterThan(0.99);
@@ -181,10 +180,9 @@ describe("startTickDriver onFrame (tick fraction)", () => {
 
   it("existing callers still work without passing onFrame", () => {
     const { raf, caf, flush } = createFakeRaf();
-    // No onFrame — should not throw
     expect(() => {
       startTickDriver(dispatch as (a: Action) => void, () => speed, undefined, raf, caf, T0);
-      flush(T0 + 10000);
+      flush(T0 + SPEED_INTERVALS_MS[1] / DAYS_PER_TICK);
     }).not.toThrow();
     expect(dispatch).toHaveBeenCalledTimes(1);
   });

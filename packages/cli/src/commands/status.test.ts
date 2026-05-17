@@ -7,6 +7,8 @@ import { formatStatusJson, formatStatusLine, runStatusCommand, type StatusClient
 
 const sampleStatus: StatusView = {
 	tick: 1284,
+	subtick: 11,
+	dayOfMonth: 12,
 	cash: 42310,
 	difficulty: "easy",
 	datacenterCount: 2,
@@ -20,7 +22,7 @@ const sampleStatus: StatusView = {
 test("formatStatusLine renders the expected status summary", () => {
 	assert.equal(
 		formatStatusLine(sampleStatus),
-		"tick=1284 cash=$42,310 difficulty=easy dcs=2 racks=8 active=3 market=4 paused=false speed=4",
+		"tick=1284 day=12/30 cash=$42,310 difficulty=easy dcs=2 racks=8 active=3 market=4 paused=false speed=4",
 	);
 });
 
@@ -60,7 +62,7 @@ test("runStatusCommand prints text output and closes the client", async () => {
 			console.log = originalConsoleLog;
 		}
 
-		assert.deepEqual(printed, ["tick=1284 cash=$42,310 difficulty=easy dcs=2 racks=8 active=3 market=4 paused=false speed=4"]);
+		assert.deepEqual(printed, ["tick=1284 day=12/30 cash=$42,310 difficulty=easy dcs=2 racks=8 active=3 market=4 paused=false speed=4"]);
 		assert.equal(closed, true);
 });
 
@@ -92,6 +94,8 @@ test("runStatusCommand prints json output when --json is set", async () => {
 // This is the exact failure mode reported in the bug investigation.
 const expiredOnlyStatus: StatusView = {
 	tick: 42,
+	subtick: 4,
+	dayOfMonth: 5,
 	cash: 100_000,
 	difficulty: "hard",
 	datacenterCount: 1,
@@ -103,6 +107,7 @@ const expiredOnlyStatus: StatusView = {
 };
 
 test("formatStatusLine shows zero active contracts when status reports none", () => {
+	assert.match(formatStatusLine(expiredOnlyStatus), /day=5\/30/);
 	assert.match(formatStatusLine(expiredOnlyStatus), /active=0/);
 	assert.ok(!formatStatusLine(expiredOnlyStatus).includes("active=1"), "must not show 1 expired contract as active");
 });

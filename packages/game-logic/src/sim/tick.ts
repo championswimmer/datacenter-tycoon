@@ -1,4 +1,4 @@
-import { collectContractSlaOutcomes, updatePlayerReliability } from "../contracts/reliability.js";
+import { updatePlayerReliability } from "../contracts/reliability.js";
 import {
 	CONTRACT_BREACH_AUTO_CANCEL_MONTHS,
 	contractsFromState,
@@ -8,18 +8,15 @@ import {
 } from "../contracts/lifecycle.js";
 import { refreshContractMarket } from "../contracts/market.js";
 import { tickOpex, tickRevenue } from "../economy/opex.js";
-import { advanceRackRepair, rackAgeMonths, rackFailureChance } from "./maintenance.js";
-import { rngFromState } from "./rng.js";
+import { advanceSubtick } from "./subtick.js";
 import type {
 	Contract,
-	Datacenter,
 	DatacenterId,
 	GameState,
 	LedgerEntry,
 	LedgerEntryType,
 	Money,
 	OpexTickResult,
-	RackPlacement,
 	Tick,
 } from "../types.js";
 
@@ -78,47 +75,12 @@ function getRegionForDatacenter(state: GameState, dcId: string) {
 	return state.map.regions.find((r) => r.id === datacenter.regionId);
 }
 
-function processRackMaintenance(
-	datacenter: Datacenter,
-	currentTick: Tick,
-	difficulty: GameState["difficulty"],
-	rng: ReturnType<typeof rngFromState>,
-): Datacenter {
-	const placements = datacenter.placements.map((placement): RackPlacement => {
-		if (placement.health === "repairing") {
-			return advanceRackRepair(placement, datacenter.maintenanceStaff, difficulty);
-		}
-
-		const failureChance = rackFailureChance(rackAgeMonths(currentTick, placement), difficulty);
-		if (rng.next() >= failureChance) {
-			return placement;
-		}
-
-		return {
-			...placement,
-			health: "repairing",
-			repairProgressDays: 0,
-			lastFailureAtTick: currentTick,
-		};
-	});
-
-	return {
-		...datacenter,
-		placements,
-	};
-}
-
-export function tick(state: GameState): GameState {
+export function settleMonthlyTick(state: GameState): GameState {
 	const nextTick = (state.tick + 1) as Tick;
-	const rng = rngFromState(state.rngState);
-	const datacentersAfterMaintenance = state.datacenters.map((datacenter) =>
-		processRackMaintenance(datacenter, nextTick, state.difficulty, rng),
-	);
 	const maintenanceState: GameState = {
 		...state,
 		tick: nextTick,
-		rngState: rng.state(),
-		datacenters: datacentersAfterMaintenance,
+		subtick: 0,
 		contracts: contractsFromState(state),
 	};
 
@@ -156,9 +118,7 @@ export function tick(state: GameState): GameState {
 	const totalOpex = roundMoney(baseOpexTotal + totalTax);
 
 	const finalizedContracts = revenueResult.updatedContracts.map((contract) => finalizeContract(contract, nextTick));
-	const previousLiveContracts = selectLiveContracts(contractsFromState(state));
-	const reliabilityOutcomes = collectContractSlaOutcomes(previousLiveContracts, finalizedContracts, nextTick);
-	const nextReliability = updatePlayerReliability(state.player.reliability, reliabilityOutcomes);
+	const nextReliability = updatePlayerReliability(state.player.reliability, revenueResult.outcomes);
 	const netCashDelta = roundMoney(revenueResult.revenue - totalOpex);
 	const ledgerEntries: LedgerEntry[] = [];
 
@@ -175,7 +135,7 @@ export function tick(state: GameState): GameState {
 				nextTick,
 				"revenue",
 				revenueResult.revenue,
-				"Contract revenue for fulfilled workloads",
+				"Contract revenue for SLA-compliant months",
 				ledgerEntries.length,
 			),
 		);
@@ -186,7 +146,7 @@ export function tick(state: GameState): GameState {
 				nextTick,
 				"penalty",
 				revenueResult.revenue,
-				"Contract penalties for breached workloads",
+				"Contract penalties for missed SLA months",
 				ledgerEntries.length,
 			),
 		);
@@ -204,4 +164,14 @@ export function tick(state: GameState): GameState {
 	};
 
 	return refreshContractMarket(withDerivedContractViews(advancedState));
+}
+
+export function tick(state: GameState): GameState {
+	const targetTick = state.tick + 1;
+	let nextState = state;
+	while (nextState.tick < targetTick) {
+		nextState = advanceSubtick(nextState);
+	}
+
+	return nextState;
 }

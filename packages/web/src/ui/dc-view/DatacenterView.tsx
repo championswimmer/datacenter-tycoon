@@ -156,7 +156,7 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
             </div>
             <div className={styles.maintenanceHints}>
               <span>Extra wages ${maintenanceStaffing.extraWagesMonthly.toLocaleString()}/mo</span>
-              <span>Repair speed {maintenanceStaffing.repairSpeedDaysPerTick.toFixed(0)} days/tick</span>
+              <span>Repair speed {maintenanceStaffing.repairSpeedDaysPerDay.toFixed(2)} repair-days/day</span>
               {!maintenanceStaffing.canIncrease && maintenanceStaffing.currentStaff < maintenanceStaffing.maxStaff && (
                 <span>Regional staff exhausted</span>
               )}

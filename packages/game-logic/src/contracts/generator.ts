@@ -21,6 +21,7 @@ import type {
 	Region,
 } from "../types.js";
 import type { Rng } from "../sim/rng.js";
+import { createEmptyContractSlaWindow, pickContractSlaTargetPercent } from "./sla.js";
 
 type TermRange = readonly [minMonths: number, maxMonths: number];
 
@@ -428,6 +429,13 @@ export function generateContract(
 		.toString(16)
 		.padStart(5, "0");
 
+	const slaTargetPercent = pickContractSlaTargetPercent({
+		urgency,
+		tier,
+		monthlyPayment,
+		penaltyPerMonth,
+	});
+
 	return {
 		id: contractId(`contract-${theme.id}-${idSuffix}`),
 		name: contractName,
@@ -435,6 +443,8 @@ export function generateContract(
 		monthlyPayment,
 		penaltyPerMonth,
 		termMonths,
+		slaTargetPercent,
+		currentSlaWindow: createEmptyContractSlaWindow(),
 		lifecycleState: "market_open",
 		status: "offered",
 		urgency,

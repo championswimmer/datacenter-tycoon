@@ -2,6 +2,7 @@ import { EventEmitter } from "node:events";
 
 import {
 	DATACENTER_CATALOG,
+	DAYS_PER_TICK,
 	RACK_CATALOG,
 	datacenterUsage,
 	rackFailureRiskView,
@@ -30,6 +31,7 @@ import type {
 	RuntimeStatus,
 	StateEvent,
 	StatusView,
+	SubtickEvent,
 	SubscriptionEvent,
 	TickEvent,
 } from "../protocol/messages.js";
@@ -48,6 +50,7 @@ export interface GameRuntimeOptions {
 
 interface GameRuntimeEventMap {
 	state: [event: StateEvent];
+	subtick: [event: SubtickEvent];
 	tick: [event: TickEvent];
 	ledger: [event: LedgerEvent];
 	status: [status: RuntimeStatus];
@@ -73,6 +76,8 @@ function totalRackCount(datacenters: Datacenter[]): number {
 function createStatusView(state: GameState, runtimeStatus: RuntimeStatus): StatusView {
 	return {
 		tick: state.tick,
+		subtick: state.subtick,
+		dayOfMonth: state.subtick + 1,
 		cash: state.player.cash,
 		difficulty: state.difficulty,
 		datacenterCount: state.datacenters.length,
@@ -222,6 +227,13 @@ export class GameRuntime extends EventEmitter<GameRuntimeEventMap> {
 
 		if (nextState.tick !== previousState.tick) {
 			this.emit("tick", { type: "tick", tick: nextState.tick });
+		} else if (nextState.subtick !== previousState.subtick) {
+			this.emit("subtick", {
+				type: "subtick",
+				tick: nextState.tick,
+				subtick: nextState.subtick,
+				dayOfMonth: nextState.subtick + 1,
+			});
 		}
 
 		if (newLedgerEntries.length > 0) {
@@ -342,8 +354,8 @@ export class GameRuntime extends EventEmitter<GameRuntimeEventMap> {
 		}
 
 		this.timerHandle = this.scheduler.setInterval(() => {
-			this.dispatch({ type: "Tick" });
-		}, 1000 / this.speedTps);
+			this.dispatch({ type: "Subtick" });
+		}, 1000 / (this.speedTps * DAYS_PER_TICK));
 	}
 
 	private clearTimer(): void {

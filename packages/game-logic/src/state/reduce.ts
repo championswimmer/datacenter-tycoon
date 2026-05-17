@@ -9,6 +9,7 @@ import { calculateMoveCost } from "../economy/move.js";
 import { applyDatacenterUpgrade, canMoveRack, canPlaceRack, validateDatacenterUpgradeRequest } from "../entities/datacenter.js";
 import { applyValidatedFabricLink, validateFabricLinkRequest } from "../entities/fabric.js";
 import { canBuildInRegion } from "../entities/region.js";
+import { advanceSubtick } from "../sim/subtick.js";
 import { tick } from "../sim/tick.js";
 import type {
 	ContractId,
@@ -52,6 +53,7 @@ export type Action =
 	| { type: "UpdateAudioSettings"; settings: Partial<import("../types.js").AudioSettings> }
 	| { type: "SetSpeed"; speed: number }
 	| { type: "SetPaused"; paused: boolean }
+	| { type: "Subtick" }
 	| { type: "Tick" };
 
 function getDatacenterSpec(specId: DatacenterSpecId): DatacenterSpec {
@@ -424,6 +426,8 @@ export function reduce(state: GameState, action: Action): GameState {
 				...state,
 				game: { ...state.game, paused: action.paused },
 			};
+		case "Subtick":
+			return advanceSubtick(state);
 		case "Tick":
 			return tick(state);
 		default:

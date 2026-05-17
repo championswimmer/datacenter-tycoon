@@ -9,6 +9,8 @@ import type { Contract, ContractId, DatacenterId, RackPlacementId } from "../typ
 import { serialize, deserialize, migrate, SAVE_VERSION } from "./serialize.js";
 import { newGame } from "../state/newGame.js";
 import { reduce } from "../state/reduce.js";
+import { advanceSubtick } from "../sim/subtick.js";
+import { DAYS_PER_TICK } from "../balance/maintenance.js";
 
 const datacenterId = (value: string): DatacenterId => value as DatacenterId;
 const rackPlacementId = (value: string): RackPlacementId => value as RackPlacementId;
@@ -33,6 +35,8 @@ test("serialize and deserialize round-trip contracts with and without region aff
 		monthlyPayment: 3_000,
 		penaltyPerMonth: 800,
 		termMonths: 3,
+		slaTargetPercent: 95,
+		currentSlaWindow: { sampledDays: 4, servedDays: 4, failedDays: 0 },
 		lifecycleState: "market_open",
 		status: "offered",
 		urgency: "standard",
@@ -51,6 +55,8 @@ test("serialize and deserialize round-trip contracts with and without region aff
 		monthlyPayment: 1_500,
 		penaltyPerMonth: 400,
 		termMonths: 2,
+		slaTargetPercent: 90,
+		currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
 		lifecycleState: "market_open",
 		status: "offered",
 		urgency: "standard",
@@ -128,6 +134,8 @@ test("serialize and deserialize preserve every supported region affinity family"
 				monthlyPayment: 500,
 				penaltyPerMonth: 100,
 				termMonths: 1,
+				slaTargetPercent: 90,
+				currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
 				lifecycleState: "market_open" as const,
 				status: "offered" as const,
 				urgency: "standard" as const,
@@ -146,6 +154,8 @@ test("serialize and deserialize preserve every supported region affinity family"
 				monthlyPayment: 500,
 				penaltyPerMonth: 100,
 				termMonths: 1,
+				slaTargetPercent: 90,
+				currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
 				lifecycleState: "market_open" as const,
 				status: "offered" as const,
 				urgency: "standard" as const,
@@ -164,6 +174,8 @@ test("serialize and deserialize preserve every supported region affinity family"
 				monthlyPayment: 500,
 				penaltyPerMonth: 100,
 				termMonths: 1,
+				slaTargetPercent: 90,
+				currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
 				lifecycleState: "market_open" as const,
 				status: "offered" as const,
 				urgency: "standard" as const,
@@ -245,9 +257,51 @@ test("migrate is a no-op for current-version envelopes", () => {
 	assert.deepEqual(migrate(envelope), envelope);
 });
 
+test("migrate upgrades v10 saves by attaching default contract SLA state", () => {
+	const state = newGame(7);
+	const legacyState = {
+		...state,
+		contracts: [
+			{
+				id: contractId("legacy-offer"),
+				name: "Legacy Offer",
+				requirements: { vCpu: 8, ramGb: 16, storageTb: 2, gpuFlops: 0 },
+				monthlyPayment: 500,
+				penaltyPerMonth: 100,
+				termMonths: 1,
+				lifecycleState: "market_open" as const,
+				status: "offered" as const,
+				urgency: "standard" as const,
+				tier: 1 as const,
+				offeredAtTick: 0,
+				expiresAtTick: 1,
+			},
+		],
+		contractMarket: [],
+		activeContracts: [],
+	};
+
+	const migrated = migrate({ saveVersion: 10, state: legacyState as typeof legacyState & { contracts: Contract[] } });
+
+	assert.equal(migrated.saveVersion, SAVE_VERSION);
+	assert.equal(migrated.state.subtick, 0);
+	assert.equal(migrated.state.contracts[0]?.slaTargetPercent, 90);
+	assert.deepEqual(migrated.state.contracts[0]?.currentSlaWindow, { sampledDays: 0, servedDays: 0, failedDays: 0 });
+});
+
+test("migrate upgrades v9 saves by attaching an initial subtick", () => {
+	const { subtick: _subtick, ...legacyState } = newGame(7);
+
+	const migrated = migrate({ saveVersion: 9, state: legacyState as typeof legacyState & { subtick?: number } });
+
+	assert.equal(migrated.saveVersion, SAVE_VERSION);
+	assert.equal(migrated.state.subtick, 0);
+});
+
 test("migrate upgrades v8 saves without rewriting unrestricted contracts", () => {
+	const { subtick: _subtick, ...baseState } = newGame(7);
 	const state = {
-		...newGame(7),
+		...baseState,
 		contracts: [
 			{
 				id: contractId("legacy-offer"),
@@ -274,8 +328,9 @@ test("migrate upgrades v8 saves without rewriting unrestricted contracts", () =>
 
 test("migrate upgrades v7 saves by attaching empty regional fabric state", () => {
 	const state = newGame(7);
+	const { subtick: _subtick, ...baseState } = state;
 	const legacyState = {
-		...state,
+		...baseState,
 		map: {
 			...state.map,
 			regions: state.map.regions.map(({ fabric: _fabric, ...region }) => region),
@@ -285,6 +340,7 @@ test("migrate upgrades v7 saves by attaching empty regional fabric state", () =>
 	const migrated = migrate({ saveVersion: 7, state: legacyState });
 
 	assert.equal(migrated.saveVersion, SAVE_VERSION);
+	assert.equal(migrated.state.subtick, 0);
 	assert.ok(migrated.state.map.regions.every((region) => region.fabric?.memberDcIds.length === 0));
 	assert.deepEqual(
 		migrated.state.map.regions.map((region) => region.id),
@@ -320,4 +376,77 @@ test("deserialize rejects invalid envelopes", () => {
 	assert.throws(() => deserialize(JSON.stringify({ nope: true })), {
 		message: /Invalid save envelope/,
 	});
+});
+
+test("serialize mid-month state resumes deterministic failures, repairs, SLA outcomes, and market refresh", () => {
+	let state = newGame(42, { startingCash: 3_000_000 });
+	state = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: datacenterId("dc-midmonth"),
+		regionId: REGION_CATALOG.us_east.id,
+	});
+	state = reduce(state, {
+		type: "PlaceRack",
+		dcId: datacenterId("dc-midmonth"),
+		specId: RACK_CATALOG.C1.id,
+		row: 0,
+		position: 0,
+		placementId: rackPlacementId("rack-midmonth"),
+	});
+	const contract: Contract = {
+		id: contractId("resume-contract"),
+		name: "Resume Contract",
+		requirements: { vCpu: 64, ramGb: 128, storageTb: 8, gpuFlops: 0 },
+		monthlyPayment: 5_000,
+		penaltyPerMonth: 2_000,
+		termMonths: 12,
+		slaTargetPercent: 80,
+		currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
+		lifecycleState: "serving",
+		status: "active",
+		urgency: "standard",
+		tier: 1,
+		offeredAtTick: 0,
+		expiresAtTick: 12,
+		startedAtTick: 59,
+		acceptedAtTick: 59,
+		assignedDcId: datacenterId("dc-midmonth"),
+	};
+	state = {
+		...state,
+		tick: 59,
+		subtick: 0,
+		rngState: 99,
+		datacenters: state.datacenters.map((datacenter) => ({
+			...datacenter,
+			placements: datacenter.placements.map((placement) => ({
+				...placement,
+				installedAtTick: 0 as typeof placement.installedAtTick,
+			})),
+		})),
+		contracts: [contract],
+		contractMarket: [],
+		activeContracts: [contract],
+	};
+
+	let midMonth = state;
+	for (let day = 0; day < 2; day += 1) {
+		midMonth = advanceSubtick(midMonth);
+	}
+	let fromOriginal = midMonth;
+	let fromRestored = deserialize(serialize(midMonth));
+
+	for (let day = midMonth.subtick; day < DAYS_PER_TICK; day += 1) {
+		fromOriginal = advanceSubtick(fromOriginal);
+		fromRestored = advanceSubtick(fromRestored);
+	}
+
+	assert.deepEqual(fromRestored, fromOriginal);
+	assert.equal(fromOriginal.tick, 60);
+	assert.equal(fromOriginal.subtick, 0);
+	assert.equal(fromOriginal.datacenters[0]?.placements[0]?.lastFailureAtSubtick, 4);
+	assert.equal(fromOriginal.player.reliability.recentOutcomes.at(-1)?.kind, "fulfilled");
+	assert.ok(fromOriginal.ledger.length > 0);
+	assert.ok(fromOriginal.contractMarket.length > 0);
 });

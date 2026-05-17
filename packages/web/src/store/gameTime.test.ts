@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   tickToGameDate,
+  toGameTimeView,
   formatGameDate,
   formatGameDateShort,
   monthsAndDaysBetween,
@@ -15,6 +16,10 @@ describe("tickToGameDate", () => {
 
   it("tick 0, fraction 0.5 → Jan 2025, day 16", () => {
     expect(tickToGameDate(0, 0.5)).toEqual({ year: 2025, month: 0, day: 16 });
+  });
+
+  it("authoritative subtick + animation fraction advances from the current day", () => {
+    expect(tickToGameDate(0, 14, 0.5)).toEqual({ year: 2025, month: 0, day: 15 });
   });
 
   it("tick 12 → Jan 2026, day 1 (new year rollover)", () => {
@@ -39,6 +44,17 @@ describe("tickToGameDate", () => {
 
   it("epoch year constant is 2025", () => {
     expect(EPOCH_YEAR).toBe(2025);
+  });
+});
+
+describe("toGameTimeView", () => {
+  it("returns authoritative day and month fraction from tick/subtick/fraction", () => {
+    expect(toGameTimeView(2, 14, 0.5)).toEqual({
+      tick: 2,
+      subtick: 14,
+      dayOfMonth: 15,
+      monthFraction: 14.5 / 30,
+    });
   });
 });
 

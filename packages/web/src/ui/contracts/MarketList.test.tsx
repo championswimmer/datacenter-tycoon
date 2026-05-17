@@ -39,6 +39,8 @@ function buildMarketState(): GameState {
     monthlyPayment: 12000,
     penaltyPerMonth: 4000,
     termMonths: 3,
+    slaTargetPercent: 90,
+    currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
     lifecycleState: "market_open",
     status: "offered",
     urgency: "standard",
@@ -85,6 +87,8 @@ function buildRegionalAssignmentState(): GameState {
     monthlyPayment: 12_000,
     penaltyPerMonth: 4_000,
     termMonths: 3,
+    slaTargetPercent: 90,
+    currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
     lifecycleState: "market_open",
     status: "offered",
     urgency: "standard",
@@ -136,6 +140,8 @@ function buildWrongRegionState(): GameState {
     monthlyPayment: 12_000,
     penaltyPerMonth: 4_000,
     termMonths: 3,
+    slaTargetPercent: 90,
+    currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
     lifecycleState: "market_open",
     status: "offered",
     urgency: "standard",
@@ -170,12 +176,20 @@ describe("MarketList", () => {
     renderMarket();
     expect(screen.getByText("FREE CAPACITY")).toBeTruthy();
     expect(screen.getByText("Burst Compute")).toBeTruthy();
+    expect(screen.getByText(/90% SLA/)).toBeTruthy();
+    expect(screen.getByText(/up to 3 failed days\/mo/)).toBeTruthy();
   });
 
   it("shows months-based expiry label (not ticks)", () => {
     // state.tick = 0, expiresAtTick = 6 → 6 months left
     renderMarket();
     expect(screen.getByText("6 months left")).toBeTruthy();
+  });
+
+  it("uses authoritative subtick plus animation fraction for offer expiry", () => {
+    const state = { ...buildMarketState(), tick: 0, subtick: 10 };
+    renderMarket(state);
+    expect(screen.getByText("5 months 20 days left")).toBeTruthy();
   });
 
   it("renders affinity badges and allowed-region copy for restricted offers", () => {

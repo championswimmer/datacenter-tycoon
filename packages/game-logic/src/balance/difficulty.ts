@@ -12,7 +12,7 @@ export const DEFAULT_DIFFICULTY: Difficulty = "hard";
 export const DIFFICULTY_CONFIG: Record<Difficulty, DifficultyConfig> = {
 	easy: {
 		startingCash: 5_000_000,
-		repairTimeMultiplier: 0.5,
+		repairTimeMultiplier: 0.75,
 		breachPenaltyMultiplier: 0.5,
 		failureCurvePct: [0, 1, 2, 4, 8, 16],
 	},

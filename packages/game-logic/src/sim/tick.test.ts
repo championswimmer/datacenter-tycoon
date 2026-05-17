@@ -3,10 +3,13 @@ import test from "node:test";
 
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
+import { DAYS_PER_TICK } from "../balance/maintenance.js";
 import { RELIABILITY_BASELINE_SCORE, RELIABILITY_MARKET_OFFER_COUNT, reliabilityBandForScore } from "../balance/reliability.js";
+import { CONTRACT_BREACH_AUTO_CANCEL_MONTHS } from "../contracts/lifecycle.js";
 import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
 import { tickOpex } from "../economy/opex.js";
-import { tick } from "./tick.js";
+import { advanceSubtick } from "./subtick.js";
+import { settleMonthlyTick, tick } from "./tick.js";
 import type {
 	Contract,
 	ContractId,
@@ -94,6 +97,9 @@ function makeContract(id: string, datacenter: Datacenter, overrides: Partial<Con
 		monthlyPayment: 20_000,
 		penaltyPerMonth: 8_000,
 		termMonths: 6,
+		slaTargetPercent: 90,
+		currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
+		lifecycleState: "serving",
 		status: "active",
 		urgency: "standard",
 		tier: 1,
@@ -108,6 +114,7 @@ function makeContract(id: string, datacenter: Datacenter, overrides: Partial<Con
 function makeState(overrides: Partial<GameState> = {}): GameState {
 	return {
 		tick: tickValue(0),
+		subtick: 0,
 		seed: 123,
 		rngState: 123,
 		difficulty: "hard",
@@ -155,6 +162,28 @@ test("tick advances time, applies opex and revenue, and refreshes the contract m
 	assert.equal(nextState.contractMarket[0]?.offeredAtTick, 1);
 });
 
+test("advanceSubtick increments the day counter without settling the month early", () => {
+	const state = makeState();
+
+	const nextState = advanceSubtick(state);
+
+	assert.equal(nextState.tick, 0);
+	assert.equal(nextState.subtick, 1);
+	assert.deepEqual(nextState.ledger, state.ledger);
+});
+
+test("advanceSubtick rolls the month boundary into exactly one monthly settlement", () => {
+	let state = makeState();
+
+	for (let day = 0; day < DAYS_PER_TICK; day += 1) {
+		state = advanceSubtick(state);
+	}
+
+	assert.equal(state.tick, 1);
+	assert.equal(state.subtick, 0);
+	assert.equal(state.contractMarket.length, MARKET_REFRESH_SIZE);
+});
+
 test("tick honors pooled regional fabric capacity during monthly contract settlement", () => {
 	const dcA = makeDatacenter("dc-a", [placement("rack-a", "C1", 0, 0)]);
 	const dcB = makeDatacenter("dc-b", [placement("rack-b", "C1", 0, 0)]);
@@ -195,6 +224,7 @@ test("tick expires breached contracts when their term ends and records penalties
 
 	assert.equal(nextState.activeContracts[0]?.status, "expired");
 	assert.equal(nextState.player.cash, state.player.cash - opex - expiringContract.penaltyPerMonth);
+	assert.equal(nextState.player.reliability.recentOutcomes.at(-1)?.kind, "breached");
 	assert.deepEqual(
 		nextState.ledger.map((entry) => ({ type: entry.type, amount: entry.amount })),
 		[
@@ -202,6 +232,73 @@ test("tick expires breached contracts when their term ends and records penalties
 			{ type: "penalty", amount: -expiringContract.penaltyPerMonth },
 		],
 	);
+});
+
+test("month-end SLA settlement tolerates short outages for 80/90 targets but breaches 95", () => {
+	const datacenter = makeDatacenter("dc-1");
+	const eighty = makeContract("contract-80", datacenter, {
+		requirements: { vCpu: 64, ramGb: 128, storageTb: 8, gpuFlops: 0 },
+		monthlyPayment: 4_000,
+		penaltyPerMonth: 2_000,
+		slaTargetPercent: 80,
+		currentSlaWindow: { sampledDays: DAYS_PER_TICK, servedDays: DAYS_PER_TICK - 3, failedDays: 3 },
+	});
+	const ninety = makeContract("contract-90", datacenter, {
+		requirements: { vCpu: 64, ramGb: 128, storageTb: 8, gpuFlops: 0 },
+		monthlyPayment: 5_000,
+		penaltyPerMonth: 2_000,
+		slaTargetPercent: 90,
+		currentSlaWindow: { sampledDays: DAYS_PER_TICK, servedDays: DAYS_PER_TICK - 3, failedDays: 3 },
+	});
+	const ninetyFive = makeContract("contract-95", datacenter, {
+		requirements: { vCpu: 64, ramGb: 128, storageTb: 8, gpuFlops: 0 },
+		monthlyPayment: 6_000,
+		penaltyPerMonth: 3_000,
+		slaTargetPercent: 95,
+		currentSlaWindow: { sampledDays: DAYS_PER_TICK, servedDays: DAYS_PER_TICK - 3, failedDays: 3 },
+	});
+	const state = makeState({
+		datacenters: [datacenter],
+		activeContracts: [eighty, ninety, ninetyFive],
+	});
+	const opex = tickOpex(datacenter, TEST_REGION, state.activeContracts).total;
+
+	const nextState = settleMonthlyTick(state);
+
+	assert.equal(nextState.activeContracts.find((contract) => contract.id === eighty.id)?.status, "active");
+	assert.equal(nextState.activeContracts.find((contract) => contract.id === ninety.id)?.status, "active");
+	assert.equal(nextState.activeContracts.find((contract) => contract.id === ninetyFive.id)?.status, "breached");
+	assert.deepEqual(nextState.activeContracts.find((contract) => contract.id === eighty.id)?.currentSlaWindow, { sampledDays: 0, servedDays: 0, failedDays: 0 });
+	assert.deepEqual(nextState.activeContracts.find((contract) => contract.id === ninety.id)?.currentSlaWindow, { sampledDays: 0, servedDays: 0, failedDays: 0 });
+	assert.deepEqual(nextState.activeContracts.find((contract) => contract.id === ninetyFive.id)?.currentSlaWindow, { sampledDays: 0, servedDays: 0, failedDays: 0 });
+	assert.equal(nextState.player.cash, state.player.cash - opex + eighty.monthlyPayment + ninety.monthlyPayment - ninetyFive.penaltyPerMonth);
+	assert.deepEqual(
+		nextState.player.reliability.recentOutcomes.map((outcome) => outcome.kind),
+		["fulfilled", "fulfilled", "breached"],
+	);
+});
+
+test("breached SLA months can auto-cancel after the configured streak while keeping a breached outcome", () => {
+	const weakDatacenter = makeDatacenter("dc-1", [placement("rack-1", "C1", 0, 0)]);
+	const contract = makeContract("contract-1", weakDatacenter, {
+		requirements: { vCpu: 500, ramGb: 5_000, storageTb: 500, gpuFlops: 500 },
+		penaltyPerMonth: 6_000,
+		status: "breached",
+		lifecycleState: "breached",
+		breachStreakMonths: CONTRACT_BREACH_AUTO_CANCEL_MONTHS - 1,
+		currentSlaWindow: { sampledDays: DAYS_PER_TICK, servedDays: 0, failedDays: DAYS_PER_TICK },
+	});
+	const state = makeState({
+		tick: tickValue(1),
+		datacenters: [weakDatacenter],
+		activeContracts: [contract],
+	});
+
+	const nextState = settleMonthlyTick(state);
+
+	assert.equal(nextState.activeContracts[0]?.status, "cancelled");
+	assert.equal(nextState.activeContracts[0]?.closedAtTick, 2);
+	assert.equal(nextState.player.reliability.recentOutcomes.at(-1)?.kind, "breached");
 });
 
 test("tick is deterministic across multiple months for the same seed and starting state", () => {
@@ -247,7 +344,7 @@ test("tick keeps a previously breached contract breached while it remains live",
 	assert.equal(nextState.player.cash, state.player.cash - opex - breachedContract.penaltyPerMonth);
 });
 
-test("tick rolls deterministic late-life failures for healthy racks", () => {
+test("tick rolls deterministic late-life failures and can recover them before month end", () => {
 	const agedDatacenter = makeDatacenter("dc-1", [
 		{
 			...placement("rack-1", "C1", 0, 0),
@@ -263,47 +360,109 @@ test("tick rolls deterministic late-life failures for healthy racks", () => {
 	const nextState = tick(state);
 	const failedRack = nextState.datacenters[0]?.placements[0];
 
-	assert.equal(failedRack?.health, "repairing");
-	assert.equal(failedRack?.repairProgressDays, 0);
-	assert.equal(failedRack?.lastFailureAtTick, 60);
+	assert.equal(failedRack?.health, "healthy");
+	assert.equal("repairProgressDays" in (failedRack ?? {}), false);
+	assert.equal(failedRack?.lastFailureAtTick, 59);
+	assert.ok(failedRack?.lastFailureAtSubtick !== undefined);
 	assert.notEqual(nextState.rngState, state.rngState);
 });
 
-test("higher maintenance staffing restores repairing racks in fewer ticks", () => {
+test("daily failure rolls land on the same subtick for identical seed histories", () => {
+	const agedDatacenter = makeDatacenter("dc-1", [
+		{
+			...placement("rack-1", "C1", 0, 0),
+			installedAtTick: tickValue(0),
+		},
+	]);
+	const initial = makeState({
+		tick: tickValue(59),
+		rngState: 99,
+		datacenters: [agedDatacenter],
+	});
+	let first = initial;
+	let second = initial;
+
+	for (let day = 0; day < DAYS_PER_TICK; day += 1) {
+		if (first.datacenters[0]?.placements[0]?.health === "repairing") {
+			break;
+		}
+		first = advanceSubtick(first);
+		second = advanceSubtick(second);
+	}
+
+	const firstRack = first.datacenters[0]?.placements[0];
+	const secondRack = second.datacenters[0]?.placements[0];
+	assert.equal(firstRack?.health, "repairing");
+	assert.equal(secondRack?.health, "repairing");
+	assert.equal(firstRack?.lastFailureAtTick, secondRack?.lastFailureAtTick);
+	assert.equal(firstRack?.lastFailureAtSubtick, secondRack?.lastFailureAtSubtick);
+	assert.deepEqual(first, second);
+});
+
+test("higher maintenance staffing restores repairing racks in fewer subticks", () => {
 	const repairingRack = {
 		...placement("rack-1", "C1", 0, 0),
 		health: "repairing" as const,
 		repairProgressDays: 0,
 		lastFailureAtTick: tickValue(1),
 	};
-	const lowStaffState = tick(
-		makeState({
-			tick: tickValue(1),
-			datacenters: [
-				{
-					...makeDatacenter("dc-low", [repairingRack]),
-					maintenanceStaff: 0,
-				},
-			],
-		}),
-	);
-	const highStaffState = tick(
-		makeState({
-			tick: tickValue(1),
-			datacenters: [
-				{
-					...makeDatacenter("dc-high", [repairingRack]),
-					maintenanceStaff: 4,
-				},
-			],
-		}),
-	);
+	let lowStaffState = makeState({
+		tick: tickValue(1),
+		datacenters: [
+			{
+				...makeDatacenter("dc-low", [repairingRack]),
+				maintenanceStaff: 0,
+			},
+		],
+	});
+	let highStaffState = makeState({
+		tick: tickValue(1),
+		datacenters: [
+			{
+				...makeDatacenter("dc-high", [repairingRack]),
+				maintenanceStaff: 4,
+			},
+		],
+	});
+
+	for (let day = 0; day < 2; day += 1) {
+		lowStaffState = advanceSubtick(lowStaffState);
+		highStaffState = advanceSubtick(highStaffState);
+	}
 
 	assert.equal(lowStaffState.datacenters[0]?.placements[0]?.health, "repairing");
 	assert.equal(highStaffState.datacenters[0]?.placements[0]?.health, "healthy");
+	lowStaffState = advanceSubtick(lowStaffState);
+	assert.equal(lowStaffState.datacenters[0]?.placements[0]?.health, "healthy");
 });
 
-test("a late-life rack failure can breach an overcommitted contract in the same tick", () => {
+test("repairing racks do not roll a second failure while already down", () => {
+	const state = makeState({
+		tick: tickValue(59),
+		rngState: 99,
+		datacenters: [
+			{
+				...makeDatacenter("dc-1", [
+					{
+						...placement("rack-1", "C1", 0, 0),
+						health: "repairing" as const,
+						repairProgressDays: 0,
+						lastFailureAtTick: tickValue(58),
+						lastFailureAtSubtick: 12,
+					},
+				]),
+			},
+		],
+	});
+
+	const nextState = advanceSubtick(state);
+	const rack = nextState.datacenters[0]?.placements[0];
+	assert.equal(rack?.health, "repairing");
+	assert.equal(rack?.lastFailureAtTick, 58);
+	assert.equal(rack?.lastFailureAtSubtick, 12);
+});
+
+test("a short late-life outage can recover before month-end settlement", () => {
 	const datacenter = makeDatacenter("dc-1", [
 		{
 			...placement("rack-1", "C1", 0, 0),
@@ -324,17 +483,17 @@ test("a late-life rack failure can breach an overcommitted contract in the same 
 		activeContracts: [contract],
 	});
 	const nextState = tick(state);
-	const postFailureDatacenter = nextState.datacenters[0]!;
-	const opex = tickOpex(postFailureDatacenter, TEST_REGION, state.activeContracts).total;
+	const settledDatacenter = nextState.datacenters[0]!;
+	const opex = tickOpex(settledDatacenter, TEST_REGION, state.activeContracts).total;
 
-	assert.equal(nextState.datacenters[0]?.placements[0]?.health, "repairing");
-	assert.equal(nextState.activeContracts[0]?.status, "breached");
-	assert.equal(nextState.player.cash, state.player.cash - opex - contract.penaltyPerMonth);
+	assert.equal(nextState.datacenters[0]?.placements[0]?.health, "healthy");
+	assert.equal(nextState.activeContracts[0]?.status, "active");
+	assert.equal(nextState.player.cash, state.player.cash - opex + contract.monthlyPayment);
 	assert.deepEqual(
 		nextState.ledger.map((entry) => ({ type: entry.type, amount: entry.amount })),
 		[
 			{ type: "opex", amount: -opex },
-			{ type: "penalty", amount: -contract.penaltyPerMonth },
+			{ type: "revenue", amount: contract.monthlyPayment },
 		],
 	);
 });
@@ -407,6 +566,20 @@ test("tick increases reliability and records fulfilled SLA outcomes for healthy 
 			kind: "fulfilled",
 		},
 	]);
+});
+
+test("tick from mid-month advances remaining subticks and settles exactly one month", () => {
+	const start = makeState({ subtick: 5 });
+	let advancedBySubticks = start;
+	for (let day = start.subtick; day < DAYS_PER_TICK; day += 1) {
+		advancedBySubticks = advanceSubtick(advancedBySubticks);
+	}
+
+	const viaTick = tick(start);
+
+	assert.deepEqual(viaTick, advancedBySubticks);
+	assert.equal(viaTick.tick, start.tick + 1);
+	assert.equal(viaTick.subtick, 0);
 });
 
 test("tick lowers reliability for repeated breached SLA months without auto-cancelling", () => {

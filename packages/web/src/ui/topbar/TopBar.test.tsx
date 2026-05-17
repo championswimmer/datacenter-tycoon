@@ -96,15 +96,29 @@ describe("TopBar", () => {
     expect(screen.getByText("1 Jan 2025")).toBeTruthy();
   });
 
-  it("advances day display when tick fraction changes", () => {
+  it("uses authoritative date state while tick fraction animates within the day", () => {
     render(
       <Wrapper>
         <TopBar speed={1} onSpeedChange={() => {}} />
       </Wrapper>,
     );
-    // fraction 0.5 → day 16
     act(() => setTickFraction(0.5));
-    expect(screen.getByText("16 Jan 2025")).toBeTruthy();
+    expect(screen.getByText("1 Jan 2025")).toBeTruthy();
+  });
+
+  it("uses authoritative subtick plus animation fraction for the displayed date", () => {
+    const base = newGame(42, { playerName: "Acme Corp" });
+    const midMonthState: GameState = { ...base, tick: 0, subtick: 10 };
+
+    render(
+      <Wrapper state={midMonthState}>
+        <TopBar speed={1} onSpeedChange={() => {}} />
+      </Wrapper>,
+    );
+
+    expect(screen.getByText("11 Jan 2025")).toBeTruthy();
+    act(() => setTickFraction(0.5));
+    expect(screen.getByText("11 Jan 2025")).toBeTruthy();
   });
 
   it("shows platinum reliability changes in the HUD when store state changes", () => {
@@ -149,6 +163,8 @@ describe("TopBar", () => {
         monthlyPayment: 1000,
         penaltyPerMonth: 100,
         termMonths: 1,
+        slaTargetPercent: 90,
+        currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
         lifecycleState: "market_open",
         status: "offered",
         urgency: "standard",

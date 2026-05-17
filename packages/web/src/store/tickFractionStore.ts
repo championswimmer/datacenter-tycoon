@@ -13,7 +13,7 @@ import { useSyncExternalStore } from "react";
 let fraction = 0;
 const listeners = new Set<() => void>();
 
-/** Called by the tickDriver every animation frame. */
+/** Called by the tickDriver every animation frame with the current intra-day fraction. */
 export function setTickFraction(f: number): void {
   if (f === fraction) return;
   fraction = f;
@@ -30,9 +30,9 @@ function getSnapshot(): number {
 }
 
 /**
- * React hook — subscribes to the per-frame tick fraction.
+ * React hook — subscribes to the per-frame subtick/day fraction.
  * Returns a number in [0, 1] representing how far through the current
- * tick (month) the simulation is. Returns 0 when paused.
+ * authoritative day the simulation is. Returns 0 when paused.
  *
  * Only import this in components that genuinely need day-level precision
  * (TopBar date, contract remaining-time labels). Other components should

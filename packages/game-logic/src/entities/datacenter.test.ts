@@ -150,7 +150,9 @@ test("datacenterMaintenanceStaffingView: defaults with 0 staff", () => {
 	assert.equal(view.repairingRackCount, 0);
 	assert.equal(view.totalRackCount, 0);
 	assert.equal(view.averageRackAgeMonths, 0);
-	// repair speed with 0 extra staff = base multiplier * DAYS_PER_TICK
+	// repair speed with 0 extra staff = base multiplier per day and per-tick aggregate.
+	assert.equal(view.repairSpeedDaysPerSubtick, BASE_REPAIR_SPEED_MULTIPLIER);
+	assert.equal(view.repairSpeedDaysPerDay, BASE_REPAIR_SPEED_MULTIPLIER);
 	assert.equal(view.repairSpeedDaysPerTick, DAYS_PER_TICK * BASE_REPAIR_SPEED_MULTIPLIER);
 });
 
@@ -164,7 +166,10 @@ test("datacenterMaintenanceStaffingView: with 2 maintenance staff", () => {
 	assert.equal(view.extraWagesMonthly, 8_000);
 	assert.equal(view.staffWagePerHead, 4_000);
 	// repair speed: (base + 2 * bonus) * DAYS_PER_TICK
-	const expectedSpeed = (BASE_REPAIR_SPEED_MULTIPLIER + 2 * REPAIR_SPEED_BONUS_PER_MAINTENANCE_STAFF) * DAYS_PER_TICK;
+	const expectedDailySpeed = BASE_REPAIR_SPEED_MULTIPLIER + 2 * REPAIR_SPEED_BONUS_PER_MAINTENANCE_STAFF;
+	const expectedSpeed = expectedDailySpeed * DAYS_PER_TICK;
+	assert.equal(view.repairSpeedDaysPerSubtick, expectedDailySpeed);
+	assert.equal(view.repairSpeedDaysPerDay, expectedDailySpeed);
 	assert.equal(view.repairSpeedDaysPerTick, expectedSpeed);
 });
 

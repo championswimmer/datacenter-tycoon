@@ -2,7 +2,18 @@ export type Brand<T, Name extends string> = T & { readonly __brand: Name };
 
 export type Money = number;
 export type Tick = number;
+export type Subtick = number;
 export type Time = Tick;
+
+export interface GameTimePoint {
+	tick: Tick;
+	subtick: Subtick;
+}
+
+export interface GameTimeView extends GameTimePoint {
+	dayOfMonth: number;
+	monthFraction: number;
+}
 
 export type PlayerId = Brand<string, "PlayerId">;
 export type DatacenterId = Brand<string, "DatacenterId">;
@@ -30,6 +41,7 @@ export type ContractStatus = "offered" | "active" | "breached" | "expired" | "ca
 export type ContractUrgency = "standard" | "rush" | "anchor";
 export type ContractTier = 1 | 2 | 3;
 export type ContractRegionAffinityKey = "eu" | "asia" | "usa";
+export type ContractSlaTargetPercent = 80 | 90 | 95;
 export type LedgerEntryType = "capex" | "opex" | "revenue" | "penalty" | "adjustment";
 export type RackHealthStatus = "healthy" | "repairing";
 export type ReliabilityBand = "bronze" | "silver" | "gold" | "platinum" | "diamond";
@@ -78,6 +90,7 @@ export interface Rack {
 	health: RackHealthStatus;
 	repairProgressDays?: number;
 	lastFailureAtTick?: Tick;
+	lastFailureAtSubtick?: Subtick;
 }
 
 export interface RackPlacement extends Rack, GridPosition {}
@@ -148,6 +161,12 @@ export interface ContractRegionAffinity {
 	allowedRegionIds: RegionId[];
 }
 
+export interface ContractSlaWindow {
+	sampledDays: number;
+	servedDays: number;
+	failedDays: number;
+}
+
 export interface Contract {
 	id: ContractId;
 	name: string;
@@ -155,6 +174,8 @@ export interface Contract {
 	monthlyPayment: Money;
 	penaltyPerMonth: Money;
 	termMonths: number;
+	slaTargetPercent: ContractSlaTargetPercent;
+	currentSlaWindow: ContractSlaWindow;
 	lifecycleState: ContractLifecycleState;
 	/** @deprecated Temporary compatibility bridge for legacy consumers. */
 	status: ContractStatus;
@@ -261,6 +282,7 @@ export interface RevenueTickResult {
 	revenue: Money;
 	perDcRevenue: Record<DatacenterId, Money>;
 	updatedContracts: Contract[];
+	outcomes: ContractSlaOutcome[];
 }
 
 export interface RngState {
@@ -307,6 +329,7 @@ export interface GameState {
 		paused: boolean;
 	};
 	tick: Tick;
+	subtick: Subtick;
 	seed: number;
 	rngState: number;
 	difficulty: Difficulty;

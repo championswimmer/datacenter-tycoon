@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { contractDealScore } from "@datacenter-tycoon/game-logic";
+import { DAYS_PER_TICK, contractDealScore } from "@datacenter-tycoon/game-logic";
 import type {
   Capacity,
   Contract,
@@ -10,6 +10,7 @@ import {
   selectAllDatacenters,
   selectMarketContractViews,
   selectReliabilitySummary,
+  selectSubtick,
   selectTick,
   type ContractAssignmentOptionView,
 } from "../../store/selectors.js";
@@ -71,6 +72,7 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
   const datacenters = useSelector(selectAllDatacenters);
   const marketContractViews = useSelector(selectMarketContractViews);
   const tick = useSelector(selectTick);
+  const subtick = useSelector(selectSubtick);
   const reliability = useSelector(selectReliabilitySummary);
   const dispatch = useGameDispatch();
   const fraction = useTickFraction();
@@ -107,7 +109,7 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
           fitSummary?.fitStatus ?? "none",
           datacenters.length,
         );
-        const { months, days } = monthsAndDaysBetween(tick, fraction, contract.expiresAtTick, 0);
+        const { months, days } = monthsAndDaysBetween(tick, (subtick + fraction) / DAYS_PER_TICK, contract.expiresAtTick, 0);
         const expired = months <= 0 && days <= 0;
         const expiryLabel = expired ? "EXPIRED" : formatRemaining(months, days);
         const urgent = !expired && months === 0 && days <= 7;
@@ -174,6 +176,13 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
                 : "Deployable from any region."}
             />
             <CapacityComparison reqs={contract.requirements} free={networkFree} />
+            <div className={styles.meta}>
+              <span>{contractView?.slaProgress.slaTargetPercent ?? contract.slaTargetPercent}% SLA</span>
+              <span className={styles.dot}>·</span>
+              <span>up to {contractView?.slaProgress.maxFailedDays ?? 0} failed day{(contractView?.slaProgress.maxFailedDays ?? 0) === 1 ? "" : "s"}/mo</span>
+              <span className={styles.dot}>·</span>
+              <span>{contract.slaTargetPercent >= 95 ? "strict penalty protection" : contract.slaTargetPercent <= 80 ? "forgiving anchor uptime" : "balanced uptime target"}</span>
+            </div>
 
             {reliabilityHint && (
               <div className={[styles.reliabilityHint, reliabilityHint.tone].join(" ")}>{reliabilityHint.text}</div>

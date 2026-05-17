@@ -21,6 +21,7 @@ test("newGame creates a deterministic initial state with a primed contract marke
 	assert.equal(first.seed, 42);
 	assert.equal(first.rngState !== first.seed, true);
 	assert.equal(first.tick, 0);
+	assert.equal(first.subtick, 0);
 	assert.equal(first.player.name, "Player");
 	assert.equal(first.difficulty, "hard");
 	assert.equal(first.player.cash, DIFFICULTY_CONFIG.hard.startingCash);

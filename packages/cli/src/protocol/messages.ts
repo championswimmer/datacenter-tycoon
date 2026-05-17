@@ -30,7 +30,7 @@ export enum RpcErrorCode {
 
 export type QueryKind = "snapshot" | "status" | "list" | "catalog";
 export type ControlOp = "pause" | "resume" | "set-speed" | "save-now" | "shutdown";
-export type SubscriptionEventKind = "state" | "ledger" | "tick";
+export type SubscriptionEventKind = "state" | "ledger" | "subtick" | "tick";
 export type RpcMethod = "hello" | "dispatch" | "query" | "subscribe" | "unsubscribe" | "control";
 
 export interface ContractCapacityErrorData {
@@ -143,6 +143,8 @@ export interface RuntimeStatus {
 
 export interface StatusView extends RuntimeStatus {
 	tick: number;
+	subtick: number;
+	dayOfMonth: number;
 	cash: number;
 	difficulty: "easy" | "hard";
 	datacenterCount: number;
@@ -215,6 +217,13 @@ export interface StateEvent extends RuntimeStatus {
 	snapshot: GameState;
 }
 
+export interface SubtickEvent {
+	type: "subtick";
+	tick: number;
+	subtick: number;
+	dayOfMonth: number;
+}
+
 export interface TickEvent {
 	type: "tick";
 	tick: number;
@@ -226,7 +235,7 @@ export interface LedgerEvent {
 	entries: LedgerEntry[];
 }
 
-export type SubscriptionEvent = StateEvent | TickEvent | LedgerEvent;
+export type SubscriptionEvent = StateEvent | SubtickEvent | TickEvent | LedgerEvent;
 
 export type RpcRequestParams = HelloParams | DispatchParams | QueryParams | SubscribeParams | UnsubscribeParams | ControlParams;
 

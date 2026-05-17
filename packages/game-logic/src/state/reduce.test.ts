@@ -5,9 +5,10 @@ import { createDatacenterUpgradeProgress } from "../catalog/datacenter-upgrades.
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { REGION_CATALOG } from "../catalog/regions.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
-import { DEFAULT_MAINTENANCE_STAFF, MAX_MAINTENANCE_STAFF } from "../balance/maintenance.js";
+import { DAYS_PER_TICK, DEFAULT_MAINTENANCE_STAFF, MAX_MAINTENANCE_STAFF } from "../balance/maintenance.js";
 import { REGIONAL_FABRIC_JOIN_COST } from "../balance/fabric.js";
 import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
+import { advanceSubtick } from "../sim/subtick.js";
 import { tick as tickState } from "../sim/tick.js";
 import type {
 	Contract,
@@ -1064,6 +1065,15 @@ test("reduce handles SetMaintenanceStaff rejects changes that exceed regional st
 	);
 });
 
+test("reduce handles Subtick by delegating to sim.advanceSubtick", () => {
+	const state = {
+		...newGame(42, { startingCash: 3_000_000 }),
+		datacenters: [makeDatacenter("dc-1", [placement("rack-1", "C1", 0, 0)])],
+	};
+
+	assert.deepEqual(reduce(state, { type: "Subtick" }), advanceSubtick(state));
+});
+
 test("reduce handles Tick by delegating to sim.tick", () => {
 	const state = {
 		...newGame(42, { startingCash: 3_000_000 }),
@@ -1071,6 +1081,21 @@ test("reduce handles Tick by delegating to sim.tick", () => {
 	};
 
 	assert.deepEqual(reduce(state, { type: "Tick" }), tickState(state));
+});
+
+test("reduce advances exactly one month across DAYS_PER_TICK subticks", () => {
+	let state = {
+		...newGame(42, { startingCash: 3_000_000 }),
+		datacenters: [makeDatacenter("dc-1", [placement("rack-1", "C1", 0, 0)])],
+	};
+
+	for (let day = 0; day < DAYS_PER_TICK; day += 1) {
+		state = reduce(state, { type: "Subtick" });
+	}
+
+	assert.equal(state.tick, 1);
+	assert.equal(state.subtick, 0);
+	assert.ok(state.ledger.length > 0);
 });
 
 test("reduce handles MoveRack for same-region move", () => {

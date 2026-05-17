@@ -1,12 +1,13 @@
 import {
+  DAYS_PER_TICK,
   RELIABILITY_BASELINE_SCORE,
   datacenterMaintenanceSummary,
   datacenterUsage,
   rackAgeMonths,
-  rackFailureRiskView,
   reliabilityBandForScore,
   reliabilityMarketPolicyForScore,
-  repairDurationDays,
+  summarizeContractSlaProgress,
+  summarizeDatacenterRackMaintenanceViewsFromState,
   repairProgressPerTick,
   listRackMoveTargets,
   selectDatacenterMaintenanceStaffingViewFromState,
@@ -34,14 +35,18 @@ import type {
   ContractId,
   ContractRegionAffinityKey,
   ContractSlaOutcome,
+  ContractSlaProgressView,
   DatacenterId,
   Datacenter,
+  DatacenterRackMaintenanceStatusView,
   DatacenterResourceUsage,
   Difficulty,
   GameState,
+  GameTimeView,
   LedgerEntry,
   Money,
   OpexTickResult,
+  Subtick,
   DatacenterCapacityFromStateSummary,
   DatacenterFabricStatusView,
   DatacenterInfrastructureView,
@@ -63,6 +68,29 @@ import type {
 
 export function selectTick(state: GameState): Tick {
   return state.tick;
+}
+
+export function selectSubtick(state: GameState): Subtick {
+  return state.subtick;
+}
+
+export function selectGameTimeView(state: GameState): GameTimeView {
+  return {
+    tick: state.tick,
+    subtick: state.subtick,
+    dayOfMonth: state.subtick + 1,
+    monthFraction: state.subtick / DAYS_PER_TICK,
+  };
+}
+
+export function selectAnimatedGameTimeView(state: GameState, fraction = 0): GameTimeView {
+  const monthFraction = Math.min(0.999999, (state.subtick + Math.min(Math.max(fraction, 0), 0.999999)) / DAYS_PER_TICK);
+  return {
+    tick: state.tick,
+    subtick: state.subtick,
+    dayOfMonth: state.subtick + 1,
+    monthFraction,
+  };
 }
 
 export function selectCash(state: GameState): Money {
@@ -267,19 +295,7 @@ export function selectDatacenterMaintenanceStaffingView(
   return selectDatacenterMaintenanceStaffingViewFromState(state, id);
 }
 
-export interface RackMaintenanceView {
-  placementId: RackPlacementId;
-  ageMonths: number;
-  status: RackHealthStatus;
-  repairProgressDays: number;
-  repairCompletionPercent: number;
-  repairEtaTicks: number;
-  /**
-   * Monthly failure probability in [0, 1], derived from `rackFailureRiskView()`.
-   * Always 0 for racks that are currently `repairing`.
-   */
-  failureProbability: number;
-}
+export type RackMaintenanceView = DatacenterRackMaintenanceStatusView;
 
 export function selectDatacenterRackMaintenanceViews(
   state: GameState,
@@ -290,26 +306,7 @@ export function selectDatacenterRackMaintenanceViews(
     return [];
   }
 
-  const repairProgressDaysPerTick = repairProgressPerTick(datacenter.maintenanceStaff);
-  const repairTargetDays = repairDurationDays(state.difficulty);
-
-  return datacenter.placements.map((placement) => {
-    const repairProgressDays = placement.repairProgressDays ?? 0;
-    const remainingRepairDays = Math.max(0, repairTargetDays - repairProgressDays);
-    const riskView = rackFailureRiskView(state.tick, placement, state.difficulty);
-
-    return {
-      placementId: placement.id,
-      ageMonths: riskView.ageMonths,
-      status: placement.health,
-      repairProgressDays,
-      repairCompletionPercent: Math.round((Math.min(repairProgressDays, repairTargetDays) / repairTargetDays) * 100),
-      repairEtaTicks: placement.health === "repairing"
-        ? Math.ceil(remainingRepairDays / repairProgressDaysPerTick)
-        : 0,
-      failureProbability: riskView.failureProbability,
-    };
-  });
+  return summarizeDatacenterRackMaintenanceViewsFromState(state, id);
 }
 
 /**
@@ -390,6 +387,7 @@ export interface MarketContractView {
   fitSummary: ContractAssignmentFitSummary;
   eligibleDatacenterIds: DatacenterId[];
   assignmentOptions: ContractAssignmentOptionView[];
+  slaProgress: ContractSlaProgressView;
 }
 
 export interface AssignedContractView {
@@ -397,6 +395,7 @@ export interface AssignedContractView {
   affinity: ContractAffinityView;
   assignedDcName: string | null;
   assignedRegionLabel: string | null;
+  slaProgress: ContractSlaProgressView;
 }
 
 function formatRegionLabel(state: Pick<GameState, "map">, regionId: RegionId): string {
@@ -497,6 +496,7 @@ export function selectMarketContractViews(state: GameState): MarketContractView[
           candidateByDcId.get(datacenter.id),
         )
       ),
+      slaProgress: summarizeContractSlaProgress(contract),
     };
   });
 }
@@ -512,6 +512,7 @@ export function selectAssignedContractViews(
       affinity: buildContractAffinityView(state, contract),
       assignedDcName: assignedDc?.name ?? null,
       assignedRegionLabel: assignedDc ? formatRegionLabel(state, assignedDc.regionId) : null,
+      slaProgress: summarizeContractSlaProgress(contract),
     };
   });
 }

@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Changed
+- bumped `@datacenter-tycoon/game-logic` `BALANCE_VERSION` to `5` for day-level repair timing
+- shortened base rack repair targets to `3` days on hard / `2.25` days on easy before staffing bonuses apply
 - bumped `@datacenter-tycoon/game-logic` `BALANCE_VERSION` to `4` for the global easier-balance pass
 - reduced rack recurring upkeep by `20%` across all rack families and tiers
 - reduced extra maintenance-staff wages by `20%` while leaving baseline facility staffing unchanged

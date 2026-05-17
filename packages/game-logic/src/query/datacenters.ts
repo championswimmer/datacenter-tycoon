@@ -1,4 +1,6 @@
 import { REGIONAL_FABRIC_JOIN_COST } from "../balance/fabric.js";
+import { repairDurationDays, repairProgressPerSubtick } from "../sim/maintenance.js";
+import { rackFailureRiskView } from "../sim/maintenance.js";
 import { getDatacenterUpgradeTrackDefinition } from "../catalog/datacenter-upgrades.js";
 import { contractsFromState, selectLiveContracts } from "../contracts/lifecycle.js";
 import {
@@ -34,6 +36,8 @@ import type {
 	GameState,
 	Money,
 	RackActivityView,
+	RackHealthStatus,
+	RackPlacementId,
 	RackPowerSummary,
 	RegionId,
 } from "../types.js";
@@ -128,6 +132,19 @@ export interface NetworkCapacitySummary {
 	perDc: DatacenterCapacityFromStateSummary[];
 }
 
+export interface DatacenterRackMaintenanceStatusView {
+	placementId: RackPlacementId;
+	ageMonths: number;
+	status: RackHealthStatus;
+	repairProgressDays: number;
+	repairCompletionPercent: number;
+	repairEtaSubticks: number;
+	repairEtaDays: number;
+	/** @deprecated Prefer `repairEtaDays`. Kept for compatibility while web/cli migrate copy. */
+	repairEtaTicks: number;
+	failureProbability: number;
+}
+
 export interface DatacenterFabricStatusView {
 	dcId: DatacenterId;
 	regionId: RegionId;
@@ -205,6 +222,35 @@ function summarizeUpgradeTrackViews(datacenter: Datacenter, dcId: DatacenterId):
 								: "locked",
 			})),
 			maxed: track.maxed,
+		};
+	});
+}
+
+export function summarizeDatacenterRackMaintenanceViewsFromState(
+	state: Pick<GameState, "datacenters" | "tick" | "difficulty">,
+	dcId: DatacenterId,
+): DatacenterRackMaintenanceStatusView[] {
+	const datacenter = getDatacenterOrThrow(state.datacenters, dcId);
+	const repairProgressDaysPerSubtick = repairProgressPerSubtick(datacenter.maintenanceStaff);
+	const repairTargetDays = repairDurationDays(state.difficulty);
+
+	return datacenter.placements.map((placement) => {
+		const repairProgressDays = placement.repairProgressDays ?? 0;
+		const remainingRepairDays = Math.max(0, repairTargetDays - repairProgressDays);
+		const riskView = rackFailureRiskView(state.tick, placement, state.difficulty);
+		const repairEtaSubticks = placement.health === "repairing"
+			? Math.ceil(remainingRepairDays / Math.max(repairProgressDaysPerSubtick, 1e-9))
+			: 0;
+		return {
+			placementId: placement.id,
+			ageMonths: riskView.ageMonths,
+			status: placement.health,
+			repairProgressDays,
+			repairCompletionPercent: Math.round((Math.min(repairProgressDays, repairTargetDays) / repairTargetDays) * 100),
+			repairEtaSubticks,
+			repairEtaDays: repairEtaSubticks,
+			repairEtaTicks: repairEtaSubticks,
+			failureProbability: riskView.failureProbability,
 		};
 	});
 }
