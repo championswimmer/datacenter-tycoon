@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DATACENTER_CATALOG,
   RACK_CATALOG,
+  createDatacenterUpgradeProgress,
   listRackMoveTargets,
   selectDatacenterMaintenanceStaffingViewFromState,
   selectHistoricalContractsFromState,
@@ -226,7 +227,14 @@ describe("web query-boundary selectors", () => {
   });
 
   it("mirrors canonical regional fabric summaries for pooled-capacity UI", () => {
-    const fiberUpgrades = { currentNodeByTrack: { networkType: "fiber" as const } };
+    const garageSpecId = DATACENTER_CATALOG.garage!.id;
+    const fiberUpgrades = {
+      ...createDatacenterUpgradeProgress(garageSpecId),
+      currentNodeByTrack: {
+        ...createDatacenterUpgradeProgress(garageSpecId).currentNodeByTrack,
+        networkType: "fiber" as const,
+      },
+    };
     const dcA: Datacenter = {
       ...makeDatacenter("dc-a", "region-a", [placement("rack-a", "C1", 0, 0)]),
       upgrades: fiberUpgrades,
