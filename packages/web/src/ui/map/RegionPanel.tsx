@@ -53,14 +53,25 @@ export function RegionPanel({ region, datacenters, onClose, onBuild }: RegionPan
 
   const datacenterById = new Map(regionDcs.map((dc) => [dc.id, dc]));
   const bootstrapAnchorDcId = !fabricSummary?.active ? fabricSummary?.eligibleDcIds[0] ?? null : null;
+  const canAffordFabricJoin = cash >= (fabricSummary?.joinCost ?? 0);
+  const canShowFabricAffordabilityWarning = !!fabricSummary
+    && !canAffordFabricJoin
+    && fabricSummary.datacenters.some((datacenter) => datacenter.linkMode !== null && !datacenter.fabricConnected);
+  const fabricAffordabilityWarning = fabricSummary
+    ? `Need $${fabricSummary.joinCost.toLocaleString()} cash to create or extend the regional fabric. Current cash: $${cash.toLocaleString()}.`
+    : null;
 
   const handleFabricLink = useCallback((sourceDcId: Datacenter["id"], targetDcId: Datacenter["id"]) => {
+    if (!fabricSummary || cash < fabricSummary.joinCost) {
+      return;
+    }
+
     dispatch({
       type: "FabricLink",
       sourceDcId,
       targetDcId,
     });
-  }, [dispatch]);
+  }, [cash, dispatch, fabricSummary]);
 
   return (
     <div className={styles.panel}>
@@ -130,6 +141,9 @@ export function RegionPanel({ region, datacenters, onClose, onBuild }: RegionPan
             ) : (
               <p className={styles.fabricHint}>No datacenters are connected yet. Link two fiber-ready sites to create the region fabric.</p>
             )}
+            {canShowFabricAffordabilityWarning && fabricAffordabilityWarning && (
+              <p className={styles.fabricWarning}>{fabricAffordabilityWarning}</p>
+            )}
 
             <div className={styles.fabricStatusList}>
               {fabricSummary.datacenters.map((fabricDc) => {
@@ -153,6 +167,10 @@ export function RegionPanel({ region, datacenters, onClose, onBuild }: RegionPan
                     : fabricDc.fabricConnected
                       ? `Connected with ${fabricDc.memberDcIds.length} sites`
                       : fabricDc.linkBlockedReason;
+                const actionDisabled = !canAffordFabricJoin;
+                const actionDetailLabel = showAction && actionDisabled && fabricAffordabilityWarning
+                  ? fabricAffordabilityWarning
+                  : actionDetail;
 
                 return (
                   <div key={fabricDc.dcId} className={styles.fabricDcRow}>
@@ -163,13 +181,15 @@ export function RegionPanel({ region, datacenters, onClose, onBuild }: RegionPan
                           {fabricDc.fabricConnected ? "LINKED" : fabricDc.fabricEligible ? "FIBER READY" : "FIBER LOCKED"}
                         </span>
                       </div>
-                      <div className={styles.fabricDcMeta}>{actionDetail}</div>
+                      <div className={styles.fabricDcMeta}>{actionDetailLabel}</div>
                     </div>
                     {showAction && suggestedTarget && actionLabel && (
                       <button
                         className={styles.fabricActionBtn}
                         onClick={() => handleFabricLink(canJoinHere ? suggestedTarget.id : dc.id, canJoinHere ? dc.id : suggestedTarget.id)}
                         aria-label={actionLabel}
+                        disabled={actionDisabled}
+                        title={actionDisabled && fabricAffordabilityWarning ? fabricAffordabilityWarning : undefined}
                       >
                         {fabricSummary.active ? "CONNECT" : "CREATE"}
                       </button>
