@@ -54,6 +54,58 @@ function buildMarketState(): GameState {
   };
 }
 
+function buildRegionalAssignmentState(): GameState {
+  let state = newGame(42, { playerName: "Acme Corp", startingCash: 8_000_000 });
+  const euDcId = nextDcId();
+  const usaDcId = nextDcId();
+  const euRegionId = state.map.regions.find((region) => region.id.toString().startsWith("eu_"))!.id;
+  const usaRegionId = state.map.regions.find((region) => region.id.toString().startsWith("us_"))!.id;
+
+  for (const [dcId, regionId] of [[euDcId, euRegionId], [usaDcId, usaRegionId]] as const) {
+    state = reduce(state, {
+      type: "BuildDatacenter",
+      specId: DATACENTER_CATALOG.garage!.id,
+      dcId,
+      regionId,
+    });
+    state = reduce(state, {
+      type: "PlaceRack",
+      dcId,
+      specId: RACK_CATALOG.C1!.id,
+      row: 0,
+      position: 0,
+      placementId: nextRackPlacementId(),
+    });
+  }
+
+  const contract: Contract = {
+    id: "contract-market-region" as Contract["id"],
+    name: "Regional Burst Compute",
+    requirements: { vCpu: 8, ramGb: 0, storageTb: 0, gpuFlops: 0 },
+    monthlyPayment: 12_000,
+    penaltyPerMonth: 4_000,
+    termMonths: 3,
+    lifecycleState: "market_open",
+    status: "offered",
+    urgency: "standard",
+    tier: 1,
+    regionAffinity: {
+      key: "eu",
+      allowedRegionIds: state.map.regions
+        .filter((region) => region.id.toString().startsWith("eu_"))
+        .map((region) => region.id),
+    },
+    offeredAtTick: state.tick,
+    expiresAtTick: (state.tick + 6) as Contract["expiresAtTick"],
+  };
+
+  return {
+    ...state,
+    contractMarket: [contract],
+    activeContracts: [],
+  };
+}
+
 function renderMarket(state = buildMarketState()) {
   const store = createGameStore(state);
   render(
@@ -145,13 +197,49 @@ describe("MarketList", () => {
     expect(screen.getByText(/Platinum reliability is helping surface longer-term offers like this/i)).toBeTruthy();
   });
 
+  it("shows only region-eligible datacenters in the accept picker for restricted offers", () => {
+    const store = renderMarket(buildRegionalAssignmentState());
+    const euDcName = store.getState().datacenters.find((dc) => dc.regionId.toString().startsWith("eu_"))!.name;
+    const usaDcName = store.getState().datacenters.find((dc) => dc.regionId.toString().startsWith("us_"))!.name;
+
+    fireEvent.click(screen.getByText("ACCEPT CONTRACT"));
+
+    expect(screen.getByText(/Click an eligible datacenter to accept this contract/i)).toBeTruthy();
+    expect(screen.getByText(/Only datacenters in the allowed regions can accept this contract/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: new RegExp(euDcName) })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: new RegExp(usaDcName) })).toBeNull();
+    expect(screen.getByText(/Unavailable outside allowed regions/i)).toBeTruthy();
+    expect(screen.getByText(usaDcName)).toBeTruthy();
+  });
+
+  it("keeps unrestricted offers assignable from every datacenter", () => {
+    const restrictedState = buildRegionalAssignmentState();
+    const unrestrictedState: GameState = {
+      ...restrictedState,
+      contractMarket: [{
+        ...restrictedState.contractMarket[0]!,
+        id: "contract-market-global" as Contract["id"],
+        regionAffinity: undefined,
+      }],
+    };
+    const store = renderMarket(unrestrictedState);
+    const dcNames = store.getState().datacenters.map((dc) => dc.name);
+
+    fireEvent.click(screen.getByText("ACCEPT CONTRACT"));
+
+    expect(screen.queryByText(/Unavailable outside allowed regions/i)).toBeNull();
+    for (const dcName of dcNames) {
+      expect(screen.getByText(dcName)).toBeTruthy();
+    }
+  });
+
   it("accepts a contract directly when a fitting datacenter is clicked", () => {
     const store = renderMarket();
     const dcName = store.getState().datacenters[0]!.name;
 
     fireEvent.click(screen.getByText("ACCEPT CONTRACT"));
 
-    expect(screen.getByText(/Click a datacenter to accept this contract/i)).toBeTruthy();
+    expect(screen.getByText(/Click an eligible datacenter to accept this contract/i)).toBeTruthy();
     expect(screen.queryByText("CONFIRM ACCEPT")).toBeNull();
 
     fireEvent.click(screen.getByText(dcName));
