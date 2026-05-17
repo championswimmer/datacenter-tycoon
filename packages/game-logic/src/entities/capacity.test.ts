@@ -13,6 +13,7 @@ import {
 	datacenterUsage,
 	isLiveContractStatus,
 	rackCapacity,
+	summarizeAllDatacenterOperationalCapacities,
 } from "../index.js";
 import type {
 	Contract,
@@ -267,6 +268,50 @@ test("datacenterContractCapacitySummary floors negative availability at zero and
 		usable: { vCpu: 128, ramGb: 512, storageTb: 16, gpuFlops: 0 },
 		committed: { vCpu: 200, ramGb: 1_500, storageTb: 40, gpuFlops: 600 },
 		available: { vCpu: 0, ramGb: 0, storageTb: 0, gpuFlops: 0 },
+	});
+});
+
+test("summarizeAllDatacenterOperationalCapacities batches usage, capacity, and maintenance summaries in one pass", () => {
+	const warehouse = makeDatacenter(DATACENTER_CATALOG.warehouse, [
+		placement("rack-1", "C2", 0, 0),
+		{ ...placement("rack-2", "G1", 0, 1), health: "repairing", repairProgressDays: 8 },
+	]);
+	const garage = {
+		...makeDatacenter(DATACENTER_CATALOG.garage, [placement("rack-3", "M1", 0, 0)]),
+		id: datacenterId("garage-dc"),
+	};
+	const contracts = [
+		makeContract("active-a", warehouse.id, {
+			requirements: { vCpu: 128, ramGb: 512, storageTb: 24, gpuFlops: 100 },
+		}),
+		makeContract("active-b", garage.id, {
+			requirements: { vCpu: 0, ramGb: 128, storageTb: 8, gpuFlops: 0 },
+		}),
+		makeContract("cancelled", warehouse.id, {
+			status: "cancelled",
+			requirements: { vCpu: 999, ramGb: 999, storageTb: 999, gpuFlops: 999 },
+		}),
+	];
+
+	const summaries = summarizeAllDatacenterOperationalCapacities([warehouse, garage], contracts, tick(9));
+	assert.equal(summaries.length, 2);
+	assert.deepEqual(summaries[0], {
+		dcId: warehouse.id,
+		usage: datacenterUsage(warehouse),
+		installed: datacenterInstalledCapacity(warehouse),
+		usable: datacenterCapacity(warehouse),
+		committed: { vCpu: 128, ramGb: 512, storageTb: 24, gpuFlops: 100 },
+		available: { vCpu: 128, ramGb: 256, storageTb: 0, gpuFlops: 0 },
+		maintenance: datacenterMaintenanceSummary(warehouse, tick(9)),
+	});
+	assert.deepEqual(summaries[1], {
+		dcId: garage.id,
+		usage: datacenterUsage(garage),
+		installed: datacenterInstalledCapacity(garage),
+		usable: datacenterCapacity(garage),
+		committed: { vCpu: 0, ramGb: 128, storageTb: 8, gpuFlops: 0 },
+		available: { vCpu: 48, ramGb: 1_920, storageTb: 12, gpuFlops: 0 },
+		maintenance: datacenterMaintenanceSummary(garage, tick(9)),
 	});
 });
 

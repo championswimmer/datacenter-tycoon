@@ -54,6 +54,24 @@ const EMPTY_DATACENTER_USAGE: DatacenterResourceUsage = {
 	slotsUsed: 0,
 };
 
+function cloneCapacity(capacity: Capacity): Capacity {
+	return {
+		vCpu: capacity.vCpu,
+		ramGb: capacity.ramGb,
+		storageTb: capacity.storageTb,
+		gpuFlops: capacity.gpuFlops,
+	};
+}
+
+function cloneUsage(usage: DatacenterResourceUsage): DatacenterResourceUsage {
+	return {
+		powerKw: usage.powerKw,
+		heatOutputBtuPerHr: usage.heatOutputBtuPerHr,
+		bandwidthGbps: usage.bandwidthGbps,
+		slotsUsed: usage.slotsUsed,
+	};
+}
+
 function addCapacity(total: Capacity, delta: Capacity): Capacity {
 	return {
 		vCpu: total.vCpu + delta.vCpu,
@@ -296,50 +314,102 @@ function isSlotTaken(datacenter: Datacenter, position: GridPosition): boolean {
 	);
 }
 
-export function datacenterUsage(datacenter: Datacenter): DatacenterResourceUsage {
-	return datacenter.placements.reduce<DatacenterResourceUsage>((usage, placement) => {
-		const spec = getRackSpec(placement);
-		return {
-			powerKw: usage.powerKw + spec.powerDrawKw,
-			heatOutputBtuPerHr: usage.heatOutputBtuPerHr + spec.heatOutputBtuPerHr,
-			bandwidthGbps: usage.bandwidthGbps + spec.bandwidthGbps,
-			slotsUsed: usage.slotsUsed + 1,
-		};
-	}, EMPTY_DATACENTER_USAGE);
+interface DatacenterPlacementAggregate {
+	usage: DatacenterResourceUsage;
+	installed: Capacity;
+	usable: Capacity;
+	totalRackCount: number;
+	repairingRackCount: number;
+	averageRackAgeMonths?: number;
 }
 
-export function datacenterCapacity(datacenter: Datacenter): Capacity {
-	return datacenter.placements
-		.filter((placement) => placement.health === "healthy")
-		.reduce<Capacity>((capacity, placement) => {
-			const placementCapacity = rackCapacity(getRackSpec(placement));
-			return {
-				vCpu: capacity.vCpu + placementCapacity.vCpu,
-				ramGb: capacity.ramGb + placementCapacity.ramGb,
-				storageTb: capacity.storageTb + placementCapacity.storageTb,
-				gpuFlops: capacity.gpuFlops + placementCapacity.gpuFlops,
-			};
-		}, EMPTY_CAPACITY);
-}
-
-export function datacenterInstalledCapacity(datacenter: Datacenter): Capacity {
-	return datacenter.placements.reduce<Capacity>((capacity, placement) => {
-		const placementCapacity = rackCapacity(getRackSpec(placement));
-		return addCapacity(capacity, placementCapacity);
-	}, EMPTY_CAPACITY);
-}
-
-export function datacenterCommittedContractDemand(
+function summarizeDatacenterPlacements(
 	datacenter: Datacenter,
-	contracts: readonly Pick<Contract, "assignedDcId" | "lifecycleState" | "requirements">[],
-): ContractRequirements {
-	return contracts.reduce<ContractRequirements>((committed, contract) => {
-		if (contract.assignedDcId !== datacenter.id || !isLiveContract(contract)) {
-			return committed;
-		}
+	currentTick?: Tick,
+): DatacenterPlacementAggregate {
+	let powerKw = 0;
+	let heatOutputBtuPerHr = 0;
+	let bandwidthGbps = 0;
+	let slotsUsed = 0;
+	let installedVCpu = 0;
+	let installedRamGb = 0;
+	let installedStorageTb = 0;
+	let installedGpuFlops = 0;
+	let usableVCpu = 0;
+	let usableRamGb = 0;
+	let usableStorageTb = 0;
+	let usableGpuFlops = 0;
+	let repairingRackCount = 0;
+	let rackAgeMonthsTotal = 0;
 
-		return addCapacity(committed, contract.requirements);
-	}, EMPTY_CAPACITY);
+	for (const placement of datacenter.placements) {
+		const spec = getRackSpec(placement);
+		const capacity = rackCapacity(spec);
+		powerKw += spec.powerDrawKw;
+		heatOutputBtuPerHr += spec.heatOutputBtuPerHr;
+		bandwidthGbps += spec.bandwidthGbps;
+		slotsUsed += 1;
+		installedVCpu += capacity.vCpu;
+		installedRamGb += capacity.ramGb;
+		installedStorageTb += capacity.storageTb;
+		installedGpuFlops += capacity.gpuFlops;
+		if (placement.health === "healthy") {
+			usableVCpu += capacity.vCpu;
+			usableRamGb += capacity.ramGb;
+			usableStorageTb += capacity.storageTb;
+			usableGpuFlops += capacity.gpuFlops;
+		} else {
+			repairingRackCount += 1;
+		}
+		if (currentTick !== undefined) {
+			rackAgeMonthsTotal += rackAgeMonths(currentTick, placement);
+		}
+	}
+
+	const totalRackCount = datacenter.placements.length;
+	return {
+		usage: {
+			powerKw,
+			heatOutputBtuPerHr,
+			bandwidthGbps,
+			slotsUsed,
+		},
+		installed: {
+			vCpu: installedVCpu,
+			ramGb: installedRamGb,
+			storageTb: installedStorageTb,
+			gpuFlops: installedGpuFlops,
+		},
+		usable: {
+			vCpu: usableVCpu,
+			ramGb: usableRamGb,
+			storageTb: usableStorageTb,
+			gpuFlops: usableGpuFlops,
+		},
+		totalRackCount,
+		repairingRackCount,
+		averageRackAgeMonths: currentTick === undefined || totalRackCount === 0 ? undefined : rackAgeMonthsTotal / totalRackCount,
+	};
+}
+
+function committedDemandForContracts(
+	contracts: readonly Pick<Contract, "assignedDcId" | "lifecycleState" | "requirements">[],
+	dcId: DatacenterId,
+): ContractRequirements {
+	let vCpu = 0;
+	let ramGb = 0;
+	let storageTb = 0;
+	let gpuFlops = 0;
+	for (const contract of contracts) {
+		if (contract.assignedDcId !== dcId || !isLiveContract(contract)) {
+			continue;
+		}
+		vCpu += contract.requirements.vCpu;
+		ramGb += contract.requirements.ramGb;
+		storageTb += contract.requirements.storageTb;
+		gpuFlops += contract.requirements.gpuFlops;
+	}
+	return { vCpu, ramGb, storageTb, gpuFlops };
 }
 
 export interface DatacenterContractCapacitySummary {
@@ -349,20 +419,90 @@ export interface DatacenterContractCapacitySummary {
 	available: Capacity;
 }
 
+export interface DatacenterOperationalCapacitySummary extends DatacenterContractCapacitySummary {
+	dcId: DatacenterId;
+	usage: DatacenterResourceUsage;
+	maintenance?: DatacenterMaintenanceSummary;
+}
+
+export function summarizeAllDatacenterOperationalCapacities(
+	datacenters: readonly Datacenter[],
+	contracts: readonly Pick<Contract, "assignedDcId" | "lifecycleState" | "requirements">[],
+	currentTick?: Tick,
+): DatacenterOperationalCapacitySummary[] {
+	const committedByDcId = new Map<DatacenterId, ContractRequirements>();
+	for (const contract of contracts) {
+		if (!contract.assignedDcId || !isLiveContract(contract)) {
+			continue;
+		}
+		const existing = committedByDcId.get(contract.assignedDcId);
+		if (existing) {
+			existing.vCpu += contract.requirements.vCpu;
+			existing.ramGb += contract.requirements.ramGb;
+			existing.storageTb += contract.requirements.storageTb;
+			existing.gpuFlops += contract.requirements.gpuFlops;
+			continue;
+		}
+		committedByDcId.set(contract.assignedDcId, {
+			vCpu: contract.requirements.vCpu,
+			ramGb: contract.requirements.ramGb,
+			storageTb: contract.requirements.storageTb,
+			gpuFlops: contract.requirements.gpuFlops,
+		});
+	}
+
+	return datacenters.map((datacenter) => {
+		const placementAggregate = summarizeDatacenterPlacements(datacenter, currentTick);
+		const committed = cloneCapacity(committedByDcId.get(datacenter.id) ?? EMPTY_CAPACITY);
+		return {
+			dcId: datacenter.id,
+			usage: cloneUsage(placementAggregate.usage),
+			installed: cloneCapacity(placementAggregate.installed),
+			usable: cloneCapacity(placementAggregate.usable),
+			committed,
+			available: subtractCapacity(placementAggregate.usable, committed),
+			maintenance: currentTick === undefined
+				? undefined
+				: {
+						totalRackCount: placementAggregate.totalRackCount,
+						healthyRackCount: placementAggregate.totalRackCount - placementAggregate.repairingRackCount,
+						repairingRackCount: placementAggregate.repairingRackCount,
+						averageRackAgeMonths: placementAggregate.averageRackAgeMonths ?? 0,
+				  },
+		};
+	});
+}
+
+export function datacenterUsage(datacenter: Datacenter): DatacenterResourceUsage {
+	return cloneUsage(summarizeDatacenterPlacements(datacenter).usage);
+}
+
+export function datacenterCapacity(datacenter: Datacenter): Capacity {
+	return cloneCapacity(summarizeDatacenterPlacements(datacenter).usable);
+}
+
+export function datacenterInstalledCapacity(datacenter: Datacenter): Capacity {
+	return cloneCapacity(summarizeDatacenterPlacements(datacenter).installed);
+}
+
+export function datacenterCommittedContractDemand(
+	datacenter: Datacenter,
+	contracts: readonly Pick<Contract, "assignedDcId" | "lifecycleState" | "requirements">[],
+): ContractRequirements {
+	return committedDemandForContracts(contracts, datacenter.id);
+}
+
 export function datacenterContractCapacitySummary(
 	datacenter: Datacenter,
 	contracts: readonly Pick<Contract, "assignedDcId" | "lifecycleState" | "requirements">[],
 ): DatacenterContractCapacitySummary {
-	const installed = datacenterInstalledCapacity(datacenter);
-	const usable = datacenterCapacity(datacenter);
-	const committed = datacenterCommittedContractDemand(datacenter, contracts);
-	const available = subtractCapacity(usable, committed);
-
+	const placementAggregate = summarizeDatacenterPlacements(datacenter);
+	const committed = committedDemandForContracts(contracts, datacenter.id);
 	return {
-		installed,
-		usable,
+		installed: cloneCapacity(placementAggregate.installed),
+		usable: cloneCapacity(placementAggregate.usable),
 		committed,
-		available,
+		available: subtractCapacity(placementAggregate.usable, committed),
 	};
 }
 
@@ -431,18 +571,12 @@ export function datacenterMaintenanceSummary(
 	datacenter: Datacenter,
 	currentTick: Tick,
 ): DatacenterMaintenanceSummary {
-	const totalRackCount = datacenter.placements.length;
-	const repairingRackCount = datacenter.placements.filter((placement) => placement.health === "repairing").length;
-	const healthyRackCount = totalRackCount - repairingRackCount;
-	const averageRackAgeMonths = totalRackCount === 0
-		? 0
-		: datacenter.placements.reduce((sum, placement) => sum + rackAgeMonths(currentTick, placement), 0) / totalRackCount;
-
+	const aggregate = summarizeDatacenterPlacements(datacenter, currentTick);
 	return {
-		totalRackCount,
-		healthyRackCount,
-		repairingRackCount,
-		averageRackAgeMonths,
+		totalRackCount: aggregate.totalRackCount,
+		healthyRackCount: aggregate.totalRackCount - aggregate.repairingRackCount,
+		repairingRackCount: aggregate.repairingRackCount,
+		averageRackAgeMonths: aggregate.averageRackAgeMonths ?? 0,
 	};
 }
 
@@ -517,14 +651,7 @@ export function datacenterMaintenanceStaffingView(
 ): DatacenterMaintenanceStaffingView {
 	const currentStaff = datacenter.maintenanceStaff;
 	const availableRegionalStaff = regionStaffRemaining(region, allDcs as Datacenter[]);
-
-	const totalRackCount = datacenter.placements.length;
-	const repairingRackCount = datacenter.placements.filter((p) => p.health === "repairing").length;
-	const averageRackAgeMonths =
-		totalRackCount === 0
-			? 0
-			: datacenter.placements.reduce((sum, p) => sum + rackAgeMonths(currentTick, p), 0) / totalRackCount;
-
+	const maintenanceSummary = datacenterMaintenanceSummary(datacenter, currentTick);
 	const staffWagePerHead = maintenanceStaffWagePerHead(region.staffWage);
 
 	return {
@@ -539,9 +666,9 @@ export function datacenterMaintenanceStaffingView(
 		repairSpeedDaysPerTick: repairProgressPerTick(currentStaff),
 		repairSpeedDaysPerSubtick: repairProgressPerSubtick(currentStaff),
 		repairSpeedDaysPerDay: repairProgressPerSubtick(currentStaff),
-		repairingRackCount,
-		totalRackCount,
-		averageRackAgeMonths,
+		repairingRackCount: maintenanceSummary.repairingRackCount,
+		totalRackCount: maintenanceSummary.totalRackCount,
+		averageRackAgeMonths: maintenanceSummary.averageRackAgeMonths,
 	};
 }
 
