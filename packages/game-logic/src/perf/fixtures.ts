@@ -2,9 +2,11 @@ import { createDatacenterUpgradeProgress } from "../catalog/datacenter-upgrades.
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { regionIdsForContractAffinity } from "../catalog/regions.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
+import { acceptContract } from "../contracts/market.js";
 import { withDerivedContractViews } from "../contracts/lifecycle.js";
-import { datacenterContractCapacitySummary, datacenterInstalledCapacity } from "../entities/datacenter.js";
-import { summarizeDistinctCapacityPools, summarizeFabricCapacityForDatacenter } from "../entities/fabric.js";
+import { canMoveRack, canPlaceRack, datacenterContractCapacitySummary, datacenterInstalledCapacity } from "../entities/datacenter.js";
+import { summarizeDistinctCapacityPools, summarizeFabricCapacityForDatacenter, validateFabricLinkRequest } from "../entities/fabric.js";
+import { canBuildInRegion } from "../entities/region.js";
 import { generateMap } from "../sim/mapgen.js";
 import { createRng } from "../sim/rng.js";
 import type { Action } from "../state/reduce.js";
@@ -470,80 +472,187 @@ function buildMarketContracts(
 	return marketContracts;
 }
 
-function findFirstEmptySlot(datacenter: Datacenter): { row: number; position: number } {
+function listEmptySlots(datacenter: Datacenter): { row: number; position: number }[] {
+	const slots: { row: number; position: number }[] = [];
 	for (let row = 0; row < datacenter.spec.rows; row += 1) {
 		for (let position = 0; position < datacenter.spec.positionsPerRow; position += 1) {
 			if (!datacenter.placements.some((placement) => placement.row === row && placement.position === position)) {
-				return { row, position };
+				slots.push({ row, position });
+			}
+		}
+	}
+	return slots;
+}
+
+function findFirstEmptySlot(datacenter: Datacenter): { row: number; position: number } {
+	const slot = listEmptySlots(datacenter)[0];
+	if (!slot) {
+		throw new Error(`Datacenter ${datacenter.id} has no empty slots for a performance fixture action target`);
+	}
+	return slot;
+}
+
+function sortedRackSpecsForPlacement(): RackSpec[] {
+	return Object.values(RACK_CATALOG).sort(
+		(left, right) =>
+			left.powerDrawKw - right.powerDrawKw ||
+			left.heatOutputBtuPerHr - right.heatOutputBtuPerHr ||
+			left.bandwidthGbps - right.bandwidthGbps,
+	);
+}
+
+function findPlaceableRackTarget(datacenter: Datacenter): { spec: RackSpec; slot: { row: number; position: number } } {
+	for (const slot of listEmptySlots(datacenter)) {
+		for (const spec of sortedRackSpecsForPlacement()) {
+			if (canPlaceRack(datacenter, spec, slot).ok) {
+				return { spec, slot };
 			}
 		}
 	}
 
-	throw new Error(`Datacenter ${datacenter.id} has no empty slots for a performance fixture action target`);
+	throw new Error(`No valid placement target found for datacenter ${datacenter.id}`);
+}
+
+function findMoveTarget(
+	state: Pick<GameState, "datacenters">,
+	sourceDatacenter: Datacenter,
+): {
+	targetDatacenter: Datacenter;
+	placement: RackPlacement;
+	slot: { row: number; position: number };
+} {
+	const targetCandidates = [
+		...state.datacenters.filter((candidate) => candidate.regionId === sourceDatacenter.regionId && candidate.id !== sourceDatacenter.id),
+		...state.datacenters.filter((candidate) => candidate.regionId !== sourceDatacenter.regionId),
+	];
+
+	for (const targetDatacenter of targetCandidates) {
+		for (const placement of sourceDatacenter.placements) {
+			for (const slot of listEmptySlots(targetDatacenter)) {
+				if (canMoveRack(sourceDatacenter, targetDatacenter, placement, slot).ok) {
+					return { targetDatacenter, placement, slot };
+				}
+			}
+		}
+	}
+
+	throw new Error(`No valid move target found for datacenter ${sourceDatacenter.id}`);
+}
+
+function findAcceptTarget(state: GameState): { contractId: ContractId; dcId: DatacenterId } {
+	for (const contract of state.contractMarket) {
+		for (const datacenter of state.datacenters) {
+			try {
+				acceptContract(state, contract.id, datacenter.id);
+				return { contractId: contract.id, dcId: datacenter.id };
+			} catch {
+				continue;
+			}
+		}
+	}
+
+	throw new Error("No accept-contract benchmark target found in performance fixture state");
+}
+
+function findBuildTarget(state: Pick<GameState, "datacenters" | "map">): { regionId: RegionId; specId: DatacenterSpecId } {
+	const garageSpec = DATACENTER_CATALOG.garage;
+	if (!garageSpec) {
+		throw new Error("Performance fixtures require the garage datacenter catalog entry");
+	}
+
+	for (const region of state.map.regions) {
+		if (canBuildInRegion(region, garageSpec, state.datacenters)) {
+			return { regionId: region.id, specId: garageSpec.id };
+		}
+	}
+
+	throw new Error("No valid build-datacenter benchmark target found in performance fixture state");
+}
+
+function findFabricLinkTarget(state: Pick<GameState, "datacenters" | "map">): { sourceDcId: DatacenterId; targetDcId: DatacenterId } | null {
+	for (const region of state.map.regions) {
+		const memberDcIds = region.fabric?.memberDcIds ?? [];
+		const sameRegionDatacenters = state.datacenters.filter((datacenter) => datacenter.regionId === region.id);
+		for (const sourceDcId of memberDcIds) {
+			for (const datacenter of sameRegionDatacenters) {
+				if (memberDcIds.includes(datacenter.id)) {
+					continue;
+				}
+				try {
+					validateFabricLinkRequest(state, sourceDcId, datacenter.id);
+					return { sourceDcId, targetDcId: datacenter.id };
+				} catch {
+					continue;
+				}
+			}
+		}
+	}
+
+	return null;
 }
 
 function buildTargets(state: GameState): PerformanceFixtureTargets {
-	const garageSpec = DATACENTER_CATALOG.garage;
-	const c0Rack = RACK_CATALOG.C0;
-	if (!garageSpec || !c0Rack) {
-		throw new Error("Performance fixtures require the garage datacenter and C0 rack catalog entries");
+	let primaryDatacenter: Datacenter | undefined;
+	let liveContract: Contract | undefined;
+	let placeTarget: { spec: RackSpec; slot: { row: number; position: number } } | undefined;
+	let moveTarget:
+		| {
+				targetDatacenter: Datacenter;
+				placement: RackPlacement;
+				slot: { row: number; position: number };
+		  }
+		| undefined;
+
+	for (const datacenter of state.datacenters) {
+		const candidateLiveContract = state.contracts.find(
+			(contract) =>
+				contract.assignedDcId === datacenter.id &&
+				(contract.lifecycleState === "serving" || contract.lifecycleState === "breached"),
+		);
+		if (!candidateLiveContract || datacenter.placements.length === 0) {
+			continue;
+		}
+
+		try {
+			const candidatePlaceTarget = findPlaceableRackTarget(datacenter);
+			const candidateMoveTarget = findMoveTarget(state, datacenter);
+			primaryDatacenter = datacenter;
+			liveContract = candidateLiveContract;
+			placeTarget = candidatePlaceTarget;
+			moveTarget = candidateMoveTarget;
+			break;
+		} catch {
+			continue;
+		}
 	}
 
-	const primaryDatacenter = state.datacenters[0];
-	const secondaryDatacenter =
-		state.datacenters.find((candidate) => candidate.regionId === primaryDatacenter?.regionId && candidate.id !== primaryDatacenter.id) ?? state.datacenters[1];
-	if (!primaryDatacenter || !secondaryDatacenter) {
-		throw new Error("Performance fixture requires at least two datacenters");
-	}
-
-	const primaryContracts = state.contracts.filter((contract) => contract.assignedDcId === primaryDatacenter.id);
-	const liveContract = primaryContracts.find((contract) => contract.lifecycleState === "serving" || contract.lifecycleState === "breached");
-	if (!liveContract) {
-		throw new Error(`No live contract found for primary datacenter ${primaryDatacenter.id}`);
-	}
-
-	const openContract = state.contracts.find((contract) => contract.lifecycleState === "market_open");
-	if (!openContract) {
-		throw new Error("No open market contract found in performance fixture state");
+	if (!primaryDatacenter || !liveContract || !placeTarget || !moveTarget) {
+		throw new Error("Performance fixture could not find a datacenter with valid place/remove/move targets");
 	}
 
 	const removablePlacement = primaryDatacenter.placements[0];
-	const movablePlacement = primaryDatacenter.placements[1] ?? primaryDatacenter.placements[0];
-	if (!removablePlacement || !movablePlacement) {
+	if (!removablePlacement) {
 		throw new Error(`Primary datacenter ${primaryDatacenter.id} needs at least one rack placement`);
 	}
 
-	const placePosition = findFirstEmptySlot(primaryDatacenter);
-	const movePosition = findFirstEmptySlot(secondaryDatacenter);
-	const buildRegionId = state.map.regions[0]?.id;
-	if (!buildRegionId) {
-		throw new Error("Performance fixture requires at least one region");
-	}
-
-	const fabricLinkPair = state.map.regions
-		.map((region) => {
-			const memberSet = new Set(region.fabric?.memberDcIds ?? []);
-			const source = region.fabric?.memberDcIds[0];
-			const target = state.datacenters.find(
-				(datacenter) => datacenter.regionId === region.id && !memberSet.has(datacenter.id) && datacenter.upgrades?.currentNodeByTrack.networkType === "fiber",
-			)?.id;
-			return source && target ? { sourceDcId: source, targetDcId: target } : null;
-		})
-		.find((pair) => pair !== null) ?? null;
+	const buildTarget = findBuildTarget(state);
+	const acceptTarget = findAcceptTarget(state);
+	const fabricLinkTarget = findFabricLinkTarget(state);
+	const maintenanceTarget = Math.min(primaryDatacenter.maintenanceStaff + 1, primaryDatacenter.maintenanceStaff + 2);
 
 	return {
 		buildDatacenter: {
 			type: "BuildDatacenter",
-			specId: garageSpec.id,
-			dcId: datacenterId(`bench-build-${buildRegionId}`),
-			regionId: buildRegionId,
+			specId: buildTarget.specId,
+			dcId: datacenterId(`bench-build-${buildTarget.regionId}`),
+			regionId: buildTarget.regionId,
 		},
 		placeRack: {
 			type: "PlaceRack",
 			dcId: primaryDatacenter.id,
-			specId: c0Rack.id,
-			row: placePosition.row,
-			position: placePosition.position,
+			specId: placeTarget.spec.id,
+			row: placeTarget.slot.row,
+			position: placeTarget.slot.position,
 			placementId: rackPlacementId(`bench-place-${primaryDatacenter.id}`),
 		},
 		removeRack: {
@@ -554,35 +663,35 @@ function buildTargets(state: GameState): PerformanceFixtureTargets {
 		moveRack: {
 			type: "MoveRack",
 			dcId: primaryDatacenter.id,
-			placementId: movablePlacement.id,
-			targetDcId: secondaryDatacenter.id,
-			row: movePosition.row,
-			position: movePosition.position,
+			placementId: moveTarget.placement.id,
+			targetDcId: moveTarget.targetDatacenter.id,
+			row: moveTarget.slot.row,
+			position: moveTarget.slot.position,
 		},
 		acceptContract: {
 			type: "AcceptContract",
-			contractId: openContract.id,
-			dcId: primaryDatacenter.id,
+			contractId: acceptTarget.contractId,
+			dcId: acceptTarget.dcId,
 		},
 		cancelContract: {
 			type: "CancelContract",
 			contractId: liveContract.id,
 		},
-		fabricLink: fabricLinkPair
+		fabricLink: fabricLinkTarget
 			? {
 					type: "FabricLink",
-					sourceDcId: fabricLinkPair.sourceDcId,
-					targetDcId: fabricLinkPair.targetDcId,
+					sourceDcId: fabricLinkTarget.sourceDcId,
+					targetDcId: fabricLinkTarget.targetDcId,
 			  }
 			: null,
 		setMaintenanceStaff: {
 			type: "SetMaintenanceStaff",
 			dcId: primaryDatacenter.id,
-			maintenanceStaff: primaryDatacenter.maintenanceStaff + 1,
+			maintenanceStaff: maintenanceTarget,
 		},
 		primaryDatacenterId: primaryDatacenter.id,
-		secondaryDatacenterId: secondaryDatacenter.id,
-		openContractId: openContract.id,
+		secondaryDatacenterId: moveTarget.targetDatacenter.id,
+		openContractId: acceptTarget.contractId,
 		liveContractId: liveContract.id,
 	};
 }

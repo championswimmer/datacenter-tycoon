@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { contractsFromState, isLiveContract } from "../contracts/lifecycle.js";
+import { reduce } from "../state/reduce.js";
 import {
 	PERFORMANCE_FIXTURE_PROFILES,
 	createCustomPerformanceFixture,
@@ -64,6 +65,17 @@ test("performance fixture targets point at valid reducer and query entities", ()
 			candidate.fabric?.memberDcIds.includes(targets.fabricLink!.sourceDcId),
 		);
 		assert.ok(region);
+	}
+
+	assert.doesNotThrow(() => reduce(state, targets.buildDatacenter));
+	assert.doesNotThrow(() => reduce(state, targets.placeRack));
+	assert.doesNotThrow(() => reduce(state, targets.removeRack));
+	assert.doesNotThrow(() => reduce(state, targets.moveRack));
+	assert.doesNotThrow(() => reduce(state, targets.acceptContract));
+	assert.doesNotThrow(() => reduce(state, targets.cancelContract));
+	assert.doesNotThrow(() => reduce(state, targets.setMaintenanceStaff));
+	if (targets.fabricLink) {
+		assert.doesNotThrow(() => reduce(state, targets.fabricLink!));
 	}
 });
 
