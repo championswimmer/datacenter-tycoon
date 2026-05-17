@@ -12,9 +12,9 @@ owner: game-logic, web
 - [x] **Phase 1 — Canonical upgrade ladder summaries**
   - [x] 1.1 Extend the game-logic datacenter upgrade query with ladder-node status metadata for every track node
   - [x] 1.2 Add regression tests for default, partially upgraded, and maxed upgrade tracks
-- [ ] **Phase 2 — Web ladder visualization**
+- [x] **Phase 2 — Web ladder visualization**
   - [x] 2.1 Render the upgrade ladder in `UpgradePanel` so each track shows completed, current, next, and locked nodes
-  - [ ] 2.2 Add/update web tests and styles for the ladder presentation across desktop and narrow layouts
+  - [x] 2.2 Add/update web tests and styles for the ladder presentation across desktop and narrow layouts
 - [ ] **Phase 3 — Upgrade confirmation flow**
   - [ ] 3.1 Add a confirmation modal that previews capex, upkeep delta, and resulting cash before dispatching `UpgradeDatacenter`
   - [ ] 3.2 Wire upgrade buttons to open the modal, require explicit confirmation, and block unaffordable upgrades in the UI
