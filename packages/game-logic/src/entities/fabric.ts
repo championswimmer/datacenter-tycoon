@@ -4,6 +4,7 @@ import { createEntityIndexView } from "../state/indexed-view.js";
 import { datacenterContractCapacitySummary, resolveDatacenterUpgradeState, type DatacenterContractCapacitySummary } from "./datacenter.js";
 import type {
 	Capacity,
+	Contract,
 	Datacenter,
 	DatacenterId,
 	GameState,
@@ -146,8 +147,9 @@ export interface FabricCapacitySummary extends DatacenterContractCapacitySummary
 export function summarizeFabricCapacityForDatacenter(
 	state: Pick<GameState, "datacenters" | "map" | "contracts" | "contractMarket" | "activeContracts">,
 	dcId: DatacenterId,
+	contracts: readonly (Pick<Contract, "lifecycleState" | "requirements"> & Partial<Pick<Contract, "assignedDcId" | "status">>)[] = contractsFromState(state),
 ): FabricCapacitySummary {
-	const liveContracts = selectLiveContracts(contractsFromState(state));
+	const liveContracts = selectLiveContracts(contracts);
 	const datacenter = getDatacenterOrThrow(state.datacenters, dcId);
 	const local = datacenterContractCapacitySummary(datacenter, liveContracts);
 	const memberDcIds = resolveDatacenterCapacityPoolMemberIds(state, dcId);
@@ -183,6 +185,7 @@ export interface CapacityPoolSummary extends DatacenterContractCapacitySummary {
 
 export function summarizeDistinctCapacityPools(
 	state: Pick<GameState, "datacenters" | "map" | "contracts" | "contractMarket" | "activeContracts">,
+	contracts: readonly (Pick<Contract, "lifecycleState" | "requirements"> & Partial<Pick<Contract, "assignedDcId" | "status">>)[] = contractsFromState(state),
 ): CapacityPoolSummary[] {
 	const seen = new Set<DatacenterId>();
 	const pools: CapacityPoolSummary[] = [];
@@ -192,7 +195,7 @@ export function summarizeDistinctCapacityPools(
 			continue;
 		}
 
-		const summary = summarizeFabricCapacityForDatacenter(state, datacenter.id);
+		const summary = summarizeFabricCapacityForDatacenter(state, datacenter.id, contracts);
 		for (const memberDcId of summary.memberDcIds) {
 			seen.add(memberDcId);
 		}

@@ -5,7 +5,12 @@ import {
 	withDerivedContractViews,
 } from "../contracts/lifecycle.js";
 import { refreshContractMarket } from "../contracts/market.js";
-import { tickOpex, tickRevenue } from "../economy/opex.js";
+import {
+	buildAssignedDemandByDatacenter,
+	summarizeDatacenterOpexInputs,
+	tickOpexFromInputs,
+	tickRevenue,
+} from "../economy/opex.js";
 import { createIndexedGameStateView } from "../state/indexed-view.js";
 import { advanceSubtick } from "./subtick.js";
 import type {
@@ -68,12 +73,6 @@ function finalizeContract(contract: Contract, tick: Tick): Contract {
 	};
 }
 
-function getRegionForDatacenter(state: GameState, dcId: string) {
-	const datacenter = state.datacenters.find((dc) => dc.id === dcId);
-	if (!datacenter) return undefined;
-	return state.map.regions.find((r) => r.id === datacenter.regionId);
-}
-
 export function settleMonthlyTick(state: GameState): GameState {
 	const nextTick = (state.tick + 1) as Tick;
 	const maintenanceView = createIndexedGameStateView(state);
@@ -84,15 +83,21 @@ export function settleMonthlyTick(state: GameState): GameState {
 		contracts: [...maintenanceView.contracts],
 	};
 
-	// Calculate base opex per datacenter
+	const assignedDemandByDatacenter = buildAssignedDemandByDatacenter(maintenanceView.liveContracts);
+
+	// Calculate base opex per datacenter.
 	const perDcOpex = new Map<DatacenterId, OpexTickResult>();
 	let baseOpexTotal = 0;
 	for (const datacenter of maintenanceState.datacenters) {
-		const region = getRegionForDatacenter(maintenanceState, datacenter.id);
+		const region = maintenanceView.regionById.get(datacenter.regionId);
 		if (!region) {
 			throw new Error(`Region not found for datacenter: ${datacenter.regionId}`);
 		}
-		const opex = tickOpex(datacenter, region, maintenanceView.liveContracts);
+		const opexInputs = summarizeDatacenterOpexInputs(datacenter, {
+			assignedDemand: assignedDemandByDatacenter.get(datacenter.id),
+			activityAwareBilling: true,
+		});
+		const opex = tickOpexFromInputs(datacenter, region, opexInputs);
 		perDcOpex.set(datacenter.id, opex);
 		baseOpexTotal += opex.total;
 	}
@@ -102,8 +107,10 @@ export function settleMonthlyTick(state: GameState): GameState {
 	// Calculate tax per datacenter
 	let totalTax = 0;
 	for (const datacenter of maintenanceState.datacenters) {
-		const region = getRegionForDatacenter(maintenanceState, datacenter.id);
-		if (!region) continue;
+		const region = maintenanceView.regionById.get(datacenter.regionId);
+		if (!region) {
+			throw new Error(`Region not found for datacenter: ${datacenter.regionId}`);
+		}
 
 		const opex = perDcOpex.get(datacenter.id)!;
 		const dcRevenue = revenueResult.perDcRevenue[datacenter.id] ?? 0;

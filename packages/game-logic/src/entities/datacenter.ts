@@ -98,6 +98,12 @@ export interface DatacenterUpgradeEconomics {
 	byTrack: Record<DatacenterUpgradeTrackId, Money>;
 }
 
+export interface ResolvedDatacenterOperationalProfile {
+	upgradeState: DatacenterUpgradeState;
+	infrastructure: DatacenterInfrastructureProfile;
+	upgradeEconomics: DatacenterUpgradeEconomics;
+}
+
 export interface ResolvedDatacenterUpgradeTrackState {
 	trackId: DatacenterUpgradeTrackId;
 	label: string;
@@ -217,9 +223,12 @@ export function applyDatacenterUpgrade(
 	};
 }
 
-export function resolveDatacenterInfrastructure(datacenter: Pick<Datacenter, "spec" | "upgrades">): DatacenterInfrastructureProfile {
+function resolveDatacenterInfrastructureFromUpgradeState(
+	datacenter: Pick<Datacenter, "spec">,
+	upgradeState: DatacenterUpgradeState,
+): DatacenterInfrastructureProfile {
 	const resolved = datacenterBaseInfrastructure(datacenter.spec);
-	for (const track of resolveDatacenterUpgradeState(datacenter).tracks) {
+	for (const track of upgradeState.tracks) {
 		if (track.currentNodeIndex === 0) {
 			continue;
 		}
@@ -235,13 +244,15 @@ export function resolveDatacenterInfrastructure(datacenter: Pick<Datacenter, "sp
 	return resolved;
 }
 
-export function resolveDatacenterUpgradeEconomics(datacenter: Pick<Datacenter, "spec" | "upgrades">): DatacenterUpgradeEconomics {
+function resolveDatacenterUpgradeEconomicsFromUpgradeState(
+	upgradeState: DatacenterUpgradeState,
+): DatacenterUpgradeEconomics {
 	const byTrack = {
 		cooling: 0,
 		networkType: 0,
 		onsiteGeneration: 0,
 	} satisfies Record<DatacenterUpgradeTrackId, Money>;
-	for (const track of resolveDatacenterUpgradeState(datacenter).tracks) {
+	for (const track of upgradeState.tracks) {
 		byTrack[track.trackId] = track.currentNode.opex.fixedMonthly ?? 0;
 	}
 
@@ -249,6 +260,25 @@ export function resolveDatacenterUpgradeEconomics(datacenter: Pick<Datacenter, "
 		fixedMonthly: byTrack.cooling + byTrack.networkType + byTrack.onsiteGeneration,
 		byTrack,
 	};
+}
+
+export function resolveDatacenterOperationalProfile(
+	datacenter: Pick<Datacenter, "spec" | "upgrades">,
+): ResolvedDatacenterOperationalProfile {
+	const upgradeState = resolveDatacenterUpgradeState(datacenter);
+	return {
+		upgradeState,
+		infrastructure: resolveDatacenterInfrastructureFromUpgradeState(datacenter, upgradeState),
+		upgradeEconomics: resolveDatacenterUpgradeEconomicsFromUpgradeState(upgradeState),
+	};
+}
+
+export function resolveDatacenterInfrastructure(datacenter: Pick<Datacenter, "spec" | "upgrades">): DatacenterInfrastructureProfile {
+	return resolveDatacenterOperationalProfile(datacenter).infrastructure;
+}
+
+export function resolveDatacenterUpgradeEconomics(datacenter: Pick<Datacenter, "spec" | "upgrades">): DatacenterUpgradeEconomics {
+	return resolveDatacenterOperationalProfile(datacenter).upgradeEconomics;
 }
 
 function isWithinBounds(datacenter: Datacenter, position: GridPosition): boolean {
