@@ -1,5 +1,5 @@
 import { reliabilityMarketPolicyForScore } from "../balance/reliability.js";
-import { datacenterContractCapacitySummary } from "../entities/datacenter.js";
+import { summarizeFabricCapacityForDatacenter } from "../entities/fabric.js";
 import { rngFromState } from "../sim/rng.js";
 import type { Capacity, Contract, ContractId, ContractRequirements, DatacenterId, GameState } from "../types.js";
 import { contractTermBand, generateContractForTermBand, type ContractTermBand } from "./generator.js";
@@ -171,7 +171,7 @@ export function acceptContract(
 		throw new Error(`Unknown market contract: ${contractId}`);
 	}
 
-	const capacitySummary = datacenterContractCapacitySummary(datacenter, selectLiveContracts(contracts));
+	const capacitySummary = summarizeFabricCapacityForDatacenter(state, dcId);
 	if (!canCoverRequirements(capacitySummary.available, contractToAccept.requirements)) {
 		throw new ContractAcceptanceError({
 			code: "insufficient_capacity",

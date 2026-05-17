@@ -41,6 +41,13 @@ const TEST_REGION: Region = {
 	staffUsed: 0,
 };
 
+function regionWithFabric(memberDcIds: DatacenterId[]): Region {
+	return {
+		...TEST_REGION,
+		fabric: { memberDcIds },
+	};
+}
+
 function placement(id: string, specId: keyof typeof RACK_CATALOG, row: number, position: number): RackPlacement {
 	const spec = RACK_CATALOG[specId];
 	return {
@@ -146,6 +153,27 @@ test("tick advances time, applies opex and revenue, and refreshes the contract m
 	);
 	assert.equal(nextState.contractMarket.length, MARKET_REFRESH_SIZE);
 	assert.equal(nextState.contractMarket[0]?.offeredAtTick, 1);
+});
+
+test("tick honors pooled regional fabric capacity during monthly contract settlement", () => {
+	const dcA = makeDatacenter("dc-a", [placement("rack-a", "C1", 0, 0)]);
+	const dcB = makeDatacenter("dc-b", [placement("rack-b", "C1", 0, 0)]);
+	const contract = makeContract("contract-fabric", dcA, {
+		requirements: { vCpu: 192, ramGb: 700, storageTb: 20, gpuFlops: 0 },
+		monthlyPayment: 12_000,
+		penaltyPerMonth: 4_000,
+	});
+	const state = makeState({
+		datacenters: [dcA, dcB],
+		activeContracts: [contract],
+		map: { regions: [regionWithFabric([dcA.id, dcB.id])] },
+	});
+
+	const nextState = tick(state);
+
+	assert.equal(nextState.activeContracts[0]?.status, "active");
+	assert.ok(nextState.ledger.some((entry) => entry.type === "revenue" && entry.amount === contract.monthlyPayment));
+	assert.equal(nextState.ledger.some((entry) => entry.type === "penalty"), false);
 });
 
 test("tick expires breached contracts when their term ends and records penalties", () => {

@@ -3,12 +3,12 @@ import { maintenanceStaffWagePerHead } from "../balance/easier.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { contractsFromState, isLiveContract, selectLiveContracts } from "../contracts/lifecycle.js";
 import {
-	datacenterCapacity,
 	datacenterRackPowerSummary,
 	datacenterUsage,
 	resolveDatacenterInfrastructure,
 	resolveDatacenterUpgradeEconomics,
 } from "../entities/datacenter.js";
+import { summarizeFabricCapacityForDatacenter } from "../entities/fabric.js";
 import type {
 	Capacity,
 	Contract,
@@ -132,6 +132,7 @@ export function tickRevenue(state: GameState): RevenueTickResult {
 
 	const contracts = contractsFromState(state);
 	const liveContracts = selectLiveContracts(contracts);
+	const capacitySummaryByDcId = new Map<DatacenterId, ReturnType<typeof summarizeFabricCapacityForDatacenter>>();
 	const updatedLiveContracts = liveContracts.map((contract): Contract => {
 		if (!contract.assignedDcId) {
 			return contract;
@@ -151,9 +152,9 @@ export function tickRevenue(state: GameState): RevenueTickResult {
 			};
 		}
 
-		const datacenterDemand = getAssignedDemand(liveContracts, datacenter.id);
-		const datacenterSupply = datacenterCapacity(datacenter);
-		if (!canCoverRequirements(datacenterSupply, datacenterDemand)) {
+		const capacitySummary = capacitySummaryByDcId.get(datacenter.id) ?? summarizeFabricCapacityForDatacenter(state, datacenter.id);
+		capacitySummaryByDcId.set(datacenter.id, capacitySummary);
+		if (!canCoverRequirements(capacitySummary.usable, capacitySummary.committed)) {
 			revenue -= penalty;
 			perDcRevenue[datacenter.id] = (perDcRevenue[datacenter.id] ?? 0) - penalty;
 			return {
