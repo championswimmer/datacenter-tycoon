@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { newGame } from "@datacenter-tycoon/game-logic";
+import { REGION_CATALOG, newGame } from "@datacenter-tycoon/game-logic";
 
 import { renderContractsTab } from "./contracts.js";
 
@@ -16,6 +16,7 @@ test("renderContractsTab shows market and active contracts", () => {
 				monthlyPayment: 700,
 				penaltyPerMonth: 100,
 				termMonths: 6,
+				lifecycleState: "serving",
 				status: "active",
 				urgency: "standard",
 				tier: 1,
@@ -31,6 +32,7 @@ test("renderContractsTab shows market and active contracts", () => {
 				monthlyPayment: 500,
 				penaltyPerMonth: 100,
 				termMonths: 3,
+				lifecycleState: "market_open",
 				status: "offered",
 				urgency: "standard",
 				tier: 1,
@@ -45,9 +47,35 @@ test("renderContractsTab shows market and active contracts", () => {
 	const rendered = renderContractsTab(snapshot).join("\n");
 	assert.match(rendered, /Market:/);
 	assert.match(rendered, /offer-1/);
+	assert.match(rendered, /Regions: Any region/);
 	assert.match(rendered, /Active:/);
 	assert.match(rendered, /active-1/);
 	assert.match(rendered, /dc=dc-1/);
+});
+
+test("renderContractsTab shows region affinity hints and eligible-region copy", () => {
+	const base = newGame(11);
+	const contract = base.contractMarket[0]!;
+	const snapshot = {
+		...base,
+		contracts: [
+			{
+				...contract,
+				id: "offer-eu" as typeof contract.id,
+				regionAffinity: {
+					key: "eu" as const,
+					allowedRegionIds: [REGION_CATALOG.eu_west.id, REGION_CATALOG.eu_central.id],
+				},
+			},
+		],
+		contractMarket: [],
+		activeContracts: [],
+	};
+
+	const rendered = renderContractsTab(snapshot).join("\n");
+	assert.match(rendered, /Regions: EU only/);
+	assert.match(rendered, /DUB · Dublin · EU West/);
+	assert.match(rendered, /eligible regions only/);
 });
 
 test("renderContractsTab places expired contracts in History section, not Active", () => {
