@@ -8,7 +8,8 @@ import {
 	selectLiveContracts,
 	selectOpenMarketContracts,
 } from "../contracts/lifecycle.js";
-import { summarizeDistinctCapacityPools, summarizeFabricCapacityForDatacenter } from "../entities/fabric.js";
+import { summarizeAllDatacenterFabricCapacities } from "../entities/fabric.js";
+import { createIndexedGameStateView } from "../state/indexed-view.js";
 import type {
 	Capacity,
 	Contract,
@@ -34,6 +35,15 @@ function addCapacity(total: Capacity, delta: Capacity): Capacity {
 		ramGb: total.ramGb + delta.ramGb,
 		storageTb: total.storageTb + delta.storageTb,
 		gpuFlops: total.gpuFlops + delta.gpuFlops,
+	};
+}
+
+function cloneCapacity(capacity: Capacity): Capacity {
+	return {
+		vCpu: capacity.vCpu,
+		ramGb: capacity.ramGb,
+		storageTb: capacity.storageTb,
+		gpuFlops: capacity.gpuFlops,
 	};
 }
 
@@ -169,10 +179,10 @@ export function selectHistoricalContractsFromState(
 }
 
 export function selectContractByIdFromState(
-	state: Pick<GameState, "contracts" | "contractMarket" | "activeContracts">,
+	state: Pick<GameState, "contracts" | "contractMarket" | "activeContracts" | "datacenters" | "map">,
 	contractId: ContractId,
 ): Contract | undefined {
-	return contractsFromState(state).find((contract) => contract.id === contractId);
+	return createIndexedGameStateView(state).contractById.get(contractId);
 }
 
 export function selectLiveContractsForDatacenter(
@@ -189,39 +199,135 @@ export function selectHistoricalContractsForDatacenter(
 	return selectHistoricalContractsFromState(state).filter((contract) => contract.assignedDcId === dcId);
 }
 
-export function summarizeContractAssignmentFitForContract(
+interface ContractFitCandidateTemplate {
+	dcId: DatacenterId;
+	regionId: RegionId;
+	available: Capacity;
+	fabricConnected: boolean;
+	memberDcIds: DatacenterId[];
+}
+
+interface ContractFitPoolSummary {
+	memberDcIds: DatacenterId[];
+	available: Capacity;
+	regionIds: Set<RegionId>;
+}
+
+interface ContractFitQueryContext {
+	contracts: readonly Contract[];
+	contractById: ReadonlyMap<ContractId, Contract>;
+	openMarketContracts: readonly Contract[];
+	candidateTemplates: readonly ContractFitCandidateTemplate[];
+	poolSummaries: readonly ContractFitPoolSummary[];
+	unrestrictedNetworkAvailable: Capacity;
+	regions: readonly Pick<Region, "id">[];
+}
+
+function fitPoolKey(memberDcIds: readonly DatacenterId[]): string {
+	return memberDcIds.join("\u0000");
+}
+
+function buildContractFitQueryContext(
 	state: Pick<GameState, "contracts" | "contractMarket" | "activeContracts" | "datacenters" | "map">,
+): ContractFitQueryContext {
+	const indexedState = createIndexedGameStateView(state);
+	const allFabricSummaries = summarizeAllDatacenterFabricCapacities(state, indexedState.liveContracts);
+	const candidateTemplates: ContractFitCandidateTemplate[] = allFabricSummaries.map((summary) => {
+		const datacenter = indexedState.datacenterById.get(summary.dcId);
+		if (!datacenter) {
+			throw new Error(`Unknown datacenter: ${summary.dcId}`);
+		}
+		return {
+			dcId: summary.dcId,
+			regionId: datacenter.regionId,
+			available: cloneCapacity(summary.available),
+			fabricConnected: summary.connected,
+			memberDcIds: [...summary.memberDcIds],
+		};
+	});
+	const poolSummariesByKey = new Map<string, ContractFitPoolSummary>();
+	let unrestrictedNetworkAvailable = { ...EMPTY_CAPACITY };
+	for (const summary of allFabricSummaries) {
+		const key = fitPoolKey(summary.memberDcIds);
+		if (poolSummariesByKey.has(key)) {
+			continue;
+		}
+		const regionIds = new Set<RegionId>();
+		for (const memberDcId of summary.memberDcIds) {
+			const memberDc = indexedState.datacenterById.get(memberDcId);
+			if (!memberDc) {
+				throw new Error(`Unknown datacenter in pool: ${memberDcId}`);
+			}
+			regionIds.add(memberDc.regionId);
+		}
+		const poolSummary = {
+			memberDcIds: [...summary.memberDcIds],
+			available: cloneCapacity(summary.available),
+			regionIds,
+		};
+		poolSummariesByKey.set(key, poolSummary);
+		unrestrictedNetworkAvailable = addCapacity(unrestrictedNetworkAvailable, summary.available);
+	}
+
+	return {
+		contracts: indexedState.contracts,
+		contractById: indexedState.contractById,
+		openMarketContracts: indexedState.openMarketContracts,
+		candidateTemplates,
+		poolSummaries: [...poolSummariesByKey.values()],
+		unrestrictedNetworkAvailable,
+		regions: state.map.regions,
+	};
+}
+
+function summarizeContractAssignmentFitForContractWithContext(
+	context: ContractFitQueryContext,
 	contract: Pick<Contract, "id" | "requirements" | "regionAffinity">,
 ): ContractAssignmentFitSummary {
-	const datacenterById = new Map(state.datacenters.map((datacenter) => [datacenter.id, datacenter]));
-	const regionAffinity = summarizeContractRegionAffinity(contract, state.map.regions);
-	const candidates = state.datacenters.map((datacenter) => {
-		const summary = summarizeFabricCapacityForDatacenter(state, datacenter.id);
-		const fitsCapacity = canCoverRequirements(summary.available, contract.requirements);
-		const regionEligible = contractAllowsDatacenter(contract, datacenter);
-		return {
-			dcId: datacenter.id,
-			regionId: datacenter.regionId,
-			available: summary.available,
+	const regionAffinity = summarizeContractRegionAffinity(contract, context.regions);
+	const allowedRegionIds = new Set(regionAffinity.allowedRegionIds);
+	const candidates: ContractAssignmentFitCandidate[] = [];
+	const eligibleDcIds: DatacenterId[] = [];
+	const fittingDcIds: DatacenterId[] = [];
+
+	for (const template of context.candidateTemplates) {
+		const fitsCapacity = canCoverRequirements(template.available, contract.requirements);
+		const regionEligible = !regionAffinity.restricted || allowedRegionIds.has(template.regionId);
+		const candidate = {
+			dcId: template.dcId,
+			regionId: template.regionId,
+			available: cloneCapacity(template.available),
 			fitsCapacity,
 			regionEligible,
 			fits: regionEligible && fitsCapacity,
-			fabricConnected: summary.connected,
-			memberDcIds: summary.memberDcIds,
+			fabricConnected: template.fabricConnected,
+			memberDcIds: [...template.memberDcIds],
 		};
-	});
-	const networkAvailable = summarizeDistinctCapacityPools(state)
-		.filter((pool) =>
-			contract.regionAffinity
-				? pool.memberDcIds.some((memberDcId) => {
-					const memberDc = datacenterById.get(memberDcId);
-					return memberDc ? contractAllowsDatacenter(contract, memberDc) : false;
-				})
-				: true,
-		)
-		.reduce<Capacity>((total, pool) => addCapacity(total, pool.available), EMPTY_CAPACITY);
-	const eligibleDcIds = candidates.filter((candidate) => candidate.regionEligible).map((candidate) => candidate.dcId);
-	const fittingDcIds = candidates.filter((candidate) => candidate.fits).map((candidate) => candidate.dcId);
+		candidates.push(candidate);
+		if (regionEligible) {
+			eligibleDcIds.push(candidate.dcId);
+		}
+		if (candidate.fits) {
+			fittingDcIds.push(candidate.dcId);
+		}
+	}
+
+	let networkAvailable = regionAffinity.restricted ? { ...EMPTY_CAPACITY } : cloneCapacity(context.unrestrictedNetworkAvailable);
+	if (regionAffinity.restricted) {
+		for (const poolSummary of context.poolSummaries) {
+			let eligible = false;
+			for (const regionId of poolSummary.regionIds) {
+				if (allowedRegionIds.has(regionId)) {
+					eligible = true;
+					break;
+				}
+			}
+			if (eligible) {
+				networkAvailable = addCapacity(networkAvailable, poolSummary.available);
+			}
+		}
+	}
+
 	const fitStatus: ContractAssignmentFitStatus = fittingDcIds.length > 0
 		? "fits"
 		: canCoverRequirements(networkAvailable, contract.requirements)
@@ -240,20 +346,29 @@ export function summarizeContractAssignmentFitForContract(
 	};
 }
 
+export function summarizeContractAssignmentFitForContract(
+	state: Pick<GameState, "contracts" | "contractMarket" | "activeContracts" | "datacenters" | "map">,
+	contract: Pick<Contract, "id" | "requirements" | "regionAffinity">,
+): ContractAssignmentFitSummary {
+	return summarizeContractAssignmentFitForContractWithContext(buildContractFitQueryContext(state), contract);
+}
+
 export function summarizeContractAssignmentFit(
 	state: Pick<GameState, "contracts" | "contractMarket" | "activeContracts" | "datacenters" | "map">,
 	contractId: ContractId,
 ): ContractAssignmentFitSummary | undefined {
-	const contract = selectContractByIdFromState(state, contractId);
+	const context = buildContractFitQueryContext(state);
+	const contract = context.contractById.get(contractId);
 	if (!contract) {
 		return undefined;
 	}
 
-	return summarizeContractAssignmentFitForContract(state, contract);
+	return summarizeContractAssignmentFitForContractWithContext(context, contract);
 }
 
 export function summarizeOpenMarketContractFits(
 	state: Pick<GameState, "contracts" | "contractMarket" | "activeContracts" | "datacenters" | "map">,
 ): ContractAssignmentFitSummary[] {
-	return selectOpenMarketContractsFromState(state).map((contract) => summarizeContractAssignmentFitForContract(state, contract));
+	const context = buildContractFitQueryContext(state);
+	return context.openMarketContracts.map((contract) => summarizeContractAssignmentFitForContractWithContext(context, contract));
 }
