@@ -336,12 +336,18 @@ export interface GameState {
 	player: Player;
 	datacenters: Datacenter[];
 	contracts: Contract[];
-	/** @deprecated Use lifecycle selectors over `contracts`. */
+	/** @deprecated Use lifecycle selectors over `contracts`. This is a runtime compatibility view and is not required in newly serialized saves. */
 	contractMarket: Contract[];
-	/** @deprecated Use lifecycle selectors over `contracts`. */
+	/** @deprecated Use lifecycle selectors over `contracts`. This is a runtime compatibility view and is not required in newly serialized saves. */
 	activeContracts: Contract[];
 	ledger: LedgerEntry[];
 	audioEnabled: boolean;
 	audioSettings: AudioSettings;
 	map: MapState;
 }
+
+/**
+ * Persisted saves keep canonical `contracts` and may omit legacy compatibility
+ * views. `deserialize()` rehydrates `contractMarket` and `activeContracts`.
+ */
+export type PersistedGameState = Omit<GameState, "contractMarket" | "activeContracts"> & Partial<Pick<GameState, "contractMarket" | "activeContracts">>;

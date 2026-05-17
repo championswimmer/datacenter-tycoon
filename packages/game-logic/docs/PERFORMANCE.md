@@ -131,6 +131,27 @@ Use these guardrails when evaluating future changes:
    - document why the tradeoff is intentional and update this note after review.
 4. When a meaningful optimisation lands, refresh this document with the new accepted baseline and keep the previous results in the plan/PR discussion.
 
+## Save-state footprint audit
+
+As of save version `12`, serialized saves persist only canonical `contracts` and omit the derived compatibility views `contractMarket` and `activeContracts`.
+
+### Why
+
+- Those arrays duplicate information already derivable from `contracts`.
+- They noticeably increase save payload size for large markets and long contract histories.
+- They also increase load-time normalization work when older saves carry divergent legacy views.
+
+### Migration notes
+
+- `deserialize()` still returns a full runtime `GameState` with `contractMarket` and `activeContracts` rehydrated via `withDerivedContractViews()`.
+- `migrate()` upgrades version `11` saves by canonicalizing any legacy overrides from `contractMarket` / `activeContracts` into `contracts` before rehydrating derived views.
+- Save/load tests cover compact current-version saves, legacy v11 overrides, and deterministic mid-month resumes.
+
+### Compatibility risk
+
+- External tooling that directly inspects raw save JSON must not assume `contractMarket` or `activeContracts` are present in newly written saves.
+- Runtime code inside `game-logic`, `web`, `cli`, or `server` should continue to treat those arrays as derived compatibility views and prefer lifecycle selectors over direct persisted-state coupling.
+
 ## Notes
 
 - The benchmark harness is intentionally deterministic and uses no `Math.random()`.

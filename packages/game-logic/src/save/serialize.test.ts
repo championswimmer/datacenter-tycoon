@@ -5,8 +5,8 @@ import { RELIABILITY_MARKET_OFFER_COUNT } from "../balance/reliability.js";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { REGION_CATALOG } from "../catalog/regions.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
-import type { Contract, ContractId, DatacenterId, RackPlacementId } from "../types.js";
-import { serialize, deserialize, migrate, SAVE_VERSION } from "./serialize.js";
+import type { Contract, ContractId, DatacenterId, PersistedGameState, RackPlacementId } from "../types.js";
+import { serialize, deserialize, migrate, SAVE_VERSION, type SaveEnvelope } from "./serialize.js";
 import { newGame } from "../state/newGame.js";
 import { reduce } from "../state/reduce.js";
 import { advanceSubtick } from "../sim/subtick.js";
@@ -16,13 +16,22 @@ const datacenterId = (value: string): DatacenterId => value as DatacenterId;
 const rackPlacementId = (value: string): RackPlacementId => value as RackPlacementId;
 const contractId = (value: string): ContractId => value as ContractId;
 
-test("serialize wraps state in a versioned envelope", () => {
+test("serialize wraps state in a compact versioned envelope", () => {
 	const state = newGame(42);
+	const serialized = JSON.parse(serialize(state)) as SaveEnvelope<PersistedGameState>;
 
-	assert.deepEqual(JSON.parse(serialize(state)), {
-		saveVersion: SAVE_VERSION,
-		state,
-	});
+	assert.equal(serialized.saveVersion, SAVE_VERSION);
+	assert.deepEqual(serialized.state.contracts, state.contracts);
+	assert.equal("contractMarket" in serialized.state, false);
+	assert.equal("activeContracts" in serialized.state, false);
+});
+
+test("serialize omits derived compatibility views to reduce save payload size", () => {
+	const state = newGame(42);
+	const compact = serialize(state);
+	const legacyShape = JSON.stringify({ saveVersion: SAVE_VERSION, state });
+
+	assert.ok(compact.length < legacyShape.length);
 });
 
 test("serialize and deserialize round-trip contracts with and without region affinity", () => {
@@ -210,7 +219,7 @@ test("serialize persists default datacenter upgrade progress after build", () =>
 		regionId: firstRegionId,
 	});
 
-	const serialized = JSON.parse(serialize(state)) as { saveVersion: number; state: typeof state };
+	const serialized = JSON.parse(serialize(state)) as SaveEnvelope<PersistedGameState>;
 	assert.deepEqual(serialized.state.datacenters[0]?.upgrades, {
 		currentNodeByTrack: {
 			cooling: "air",
@@ -250,11 +259,56 @@ test("deserialize preserves reliability so future market refreshes still use the
 	assert.equal(refreshed.contractMarket.length, RELIABILITY_MARKET_OFFER_COUNT.platinum);
 });
 
-test("migrate is a no-op for current-version envelopes", () => {
+test("migrate rehydrates derived contract views for current-version compact envelopes", () => {
 	const state = newGame(7);
-	const envelope = { saveVersion: SAVE_VERSION, state };
+	const envelope = JSON.parse(serialize(state)) as SaveEnvelope<PersistedGameState>;
 
-	assert.deepEqual(migrate(envelope), envelope);
+	assert.deepEqual(migrate(envelope), {
+		saveVersion: SAVE_VERSION,
+		state,
+	});
+});
+
+test("migrate upgrades v11 saves by canonicalizing legacy contract compatibility overrides", () => {
+	const legacyOffer: Contract = {
+		id: contractId("legacy-offer-v11"),
+		name: "Legacy Offer",
+		requirements: { vCpu: 8, ramGb: 16, storageTb: 2, gpuFlops: 0 },
+		monthlyPayment: 500,
+		penaltyPerMonth: 100,
+		termMonths: 1,
+		slaTargetPercent: 90,
+		currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
+		lifecycleState: "market_open",
+		status: "offered",
+		urgency: "standard",
+		tier: 1,
+		offeredAtTick: 0,
+		expiresAtTick: 1,
+	};
+	const legacyAccepted: Contract = {
+		...legacyOffer,
+		lifecycleState: "serving",
+		status: "active",
+		acceptedAtTick: 0,
+		startedAtTick: 0,
+		assignedDcId: datacenterId("legacy-dc"),
+	};
+
+	const migrated = migrate({
+		saveVersion: 11,
+		state: {
+			...newGame(7),
+			contracts: [legacyOffer],
+			contractMarket: [],
+			activeContracts: [legacyAccepted],
+		},
+	});
+
+	assert.equal(migrated.saveVersion, SAVE_VERSION);
+	assert.deepEqual(migrated.state.contracts, [legacyAccepted]);
+	assert.deepEqual(migrated.state.activeContracts, [legacyAccepted]);
+	assert.deepEqual(migrated.state.contractMarket, []);
 });
 
 test("migrate upgrades v10 saves by attaching default contract SLA state", () => {

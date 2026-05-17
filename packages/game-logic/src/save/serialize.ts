@@ -1,15 +1,20 @@
+import { contractsFromState, stripDerivedContractViews, withDerivedContractViews } from "../contracts/lifecycle.js";
 import { withContractSlaDefaults } from "../contracts/sla.js";
 import { createEmptyRegionFabric } from "../entities/fabric.js";
-import type { GameState, Subtick } from "../types.js";
+import type { GameState, PersistedGameState, Subtick } from "../types.js";
 
-export const SAVE_VERSION = 11;
+export const SAVE_VERSION = 12;
 
-export interface SaveEnvelope {
+export interface SaveEnvelope<TState = PersistedGameState> {
 	saveVersion: number;
-	state: GameState;
+	state: TState;
 }
 
-function isSaveEnvelope(value: unknown): value is SaveEnvelope {
+type LegacyPersistedGameState = PersistedGameState & {
+	subtick?: Subtick;
+};
+
+function isSaveEnvelope(value: unknown): value is SaveEnvelope<LegacyPersistedGameState> {
 	if (!value || typeof value !== "object") {
 		return false;
 	}
@@ -17,7 +22,7 @@ function isSaveEnvelope(value: unknown): value is SaveEnvelope {
 	return "saveVersion" in value && "state" in value;
 }
 
-function attachEmptyRegionalFabrics(state: GameState): GameState {
+function attachEmptyRegionalFabrics(state: LegacyPersistedGameState): LegacyPersistedGameState {
 	return {
 		...state,
 		map: {
@@ -30,30 +35,50 @@ function attachEmptyRegionalFabrics(state: GameState): GameState {
 	};
 }
 
-function attachInitialSubtick(state: GameState): GameState {
+function attachInitialSubtick(state: LegacyPersistedGameState): PersistedGameState {
 	return {
 		...state,
 		subtick: (state.subtick ?? (0 as Subtick)) as Subtick,
 	};
 }
 
-function attachContractSlaDefaults(state: GameState): GameState {
+function attachContractSlaDefaults(state: PersistedGameState): PersistedGameState {
+	const contracts = contractsFromState({
+		contracts: state.contracts.map(withContractSlaDefaults),
+		contractMarket: state.contractMarket?.map(withContractSlaDefaults) ?? [],
+		activeContracts: state.activeContracts?.map(withContractSlaDefaults) ?? [],
+	});
 	return {
 		...state,
-		contracts: state.contracts.map(withContractSlaDefaults),
-		contractMarket: state.contractMarket.map(withContractSlaDefaults),
-		activeContracts: state.activeContracts.map(withContractSlaDefaults),
+		contracts,
+		contractMarket: state.contractMarket?.map(withContractSlaDefaults),
+		activeContracts: state.activeContracts?.map(withContractSlaDefaults),
 	};
 }
 
-function attachModernDefaults(state: GameState): GameState {
-	return attachContractSlaDefaults(attachInitialSubtick(state));
+function rehydrateDerivedContractViews(state: PersistedGameState): GameState {
+	return withDerivedContractViews({
+		...state,
+		contractMarket: [],
+		activeContracts: [],
+	} as GameState);
 }
 
-export function migrate(envelope: SaveEnvelope): SaveEnvelope {
+function attachModernDefaults(state: LegacyPersistedGameState): GameState {
+	return rehydrateDerivedContractViews(attachContractSlaDefaults(attachInitialSubtick(state)));
+}
+
+export function migrate(envelope: SaveEnvelope<LegacyPersistedGameState>): SaveEnvelope<GameState> {
 	if (envelope.saveVersion === SAVE_VERSION) {
 		return {
 			...envelope,
+			state: attachModernDefaults(envelope.state),
+		};
+	}
+
+	if (envelope.saveVersion === 11) {
+		return {
+			saveVersion: SAVE_VERSION,
 			state: attachModernDefaults(envelope.state),
 		};
 	}
@@ -92,8 +117,8 @@ export function migrate(envelope: SaveEnvelope): SaveEnvelope {
 export function serialize(state: GameState): string {
 	return JSON.stringify({
 		saveVersion: SAVE_VERSION,
-		state,
-	});
+		state: stripDerivedContractViews(state),
+	} satisfies SaveEnvelope);
 }
 
 export function deserialize(json: string): GameState {
