@@ -1,7 +1,27 @@
-import type { DatacenterId } from "@datacenter-tycoon/game-logic";
+import type {
+  DatacenterId,
+  DatacenterUpgradeTrackLadderNodeView,
+} from "@datacenter-tycoon/game-logic";
 import { useGameDispatch, useSelector } from "../../store/storeContext.js";
 import { selectDatacenterInfrastructureSummary, selectDatacenterUpgradeSummary } from "../../store/selectors.js";
 import styles from "./UpgradePanel.module.css";
+
+const LADDER_STATUS_LABEL: Record<DatacenterUpgradeTrackLadderNodeView["status"], string> = {
+  completed: "Complete",
+  current: "Current",
+  available: "Available next",
+  locked: "Locked",
+};
+
+function ladderNodeClassName(status: DatacenterUpgradeTrackLadderNodeView["status"]): string {
+  return [
+    styles.ladderNode,
+    status === "completed" ? styles.ladderNodeCompleted : "",
+    status === "current" ? styles.ladderNodeCurrent : "",
+    status === "available" ? styles.ladderNodeAvailable : "",
+    status === "locked" ? styles.ladderNodeLocked : "",
+  ].filter(Boolean).join(" ");
+}
 
 interface UpgradePanelProps {
   dcId: DatacenterId;
@@ -71,8 +91,29 @@ export function UpgradePanel({ dcId }: UpgradePanelProps) {
             </div>
 
             <div className={styles.trackBody}>
-              <span className={styles.trackStat}>Node ID: {track.currentNode.id}</span>
-              <span className={styles.trackStat}>Upkeep: ${track.currentNode.fixedMonthlyOpex.toLocaleString()}/mo</span>
+              <div className={styles.ladderSummary}>
+                <span className={styles.trackStat}>Node ID: {track.currentNode.id}</span>
+                <span className={styles.trackStat}>Upkeep: ${track.currentNode.fixedMonthlyOpex.toLocaleString()}/mo</span>
+                <span className={styles.trackStat}>
+                  Reach: {track.currentNodeIndex + 1} of {track.totalNodes} {track.presentation === "slots" ? "installs" : "levels"}
+                </span>
+              </div>
+
+              <ol className={styles.ladder} aria-label={`${track.label} upgrade ladder`}>
+                {track.nodes.map((node) => (
+                  <li key={node.id} className={ladderNodeClassName(node.status)}>
+                    <span className={styles.ladderStep}>{node.index + 1}</span>
+                    <div className={styles.ladderCopy}>
+                      <span className={styles.ladderName}>{node.label}</span>
+                      <span className={styles.ladderMeta}>
+                        {LADDER_STATUS_LABEL[node.status]} · ${node.capexCost.toLocaleString()} capex · ${node.fixedMonthlyOpex.toLocaleString()}/mo
+                      </span>
+                    </div>
+                    <span className={styles.ladderBadge}>{LADDER_STATUS_LABEL[node.status]}</span>
+                  </li>
+                ))}
+              </ol>
+
               {track.nextNode ? (
                 <>
                   <span className={styles.trackNext}>NEXT · {track.nextNode.label}</span>
