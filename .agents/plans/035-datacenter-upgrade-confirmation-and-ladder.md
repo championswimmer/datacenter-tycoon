@@ -1,7 +1,7 @@
 ---
 name: Datacenter Upgrade Confirmation and Ladder UI
 description: Show canonical datacenter upgrade ladders in the web UI and require an explicit cost confirmation before spending capex on upgrades.
-status: started
+status: completed
 created: 2026-05-17
 updated: 2026-05-17
 owner: game-logic, web
@@ -19,9 +19,9 @@ owner: game-logic, web
   - [x] 3.1 Add a confirmation modal that previews capex, upkeep delta, and resulting cash before dispatching `UpgradeDatacenter`
   - [x] 3.2 Wire upgrade buttons to open the modal, require explicit confirmation, and block unaffordable upgrades in the UI
   - [x] 3.3 Add interaction coverage for confirm, cancel, and insufficient-funds upgrade states
-- [ ] **Phase 4 — Verification and plan wrap-up**
+- [x] **Phase 4 — Verification and plan wrap-up**
   - [x] 4.1 Run targeted game-logic/web tests plus typecheck for the touched packages
-  - [ ] 4.2 Mark the plan complete and capture any follow-up notes if more upgrade UX work remains
+  - [x] 4.2 Mark the plan complete and capture any follow-up notes if more upgrade UX work remains
 
 ## Overview
 
@@ -152,3 +152,4 @@ export interface DatacenterUpgradeTrackLadderNodeView extends DatacenterUpgradeN
 ## Changelog
 
 - 2026-05-17 — created.
+- 2026-05-17 — completed implementation; no further upgrade UX follow-up captured in this plan.
