@@ -22,6 +22,23 @@ function buildState(): { state: GameState; dcId: ReturnType<typeof nextDcId> } {
   return { state, dcId };
 }
 
+function upgradeDatacenterToFiber(state: GameState, dcId: ReturnType<typeof nextDcId>) {
+  return reduce(
+    reduce(state, {
+      type: "UpgradeDatacenter",
+      dcId,
+      trackId: "networkType",
+      targetNodeId: "cat8",
+    }),
+    {
+      type: "UpgradeDatacenter",
+      dcId,
+      trackId: "networkType",
+      targetNodeId: "fiber",
+    },
+  );
+}
+
 function renderView(state: GameState, dcId: ReturnType<typeof nextDcId>) {
   const store = createGameStore(state);
   render(
@@ -73,23 +90,36 @@ describe("DatacenterView maintenance staffing controls", () => {
 
   it("shows upgrade and fabric status badges sourced from canonical selectors", () => {
     const { state: builtState, dcId } = buildState();
-    let state = reduce(builtState, {
-      type: "UpgradeDatacenter",
-      dcId,
-      trackId: "networkType",
-      targetNodeId: "cat8",
-    });
-    state = reduce(state, {
-      type: "UpgradeDatacenter",
-      dcId,
-      trackId: "networkType",
-      targetNodeId: "fiber",
-    });
+    const state = upgradeDatacenterToFiber(builtState, dcId);
 
     renderView(state, dcId);
 
-    expect(screen.getByText(/FABRIC READY/)).toBeTruthy();
+    expect(screen.getAllByText(/FABRIC READY/).length).toBeGreaterThan(0);
     expect(screen.getByText(/NETWORK UPLINK: FIBER UPLINK/)).toBeTruthy();
+  });
+
+  it("shows linked fabric pool metadata after the regional fabric is created", () => {
+    let state = newGame(42, { startingCash: 8_000_000 });
+    const dcA = nextDcId();
+    const dcB = nextDcId();
+    const firstRegionId = state.map.regions[0]!.id;
+
+    for (const dcId of [dcA, dcB] as const) {
+      state = reduce(state, {
+        type: "BuildDatacenter",
+        specId: DATACENTER_CATALOG.garage!.id,
+        dcId,
+        regionId: firstRegionId,
+      });
+      state = upgradeDatacenterToFiber(state, dcId);
+    }
+
+    state = reduce(state, { type: "FabricLink", sourceDcId: dcA, targetDcId: dcB });
+
+    renderView(state, dcA);
+
+    expect(screen.getByText(/FABRIC LINKED/)).toBeTruthy();
+    expect(screen.getByText(/2 SITES IN POOL/)).toBeTruthy();
   });
 
   it("disables the increase control when the region has no spare staff", () => {

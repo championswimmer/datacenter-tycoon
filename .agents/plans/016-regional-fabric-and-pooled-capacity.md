@@ -22,7 +22,7 @@ owner: game-logic, web
   - [x] 3.2 Route contract acceptance and fulfilment through pooled fabric capacity
   - [x] 3.3 Update selectors and tick summaries to expose fabric-aware totals
 - [ ] **Phase 4 - Web UI and feedback**
-  - [ ] 4.1 Surface fabric status and join cost in map, region, and datacenter views
+  - [x] 4.1 Surface fabric status and join cost in map, region, and datacenter views
   - [ ] 4.2 Update capacity displays to show pooled block capacity for fabric-connected sites
   - [ ] 4.3 Add a UI affordance for connecting datacenters into the regional fabric
 - [ ] **Phase 5 - Tests and regression coverage**

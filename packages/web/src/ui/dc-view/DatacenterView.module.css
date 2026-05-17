@@ -89,6 +89,14 @@
   margin-top: var(--space-2);
 }
 
+.upgradeStrip,
+.fabricStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
 .upgradeStrip {
   display: flex;
   flex-wrap: wrap;
@@ -98,7 +106,9 @@
 
 .activityBadge,
 .activityMeta,
-.upgradeMeta {
+.upgradeMeta,
+.fabricBadge,
+.fabricMeta {
   font-family: var(--font-mono);
   font-size: 0.62rem;
   letter-spacing: 0.08em;
@@ -123,6 +133,18 @@
   color: var(--neon-lime);
   border: 1px solid rgba(132, 255, 129, 0.18);
   background: rgba(132, 255, 129, 0.08);
+}
+
+.fabricBadge {
+  color: var(--neon-cyan);
+  border: 1px solid rgba(94, 240, 255, 0.2);
+  background: rgba(94, 240, 255, 0.08);
+}
+
+.fabricMeta {
+  color: var(--fg-2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .maintenanceControls {

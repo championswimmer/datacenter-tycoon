@@ -2,6 +2,7 @@ import { useGameDispatch, useSelector } from "../../store/storeContext.js";
 import {
   selectActiveContracts,
   selectDatacenter,
+  selectDatacenterFabricSummary,
   selectDatacenterInfrastructureSummary,
   selectDatacenterMaintenanceStaffingView,
   selectDatacenterMaintenanceView,
@@ -34,6 +35,7 @@ const EMPTY_USAGE = { powerKw: 0, heatOutputBtuPerHr: 0, bandwidthGbps: 0, slots
 export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
   const datacenter = useSelector((state) => selectDatacenter(state, dcId as DatacenterId));
   const maintenance = useSelector((state) => selectDatacenterMaintenanceView(state, dcId as DatacenterId));
+  const fabricSummary = useSelector((state) => selectDatacenterFabricSummary(state, dcId as DatacenterId));
   const maintenanceStaffing = useSelector((state) => selectDatacenterMaintenanceStaffingView(state, dcId as DatacenterId));
   const infrastructure = useSelector((state) => selectDatacenterInfrastructureSummary(state, dcId as DatacenterId));
   const upgradeSummary = useSelector((state) => selectDatacenterUpgradeSummary(state, dcId as DatacenterId));
@@ -104,6 +106,19 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
                 {track.nextNode ? ` → ${track.nextNode.label.toUpperCase()}` : " · MAXED"}
               </span>
             ))}
+          </div>
+        )}
+        {fabricSummary && (
+          <div className={styles.fabricStrip}>
+            <span className={styles.fabricBadge}>
+              {fabricSummary.fabricConnected ? "FABRIC LINKED" : fabricSummary.fabricEligible ? "FABRIC READY" : "FABRIC LOCKED"}
+            </span>
+            <span className={styles.fabricMeta}>JOIN ${fabricSummary.joinCost.toLocaleString()}</span>
+            <span className={styles.fabricMeta}>
+              {fabricSummary.fabricConnected
+                ? `${fabricSummary.memberDcIds.length} SITES IN POOL`
+                : fabricSummary.linkBlockedReason ?? "Use the region panel to create the fabric."}
+            </span>
           </div>
         )}
         {rackPowerSummary && rackPowerSummary.totalRackCount > 0 && (

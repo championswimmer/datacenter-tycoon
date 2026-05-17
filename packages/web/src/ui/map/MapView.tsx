@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import type { RegionId } from "@datacenter-tycoon/game-logic";
 import { useSelector } from "../../store/storeContext.js";
-import { selectRegions, selectAllDatacenters, selectCash } from "../../store/selectors.js";
+import { selectAllDatacenters, selectAllRegionFabricSummaries, selectCash, selectRegions } from "../../store/selectors.js";
 import { RegionPanel } from "./RegionPanel.js";
 import { NewDatacenterModal } from "../onboarding/NewDatacenterModal.js";
 import { WorldMap } from "./WorldMap.js";
@@ -11,6 +11,7 @@ import styles from "./MapView.module.css";
 export function MapView() {
   const regions = useSelector(selectRegions);
   const datacenters = useSelector(selectAllDatacenters);
+  const fabricSummaries = useSelector(selectAllRegionFabricSummaries);
   const cash = useSelector(selectCash);
 
   const [selectedRegionId, setSelectedRegionId] = useState<RegionId | null>(null);
@@ -23,13 +24,14 @@ export function MapView() {
   const openBuildModal = useCallback(() => setShowBuildModal(true), []);
   const closeBuildModal = useCallback(() => setShowBuildModal(false), []);
   const selectRegion = useCallback((id: RegionId) => setSelectedRegionId(id), []);
+  const activeFabricCount = fabricSummaries.filter((summary) => summary.active).length;
 
   return (
     <div className={styles.mapView}>
       <div className={styles.header}>
         <h2 className={styles.title}>WORLD MAP</h2>
         <span className={styles.subtitle}>
-          {regions.length} regions &middot; {datacenters.length} datacenters &middot; ${cash.toLocaleString()} cash
+          {regions.length} regions &middot; {datacenters.length} datacenters &middot; {activeFabricCount} active fabrics &middot; ${cash.toLocaleString()} cash
         </span>
       </div>
 
