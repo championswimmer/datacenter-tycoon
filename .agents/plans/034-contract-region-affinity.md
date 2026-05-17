@@ -11,7 +11,7 @@ owner: game-logic, cli, web
 
 - [ ] **Phase 1 — Region-affinity domain model and persistence**
   - [x] 1.1 Add contract region-affinity vocabulary and persisted whitelist fields to game-logic types
-  - [ ] 1.2 Add region grouping helpers so EU, Asia, and USA affinity sets resolve from the map/catalog
+  - [x] 1.2 Add region grouping helpers so EU, Asia, and USA affinity sets resolve from the map/catalog
   - [ ] 1.3 Update save/versioned public surfaces and package docs for the new contract shape
 - [ ] **Phase 2 — Affinity-aware contract generation and acceptance**
   - [ ] 2.1 Add deterministic generation rules so some offers are EU-, Asia-, or USA-affine while others remain unrestricted
@@ -219,5 +219,6 @@ export interface Contract {
 
 ## Changelog
 
+- 2026-05-17 — completed step 1.2 by adding canonical contract-affinity region grouping helpers and tests.
 - 2026-05-17 — completed step 1.1 by adding contract region-affinity types and public exports.
 - 2026-05-11 — created.

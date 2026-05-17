@@ -1,6 +1,12 @@
-import type { Region, RegionId } from "../types.js";
+import type { ContractRegionAffinityKey, Region, RegionId } from "../types.js";
 
 const regionId = (value: string): RegionId => value as RegionId;
+
+export const CONTRACT_REGION_AFFINITY_REGION_IDS: Record<ContractRegionAffinityKey, readonly RegionId[]> = {
+	eu: [regionId("eu_west"), regionId("eu_central")],
+	asia: [regionId("ap_northeast"), regionId("ap_southeast")],
+	usa: [regionId("us_east"), regionId("us_west")],
+};
 
 export const REGION_CATALOG: Record<string, Region> = {
 	us_east: {
@@ -116,3 +122,14 @@ export const REGION_CATALOG: Record<string, Region> = {
 		staffUsed: 0,
 	},
 };
+
+export function regionMatchesContractAffinity(regionId: RegionId, affinityKey: ContractRegionAffinityKey): boolean {
+	return CONTRACT_REGION_AFFINITY_REGION_IDS[affinityKey].includes(regionId);
+}
+
+export function regionIdsForContractAffinity(
+	affinityKey: ContractRegionAffinityKey,
+	regions: readonly Pick<Region, "id">[] = Object.values(REGION_CATALOG),
+): RegionId[] {
+	return regions.filter((region) => regionMatchesContractAffinity(region.id, affinityKey)).map((region) => region.id);
+}
