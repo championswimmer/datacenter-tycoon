@@ -86,12 +86,21 @@ describe("PowerView", () => {
     expect(screen.getByText(/idle and repairing racks pay only baseline power/i)).toBeTruthy();
   });
 
-  it("renders canonical upgrade affordances and applies the next node through store dispatch", () => {
+  it("renders canonical upgrade ladders and applies the next node through store dispatch", () => {
     const { state, dcId } = stateWithDatacenterAndRack();
     renderPowerView(state, dcId);
 
     expect(screen.getByText("UPGRADE TRACKS")).toBeTruthy();
     expect(screen.getByText(/FABRIC LOCKED/)).toBeTruthy();
+
+    const networkLadder = screen.getByRole("list", { name: /Network uplink upgrade ladder/i });
+    expect(within(networkLadder).getByText(/Cat6 uplink/i)).toBeTruthy();
+    expect(within(networkLadder).getByText(/Cat8 uplink/i)).toBeTruthy();
+    expect(within(networkLadder).getByText(/Fiber uplink/i)).toBeTruthy();
+    expect(within(networkLadder).getByText("Current")).toBeTruthy();
+    expect(within(networkLadder).getByText("Available next")).toBeTruthy();
+    expect(within(networkLadder).getByText("Locked")).toBeTruthy();
+
     const button = screen.getByRole("button", { name: /Upgrade to Hybrid cooling/i });
     fireEvent.click(button);
 
@@ -99,6 +108,19 @@ describe("PowerView", () => {
     expect(screen.getAllByText(/HYBRID/).length).toBeGreaterThan(0);
     expect(screen.getByText(/UPKEEP \$900\/mo/)).toBeTruthy();
     expect(screen.getByText("MAXED")).toBeTruthy();
+  });
+
+  it("shows completed ladder nodes for already-upgraded tracks", () => {
+    const { state: builtState, dcId } = stateWithDatacenterAndRack();
+    const state = upgradeDatacenterToFiber(builtState, dcId);
+
+    renderPowerView(state, dcId);
+
+    const networkLadder = screen.getByRole("list", { name: /Network uplink upgrade ladder/i });
+    expect(within(networkLadder).getAllByText("Complete")).toHaveLength(2);
+    expect(within(networkLadder).getByText("Current")).toBeTruthy();
+    expect(within(networkLadder).queryByText("Available next")).toBeNull();
+    expect(screen.getByText(/FABRIC READY/)).toBeTruthy();
   });
 
   it("shows generator installs raising effective power headroom and upgrade upkeep", () => {
