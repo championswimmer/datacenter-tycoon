@@ -7,8 +7,8 @@ import { contractMeetsSlaTarget, resetContractSlaWindow, withContractSlaDefaults
 import {
 	datacenterRackPowerSummary,
 	datacenterUsage,
-	resolveDatacenterInfrastructure,
-	resolveDatacenterUpgradeEconomics,
+	resolveDatacenterOperationalProfile,
+	type DatacenterUpgradeEconomics,
 } from "../entities/datacenter.js";
 import type {
 	Capacity,
@@ -16,6 +16,8 @@ import type {
 	ContractRequirements,
 	Datacenter,
 	DatacenterId,
+	DatacenterInfrastructureProfile,
+	DatacenterResourceUsage,
 	GameState,
 	Money,
 	OpexTickResult,
@@ -58,44 +60,110 @@ function canCoverRequirements(capacity: Capacity, requirements: ContractRequirem
 }
 
 function getAssignedDemand(contracts: readonly Contract[], datacenterId: DatacenterId): ContractRequirements {
-	return contracts.reduce<ContractRequirements>((total, contract) => {
+	let vCpu = 0;
+	let ramGb = 0;
+	let storageTb = 0;
+	let gpuFlops = 0;
+
+	for (const contract of contracts) {
 		if (contract.assignedDcId !== datacenterId || !isLiveContract(contract)) {
-			return total;
+			continue;
 		}
 
-		return addRequirements(total, contract.requirements);
-	}, EMPTY_CAPACITY);
+		vCpu += contract.requirements.vCpu;
+		ramGb += contract.requirements.ramGb;
+		storageTb += contract.requirements.storageTb;
+		gpuFlops += contract.requirements.gpuFlops;
+	}
+
+	return { vCpu, ramGb, storageTb, gpuFlops };
 }
 
-export function tickOpex(
-	datacenter: Datacenter,
-	region: Region,
-	activeContracts?: readonly Contract[],
-): OpexTickResult {
-	const usage = datacenterUsage(datacenter);
-	const infrastructure = resolveDatacenterInfrastructure(datacenter);
-	const upgradeEconomics = resolveDatacenterUpgradeEconomics(datacenter);
-	const assignedDemand = activeContracts ? getAssignedDemand(activeContracts, datacenter.id) : EMPTY_CAPACITY;
-	const billedPowerKw = activeContracts
-		? datacenterRackPowerSummary(datacenter, assignedDemand).billedPowerKw
-		: usage.powerKw;
-	// The easier-balance pass maps the requested “staffing cost of all racks”
-	// onto `RackSpec.monthlyMaintenance`, because rack specs do not currently
-	// model a separate per-rack labor field. Rebalancing the catalog value keeps
-	// all existing consumers (UI, CLI, opex, docs) aligned on one source of truth.
-	const maintenance = datacenter.placements.reduce((total, placement) => {
+function maintenanceCostForDatacenter(datacenter: Datacenter): Money {
+	let maintenance = 0;
+	for (const placement of datacenter.placements) {
 		const spec = RACK_CATALOG[placement.specId];
 		if (!spec) {
 			throw new Error(`Unknown rack spec: ${placement.specId}`);
 		}
+		maintenance += spec.monthlyMaintenance;
+	}
+	return maintenance;
+}
 
-		return total + spec.monthlyMaintenance;
-	}, 0);
+export interface DatacenterAssignedDemandMap extends ReadonlyMap<DatacenterId, ContractRequirements> {}
 
-	const rawPowerCost = billedPowerKw * HOURS_PER_MONTH * region.powerCostPerKwh;
+export interface DatacenterOpexInputs {
+	usage: DatacenterResourceUsage;
+	infrastructure: DatacenterInfrastructureProfile;
+	upgradeEconomics: DatacenterUpgradeEconomics;
+	assignedDemand: ContractRequirements;
+	billedPowerKw: number;
+	maintenance: Money;
+}
+
+export function buildAssignedDemandByDatacenter(
+	contracts: readonly Pick<Contract, "assignedDcId" | "lifecycleState" | "requirements">[],
+): DatacenterAssignedDemandMap {
+	const assignedDemandByDatacenter = new Map<DatacenterId, ContractRequirements>();
+	for (const contract of contracts) {
+		if (!contract.assignedDcId || !isLiveContract(contract)) {
+			continue;
+		}
+
+		const existing = assignedDemandByDatacenter.get(contract.assignedDcId);
+		if (existing) {
+			existing.vCpu += contract.requirements.vCpu;
+			existing.ramGb += contract.requirements.ramGb;
+			existing.storageTb += contract.requirements.storageTb;
+			existing.gpuFlops += contract.requirements.gpuFlops;
+			continue;
+		}
+
+		assignedDemandByDatacenter.set(contract.assignedDcId, {
+			vCpu: contract.requirements.vCpu,
+			ramGb: contract.requirements.ramGb,
+			storageTb: contract.requirements.storageTb,
+			gpuFlops: contract.requirements.gpuFlops,
+		});
+	}
+
+	return assignedDemandByDatacenter;
+}
+
+export function summarizeDatacenterOpexInputs(
+	datacenter: Datacenter,
+	options: {
+		assignedDemand?: ContractRequirements;
+		activityAwareBilling?: boolean;
+	} = {},
+): DatacenterOpexInputs {
+	const usage = datacenterUsage(datacenter);
+	const operationalProfile = resolveDatacenterOperationalProfile(datacenter);
+	const assignedDemand = options.assignedDemand ?? EMPTY_CAPACITY;
+	const billedPowerKw = options.activityAwareBilling
+		? datacenterRackPowerSummary(datacenter, assignedDemand).billedPowerKw
+		: usage.powerKw;
+
+	return {
+		usage,
+		infrastructure: operationalProfile.infrastructure,
+		upgradeEconomics: operationalProfile.upgradeEconomics,
+		assignedDemand,
+		billedPowerKw,
+		maintenance: maintenanceCostForDatacenter(datacenter),
+	};
+}
+
+export function tickOpexFromInputs(
+	datacenter: Pick<Datacenter, "spec" | "maintenanceStaff">,
+	region: Region,
+	inputs: DatacenterOpexInputs,
+): OpexTickResult {
+	const rawPowerCost = inputs.billedPowerKw * HOURS_PER_MONTH * region.powerCostPerKwh;
 	const power = roundMoney(rawPowerCost);
 	const cooling = roundMoney(rawPowerCost * COOLING_OVERHEAD_RATIO);
-	const bandwidth = roundMoney(infrastructure.bandwidthGbps * BANDWIDTH_USD_PER_GBPS_MONTH);
+	const bandwidth = roundMoney(inputs.infrastructure.bandwidthGbps * BANDWIDTH_USD_PER_GBPS_MONTH);
 	// Extra maintenance staffing is the only wage bucket targeted by the easier
 	// balance pass. Baseline facility staffing remains tied to `region.staffWage`.
 	const maintenanceStaffWage = maintenanceStaffWagePerHead(region.staffWage);
@@ -107,8 +175,8 @@ export function tickOpex(
 		cooling,
 		bandwidth,
 		staff,
-		maintenance: roundMoney(maintenance),
-		upgrades: roundMoney(upgradeEconomics.fixedMonthly),
+		maintenance: roundMoney(inputs.maintenance),
+		upgrades: roundMoney(inputs.upgradeEconomics.fixedMonthly),
 		tax: 0 as Money,
 	};
 
@@ -123,6 +191,22 @@ export function tickOpex(
 		),
 		breakdown,
 	};
+}
+
+export function tickOpex(
+	datacenter: Datacenter,
+	region: Region,
+	activeContracts?: readonly Contract[],
+): OpexTickResult {
+	const assignedDemand = activeContracts ? getAssignedDemand(activeContracts, datacenter.id) : EMPTY_CAPACITY;
+	return tickOpexFromInputs(
+		datacenter,
+		region,
+		summarizeDatacenterOpexInputs(datacenter, {
+			assignedDemand,
+			activityAwareBilling: activeContracts !== undefined,
+		}),
+	);
 }
 
 export function tickRevenue(

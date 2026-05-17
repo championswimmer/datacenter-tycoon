@@ -9,6 +9,7 @@ import {
 	canMoveRack,
 	datacenterMaintenanceStaffingView,
 	resolveDatacenterInfrastructure,
+	resolveDatacenterOperationalProfile,
 	resolveDatacenterUpgradeEconomics,
 	resolveDatacenterUpgradeState,
 } from "./datacenter.js";
@@ -66,6 +67,7 @@ test("upgrade resolvers derive default track state, effective infrastructure, an
 	const state = resolveDatacenterUpgradeState(datacenter);
 	const infrastructure = resolveDatacenterInfrastructure(datacenter);
 	const economics = resolveDatacenterUpgradeEconomics(datacenter);
+	const operationalProfile = resolveDatacenterOperationalProfile(datacenter);
 
 	assert.equal(state.fabricEligible, false);
 	assert.equal(state.tracks.find((track) => track.trackId === "cooling")?.currentNode.id, "air");
@@ -84,6 +86,9 @@ test("upgrade resolvers derive default track state, effective infrastructure, an
 		fixedMonthly: 0,
 		byTrack: { cooling: 0, networkType: 0, onsiteGeneration: 0 },
 	});
+	assert.deepEqual(operationalProfile.upgradeState, state);
+	assert.deepEqual(operationalProfile.infrastructure, infrastructure);
+	assert.deepEqual(operationalProfile.upgradeEconomics, economics);
 });
 
 test("canMoveRack allows valid move between different datacenters", () => {

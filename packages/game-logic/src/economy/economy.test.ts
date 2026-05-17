@@ -6,7 +6,14 @@ import { RACK_CATALOG } from "../catalog/racks.js";
 import { DAYS_PER_TICK } from "../balance/maintenance.js";
 import { COOLING_OVERHEAD_RATIO } from "./constants.js";
 import { DIFFICULTY_CONFIG } from "../balance/difficulty.js";
-import { applyCapex, tickOpex, tickRevenue } from "../index.js";
+import {
+	applyCapex,
+	buildAssignedDemandByDatacenter,
+	summarizeDatacenterOpexInputs,
+	tickOpex,
+	tickOpexFromInputs,
+	tickRevenue,
+} from "../index.js";
 import type {
 	Contract,
 	ContractId,
@@ -235,6 +242,66 @@ test("tickOpex charges full draw only for racks needed by assigned contract dema
 			tax: 0,
 		},
 	});
+});
+
+test("buildAssignedDemandByDatacenter batches live contract demand once per datacenter", () => {
+	const dcA = makeDatacenter("warehouse-a", DATACENTER_CATALOG.warehouse, [placement("rack-1", "C2", 0, 0)]);
+	const dcB = makeDatacenter("warehouse-b", DATACENTER_CATALOG.warehouse, [placement("rack-2", "M2", 0, 0)]);
+	const assignedDemand = buildAssignedDemandByDatacenter([
+		makeContract("contract-a", dcA, {
+			requirements: { vCpu: 100, ramGb: 64, storageTb: 8, gpuFlops: 0 },
+		}),
+		makeContract("contract-b", dcA, {
+			requirements: { vCpu: 32, ramGb: 128, storageTb: 4, gpuFlops: 0 },
+			status: "breached",
+			lifecycleState: "breached",
+		}),
+		makeContract("contract-c", dcB, {
+			requirements: { vCpu: 0, ramGb: 512, storageTb: 16, gpuFlops: 0 },
+		}),
+		makeContract("contract-history", dcB, {
+			lifecycleState: "cancelled",
+			status: "cancelled",
+			closedAtTick: tick(5),
+		}),
+	]);
+
+	assert.deepEqual(assignedDemand.get(dcA.id), {
+		vCpu: 132,
+		ramGb: 192,
+		storageTb: 12,
+		gpuFlops: 0,
+	});
+	assert.deepEqual(assignedDemand.get(dcB.id), {
+		vCpu: 0,
+		ramGb: 512,
+		storageTb: 16,
+		gpuFlops: 0,
+	});
+	assert.equal(assignedDemand.size, 2);
+});
+
+test("tickOpexFromInputs matches tickOpex when reusing precomputed per-datacenter inputs", () => {
+	const datacenter = makeDatacenter("warehouse-1", DATACENTER_CATALOG.warehouse, [
+		placement("rack-1", "C2", 0, 0),
+		placement("rack-2", "M1", 0, 1),
+	]);
+	const contract = makeContract("contract-compute", datacenter, {
+		requirements: { vCpu: 100, ramGb: 0, storageTb: 0, gpuFlops: 0 },
+	});
+	const assignedDemand = buildAssignedDemandByDatacenter([contract]).get(datacenter.id);
+
+	assert.deepEqual(
+		tickOpexFromInputs(
+			datacenter,
+			TEST_REGION,
+			summarizeDatacenterOpexInputs(datacenter, {
+				assignedDemand,
+				activityAwareBilling: true,
+			}),
+		),
+		tickOpex(datacenter, TEST_REGION, [contract]),
+	);
 });
 
 test("tickOpex charges additional wages for maintenance staffing", () => {

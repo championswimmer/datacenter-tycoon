@@ -1,4 +1,5 @@
 import { DAYS_PER_TICK } from "../balance/maintenance.js";
+import { selectLiveContracts } from "./lifecycle.js";
 import { summarizeFabricCapacityForDatacenter } from "../entities/fabric.js";
 import type {
 	Contract,
@@ -57,10 +58,11 @@ export function withContractSlaDefaults<T extends Contract>(contract: T): T {
 function canServeContractPool(
 	state: Pick<GameState, "datacenters" | "map" | "contracts" | "contractMarket" | "activeContracts">,
 	dcId: DatacenterId,
+	liveContracts: readonly Contract[],
 	cache: Map<DatacenterId, ReturnType<typeof summarizeFabricCapacityForDatacenter>>,
 ): boolean {
 	const cached = cache.get(dcId);
-	const summary = cached ?? summarizeFabricCapacityForDatacenter(state, dcId);
+	const summary = cached ?? summarizeFabricCapacityForDatacenter(state, dcId, liveContracts);
 	if (!cached) {
 		cache.set(dcId, summary);
 	}
@@ -77,6 +79,7 @@ export function sampleContractSlaWindows(
 	state: Pick<GameState, "datacenters" | "map" | "contracts" | "contractMarket" | "activeContracts">,
 	contracts: readonly Contract[],
 ): Contract[] {
+	const liveContracts = selectLiveContracts(contracts);
 	const capacitySummaryByDcId = new Map<DatacenterId, ReturnType<typeof summarizeFabricCapacityForDatacenter>>();
 
 	return contracts.map((contract) => {
@@ -99,7 +102,7 @@ export function sampleContractSlaWindows(
 			};
 		}
 
-		const served = canServeContractPool(state, normalized.assignedDcId, capacitySummaryByDcId);
+		const served = canServeContractPool(state, normalized.assignedDcId, liveContracts, capacitySummaryByDcId);
 		return {
 			...normalized,
 			currentSlaWindow: {
