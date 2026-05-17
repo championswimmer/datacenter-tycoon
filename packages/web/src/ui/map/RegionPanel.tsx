@@ -1,5 +1,5 @@
-import { useCallback } from "react";
-import { canBuildInRegion, DATACENTER_CATALOG } from "@datacenter-tycoon/game-logic";
+import { useCallback, useMemo, useState } from "react";
+import { canBuildInRegion, DATACENTER_CATALOG, FabricLinkError } from "@datacenter-tycoon/game-logic";
 import type { Datacenter, Region } from "@datacenter-tycoon/game-logic";
 import { useGameDispatch, useSelector } from "../../store/storeContext.js";
 import { selectCash, selectRegionFabricSummary } from "../../store/selectors.js";
@@ -18,7 +18,11 @@ export function RegionPanel({ region, datacenters, onClose, onBuild }: RegionPan
   const cash = useSelector(selectCash);
   const fabricSummary = useSelector((state) => selectRegionFabricSummary(state, region.id));
   const dispatch = useGameDispatch();
-  const regionDcs = datacenters.filter((dc) => dc.regionId === region.id);
+  const [fabricActionError, setFabricActionError] = useState<string | null>(null);
+  const regionDcs = useMemo(
+    () => datacenters.filter((dc) => dc.regionId === region.id),
+    [datacenters, region.id],
+  );
 
   const powerRemaining = region.totalPowerAvailable - region.powerUsed;
   const staffRemaining = region.totalStaffAvailable - region.staffUsed;
@@ -51,7 +55,10 @@ export function RegionPanel({ region, datacenters, onClose, onBuild }: RegionPan
     onBuild();
   }, [canBuildAnything, onBuild]);
 
-  const datacenterById = new Map(regionDcs.map((dc) => [dc.id, dc]));
+  const datacenterById = useMemo(
+    () => new Map(regionDcs.map((dc) => [dc.id, dc] as const)),
+    [regionDcs],
+  );
   const bootstrapAnchorDcId = !fabricSummary?.active ? fabricSummary?.eligibleDcIds[0] ?? null : null;
   const canAffordFabricJoin = cash >= (fabricSummary?.joinCost ?? 0);
   const canShowFabricAffordabilityWarning = !!fabricSummary
@@ -66,11 +73,27 @@ export function RegionPanel({ region, datacenters, onClose, onBuild }: RegionPan
       return;
     }
 
-    dispatch({
-      type: "FabricLink",
-      sourceDcId,
-      targetDcId,
-    });
+    setFabricActionError(null);
+
+    try {
+      dispatch({
+        type: "FabricLink",
+        sourceDcId,
+        targetDcId,
+      });
+    } catch (error) {
+      if (error instanceof FabricLinkError) {
+        setFabricActionError(error.message);
+        return;
+      }
+
+      if (error instanceof Error) {
+        setFabricActionError(error.message);
+        return;
+      }
+
+      setFabricActionError("Could not update the regional fabric right now.");
+    }
   }, [cash, dispatch, fabricSummary]);
 
   return (
@@ -143,6 +166,9 @@ export function RegionPanel({ region, datacenters, onClose, onBuild }: RegionPan
             )}
             {canShowFabricAffordabilityWarning && fabricAffordabilityWarning && (
               <p className={styles.fabricWarning}>{fabricAffordabilityWarning}</p>
+            )}
+            {fabricActionError && (
+              <p className={styles.fabricWarning}>{fabricActionError}</p>
             )}
 
             <div className={styles.fabricStatusList}>
