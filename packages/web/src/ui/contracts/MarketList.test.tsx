@@ -176,6 +176,8 @@ describe("MarketList", () => {
     renderMarket();
     expect(screen.getByText("FREE CAPACITY")).toBeTruthy();
     expect(screen.getByText("Burst Compute")).toBeTruthy();
+    expect(screen.getByText(/90% SLA/)).toBeTruthy();
+    expect(screen.getByText(/up to 3 failed days\/mo/)).toBeTruthy();
   });
 
   it("shows months-based expiry label (not ticks)", () => {

@@ -42,7 +42,7 @@ export function RackTile({
   const [confirming, setConfirming] = useState(false);
   const repairStatusLabel = maintenanceView.status === "repairing" ? "REPAIRING" : "HEALTHY";
   const repairProgressLabel = maintenanceView.status === "repairing"
-    ? `${maintenanceView.repairCompletionPercent}% • ETA ${maintenanceView.repairEtaTicks} mo`
+    ? `${maintenanceView.repairCompletionPercent}% • ETA ${maintenanceView.repairEtaDays} ${maintenanceView.repairEtaDays === 1 ? "day" : "days"}`
     : undefined;
   const failRiskLabel = maintenanceView.status === "repairing"
     ? "FAIL RISK PAUSED"

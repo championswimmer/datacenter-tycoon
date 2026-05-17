@@ -176,6 +176,13 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
                 : "Deployable from any region."}
             />
             <CapacityComparison reqs={contract.requirements} free={networkFree} />
+            <div className={styles.meta}>
+              <span>{contractView?.slaProgress.slaTargetPercent ?? contract.slaTargetPercent}% SLA</span>
+              <span className={styles.dot}>·</span>
+              <span>up to {contractView?.slaProgress.maxFailedDays ?? 0} failed day{(contractView?.slaProgress.maxFailedDays ?? 0) === 1 ? "" : "s"}/mo</span>
+              <span className={styles.dot}>·</span>
+              <span>{contract.slaTargetPercent >= 95 ? "strict penalty protection" : contract.slaTargetPercent <= 80 ? "forgiving anchor uptime" : "balanced uptime target"}</span>
+            </div>
 
             {reliabilityHint && (
               <div className={[styles.reliabilityHint, reliabilityHint.tone].join(" ")}>{reliabilityHint.text}</div>

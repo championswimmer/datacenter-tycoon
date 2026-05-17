@@ -25,6 +25,8 @@ function makeMaintenanceView(overrides: Partial<RackMaintenanceView> = {}): Rack
     status: "healthy",
     repairProgressDays: 0,
     repairCompletionPercent: 0,
+    repairEtaSubticks: 0,
+    repairEtaDays: 0,
     repairEtaTicks: 0,
     failureProbability: 0.01,
     ...overrides,
@@ -192,6 +194,8 @@ describe("RackTile", () => {
           status: "repairing",
           repairProgressDays: 45,
           repairCompletionPercent: 50,
+          repairEtaSubticks: 2,
+          repairEtaDays: 2,
           repairEtaTicks: 2,
         })}
         spec={spec}
@@ -204,7 +208,7 @@ describe("RackTile", () => {
 
     expect(screen.getByText("REPAIRING")).toBeTruthy();
     expect(screen.getByText("UNAVAILABLE")).toBeTruthy();
-    expect(screen.getByText("50% • ETA 2 mo")).toBeTruthy();
+    expect(screen.getByText("50% • ETA 2 days")).toBeTruthy();
   });
 
   it("calls onMove when move button is clicked", () => {
@@ -252,6 +256,8 @@ describe("RackTile", () => {
           status: "repairing",
           repairProgressDays: 45,
           repairCompletionPercent: 50,
+          repairEtaSubticks: 2,
+          repairEtaDays: 2,
           repairEtaTicks: 2,
           failureProbability: 0,
         })}

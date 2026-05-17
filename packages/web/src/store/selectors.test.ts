@@ -366,6 +366,8 @@ describe("selectDatacenterRackMaintenanceViews", () => {
         status: "repairing",
         repairProgressDays: 30,
         repairCompletionPercent: 100,
+        repairEtaSubticks: 0,
+        repairEtaDays: 0,
         repairEtaTicks: 0,
         failureProbability: 0,
       },

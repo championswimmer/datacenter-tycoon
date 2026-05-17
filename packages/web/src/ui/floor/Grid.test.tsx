@@ -36,6 +36,8 @@ function maintenanceMapFor(
         status: "healthy",
         repairProgressDays: 0,
         repairCompletionPercent: 0,
+        repairEtaSubticks: 0,
+        repairEtaDays: 0,
         repairEtaTicks: 0,
         failureProbability: 0,
       },

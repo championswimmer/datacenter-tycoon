@@ -29,6 +29,12 @@ const STATUS_LABEL: Record<ContractStatus, string> = {
   offered: "OFFERED",
 };
 
+const SLA_STATUS_LABEL = {
+  recoverable: "RECOVERABLE",
+  at_risk: "AT RISK",
+  missed: "MISSED",
+} as const;
+
 export function ActiveList() {
   const contractViews = useSelector(selectActiveContractViews);
   const datacenters = useSelector(selectAllDatacenters);
@@ -143,6 +149,19 @@ export function ActiveList() {
               styles.slaHint,
               contract.lifecycleState === "breached" ? styles.slaHintNegative : styles.slaHintPositive,
             ].join(" ")}>{slaHint}</div>
+
+            <div className={styles.affinityRow}>
+              <span className={[
+                styles.affinityBadge,
+                view.slaProgress.status === "missed"
+                  ? styles.affinityBadgeRestricted
+                  : styles.affinityBadgeUnrestricted,
+              ].join(" ")}>{view.slaProgress.slaTargetPercent}% SLA</span>
+              <span className={styles.affinityDetail}>
+                {SLA_STATUS_LABEL[view.slaProgress.status]} · {view.slaProgress.servedDays} served / {view.slaProgress.failedDays} failed day{view.slaProgress.failedDays === 1 ? "" : "s"}
+                · failure budget {view.slaProgress.remainingFailureBudgetDays}/{view.slaProgress.maxFailedDays} day{view.slaProgress.maxFailedDays === 1 ? "" : "s"} left
+              </span>
+            </div>
 
             <div className={styles.progressRow}>
               <ProgressBar
