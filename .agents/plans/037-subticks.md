@@ -1,7 +1,7 @@
 ---
 name: Subticks
 description: Introduce day-level subticks beneath monthly ticks for repairs, SLA accounting, and other lightweight intra-month simulation.
-status: started
+status: completed
 created: 2026-05-17
 updated: 2026-05-17
 owner: game-logic, web, cli
@@ -29,10 +29,10 @@ owner: game-logic, web, cli
   - [x] 5.1 Update daemon scheduling and events for lightweight subtick advancement
   - [x] 5.2 Update CLI status/detail commands to show calendar day and SLA/repair progress
   - [x] 5.3 Preserve script compatibility for one-shot monthly advancement
-- [ ] **Phase 6 — Persistence, docs, tests, and performance guardrails**
+- [x] **Phase 6 — Persistence, docs, tests, and performance guardrails**
   - [x] 6.1 Migrate saves and update public package docs
   - [x] 6.2 Add deterministic simulation and replay tests across subtick/month boundaries
-  - [ ] 6.3 Add performance tests or assertions proving monthly-only work stays monthly
+  - [x] 6.3 Add performance tests or assertions proving monthly-only work stays monthly
 
 ## Overview
 

@@ -4,6 +4,7 @@ import test from "node:test";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { DAYS_PER_TICK } from "../balance/maintenance.js";
+import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
 import { tickOpex } from "../economy/opex.js";
 import { withDerivedContractViews } from "../contracts/lifecycle.js";
 import { advanceSubtick } from "./subtick.js";
@@ -137,6 +138,76 @@ test("30 subticks from month start equal one compatible Tick for month-level out
 	assert.equal(viaSubticks.tick, 1);
 	assert.equal(viaSubticks.subtick, 0);
 	assert.equal(viaSubticks.player.reliability.recentOutcomes.at(-1)?.kind, "fulfilled");
+});
+
+test("subticks before month boundary do not append ledger entries or refresh the market", () => {
+	const datacenter = makeDatacenter("dc-1");
+	const activeContract = makeContract("contract-live", datacenter);
+	const marketOffer: Contract = {
+		...makeContract("contract-market", datacenter, {
+			assignedDcId: undefined,
+			startedAtTick: undefined,
+			acceptedAtTick: undefined,
+			lifecycleState: "market_open",
+			status: "offered",
+		}),
+		expiresAtTick: tickValue(0),
+	};
+	let state = makeState({
+		datacenters: [datacenter],
+		contracts: [activeContract, marketOffer],
+		activeContracts: [activeContract],
+		contractMarket: [marketOffer],
+	});
+	const cashBefore = state.player.cash;
+
+	for (let day = 0; day < DAYS_PER_TICK - 1; day += 1) {
+		state = advanceSubtick(state);
+	}
+
+	assert.equal(state.tick, 0);
+	assert.equal(state.subtick, DAYS_PER_TICK - 1);
+	assert.equal(state.player.cash, cashBefore);
+	assert.equal(state.ledger.length, 0);
+	assert.equal(state.contractMarket[0]?.offeredAtTick, 0);
+	assert.equal(state.contractMarket.length, 1);
+	assert.equal(state.activeContracts[0]?.currentSlaWindow.sampledDays, DAYS_PER_TICK - 1);
+});
+
+test("the boundary subtick performs monthly settlement exactly once", () => {
+	const datacenter = makeDatacenter("dc-1");
+	const activeContract = makeContract("contract-live", datacenter);
+	const marketOffer: Contract = {
+		...makeContract("contract-market", datacenter, {
+			assignedDcId: undefined,
+			startedAtTick: undefined,
+			acceptedAtTick: undefined,
+			lifecycleState: "market_open",
+			status: "offered",
+		}),
+		expiresAtTick: tickValue(0),
+	};
+	let nearBoundary = makeState({
+		datacenters: [datacenter],
+		contracts: [activeContract, marketOffer],
+		activeContracts: [activeContract],
+		contractMarket: [marketOffer],
+	});
+	for (let day = 0; day < DAYS_PER_TICK - 1; day += 1) {
+		nearBoundary = advanceSubtick(nearBoundary);
+	}
+
+	const settled = advanceSubtick(nearBoundary);
+
+	assert.equal(settled.tick, 1);
+	assert.equal(settled.subtick, 0);
+	assert.equal(nearBoundary.tick, 0);
+	assert.equal(nearBoundary.ledger.length, 0);
+	assert.ok(settled.ledger.length > 0);
+	assert.ok(settled.player.cash !== nearBoundary.player.cash);
+	assert.equal(settled.activeContracts[0]?.currentSlaWindow.sampledDays, 0);
+	assert.equal(settled.contractMarket.length, MARKET_REFRESH_SIZE);
+	assert.ok(settled.contractMarket.every((contract) => contract.offeredAtTick === 1));
 });
 
 test("mid-month repair can recover in time to save a 90% SLA month", () => {

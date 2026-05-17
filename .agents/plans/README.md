@@ -8,7 +8,7 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 
 - [`016-regional-fabric-and-pooled-capacity.md`](./016-regional-fabric-and-pooled-capacity.md) — Add a region-local fabric investment layer that pools connected datacenter capacity for contract fulfilment. _status: created_
 - [`018-map-based-region-selector.md`](./018-map-based-region-selector.md) — Overhaul the region selection mechanism to feature an interactive world map and a sortable list of 8 realistic top-tier cloud regions with city names and codes. _status: started_
-- [`037-subticks.md`](./037-subticks.md) — Introduce day-level subticks beneath monthly ticks for repairs, SLA accounting, and other lightweight intra-month simulation. _status: started_
+- [`037-subticks.md`](./037-subticks.md) — Introduce day-level subticks beneath monthly ticks for repairs, SLA accounting, and other lightweight intra-month simulation. _status: completed_
 
 ## Archive
 
