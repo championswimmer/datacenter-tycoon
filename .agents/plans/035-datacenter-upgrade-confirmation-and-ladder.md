@@ -15,10 +15,10 @@ owner: game-logic, web
 - [x] **Phase 2 — Web ladder visualization**
   - [x] 2.1 Render the upgrade ladder in `UpgradePanel` so each track shows completed, current, next, and locked nodes
   - [x] 2.2 Add/update web tests and styles for the ladder presentation across desktop and narrow layouts
-- [ ] **Phase 3 — Upgrade confirmation flow**
+- [x] **Phase 3 — Upgrade confirmation flow**
   - [x] 3.1 Add a confirmation modal that previews capex, upkeep delta, and resulting cash before dispatching `UpgradeDatacenter`
   - [x] 3.2 Wire upgrade buttons to open the modal, require explicit confirmation, and block unaffordable upgrades in the UI
-  - [ ] 3.3 Add interaction coverage for confirm, cancel, and insufficient-funds upgrade states
+  - [x] 3.3 Add interaction coverage for confirm, cancel, and insufficient-funds upgrade states
 - [ ] **Phase 4 — Verification and plan wrap-up**
   - [ ] 4.1 Run targeted game-logic/web tests plus typecheck for the touched packages
   - [ ] 4.2 Mark the plan complete and capture any follow-up notes if more upgrade UX work remains
