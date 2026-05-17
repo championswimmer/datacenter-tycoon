@@ -7,6 +7,7 @@ import { RACK_CATALOG } from "../catalog/racks.js";
 import { applyCapex } from "../economy/capex.js";
 import { calculateMoveCost } from "../economy/move.js";
 import { applyDatacenterUpgrade, canMoveRack, canPlaceRack, validateDatacenterUpgradeRequest } from "../entities/datacenter.js";
+import { applyValidatedFabricLink, validateFabricLinkRequest } from "../entities/fabric.js";
 import { canBuildInRegion } from "../entities/region.js";
 import { tick } from "../sim/tick.js";
 import type {
@@ -44,6 +45,7 @@ export type Action =
 	  }
 	| { type: "AcceptContract"; contractId: ContractId; dcId: DatacenterId }
 	| { type: "CancelContract"; contractId: ContractId }
+	| { type: "FabricLink"; sourceDcId: DatacenterId; targetDcId: DatacenterId }
 	| { type: "UpgradeDatacenter"; dcId: DatacenterId; trackId: import("../types.js").DatacenterUpgradeTrackId; targetNodeId: string }
 	| { type: "SetMaintenanceStaff"; dcId: DatacenterId; maintenanceStaff: number }
 	| { type: "SetAudioEnabled"; enabled: boolean }
@@ -306,6 +308,27 @@ function cancelContract(state: GameState, contractId: ContractId): GameState {
 	});
 }
 
+function linkRegionalFabric(state: GameState, sourceDcId: DatacenterId, targetDcId: DatacenterId): GameState {
+	const validated = validateFabricLinkRequest(state, sourceDcId, targetDcId);
+	const debitedState = applyCapex(
+		state,
+		validated.capexCost,
+		validated.mode === "bootstrap"
+			? `Create regional fabric: ${validated.sourceDc.name} ↔ ${validated.targetDc.name}`
+			: `Join regional fabric: ${validated.sourceDc.name} ↔ ${validated.targetDc.name}`,
+	);
+
+	return {
+		...debitedState,
+		map: {
+			...debitedState.map,
+			regions: debitedState.map.regions.map((region) =>
+				region.id === validated.regionId ? applyValidatedFabricLink(region, validated) : region,
+			),
+		},
+	};
+}
+
 function clampMaintenanceStaff(maintenanceStaff: number): number {
 	return Math.max(0, Math.min(MAX_MAINTENANCE_STAFF, maintenanceStaff));
 }
@@ -373,6 +396,8 @@ export function reduce(state: GameState, action: Action): GameState {
 			return acceptContract(state, action.contractId, action.dcId);
 		case "CancelContract":
 			return cancelContract(state, action.contractId);
+		case "FabricLink":
+			return linkRegionalFabric(state, action.sourceDcId, action.targetDcId);
 		case "UpgradeDatacenter":
 			return upgradeDatacenter(state, action.dcId, action.trackId, action.targetNodeId);
 		case "SetMaintenanceStaff":

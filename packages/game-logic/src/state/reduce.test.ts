@@ -5,6 +5,7 @@ import { createDatacenterUpgradeProgress } from "../catalog/datacenter-upgrades.
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { DEFAULT_MAINTENANCE_STAFF, MAX_MAINTENANCE_STAFF } from "../balance/maintenance.js";
+import { REGIONAL_FABRIC_JOIN_COST } from "../balance/fabric.js";
 import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
 import { tick as tickState } from "../sim/tick.js";
 import type {
@@ -28,6 +29,23 @@ const datacenterSpecId = (value: string): DatacenterSpecId => value as Datacente
 const rackPlacementId = (value: string): RackPlacementId => value as RackPlacementId;
 const rackSpecId = (value: string): RackSpecId => value as RackSpecId;
 const tick = (value: number): Tick => value as Tick;
+
+function upgradeDatacenterToFiber(state: ReturnType<typeof newGame>, dcId: DatacenterId) {
+	return reduce(
+		reduce(state, {
+			type: "UpgradeDatacenter",
+			dcId,
+			trackId: "networkType",
+			targetNodeId: "cat8",
+		}),
+		{
+			type: "UpgradeDatacenter",
+			dcId,
+			trackId: "networkType",
+			targetNodeId: "fiber",
+		},
+	);
+}
 
 function placement(id: string, specKey: keyof typeof RACK_CATALOG, row: number, position: number): RackPlacement {
 	const spec = RACK_CATALOG[specKey];
@@ -305,6 +323,76 @@ test("garage network upgrades increase bandwidth monotonically and become fabric
 	assert.equal(resolveDatacenterUpgradeState(builtDc).fabricEligible, false);
 	assert.equal(resolveDatacenterUpgradeState(cat8Dc).fabricEligible, false);
 	assert.equal(resolveDatacenterUpgradeState(fiberDc).fabricEligible, true);
+});
+
+test("reduce can bootstrap a regional fabric between two fiber-ready datacenters in the same region", () => {
+	const state = newGame(42, { startingCash: 8_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const dcA = datacenterId("dc-fabric-a");
+	const dcB = datacenterId("dc-fabric-b");
+	const builtState = reduce(
+		reduce(state, {
+			type: "BuildDatacenter",
+			specId: DATACENTER_CATALOG.garage.id,
+			dcId: dcA,
+			regionId: firstRegionId,
+		}),
+		{
+			type: "BuildDatacenter",
+			specId: DATACENTER_CATALOG.garage.id,
+			dcId: dcB,
+			regionId: firstRegionId,
+		},
+	);
+	const fiberReadyState = upgradeDatacenterToFiber(upgradeDatacenterToFiber(builtState, dcA), dcB);
+
+	const linkedState = reduce(fiberReadyState, {
+		type: "FabricLink",
+		sourceDcId: dcA,
+		targetDcId: dcB,
+	});
+
+	assert.deepEqual(
+		linkedState.map.regions.find((region) => region.id === firstRegionId)?.fabric?.memberDcIds,
+		[dcA, dcB],
+	);
+	assert.equal(linkedState.player.cash, fiberReadyState.player.cash - REGIONAL_FABRIC_JOIN_COST);
+});
+
+test("reduce rejects regional fabric joins until every participating datacenter is fiber-ready", () => {
+	const state = newGame(42, { startingCash: 8_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const dcA = datacenterId("dc-fabric-lock-a");
+	const dcB = datacenterId("dc-fabric-lock-b");
+	const builtState = reduce(
+		reduce(state, {
+			type: "BuildDatacenter",
+			specId: DATACENTER_CATALOG.garage.id,
+			dcId: dcA,
+			regionId: firstRegionId,
+		}),
+		{
+			type: "BuildDatacenter",
+			specId: DATACENTER_CATALOG.garage.id,
+			dcId: dcB,
+			regionId: firstRegionId,
+		},
+	);
+	const partiallyUpgradedState = upgradeDatacenterToFiber(builtState, dcA);
+
+	assert.throws(
+		() =>
+			reduce(partiallyUpgradedState, {
+				type: "FabricLink",
+				sourceDcId: dcA,
+				targetDcId: dcB,
+			}),
+		{ message: /must be on fiber before joining the regional fabric/ },
+	);
+	assert.deepEqual(
+		partiallyUpgradedState.map.regions.find((region) => region.id === firstRegionId)?.fabric?.memberDcIds,
+		[],
+	);
 });
 
 test("generator track caps are enforced for warehouse and hyperscale blueprints", () => {
