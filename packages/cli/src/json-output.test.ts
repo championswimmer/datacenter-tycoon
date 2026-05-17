@@ -41,6 +41,37 @@ test("formatJsonError preserves structured machine-readable error details", () =
 	);
 });
 
+test("formatJsonError preserves structured region-mismatch details", () => {
+	const error = Object.assign(new Error("Datacenter dc-1 is in region us_west, but this contract only allows eu_west, eu_central"), {
+		data: {
+			code: "region_not_allowed",
+			dcId: "dc-1",
+			dcRegionId: "us_west",
+			affinityKey: "eu",
+			allowedRegionIds: ["eu_west", "eu_central"],
+		},
+	});
+
+	assert.equal(
+		formatJsonError(error),
+		JSON.stringify(
+			{
+				ok: false,
+				error: {
+					code: "region_not_allowed",
+					dcId: "dc-1",
+					dcRegionId: "us_west",
+					affinityKey: "eu",
+					allowedRegionIds: ["eu_west", "eu_central"],
+					message: "Datacenter dc-1 is in region us_west, but this contract only allows eu_west, eu_central",
+				},
+			},
+			null,
+			2,
+		),
+	);
+});
+
 test("formatTextError expands insufficient-capacity failures for humans", () => {
 	const error = Object.assign(new Error("Datacenter dc-1 lacks available capacity for this contract"), {
 		data: {
