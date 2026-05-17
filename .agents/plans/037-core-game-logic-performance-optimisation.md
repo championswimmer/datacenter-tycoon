@@ -1,16 +1,16 @@
 ---
 name: Core Game Logic Performance Optimisation
 description: Profile and optimise core game-logic hot paths across tick processing, capacity queries, state lookups, and derived views.
-status: created
+status: started
 created: 2026-05-17
-updated: 2026-05-17
+updated: 2026-05-18
 owner: game-logic
 ---
 
 ## Progress
 
 - [ ] **Phase 1 — Measurement baseline**
-  - [ ] 1.1 Add deterministic large-state fixture builders for performance tests
+  - [x] 1.1 Add deterministic large-state fixture builders for performance tests
   - [ ] 1.2 Add benchmark coverage for tick, capacity, fabric, and contract-fit paths
   - [ ] 1.3 Record baseline budgets and regression thresholds
 - [ ] **Phase 2 — State lookup and contract-view reuse**
