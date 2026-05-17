@@ -2,13 +2,14 @@ import { DIFFICULTY_CONFIG } from "../balance/difficulty.js";
 import { maintenanceStaffWagePerHead } from "../balance/easier.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { contractsFromState, isLiveContract, selectLiveContracts } from "../contracts/lifecycle.js";
+import { createContractSlaOutcome } from "../contracts/reliability.js";
+import { contractMeetsSlaTarget, resetContractSlaWindow, withContractSlaDefaults } from "../contracts/sla.js";
 import {
 	datacenterRackPowerSummary,
 	datacenterUsage,
 	resolveDatacenterInfrastructure,
 	resolveDatacenterUpgradeEconomics,
 } from "../entities/datacenter.js";
-import { summarizeFabricCapacityForDatacenter } from "../entities/fabric.js";
 import type {
 	Capacity,
 	Contract,
@@ -125,53 +126,42 @@ export function tickOpex(
 }
 
 export function tickRevenue(state: GameState): RevenueTickResult {
-	const datacentersById = new Map(state.datacenters.map((datacenter) => [datacenter.id, datacenter]));
 	const breachPenaltyMultiplier = DIFFICULTY_CONFIG[state.difficulty].breachPenaltyMultiplier;
 	let revenue = 0;
 	const perDcRevenue: Record<DatacenterId, Money> = {};
 
 	const contracts = contractsFromState(state);
 	const liveContracts = selectLiveContracts(contracts);
-	const capacitySummaryByDcId = new Map<DatacenterId, ReturnType<typeof summarizeFabricCapacityForDatacenter>>();
+	const outcomes = [] as RevenueTickResult["outcomes"];
 	const updatedLiveContracts = liveContracts.map((contract): Contract => {
-		if (!contract.assignedDcId) {
-			return contract;
+		const normalized = withContractSlaDefaults(contract);
+		const dcId = normalized.assignedDcId;
+		const penalty = roundMoney(normalized.penaltyPerMonth * breachPenaltyMultiplier);
+		const meetsTarget = dcId !== undefined && contractMeetsSlaTarget(normalized);
+
+		if (meetsTarget) {
+			revenue += normalized.monthlyPayment;
+			perDcRevenue[dcId] = (perDcRevenue[dcId] ?? 0) + normalized.monthlyPayment;
+			outcomes.push(createContractSlaOutcome(normalized, state.tick, "fulfilled"));
+			return resetContractSlaWindow({
+				...normalized,
+				lifecycleState: "serving",
+				status: "active",
+				breachStreakMonths: 0,
+			});
 		}
 
-		const datacenter = datacentersById.get(contract.assignedDcId);
-		const penalty = roundMoney(contract.penaltyPerMonth * breachPenaltyMultiplier);
-
-		if (!datacenter) {
+		if (dcId !== undefined) {
 			revenue -= penalty;
-			perDcRevenue[contract.assignedDcId] = (perDcRevenue[contract.assignedDcId] ?? 0) - penalty;
-			return {
-				...contract,
-				lifecycleState: "breached",
-				status: "breached",
-				breachStreakMonths: (contract.breachStreakMonths ?? 0) + 1,
-			};
+			perDcRevenue[dcId] = (perDcRevenue[dcId] ?? 0) - penalty;
 		}
-
-		const capacitySummary = capacitySummaryByDcId.get(datacenter.id) ?? summarizeFabricCapacityForDatacenter(state, datacenter.id);
-		capacitySummaryByDcId.set(datacenter.id, capacitySummary);
-		if (!canCoverRequirements(capacitySummary.usable, capacitySummary.committed)) {
-			revenue -= penalty;
-			perDcRevenue[datacenter.id] = (perDcRevenue[datacenter.id] ?? 0) - penalty;
-			return {
-				...contract,
-				lifecycleState: "breached",
-				status: "breached",
-				breachStreakMonths: (contract.breachStreakMonths ?? 0) + 1,
-			};
-		}
-
-		revenue += contract.monthlyPayment;
-		perDcRevenue[datacenter.id] = (perDcRevenue[datacenter.id] ?? 0) + contract.monthlyPayment;
-		return {
-			...contract,
-			lifecycleState: "serving",
-			status: "active",
-		};
+		outcomes.push(createContractSlaOutcome(normalized, state.tick, "breached"));
+		return resetContractSlaWindow({
+			...normalized,
+			lifecycleState: "breached",
+			status: "breached",
+			breachStreakMonths: (normalized.breachStreakMonths ?? 0) + 1,
+		});
 	});
 	const updatedContractsById = new Map(updatedLiveContracts.map((contract) => [contract.id, contract]));
 	const updatedContracts = contracts.map((contract) => updatedContractsById.get(contract.id) ?? contract);
@@ -180,5 +170,6 @@ export function tickRevenue(state: GameState): RevenueTickResult {
 		revenue: roundMoney(revenue),
 		perDcRevenue,
 		updatedContracts,
+		outcomes,
 	};
 }

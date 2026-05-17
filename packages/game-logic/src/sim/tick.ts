@@ -1,4 +1,4 @@
-import { collectContractSlaOutcomes, updatePlayerReliability } from "../contracts/reliability.js";
+import { updatePlayerReliability } from "../contracts/reliability.js";
 import {
 	CONTRACT_BREACH_AUTO_CANCEL_MONTHS,
 	contractsFromState,
@@ -118,9 +118,7 @@ export function settleMonthlyTick(state: GameState): GameState {
 	const totalOpex = roundMoney(baseOpexTotal + totalTax);
 
 	const finalizedContracts = revenueResult.updatedContracts.map((contract) => finalizeContract(contract, nextTick));
-	const previousLiveContracts = selectLiveContracts(contractsFromState(state));
-	const reliabilityOutcomes = collectContractSlaOutcomes(previousLiveContracts, finalizedContracts, nextTick);
-	const nextReliability = updatePlayerReliability(state.player.reliability, reliabilityOutcomes);
+	const nextReliability = updatePlayerReliability(state.player.reliability, revenueResult.outcomes);
 	const netCashDelta = roundMoney(revenueResult.revenue - totalOpex);
 	const ledgerEntries: LedgerEntry[] = [];
 
@@ -137,7 +135,7 @@ export function settleMonthlyTick(state: GameState): GameState {
 				nextTick,
 				"revenue",
 				revenueResult.revenue,
-				"Contract revenue for fulfilled workloads",
+				"Contract revenue for SLA-compliant months",
 				ledgerEntries.length,
 			),
 		);
@@ -148,7 +146,7 @@ export function settleMonthlyTick(state: GameState): GameState {
 				nextTick,
 				"penalty",
 				revenueResult.revenue,
-				"Contract penalties for breached workloads",
+				"Contract penalties for missed SLA months",
 				ledgerEntries.length,
 			),
 		);

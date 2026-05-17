@@ -5,10 +5,11 @@ import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { DAYS_PER_TICK } from "../balance/maintenance.js";
 import { RELIABILITY_BASELINE_SCORE, RELIABILITY_MARKET_OFFER_COUNT, reliabilityBandForScore } from "../balance/reliability.js";
+import { CONTRACT_BREACH_AUTO_CANCEL_MONTHS } from "../contracts/lifecycle.js";
 import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
 import { tickOpex } from "../economy/opex.js";
 import { advanceSubtick } from "./subtick.js";
-import { tick } from "./tick.js";
+import { settleMonthlyTick, tick } from "./tick.js";
 import type {
 	Contract,
 	ContractId,
@@ -96,6 +97,9 @@ function makeContract(id: string, datacenter: Datacenter, overrides: Partial<Con
 		monthlyPayment: 20_000,
 		penaltyPerMonth: 8_000,
 		termMonths: 6,
+		slaTargetPercent: 90,
+		currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
+		lifecycleState: "serving",
 		status: "active",
 		urgency: "standard",
 		tier: 1,
@@ -220,6 +224,7 @@ test("tick expires breached contracts when their term ends and records penalties
 
 	assert.equal(nextState.activeContracts[0]?.status, "expired");
 	assert.equal(nextState.player.cash, state.player.cash - opex - expiringContract.penaltyPerMonth);
+	assert.equal(nextState.player.reliability.recentOutcomes.at(-1)?.kind, "breached");
 	assert.deepEqual(
 		nextState.ledger.map((entry) => ({ type: entry.type, amount: entry.amount })),
 		[
@@ -227,6 +232,73 @@ test("tick expires breached contracts when their term ends and records penalties
 			{ type: "penalty", amount: -expiringContract.penaltyPerMonth },
 		],
 	);
+});
+
+test("month-end SLA settlement tolerates short outages for 80/90 targets but breaches 95", () => {
+	const datacenter = makeDatacenter("dc-1");
+	const eighty = makeContract("contract-80", datacenter, {
+		requirements: { vCpu: 64, ramGb: 128, storageTb: 8, gpuFlops: 0 },
+		monthlyPayment: 4_000,
+		penaltyPerMonth: 2_000,
+		slaTargetPercent: 80,
+		currentSlaWindow: { sampledDays: DAYS_PER_TICK, servedDays: DAYS_PER_TICK - 3, failedDays: 3 },
+	});
+	const ninety = makeContract("contract-90", datacenter, {
+		requirements: { vCpu: 64, ramGb: 128, storageTb: 8, gpuFlops: 0 },
+		monthlyPayment: 5_000,
+		penaltyPerMonth: 2_000,
+		slaTargetPercent: 90,
+		currentSlaWindow: { sampledDays: DAYS_PER_TICK, servedDays: DAYS_PER_TICK - 3, failedDays: 3 },
+	});
+	const ninetyFive = makeContract("contract-95", datacenter, {
+		requirements: { vCpu: 64, ramGb: 128, storageTb: 8, gpuFlops: 0 },
+		monthlyPayment: 6_000,
+		penaltyPerMonth: 3_000,
+		slaTargetPercent: 95,
+		currentSlaWindow: { sampledDays: DAYS_PER_TICK, servedDays: DAYS_PER_TICK - 3, failedDays: 3 },
+	});
+	const state = makeState({
+		datacenters: [datacenter],
+		activeContracts: [eighty, ninety, ninetyFive],
+	});
+	const opex = tickOpex(datacenter, TEST_REGION, state.activeContracts).total;
+
+	const nextState = settleMonthlyTick(state);
+
+	assert.equal(nextState.activeContracts.find((contract) => contract.id === eighty.id)?.status, "active");
+	assert.equal(nextState.activeContracts.find((contract) => contract.id === ninety.id)?.status, "active");
+	assert.equal(nextState.activeContracts.find((contract) => contract.id === ninetyFive.id)?.status, "breached");
+	assert.deepEqual(nextState.activeContracts.find((contract) => contract.id === eighty.id)?.currentSlaWindow, { sampledDays: 0, servedDays: 0, failedDays: 0 });
+	assert.deepEqual(nextState.activeContracts.find((contract) => contract.id === ninety.id)?.currentSlaWindow, { sampledDays: 0, servedDays: 0, failedDays: 0 });
+	assert.deepEqual(nextState.activeContracts.find((contract) => contract.id === ninetyFive.id)?.currentSlaWindow, { sampledDays: 0, servedDays: 0, failedDays: 0 });
+	assert.equal(nextState.player.cash, state.player.cash - opex + eighty.monthlyPayment + ninety.monthlyPayment - ninetyFive.penaltyPerMonth);
+	assert.deepEqual(
+		nextState.player.reliability.recentOutcomes.map((outcome) => outcome.kind),
+		["fulfilled", "fulfilled", "breached"],
+	);
+});
+
+test("breached SLA months can auto-cancel after the configured streak while keeping a breached outcome", () => {
+	const weakDatacenter = makeDatacenter("dc-1", [placement("rack-1", "C1", 0, 0)]);
+	const contract = makeContract("contract-1", weakDatacenter, {
+		requirements: { vCpu: 500, ramGb: 5_000, storageTb: 500, gpuFlops: 500 },
+		penaltyPerMonth: 6_000,
+		status: "breached",
+		lifecycleState: "breached",
+		breachStreakMonths: CONTRACT_BREACH_AUTO_CANCEL_MONTHS - 1,
+		currentSlaWindow: { sampledDays: DAYS_PER_TICK, servedDays: 0, failedDays: DAYS_PER_TICK },
+	});
+	const state = makeState({
+		tick: tickValue(1),
+		datacenters: [weakDatacenter],
+		activeContracts: [contract],
+	});
+
+	const nextState = settleMonthlyTick(state);
+
+	assert.equal(nextState.activeContracts[0]?.status, "cancelled");
+	assert.equal(nextState.activeContracts[0]?.closedAtTick, 2);
+	assert.equal(nextState.player.reliability.recentOutcomes.at(-1)?.kind, "breached");
 });
 
 test("tick is deterministic across multiple months for the same seed and starting state", () => {

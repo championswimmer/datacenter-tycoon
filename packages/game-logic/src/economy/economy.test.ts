@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
+import { DAYS_PER_TICK } from "../balance/maintenance.js";
 import { COOLING_OVERHEAD_RATIO } from "./constants.js";
 import { DIFFICULTY_CONFIG } from "../balance/difficulty.js";
 import { applyCapex, tickOpex, tickRevenue } from "../index.js";
@@ -319,12 +320,16 @@ test("tickRevenue pays fulfilled contracts and recovers previously breached cont
 				monthlyPayment: 10_000,
 				penaltyPerMonth: 3_000,
 				status: "active",
+				currentSlaWindow: { sampledDays: DAYS_PER_TICK, servedDays: DAYS_PER_TICK, failedDays: 0 },
 			}),
 			makeContract("contract-2", datacenter, {
 				requirements: { vCpu: 150, ramGb: 3_000, storageTb: 600, gpuFlops: 200 },
 				monthlyPayment: 12_000,
 				penaltyPerMonth: 4_000,
 				status: "breached",
+				lifecycleState: "breached",
+				breachStreakMonths: 2,
+				currentSlaWindow: { sampledDays: DAYS_PER_TICK, servedDays: DAYS_PER_TICK, failedDays: 0 },
 			}),
 		],
 	});
@@ -335,14 +340,22 @@ test("tickRevenue pays fulfilled contracts and recovers previously breached cont
 		updatedContracts: [
 			{
 				...state.activeContracts[0],
+				currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
 				lifecycleState: "serving",
 				status: "active",
+				breachStreakMonths: 0,
 			},
 			{
 				...state.activeContracts[1],
+				currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
 				lifecycleState: "serving",
 				status: "active",
+				breachStreakMonths: 0,
 			},
+		],
+		outcomes: [
+			{ contractId: contractId("contract-1"), contractName: "Contract contract-1", tick: tick(5), kind: "fulfilled" },
+			{ contractId: contractId("contract-2"), contractName: "Contract contract-2", tick: tick(5), kind: "fulfilled" },
 		],
 	});
 });
@@ -354,21 +367,25 @@ test("tickRevenue scales breach penalties by difficulty", () => {
 		placement("rack-3", "S2", 1, 0),
 		placement("rack-4", "G1", 1, 1),
 	]);
+	const breachedWindow = { sampledDays: DAYS_PER_TICK, servedDays: 0, failedDays: DAYS_PER_TICK };
 	const breachedContracts = [
 		makeContract("contract-1", datacenter, {
 			requirements: { vCpu: 200, ramGb: 2_000, storageTb: 500, gpuFlops: 200 },
 			monthlyPayment: 10_000,
 			penaltyPerMonth: 3_000,
+			currentSlaWindow: breachedWindow,
 		}),
 		makeContract("contract-2", datacenter, {
 			requirements: { vCpu: 150, ramGb: 3_000, storageTb: 600, gpuFlops: 200 },
 			monthlyPayment: 12_000,
 			penaltyPerMonth: 4_000,
+			currentSlaWindow: breachedWindow,
 		}),
 		makeContract("contract-3", datacenter, {
 			requirements: { vCpu: 100, ramGb: 2_000, storageTb: 300, gpuFlops: 200 },
 			monthlyPayment: 15_000,
 			penaltyPerMonth: 5_000,
+			currentSlaWindow: breachedWindow,
 		}),
 	];
 	const hardRevenue = tickRevenue(
@@ -393,7 +410,7 @@ test("tickRevenue scales breach penalties by difficulty", () => {
 	);
 });
 
-test("tickRevenue breaches all overcommitted contracts on the same datacenter", () => {
+test("tickRevenue breaches all contracts whose SLA windows miss target", () => {
 	const datacenter = makeDatacenter("warehouse-1", DATACENTER_CATALOG.warehouse, [
 		placement("rack-1", "C2", 0, 0),
 		placement("rack-2", "M2", 0, 1),
@@ -408,16 +425,19 @@ test("tickRevenue breaches all overcommitted contracts on the same datacenter", 
 				requirements: { vCpu: 200, ramGb: 2_000, storageTb: 500, gpuFlops: 200 },
 				monthlyPayment: 10_000,
 				penaltyPerMonth: 3_000,
+				currentSlaWindow: { sampledDays: DAYS_PER_TICK, servedDays: 0, failedDays: DAYS_PER_TICK },
 			}),
 			makeContract("contract-2", datacenter, {
 				requirements: { vCpu: 150, ramGb: 3_000, storageTb: 600, gpuFlops: 200 },
 				monthlyPayment: 12_000,
 				penaltyPerMonth: 4_000,
+				currentSlaWindow: { sampledDays: DAYS_PER_TICK, servedDays: 0, failedDays: DAYS_PER_TICK },
 			}),
 			makeContract("contract-3", datacenter, {
 				requirements: { vCpu: 100, ramGb: 2_000, storageTb: 300, gpuFlops: 200 },
 				monthlyPayment: 15_000,
 				penaltyPerMonth: 5_000,
+				currentSlaWindow: { sampledDays: DAYS_PER_TICK, servedDays: 0, failedDays: DAYS_PER_TICK },
 			}),
 		],
 	});

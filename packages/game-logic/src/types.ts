@@ -282,6 +282,7 @@ export interface RevenueTickResult {
 	revenue: Money;
 	perDcRevenue: Record<DatacenterId, Money>;
 	updatedContracts: Contract[];
+	outcomes: ContractSlaOutcome[];
 }
 
 export interface RngState {
