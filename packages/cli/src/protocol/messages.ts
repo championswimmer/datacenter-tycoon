@@ -2,6 +2,7 @@ import type {
 	Action,
 	Capacity,
 	Contract,
+	ContractRegionAffinityKey,
 	Datacenter,
 	DatacenterCapacityFromStateSummary,
 	DatacenterInfrastructureView,
@@ -37,6 +38,21 @@ export interface ContractCapacityErrorData {
 	dcId: string;
 	required: Capacity;
 	available: Capacity;
+}
+
+export interface ContractRegionAffinityView {
+	key: ContractRegionAffinityKey;
+	label: string;
+	allowedRegionIds: string[];
+	allowedRegions: string[];
+}
+
+export interface ContractRegionMismatchErrorData {
+	code: "region_not_allowed";
+	dcId: string;
+	dcRegionId: string;
+	affinityKey: ContractRegionAffinityKey;
+	allowedRegionIds: string[];
 }
 
 export interface RpcError {

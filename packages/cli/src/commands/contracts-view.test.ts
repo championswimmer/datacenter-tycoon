@@ -3,7 +3,10 @@ import test from "node:test";
 
 import { newGame } from "@datacenter-tycoon/game-logic";
 
+import { REGION_CATALOG } from "@datacenter-tycoon/game-logic";
+
 import {
+	formatContractRegionAffinity,
 	formatContractRequirements,
 	presentAcceptedContract,
 	presentContract,
@@ -20,8 +23,10 @@ test("presentContract normalizes nullable contract fields and preserves monthlyP
 	assert.equal(view.penaltyPerMonth, contract.penaltyPerMonth);
 	assert.equal(view.startedAtTick, null);
 	assert.equal(view.assignedDcId, null);
+	assert.equal(view.regionAffinity, undefined);
 	assert.equal(view.expiresAtTick, contract.expiresAtTick);
 	assert.equal(formatContractRequirements(view), formatContractRequirements({ requirements: contract.requirements }));
+	assert.equal(formatContractRegionAffinity(view), "Any region");
 });
 
 test("presentContracts applies the same DTO schema to each contract", () => {
@@ -45,6 +50,29 @@ test("presentContract preserves assignedDcId for active contracts", () => {
 	assert.equal(view.bucket, "active");
 	assert.equal(view.assignedDcId, "dc-1");
 	assert.equal(view.startedAtTick, 2);
+});
+
+
+test("presentContract exposes region affinity labels and allowed regions when present", () => {
+	const contract = {
+		...newGame(7).contractMarket[0]!,
+		regionAffinity: {
+			key: "eu" as const,
+			allowedRegionIds: [REGION_CATALOG.eu_west.id, REGION_CATALOG.eu_central.id],
+		},
+	};
+	const view = presentContract(contract, "market");
+
+	assert.deepEqual(view.regionAffinity, {
+		key: "eu",
+		label: "EU only",
+		allowedRegionIds: [REGION_CATALOG.eu_west.id, REGION_CATALOG.eu_central.id],
+		allowedRegions: [
+			`${REGION_CATALOG.eu_west.code} · ${REGION_CATALOG.eu_west.city} · ${REGION_CATALOG.eu_west.name}`,
+			`${REGION_CATALOG.eu_central.code} · ${REGION_CATALOG.eu_central.city} · ${REGION_CATALOG.eu_central.name}`,
+		],
+	});
+	assert.match(formatContractRegionAffinity(view), /^EU only \(/);
 });
 
 test("presentContract preserves expired status without remapping", () => {

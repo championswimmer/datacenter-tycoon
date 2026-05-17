@@ -1,4 +1,5 @@
 import {
+	REGION_CATALOG,
 	isHistoricalContract,
 	isLiveContract,
 	selectContractByIdFromState,
@@ -7,6 +8,8 @@ import {
 	selectOpenMarketContractsFromState,
 } from "@datacenter-tycoon/game-logic";
 import type { Contract, GameState } from "@datacenter-tycoon/game-logic";
+
+import type { ContractRegionAffinityView } from "../protocol/messages.js";
 
 /**
  * `market`  — contract on the market, not yet accepted.
@@ -29,10 +32,40 @@ export interface CliContractView {
 	expiresAtTick: number;
 	startedAtTick: number | null;
 	assignedDcId: string | null;
+	regionAffinity?: ContractRegionAffinityView;
 	bucket: ContractListBucket;
 }
 
+function formatRegionLabel(regionId: string): string {
+	const region = REGION_CATALOG[regionId] ?? Object.values(REGION_CATALOG).find((entry) => entry.id === regionId);
+	if (!region) {
+		return regionId;
+	}
+
+	return `${region.code} · ${region.city} · ${region.name}`;
+}
+
+export function presentContractRegionAffinity(contract: Pick<Contract, "regionAffinity">): ContractRegionAffinityView | undefined {
+	if (!contract.regionAffinity) {
+		return undefined;
+	}
+
+	const labelByKey = {
+		eu: "EU only",
+		asia: "Asia only",
+		usa: "USA only",
+	} as const;
+
+	return {
+		key: contract.regionAffinity.key,
+		label: labelByKey[contract.regionAffinity.key],
+		allowedRegionIds: [...contract.regionAffinity.allowedRegionIds],
+		allowedRegions: contract.regionAffinity.allowedRegionIds.map((regionId) => formatRegionLabel(regionId)),
+	};
+}
+
 export function presentContract(contract: Contract, bucket: ContractListBucket): CliContractView {
+	const regionAffinity = presentContractRegionAffinity(contract);
 	return {
 		id: contract.id,
 		name: contract.name,
@@ -47,6 +80,7 @@ export function presentContract(contract: Contract, bucket: ContractListBucket):
 		expiresAtTick: contract.expiresAtTick,
 		startedAtTick: contract.startedAtTick ?? null,
 		assignedDcId: contract.assignedDcId ?? null,
+		...(regionAffinity ? { regionAffinity } : {}),
 		bucket,
 	};
 }
@@ -92,4 +126,12 @@ export function presentContractById(
 
 export function formatContractRequirements(contract: Pick<CliContractView, "requirements">): string {
 	return `vCPU=${contract.requirements.vCpu}, RAM=${contract.requirements.ramGb}GB, Storage=${contract.requirements.storageTb}TB, GPU=${contract.requirements.gpuFlops}`;
+}
+
+export function formatContractRegionAffinity(contract: Pick<CliContractView, "regionAffinity">): string {
+	if (!contract.regionAffinity) {
+		return "Any region";
+	}
+
+	return `${contract.regionAffinity.label} (${contract.regionAffinity.allowedRegions.join(", ")})`;
 }
