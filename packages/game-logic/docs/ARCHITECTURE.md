@@ -2,7 +2,7 @@
 
 This document explains how `@datacenter-tycoon/game-logic` is structured internally, which entities own which data, and how the main subsystems depend on each other.
 
-For the monthly simulation pipeline, see [`./CORE_LOOP.md`](./CORE_LOOP.md).
+For the time-progression pipeline, see [`./CORE_LOOP.md`](./CORE_LOOP.md).
 
 ## Design principles
 
@@ -11,8 +11,8 @@ The package is built around a few strict architectural rules:
 - **`GameState` is the root aggregate**. Everything important to gameplay is persisted under it.
 - **Simulation is deterministic**. All randomness flows through the seeded RNG in `src/sim/rng.ts`.
 - **Catalogs are static data**. Blueprint-style definitions live in `src/catalog/`.
-- **Derived views stay derived**. Capacity, rack activity, reliability outcomes, and contract buckets are recomputed from canonical state instead of being reimplemented in consumers.
-- **State transitions are centralized**. Player commands go through `src/state/reduce.ts`; time progression goes through `src/sim/tick.ts`.
+- **Derived views stay derived**. Capacity, rack activity, reliability outcomes, contract buckets, SLA summaries, and maintenance summaries are recomputed from canonical state instead of being reimplemented in consumers.
+- **State transitions are centralized**. Player commands go through `src/state/reduce.ts`; time progression goes through `src/sim/subtick.ts` and `src/sim/tick.ts`.
 
 ## Subsystem responsibilities
 
@@ -22,11 +22,38 @@ The package is built around a few strict architectural rules:
 | Catalogs | `src/catalog/*` | Static datacenter, rack, and region blueprints |
 | Balance | `src/balance/*` | Difficulty, maintenance, power, reliability, and easing constants |
 | Entities | `src/entities/*` | Placement validation, capacity aggregation, regional resource checks |
-| Contracts | `src/contracts/*` | Offer generation, acceptance, lifecycle, SLA/reliability outcomes |
+| Contracts | `src/contracts/*` | Offer generation, acceptance, lifecycle, SLA windows, reliability outcomes |
 | Economy | `src/economy/*` | Capex, move costs, opex, power billing, monthly revenue |
-| Simulation | `src/sim/*` | RNG, map generation, maintenance/failure simulation, monthly tick orchestration |
+| Simulation | `src/sim/*` | RNG, map generation, daily subticks, maintenance/failure simulation, monthly settlement |
 | State | `src/state/*` | `newGame()` factory and reducer-based command handling |
 | Save/load | `src/save/*` | Versioned JSON serialization |
+
+## Time model
+
+The core now uses a two-layer time model:
+
+- `tick`: completed months
+- `subtick`: completed days within the current month (`0..DAYS_PER_TICK - 1`)
+
+```mermaid
+flowchart LR
+    Action[Reducer action] -->|Subtick| Daily[sim/subtick.ts]
+    Action -->|Tick| Compat[sim/tick.ts]
+    Daily --> Repair[Daily repairs + failures]
+    Daily --> SLA[Daily SLA sampling]
+    Daily --> Boundary{day 30?}
+    Boundary -->|no| State[GameState tick=N subtick=d+1]
+    Boundary -->|yes| Monthly[settleMonthlyTick]
+    Compat --> Monthly
+    Monthly --> Finance[Opex / revenue / tax]
+    Monthly --> Lifecycle[Contract lifecycle + reliability]
+    Monthly --> Market[Market refresh + ledger]
+```
+
+This split is deliberate:
+
+- **daily subticks** handle volatile operational state that should resolve inside a month
+- **monthly settlement** handles expensive bookkeeping and market work that should stay month-scoped
 
 ## Dependency direction
 
@@ -36,17 +63,19 @@ At a high level, the package is layered like this:
 2. **`catalog`** and **`balance`** provide static inputs.
 3. **`entities`** derives capacities/usages and validates physical constraints.
 4. **`contracts`** and **`economy`** use those entity helpers to model business behavior.
-5. **`sim`** orchestrates time-based changes across maintenance, contracts, economy, and RNG.
+5. **`sim`** orchestrates daily and monthly changes across maintenance, contracts, economy, and RNG.
 6. **`state`** is the gameplay command surface that calls into the lower layers.
 7. **`save`** persists the resulting `GameState`.
 
 In practical terms:
 
-- `state/reduce.ts` is the command router for build/place/move/accept/cancel/tick actions.
-- `sim/tick.ts` is the only place that advances time.
+- `state/reduce.ts` is the command router for build/place/move/accept/cancel/tick/subtick actions.
+- `sim/subtick.ts` is the daily operational loop.
+- `sim/tick.ts` owns compatible month advancement and month-end settlement.
 - `contracts/lifecycle.ts` is the canonical contract classification layer.
+- `contracts/sla.ts` owns SLA defaults, sampling helpers, and progress summaries.
 - `economy/opex.ts` is the canonical monthly money calculation layer.
-- `entities/datacenter.ts` is the canonical physical-capacity and placement layer.
+- `entities/datacenter.ts` and `query/datacenters.ts` remain the canonical physical-capacity and maintenance summary layer.
 
 ## Canonical persisted entity graph
 
@@ -57,6 +86,7 @@ erDiagram
     GAME_STATE {
         string gameId
         int tick
+        int subtick
         int seed
         int rngState
         string difficulty
@@ -87,13 +117,6 @@ erDiagram
         string id
         string code
         string city
-        number powerCostPerKwh
-        number staffWage
-        number taxRate
-        number totalPowerAvailable
-        number totalStaffAvailable
-        number powerUsed
-        number staffUsed
     }
 
     DATACENTER {
@@ -104,19 +127,6 @@ erDiagram
         int maintenanceStaff
     }
 
-    DATACENTER_SPEC {
-        string id
-        string name
-        int rows
-        int positionsPerRow
-        number powerCapacityKw
-        number coolingCapacityBtuPerHr
-        string coolingType
-        number bandwidthGbps
-        number capexCost
-        int staffCount
-    }
-
     RACK_PLACEMENT {
         string id
         string specId
@@ -125,22 +135,15 @@ erDiagram
         string health
         int repairProgressDays
         int lastFailureAtTick
+        int lastFailureAtSubtick
         int row
         int position
     }
 
-    RACK_SPEC {
-        string id
-        string kind
-        int tier
-        number vCpu
-        number ramGb
-        number storageTb
-        number gpuFlops
-        number powerDrawKw
-        number bandwidthGbps
-        number capexCost
-        number monthlyMaintenance
+    CONTRACT_SLA_WINDOW {
+        int sampledDays
+        int servedDays
+        int failedDays
     }
 
     CONTRACT {
@@ -149,9 +152,8 @@ erDiagram
         number monthlyPayment
         number penaltyPerMonth
         int termMonths
+        int slaTargetPercent
         string lifecycleState
-        string urgency
-        int tier
         int offeredAtTick
         int expiresAtTick
         int startedAtTick
@@ -161,107 +163,53 @@ erDiagram
         string assignedDcId
     }
 
-    LEDGER_ENTRY {
-        string id
-        int tick
-        string type
-        number amount
-        string reason
-    }
-
     GAME_STATE ||--|| PLAYER : owns
     PLAYER ||--|| PLAYER_RELIABILITY : tracks
     PLAYER_RELIABILITY ||--o{ CONTRACT_SLA_OUTCOME : records
-
     GAME_STATE ||--|| MAP_STATE : contains
     MAP_STATE ||--o{ REGION : contains
-
     GAME_STATE ||--o{ DATACENTER : owns
-    DATACENTER ||--|| DATACENTER_SPEC : embeds_spec
     DATACENTER ||--o{ RACK_PLACEMENT : contains
-    RACK_PLACEMENT }o--|| RACK_SPEC : references_spec
-    DATACENTER }o--|| REGION : built_in
-
     GAME_STATE ||--o{ CONTRACT : stores
-    CONTRACT }o--o| DATACENTER : assigned_to
-
-    GAME_STATE ||--o{ LEDGER_ENTRY : appends
+    CONTRACT ||--|| CONTRACT_SLA_WINDOW : embeds
 ```
 
 ### Important ownership notes
 
 - **`GameState.contracts` is the canonical contract collection.**
-  - `contractMarket` and `activeContracts` still exist in state, but they are deprecated compatibility views maintained by `withDerivedContractViews()`.
-- **`Datacenter.spec` is embedded by value** when a datacenter is built.
-  - This means a datacenter carries the full blueprint snapshot it was created with.
-- **`RackPlacement` stores only `specId`**, and runtime helpers resolve the full rack spec from `RACK_CATALOG`.
-- **`MapState.regions` is runtime data**, not a direct pointer to `REGION_CATALOG`.
-  - `newGame()` calls `generateMap(seed)`, which clones base regions and applies deterministic per-seed variation.
-- **`Contract.requirements` is embedded value data** (`vCpu`, `ramGb`, `storageTb`, `gpuFlops`), not a separate entity.
+  - `contractMarket` and `activeContracts` remain compatibility views maintained by `withDerivedContractViews()`.
+- **`GameState.subtick` is persisted.**
+  - Save/load must preserve mid-month state so replay determinism survives serialization.
+- **Contract SLA state is persisted on the contract itself.**
+  - `slaTargetPercent` describes the expected uptime threshold.
+  - `currentSlaWindow` accumulates served/failed daily samples for the current month.
+- **Rack failure history is day-precise.**
+  - `lastFailureAtTick` + `lastFailureAtSubtick` give canonical failure timing.
 
-## Capacity and commitment relationships
+## Capacity, SLA, and commitment relationships
 
-The most important gameplay relationship is the one between physical rack supply and contract demand.
+The most important gameplay relationship is now the one between healthy rack supply, committed live demand, and the daily SLA window.
 
 ```mermaid
-erDiagram
-    DATACENTER {
-        string id
-        int maintenanceStaff
-    }
-
-    RACK_PLACEMENT {
-        string id
-        string specId
-        string health
-    }
-
-    RACK_SPEC {
-        string id
-        string kind
-        number vCpu
-        number ramGb
-        number storageTb
-        number gpuFlops
-        number powerDrawKw
-    }
-
-    CONTRACT {
-        string id
-        string lifecycleState
-        string assignedDcId
-        number monthlyPayment
-        number penaltyPerMonth
-    }
-
-    CONTRACT_REQUIREMENTS {
-        number vCpu
-        number ramGb
-        number storageTb
-        number gpuFlops
-    }
-
-    DATACENTER ||--o{ RACK_PLACEMENT : hosts
-    RACK_PLACEMENT }o--|| RACK_SPEC : defines_capacity_and_power
-    CONTRACT ||--|| CONTRACT_REQUIREMENTS : embeds_demand
-    CONTRACT }o--o| DATACENTER : reserves_capacity_from
+flowchart TD
+    HealthyRacks[Healthy rack capacity] --> Pool[Datacenter / fabric usable capacity]
+    LiveContracts[Live assigned contracts] --> Demand[Committed demand]
+    Pool --> DailyCheck[Daily SLA sample]
+    Demand --> DailyCheck
+    DailyCheck --> Window[currentSlaWindow]
+    Window --> MonthEnd[tickRevenue monthly settlement]
+    MonthEnd --> Reliability[Player reliability + market refresh]
 ```
 
-That relationship is implemented through a few canonical helpers:
+That relationship is implemented through canonical helpers such as:
 
-- `datacenterInstalledCapacity(datacenter)`
-  - sums all racks, regardless of health.
 - `datacenterCapacity(datacenter)`
-  - sums only **healthy** racks.
-- `datacenterCommittedContractDemand(datacenter, contracts)`
-  - sums requirements of **live** contracts assigned to that datacenter.
-- `datacenterContractCapacitySummary(datacenter, contracts)`
-  - computes `installed`, `usable`, `committed`, and `available` together.
+- `summarizeFabricCapacityForDatacenter(state, dcId)`
+- `sampleContractSlaWindows(state, contracts)`
+- `summarizeContractSlaProgress(contract)`
+- `tickRevenue(state)`
 
-This is why contract acceptance and monthly revenue are separate checks:
-
-- **Acceptance** checks `available` capacity against live commitments.
-- **Monthly revenue** checks whether the datacenter's current healthy capacity can still cover the full live demand after failures/repairs.
+This keeps daily SLA math, monthly settlement, and UI presentation on the same source of truth.
 
 ## Runtime command architecture
 
@@ -269,38 +217,23 @@ There are two main entrypoints into the model:
 
 ### 1. Player-driven actions: `reduce(state, action)`
 
-`src/state/reduce.ts` is the command layer for:
+`src/state/reduce.ts` is the command layer for build/place/move/accept/cancel/settings actions plus time actions:
 
-- `BuildDatacenter`
-- `PlaceRack`
-- `RemoveRack`
-- `MoveRack`
-- `AcceptContract`
-- `CancelContract`
-- `SetMaintenanceStaff`
-- audio/speed/pause settings
-- `Tick`
+- `{ type: "Subtick" }`
+- `{ type: "Tick" }`
 
 The reducer does not duplicate domain rules. It delegates to lower-level helpers such as:
 
-- `canBuildInRegion()`
-- `canPlaceRack()`
-- `calculateMoveCost()`
-- `applyCapex()`
 - `acceptContract()`
+- `advanceSubtick()`
 - `tick()`
+- placement and capacity helpers
 
-### 2. Time-driven progression: `tick(state)`
+### 2. Time-driven progression: `advanceSubtick(state)` and `tick(state)`
 
-`src/sim/tick.ts` is the monthly orchestrator. It is the only place that advances:
-
-- rack failures and repairs
-- opex and revenue
-- contract breach/completion/cancellation
-- player reliability
-- contract market expiry/backfill
-
-See [`./CORE_LOOP.md`](./CORE_LOOP.md) for the exact order.
+- `advanceSubtick(state)` owns daily repairs, failures, and SLA sampling.
+- `tick(state)` is the compatibility surface for “advance one month”, including from mid-month states.
+- `settleMonthlyTick(state)` performs the heavy monthly bookkeeping once the day boundary reaches the end of the month.
 
 ## Module deep dives
 
@@ -309,25 +242,20 @@ If you need to understand a specific architectural concern, start here:
 - **Root state and canonical entities**: `src/types.ts`
 - **Action flow / command entrypoint**: `src/state/reduce.ts`
 - **Initial world construction**: `src/state/newGame.ts`
-- **Monthly orchestration**: `src/sim/tick.ts`
+- **Daily operational loop**: `src/sim/subtick.ts`
+- **Monthly settlement**: `src/sim/tick.ts`
 - **Placement and capacity rules**: `src/entities/datacenter.ts`
-- **Regional build/staff constraints**: `src/entities/region.ts`
 - **Contract lifecycle and selectors**: `src/contracts/lifecycle.ts`
-- **Contract market generation and acceptance**: `src/contracts/market.ts`, `src/contracts/generator.ts`
-- **Reliability updates**: `src/contracts/reliability.ts`
-- **Opex, power billing, and revenue math**: `src/economy/opex.ts`, `src/economy/rack-activity.ts`
+- **Contract SLA defaults, sampling, and summaries**: `src/contracts/sla.ts`
+- **Opex, power billing, and monthly revenue math**: `src/economy/opex.ts`
 - **Aging and repair logic**: `src/sim/maintenance.ts`
 - **Persistence shape**: `src/save/serialize.ts`
 
-## Architectural invariants worth preserving
+## Architectural guardrail
 
-When editing the package, these invariants are doing a lot of work:
+If a change adds time-based behavior, decide first whether it is:
 
-1. **One root source of truth**: `GameState`.
-2. **One canonical contract list**: `GameState.contracts`.
-3. **One command entrypoint**: `reduce()`.
-4. **One time entrypoint**: `tick()`.
-5. **One RNG stream**: `rngState` -> `rngFromState()` -> updated `rng.state()`.
-6. **One capacity model**: derived from datacenter placements plus rack catalog specs.
-7. **One monthly money model**: `tickOpex()` + `tickRevenue()` + tax pass in `tick()`.
-8. **One JSON-serializable persisted state shape**.
+- **daily operational state** → `sim/subtick.ts`
+- **monthly financial / market state** → `sim/tick.ts`
+
+That separation is the main reason subticks exist, and future work should preserve it.

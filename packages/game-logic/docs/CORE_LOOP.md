@@ -1,338 +1,236 @@
 # Core Loop
 
-This document explains what happens in one monthly simulation tick inside `src/sim/tick.ts`.
+This document explains the two-layer simulation loop inside `@datacenter-tycoon/game-logic`:
+
+- `advanceSubtick()` in `src/sim/subtick.ts` handles **daily operational state**.
+- `settleMonthlyTick()` / `tick()` in `src/sim/tick.ts` handle **monthly financial settlement**.
 
 For the static entity model and module responsibilities, see [`./ARCHITECTURE.md`](./ARCHITECTURE.md).
 
-## What a tick means
+## What time means
 
-In `game-logic`, **1 tick = 1 in-game month**.
+In `game-logic`:
+
+- **1 tick = 1 in-game month**
+- **1 subtick = 1 in-game day**
+- `DAYS_PER_TICK = 30`
+
+`GameState` persists both values:
+
+- `tick`: completed months
+- `subtick`: completed days within the current month, `0..29`
 
 Time advancement can happen either by:
 
-- calling `tick(state)` directly, or
-- dispatching `{ type: "Tick" }` through `reduce(state, action)`.
+- dispatching `{ type: "Subtick" }` to advance one day,
+- dispatching `{ type: "Tick" }` to advance to the next month boundary compatibly, or
+- calling `advanceSubtick(state)` / `tick(state)` directly.
 
-## High-level tick pipeline
+## High-level flow
 
 ```mermaid
 flowchart TD
-    A[Start with GameState] --> B[Increment tick and restore RNG]
-    B --> C[Process rack maintenance per datacenter]
-    C --> D[Build maintenanceState with canonical contracts]
-    D --> E[Compute per-datacenter opex]
-    E --> F[Compute contract revenue or breach penalties]
-    F --> G[Compute per-datacenter profit tax]
-    G --> H[Finalize contracts completed or auto-cancelled]
-    H --> I[Collect SLA outcomes and update player reliability]
-    I --> J[Append ledger entries and apply net cash delta]
-    J --> K[Expire old market offers and backfill new ones]
-    K --> L[Rebuild derived contract views]
-    L --> M[Return next GameState]
+    A[Start with GameState tick=N subtick=d] --> B[advanceSubtick]
+    B --> C[Advance repairs for repairing racks]
+    C --> D[Roll daily failures for healthy racks]
+    D --> E[Sample live contract SLA windows]
+    E --> F{Reached day 30?}
+    F -->|No| G[Return state tick=N subtick=d+1]
+    F -->|Yes| H[settleMonthlyTick]
+    H --> I[Compute opex]
+    I --> J[Settle contract revenue / penalties from SLA windows]
+    J --> K[Apply tax]
+    K --> L[Finalize completed or auto-cancelled contracts]
+    L --> M[Update player reliability]
+    M --> N[Append ledger entries]
+    N --> O[Refresh contract market]
+    O --> P[Return state tick=N+1 subtick=0]
 ```
 
-## Step-by-step
+## Daily subtick pipeline
 
-## 1. Advance time and restore deterministic RNG
+`advanceSubtick(state)` is intentionally lightweight. It performs only work that benefits from day-level fidelity.
 
-`tick()` starts by computing:
+### 1. Restore deterministic RNG and process rack maintenance
 
-- `nextTick = state.tick + 1`
-- `rng = rngFromState(state.rngState)`
+For every datacenter:
 
-This means the tick consumes randomness from the persisted RNG stream instead of using `Math.random()`.
+- repairing racks advance by `advanceRackRepair()`
+- healthy racks roll one **daily** failure hazard derived from the monthly curve
+- any failure records:
+  - `health: "repairing"`
+  - `repairProgressDays: 0`
+  - `lastFailureAtTick`
+  - `lastFailureAtSubtick`
 
-## 2. Run rack maintenance/failure simulation first
+The PRNG still comes from persisted `rngState`, so daily failures remain deterministic for the same seed + action history.
 
-Each datacenter is processed by `processRackMaintenance()`.
+### 2. Sample contract SLA windows
 
-For each rack placement:
+After rack health updates, every live contract samples whether its assigned datacenter/fabric pool could serve committed demand for that day.
 
-- if the rack is already **`repairing`**:
-  - advance repair progress with `advanceRackRepair()`
-  - repair speed depends on `maintenanceStaff`
-- otherwise, if the rack is **healthy**:
-  - compute age with `rackAgeMonths(nextTick, placement)`
-  - compute failure probability with `rackFailureChance(ageMonths, difficulty)`
-  - roll the seeded RNG
-  - on failure, mark the rack as:
-    - `health: "repairing"`
-    - `repairProgressDays: 0`
-    - `lastFailureAtTick: nextTick`
+Each live contract updates a persisted window:
 
-### Why this ordering matters
+- `sampledDays`
+- `servedDays`
+- `failedDays`
 
-Maintenance happens **before** revenue and opex are evaluated for the month.
+This means a short outage can consume only a few failed days instead of automatically failing the whole month.
 
-So the current month's money calculation already reflects:
+### 3. Advance the day counter or cross the month boundary
 
-- racks that just finished repairing
-- racks that just failed this tick
+- If `subtick + 1 < DAYS_PER_TICK`, return the updated state with the next `subtick`.
+- If the boundary is reached, hand the state off to `settleMonthlyTick()` and reset `subtick` to `0` for the new month.
 
-## 3. Build the intermediate `maintenanceState`
+## Monthly settlement pipeline
 
-After maintenance, `tick()` creates an intermediate state with:
+`settleMonthlyTick(state)` is the heavy month-end path. It should stay monthly-only.
 
-- updated `tick`
-- updated `rngState`
-- updated datacenters/placements
-- canonical contracts from `contractsFromState(state)`
+### 1. Advance the month and rebuild canonical contracts
 
-This is important because the package still keeps deprecated compatibility views (`contractMarket`, `activeContracts`) in addition to canonical `contracts`, and `contractsFromState()` normalizes that into one working list.
+The settlement pass first:
 
-## 4. Evaluate monthly opex per datacenter
+- computes `nextTick = state.tick + 1`
+- sets `subtick = 0`
+- normalizes contracts through `contractsFromState(state)`
 
-For every datacenter, `tick()` calls `tickOpex(datacenter, region, liveContracts)`.
+At this point, all daily repair/failure/SLA sampling for the closing month has already happened.
 
-`tickOpex()` calculates:
+### 2. Compute monthly opex per datacenter
 
-- **power**
-- **cooling**
-- **bandwidth**
-- **baseline staff wages** from the datacenter spec
-- **extra maintenance staff wages**
-- **rack monthly maintenance**
+For every datacenter, `tickOpex()` calculates:
 
-### Power billing nuance
+- power
+- cooling
+- bandwidth
+- baseline staff wages
+- extra maintenance staff wages
+- rack maintenance
+- tax (added after revenue is known)
 
-Power is not billed as a naive "sum all rack max draw" every month.
+This remains monthly because it is comparatively expensive and naturally month-scoped.
 
-When live contracts are provided, `tickOpex()` uses rack activity allocation to decide whether each rack is:
+### 3. Settle contract revenue and penalties from SLA windows
 
-- `active`
-- `idle`
-- `repairing`
+`tickRevenue()` now evaluates each live contract from its accumulated SLA window instead of a single month-end instantaneous capacity check.
 
-That allocation comes from:
+- If `servedDays / sampledDays >= slaTargetPercent`, the contract earns `monthlyPayment` and records a fulfilled SLA outcome.
+- Otherwise, the contract is breached, the player pays the difficulty-scaled penalty, and the breach streak increments.
+- In both cases, the current SLA window is reset for the next month.
 
-- `rackDemandByKindFromRequirements()`
-- `allocateRackActivity()`
-- `summarizeRackActivity()`
+### 4. Apply tax
 
-The result is:
+Tax is still computed per datacenter from that datacenter's monthly revenue minus monthly opex.
 
-- **active racks** are billed at their full reserved power draw
-- **idle and repairing racks** are billed only at the idle baseline (`RACK_IDLE_BASELINE_POWER_KW`)
+### 5. Finalize lifecycle transitions
 
-So contract demand directly affects monthly power cost.
+After the SLA result is known, the settlement pass can still:
 
-## 5. Evaluate monthly contract revenue and breach penalties
+- auto-cancel long breach streaks (`CONTRACT_BREACH_AUTO_CANCEL_MONTHS`)
+- complete contracts whose term has ended
 
-After opex, `tick()` calls `tickRevenue(maintenanceState)`.
+Those transitions remain month-based.
 
-For every live contract:
+### 6. Update reliability from the month’s SLA outcomes
 
-1. find the assigned datacenter
-2. recompute the datacenter's current healthy capacity with `datacenterCapacity()`
-3. recompute total live demand assigned to that datacenter
-4. compare supply vs demand
+The reliability system consumes the `outcomes` produced by `tickRevenue()`:
 
-### If the datacenter can cover all live demand
+- fulfilled month: `+3`
+- breached month: `-8`
+- cancelled contract: `-12`
 
-- the contract remains `serving`
-- the player earns `monthlyPayment`
-- that revenue is credited to the contract's datacenter bucket
+Reliability is updated before market refresh, so the same month’s SLA results immediately affect future offers.
 
-### If it cannot cover demand
+### 7. Append ledger entries and apply net cash delta
 
-- the contract becomes `breached`
-- `breachStreakMonths` increments
-- the player is charged `penaltyPerMonth` scaled by the current difficulty
+Monthly settlement appends ledger entries in stable order:
 
-### Important consequence
+1. `opex`
+2. either `revenue` or `penalty`
 
-Revenue is not checked contract-by-contract in isolation.
+Daily subticks do **not** append ledger entries.
 
-It is checked against the **aggregate live demand on the assigned datacenter**. That means one rack failure can cause multiple contracts on the same datacenter to become breached if the remaining healthy capacity no longer covers the total committed load.
+### 8. Refresh the market and rebuild derived contract views
 
-## 6. Compute tax after revenue and opex are known
+Only after monthly settlement completes does the engine:
 
-Tax is applied per datacenter, not globally.
+- expire stale market offers
+- backfill new offers
+- rebuild compatibility views (`contractMarket`, `activeContracts`)
 
-For each datacenter:
+Daily subticks do **not** generate new contracts or refresh the market.
 
-- look up that datacenter's revenue bucket from `tickRevenue()`
-- subtract that datacenter's opex total
-- compute `profit = max(0, revenue - opex)`
-- apply `region.taxRate`
+## Compatibility semantics for `Tick`
 
-So:
+`tick(state)` still means **advance one month**.
 
-- profitable datacenters pay tax
-- loss-making datacenters pay no tax that month
+- From `subtick = 0`, it advances through the next 30 subticks and settles once.
+- From mid-month, it runs only the remaining subticks to the month boundary, then settles exactly one month.
 
-The tax amount is then written back into each datacenter's `opex.breakdown.tax` and added to total opex.
+This preserves existing CLI scripts, reducers, and tests that think in month-sized steps.
 
-## 7. Finalize contract terminal states
+## What runs daily vs monthly
 
-Once money is known, `tick()` finalizes contract lifecycle transitions with `finalizeContract()`.
+### Daily (`advanceSubtick`)
 
-Two terminal checks happen for live contracts:
+- repair progress
+- rack failures
+- SLA sampling
+- day counter progression
 
-### A. Auto-cancel long breaches
+### Monthly (`settleMonthlyTick` / `tick`)
 
-If a contract is `breached` and its `breachStreakMonths` has reached `CONTRACT_BREACH_AUTO_CANCEL_MONTHS` (currently 3), it becomes:
+- opex
+- taxes
+- contract revenue / penalties
+- breach streak and lifecycle finalization
+- reliability updates
+- ledger writes
+- market expiry / backfill
 
-- `lifecycleState: "cancelled"`
-- `status: "cancelled"`
-- `closedAtTick: nextTick`
+## Guardrail
 
-### B. Complete fulfilled term-end contracts
+If a new system can be described as “this should be observable inside a month,” it probably belongs in `advanceSubtick()`.
 
-If the contract term has ended (`nextTick >= startedAtTick + termMonths`), it becomes:
-
-- `lifecycleState: "completed"`
-- `status: "expired"`
-- `breachStreakMonths: 0`
-- `closedAtTick: nextTick`
-
-In code, breach auto-cancel is checked before term completion.
-
-## 8. Update player reliability from SLA outcomes
-
-Reliability is updated by comparing:
-
-- the **previous tick's live contracts**, and
-- the **new finalized contract list**
-
-The flow is:
-
-1. `collectContractSlaOutcomes(previousLiveContracts, finalizedContracts, nextTick)`
-2. `updatePlayerReliability(state.player.reliability, outcomes)`
-
-Outcome effects are currently:
-
-- fulfilled month: **+3**
-- breached month: **-8**
-- cancelled contract: **-12**
-
-The reliability model also:
-
-- clamps score into `0..100`
-- records `lastDelta`
-- keeps only the most recent 6 outcomes
-
-## 9. Apply net cash change and append ledger entries
-
-`tick()` computes:
-
-- `netCashDelta = revenueResult.revenue - totalOpex`
-
-Then it appends ledger entries in a stable order:
-
-1. `opex` entry, if total opex is non-zero
-2. either:
-   - `revenue` entry, if revenue is positive, or
-   - `penalty` entry, if net contract result is negative
-
-The player's cash is updated once using the rounded net delta.
-
-## 10. Refresh the market after reliability has changed
-
-The final step is:
-
-- `withDerivedContractViews(advancedState)`
-- `refreshContractMarket(...)`
-
-This is where open offers are maintained.
-
-`refreshContractMarket()` does two things:
-
-### A. Expire stale offers
-
-Any `market_open` contract whose `expiresAtTick <= state.tick` becomes:
-
-- `lifecycleState: "market_expired"`
-- `status: "expired"`
-- `closedAtTick: state.tick`
-
-### B. Backfill fresh offers
-
-The market is then topped back up by `fillMarketOffers()`.
-
-Offer generation depends on:
-
-- current tick -> difficulty curve (`marketDifficulty()`)
-- player reliability -> market policy / offer count / term bias
-- seeded RNG -> contract theme, requirements, urgency, value, term, and ids
-
-Because reliability is updated **before** market refresh, the same tick's SLA results immediately affect the next market the player sees.
-
-## What is evaluated in each tick
-
-Every monthly tick evaluates all of the following:
-
-- rack aging
-- rack repair progress
-- new rack failures
-- current healthy datacenter capacity
-- live contract demand committed to each datacenter
-- rack activity state for power billing
-- power, cooling, bandwidth, staff, maintenance, and tax costs
-- contract revenue or breach penalties
-- contract completion and auto-cancellation
-- player reliability outcomes
-- ledger updates
-- market offer expiry and replenishment
-
-## What is *not* part of the tick loop
-
-These actions are **not** evaluated by `tick()` itself:
-
-- building new datacenters
-- placing/removing/moving racks
-- accepting/cancelling contracts manually
-- changing maintenance staffing
-- audio/speed/pause controls
-
-Those are reducer actions handled in `src/state/reduce.ts`.
+If it changes books, market state, taxes, or ledger history only once per month, it belongs in monthly settlement.
 
 ## Minimal pseudocode
 
 ```ts
-function tick(state: GameState): GameState {
+function advanceSubtick(state: GameState): GameState {
+  const maintenanceState = processDailyRepairsAndFailures(state);
+  const sampledState = sampleDailySlaWindows(maintenanceState);
+
+  if (state.subtick + 1 < DAYS_PER_TICK) {
+    return { ...sampledState, subtick: state.subtick + 1 };
+  }
+
+  return settleMonthlyTick({ ...sampledState, subtick: 0 });
+}
+
+function settleMonthlyTick(state: GameState): GameState {
   const nextTick = state.tick + 1;
-  const rng = rngFromState(state.rngState);
-
-  const datacentersAfterMaintenance = state.datacenters.map(dc =>
-    processRackMaintenance(dc, nextTick, state.difficulty, rng)
-  );
-
-  const maintenanceState = {
+  const monthlyState = {
     ...state,
     tick: nextTick,
-    rngState: rng.state(),
-    datacenters: datacentersAfterMaintenance,
+    subtick: 0,
     contracts: contractsFromState(state),
   };
 
-  const perDcOpex = maintenanceState.datacenters.map(/* tickOpex */);
-  const revenueResult = tickRevenue(maintenanceState);
-  const totalTax = /* tax pass using per-dc profit */;
-  const finalizedContracts = revenueResult.updatedContracts.map(/* finalizeContract */);
-  const nextReliability = updatePlayerReliability(/* compare prev live vs next */);
-  const ledger = /* append opex + revenue/penalty entries */;
+  const opex = computeMonthlyOpex(monthlyState);
+  const revenue = tickRevenue(monthlyState); // SLA-window settlement
+  const finalizedContracts = revenue.updatedContracts.map(contract =>
+    finalizeContract(contract, nextTick)
+  );
+  const reliability = updatePlayerReliability(monthlyState.player.reliability, revenue.outcomes);
 
   return refreshContractMarket(
     withDerivedContractViews({
-      ...maintenanceState,
-      player: { ...maintenanceState.player, cash, reliability: nextReliability },
+      ...monthlyState,
+      player: { ...monthlyState.player, reliability },
       contracts: finalizedContracts,
-      ledger,
-    })
+      ledger: appendMonthlyLedgerEntries(...),
+    }),
   );
 }
 ```
-
-## Files to read when changing tick behavior
-
-If you are modifying the core loop, these files are the ones that actually define it:
-
-- `src/sim/tick.ts`
-- `src/sim/maintenance.ts`
-- `src/economy/opex.ts`
-- `src/economy/rack-activity.ts`
-- `src/contracts/lifecycle.ts`
-- `src/contracts/market.ts`
-- `src/contracts/reliability.ts`
-- `src/entities/datacenter.ts`

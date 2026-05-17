@@ -8,6 +8,7 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 
 - [`016-regional-fabric-and-pooled-capacity.md`](./016-regional-fabric-and-pooled-capacity.md) — Add a region-local fabric investment layer that pools connected datacenter capacity for contract fulfilment. _status: created_
 - [`018-map-based-region-selector.md`](./018-map-based-region-selector.md) — Overhaul the region selection mechanism to feature an interactive world map and a sortable list of 8 realistic top-tier cloud regions with city names and codes. _status: started_
+- [`037-subticks.md`](./037-subticks.md) — Introduce day-level subticks beneath monthly ticks for repairs, SLA accounting, and other lightweight intra-month simulation. _status: started_
 
 ## Archive
 
@@ -16,6 +17,7 @@ Completed plans have been moved to [`./archive`](./archive/README.md) so the act
 ## Related plan guidance
 
 - If future work touches **contract availability, term mix, SLA penalties, reputation, or player-facing contract explanations**, read [`021-reliability-score-and-contract-slas.md`](./archive/021-reliability-score-and-contract-slas.md) first. It establishes the persisted reliability loop that now shapes market refresh volume, contract-term bias, save data, and web UI copy.
+- If future work touches **time semantics, day-level repair, daily SLA sampling, month-end settlement, tick drivers, or daemon clocking**, read [`037-subticks.md`](./037-subticks.md) first. It defines the intended split between lightweight daily subticks and heavyweight monthly ticks.
 - If future work touches **power budgeting, rack activity/billing, or datacenter power UI semantics**, read [`022-rack-usage-based-billing.md`](./archive/022-rack-usage-based-billing.md) first. It defines the canonical reserved-vs-billed power vocabulary and deterministic allocation model used by both game logic and web selectors.
 - If future work touches **web startup flow, tutorial timing, saved-game entry UX, contract-assignment clicks, or rack-placement clicks**, read [`024-web-start-screen-and-one-click-actions.md`](./archive/024-web-start-screen-and-one-click-actions.md) first. It establishes the intended banner-first entry flow and the current “click is commit” interaction pattern for contracts and rack installation.
 - If future work touches **contract generation, assignment eligibility, region whitelists, or contract geography shown in CLI/web**, read [`034-contract-region-affinity.md`](./archive/034-contract-region-affinity.md) first. It defines the implemented contract-region whitelist model and the cross-package presentation/validation responsibilities.

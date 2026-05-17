@@ -68,6 +68,7 @@ Main exports from `src/index.ts`:
 
 - `newGame(seed, options?)`
 - `reduce(state, action)`
+- `advanceSubtick(state)`
 - `tick(state)`
 - `serialize(state)` / `deserialize(json)`
 - `RACK_CATALOG`
@@ -143,6 +144,24 @@ interface Datacenter {
 
 Repair timing constants are exported so consumers can display or reason about the monthly-tick / daily-repair bridge without duplicating numbers.
 
+## Time model
+
+The simulation now has two deterministic layers of time:
+
+- `tick` = completed **months**
+- `subtick` = completed **days within the current month** (`0..DAYS_PER_TICK - 1`)
+
+Use `{ type: "Subtick" }` for one in-game day and `{ type: "Tick" }` for compatibility month advancement. `Tick` still means “advance one full month”, even from mid-month states.
+
+```ts
+interface GameTimeView {
+  tick: Tick;
+  subtick: Subtick;
+  dayOfMonth: number;    // 1..30
+  monthFraction: number; // 0..<1
+}
+```
+
 ## Player reliability scaffolding
 
 The player profile now includes a persisted reliability score that future contract-market systems can use without inventing UI-local state:
@@ -162,7 +181,7 @@ interface ContractSlaOutcome {
 }
 ```
 
-The current save policy is **destructive on incompatible format changes**. Version `9` adds optional contract region affinity and migrates version `8` saves losslessly because missing affinity metadata still means “deploy anywhere.” Version `7` saves still migrate forward by attaching empty regional fabric state; older save versions are intentionally rejected and should be recreated.
+The current save policy is **destructive on incompatible format changes**. Version `11` is the current save format and includes persisted `subtick` state plus contract SLA defaults. Version `10` saves migrate by attaching default SLA fields, versions `9` and `8` migrate by attaching `subtick: 0` plus other modern defaults, and version `7` still migrates forward by attaching empty regional fabric state before the newer defaults are applied. Older save versions are intentionally rejected and should be recreated.
 
 ## Contract region affinity
 
@@ -177,6 +196,12 @@ interface ContractRegionAffinity {
 }
 
 interface Contract {
+  slaTargetPercent: 80 | 90 | 95;
+  currentSlaWindow: {
+    sampledDays: number;
+    servedDays: number;
+    failedDays: number;
+  };
   regionAffinity?: ContractRegionAffinity;
 }
 ```
@@ -209,7 +234,7 @@ The lifecycle invariants are:
 
 `GameState.contracts` is the canonical contract collection. `contractMarket` and `activeContracts` are deprecated derived compatibility views; new code should derive market, live, and history buckets from lifecycle selectors.
 
-Only `serving` and `breached` contracts are **live**: they still commit capacity, pay revenue, and can levy penalties. `market_expired`, `cancelled`, and `completed` contracts are **historical**: their committed capacity has already been released and they no longer affect game-logic calculations.
+Only `serving` and `breached` contracts are **live**: they still commit capacity, accumulate daily SLA samples, pay revenue, and can levy penalties. `market_expired`, `cancelled`, and `completed` contracts are **historical**: their committed capacity has already been released and they no longer affect game-logic calculations.
 
 Always use the exported helper to classify liveness — never open-code the status check:
 
@@ -280,6 +305,7 @@ export type Action =
   | { type: "UpgradeDatacenter"; dcId: DatacenterId; trackId: DatacenterUpgradeTrackId; targetNodeId: string }
   | { type: "AcceptContract"; contractId: ContractId; dcId: DatacenterId }
   | { type: "CancelContract"; contractId: ContractId }
+  | { type: "Subtick" }
   | { type: "Tick" };
 ```
 
@@ -288,7 +314,7 @@ export type Action =
 - Rack age is derived from `currentTick - installedAtTick`, so wear stays deterministic and serializable.
 - Failure chance now ramps to `2%` at `12` months, then accelerates through the rest of a rack's lifespan until it caps at `60%` by `72` months.
 - That means early-life racks are more reliable than before, while older fleets degrade more sharply in the late game instead of following a flat linear climb.
-- Repairs accumulate in **days** even though the main sim still advances in **monthly** ticks. The default repair target is now `45` days on hard mode (and `22.5` days on easy mode), and each tick contributes `repairProgressPerTick(maintenanceStaff)` days.
+- Repairs accumulate in **days** and are advanced during daily `Subtick` simulation. The default repair target is now `6` days on hard mode (and `4.5` days on easy mode), while extra maintenance staff increase `repairProgressPerSubtick(maintenanceStaff)`.
 - Repairing racks still occupy slots and count toward installed hardware, but they contribute **zero usable contract capacity** until repairs complete.
 - `maintenanceStaff` is extra datacenter headcount on top of the blueprint's baseline staff. More maintenance staff:
   - speeds up repairs,
@@ -341,7 +367,9 @@ const view: DatacenterMaintenanceStaffingView = datacenterMaintenanceStaffingVie
 // view.availableRegionalStaff — spare slots in the region's labor pool
 // view.staffWagePerHead       — monthly wage per extra maintenance head
 // view.extraWagesMonthly      — total extra wages = currentStaff * staffWagePerHead
-// view.repairSpeedDaysPerTick — repair progress added per tick (increases with staff)
+// view.repairSpeedDaysPerSubtick — repair progress added per day
+// view.repairSpeedDaysPerDay     — alias for the same day-level speed
+// view.repairSpeedDaysPerTick    — compatibility aggregate per month
 // view.repairingRackCount     — racks currently under repair in this datacenter
 // view.totalRackCount         — total rack placements
 // view.averageRackAgeMonths   — mean rack age across all placements
@@ -400,6 +428,7 @@ interface GameState {
     paused: boolean;
   };
   tick: number;
+  subtick: number;
   seed: number;
   rngState: number;
   player: {
