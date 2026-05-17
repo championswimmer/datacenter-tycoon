@@ -11,7 +11,7 @@ owner: game-logic, web
 
 - [ ] **Phase 1 - Game-logic model, persistence, and exports**
   - [x] 1.1 Add serializable region-fabric state to the core types and initialize it in `newGame()`
-  - [ ] 1.2 Bump save version and migrate legacy saves to empty regional fabrics
+  - [x] 1.2 Bump save version and migrate legacy saves to empty regional fabrics
   - [ ] 1.3 Re-export any new public symbols from the `game-logic` barrels
 - [ ] **Phase 2 - Fabric investment and reducer flow**
   - [ ] 2.1 Add a fabric-link action with region-local validation and capex debit
