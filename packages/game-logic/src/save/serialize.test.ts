@@ -245,9 +245,19 @@ test("migrate is a no-op for current-version envelopes", () => {
 	assert.deepEqual(migrate(envelope), envelope);
 });
 
+test("migrate upgrades v9 saves by attaching an initial subtick", () => {
+	const { subtick: _subtick, ...legacyState } = newGame(7);
+
+	const migrated = migrate({ saveVersion: 9, state: legacyState as typeof legacyState & { subtick?: number } });
+
+	assert.equal(migrated.saveVersion, SAVE_VERSION);
+	assert.equal(migrated.state.subtick, 0);
+});
+
 test("migrate upgrades v8 saves without rewriting unrestricted contracts", () => {
+	const { subtick: _subtick, ...baseState } = newGame(7);
 	const state = {
-		...newGame(7),
+		...baseState,
 		contracts: [
 			{
 				id: contractId("legacy-offer"),
@@ -274,8 +284,9 @@ test("migrate upgrades v8 saves without rewriting unrestricted contracts", () =>
 
 test("migrate upgrades v7 saves by attaching empty regional fabric state", () => {
 	const state = newGame(7);
+	const { subtick: _subtick, ...baseState } = state;
 	const legacyState = {
-		...state,
+		...baseState,
 		map: {
 			...state.map,
 			regions: state.map.regions.map(({ fabric: _fabric, ...region }) => region),
@@ -285,6 +296,7 @@ test("migrate upgrades v7 saves by attaching empty regional fabric state", () =>
 	const migrated = migrate({ saveVersion: 7, state: legacyState });
 
 	assert.equal(migrated.saveVersion, SAVE_VERSION);
+	assert.equal(migrated.state.subtick, 0);
 	assert.ok(migrated.state.map.regions.every((region) => region.fabric?.memberDcIds.length === 0));
 	assert.deepEqual(
 		migrated.state.map.regions.map((region) => region.id),

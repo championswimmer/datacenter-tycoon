@@ -4,7 +4,7 @@ import { withDerivedContractViews } from "../contracts/lifecycle.js";
 import { refreshContractMarket } from "../contracts/market.js";
 import { createEmptyRegionFabric } from "../entities/fabric.js";
 import { generateMap } from "../sim/mapgen.js";
-import type { Difficulty, GameId, GameState, Money, PlayerId, Tick } from "../types.js";
+import type { Difficulty, GameId, GameState, Money, PlayerId, Subtick, Tick } from "../types.js";
 
 export interface NewGameOptions {
 	seed?: number;
@@ -15,6 +15,7 @@ export interface NewGameOptions {
 
 const DEFAULT_PLAYER_ID = "player-1" as PlayerId;
 const INITIAL_TICK = 0 as Tick;
+const INITIAL_SUBTICK = 0 as Subtick;
 
 function normalizeSeed(seed: number): number {
 	return seed >>> 0;
@@ -48,6 +49,7 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 			paused: false,
 		},
 		tick: INITIAL_TICK,
+		subtick: INITIAL_SUBTICK,
 		seed: effectiveSeed,
 		rngState: effectiveSeed,
 		difficulty,

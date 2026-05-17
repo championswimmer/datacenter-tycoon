@@ -2,7 +2,18 @@ export type Brand<T, Name extends string> = T & { readonly __brand: Name };
 
 export type Money = number;
 export type Tick = number;
+export type Subtick = number;
 export type Time = Tick;
+
+export interface GameTimePoint {
+	tick: Tick;
+	subtick: Subtick;
+}
+
+export interface GameTimeView extends GameTimePoint {
+	dayOfMonth: number;
+	monthFraction: number;
+}
 
 export type PlayerId = Brand<string, "PlayerId">;
 export type DatacenterId = Brand<string, "DatacenterId">;
@@ -307,6 +318,7 @@ export interface GameState {
 		paused: boolean;
 	};
 	tick: Tick;
+	subtick: Subtick;
 	seed: number;
 	rngState: number;
 	difficulty: Difficulty;

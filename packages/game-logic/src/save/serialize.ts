@@ -1,7 +1,7 @@
 import { createEmptyRegionFabric } from "../entities/fabric.js";
-import type { GameState } from "../types.js";
+import type { GameState, Subtick } from "../types.js";
 
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 
 export interface SaveEnvelope {
 	saveVersion: number;
@@ -29,22 +29,39 @@ function attachEmptyRegionalFabrics(state: GameState): GameState {
 	};
 }
 
+function attachInitialSubtick(state: GameState): GameState {
+	return {
+		...state,
+		subtick: (state.subtick ?? (0 as Subtick)) as Subtick,
+	};
+}
+
 export function migrate(envelope: SaveEnvelope): SaveEnvelope {
 	if (envelope.saveVersion === SAVE_VERSION) {
-		return envelope;
+		return {
+			...envelope,
+			state: attachInitialSubtick(envelope.state),
+		};
+	}
+
+	if (envelope.saveVersion === 9) {
+		return {
+			saveVersion: SAVE_VERSION,
+			state: attachInitialSubtick(envelope.state),
+		};
 	}
 
 	if (envelope.saveVersion === 8) {
 		return {
 			saveVersion: SAVE_VERSION,
-			state: envelope.state,
+			state: attachInitialSubtick(envelope.state),
 		};
 	}
 
 	if (envelope.saveVersion === 7) {
 		return {
 			saveVersion: SAVE_VERSION,
-			state: attachEmptyRegionalFabrics(envelope.state),
+			state: attachInitialSubtick(attachEmptyRegionalFabrics(envelope.state)),
 		};
 	}
 
