@@ -11,6 +11,7 @@ import { applyValidatedFabricLink, validateFabricLinkRequest } from "../entities
 import { canBuildInRegion } from "../entities/region.js";
 import { advanceSubtick } from "../sim/subtick.js";
 import { tick } from "../sim/tick.js";
+import { createIndexedGameStateView } from "./indexed-view.js";
 import type {
 	ContractId,
 	Datacenter,
@@ -285,8 +286,8 @@ function upgradeDatacenter(
 }
 
 function cancelContract(state: GameState, contractId: ContractId): GameState {
-	const contracts = contractsFromState(state);
-	const contract = contracts.find((candidate) => candidate.id === contractId);
+	const indexedState = createIndexedGameStateView(state);
+	const contract = indexedState.contractById.get(contractId);
 	if (!contract) {
 		throw new Error(`Unknown active contract: ${contractId}`);
 	}
@@ -297,7 +298,7 @@ function cancelContract(state: GameState, contractId: ContractId): GameState {
 
 	return withDerivedContractViews({
 		...state,
-		contracts: contracts.map((candidate) =>
+		contracts: indexedState.contracts.map((candidate) =>
 			candidate.id === contractId
 				? {
 						...candidate,
