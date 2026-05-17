@@ -91,6 +91,13 @@ export interface DatacenterUpgradeNodeView {
 	infrastructure: DatacenterUpgradeTrackNode["infrastructure"];
 }
 
+export type DatacenterUpgradeTrackNodeStatus = "completed" | "current" | "available" | "locked";
+
+export interface DatacenterUpgradeTrackLadderNodeView extends DatacenterUpgradeNodeView {
+	index: number;
+	status: DatacenterUpgradeTrackNodeStatus;
+}
+
 export interface DatacenterUpgradeTrackView {
 	dcId: DatacenterId;
 	trackId: DatacenterUpgradeTrackId;
@@ -101,6 +108,7 @@ export interface DatacenterUpgradeTrackView {
 	maxNode: DatacenterUpgradeNodeView;
 	currentNodeIndex: number;
 	totalNodes: number;
+	nodes: DatacenterUpgradeTrackLadderNodeView[];
 	maxed: boolean;
 }
 
@@ -167,23 +175,38 @@ function toUpgradeNodeView(node: DatacenterUpgradeTrackNode): DatacenterUpgradeN
 }
 
 function summarizeUpgradeTrackViews(datacenter: Datacenter, dcId: DatacenterId): DatacenterUpgradeTrackView[] {
-	return resolveDatacenterUpgradeState(datacenter).tracks.map((track) => ({
-		dcId,
-		trackId: track.trackId,
-		label: track.label,
-		presentation: track.presentation,
-		currentNode: toUpgradeNodeView(track.currentNode),
-		nextNode: track.nextNode
-			? {
-				...toUpgradeNodeView(track.nextNode),
-				fixedMonthlyOpexDelta: (track.nextNode.opex.fixedMonthly ?? 0) - (track.currentNode.opex.fixedMonthly ?? 0),
-			}
-			: null,
-		maxNode: toUpgradeNodeView(track.maxNode),
-		currentNodeIndex: track.currentNodeIndex,
-		totalNodes: getDatacenterUpgradeTrackDefinition(datacenter.spec.id, track.trackId).nodes.length,
-		maxed: track.maxed,
-	}));
+	return resolveDatacenterUpgradeState(datacenter).tracks.map((track) => {
+		const trackDefinition = getDatacenterUpgradeTrackDefinition(datacenter.spec.id, track.trackId);
+		return {
+			dcId,
+			trackId: track.trackId,
+			label: track.label,
+			presentation: track.presentation,
+			currentNode: toUpgradeNodeView(track.currentNode),
+			nextNode: track.nextNode
+				? {
+					...toUpgradeNodeView(track.nextNode),
+					fixedMonthlyOpexDelta: (track.nextNode.opex.fixedMonthly ?? 0) - (track.currentNode.opex.fixedMonthly ?? 0),
+				}
+				: null,
+			maxNode: toUpgradeNodeView(track.maxNode),
+			currentNodeIndex: track.currentNodeIndex,
+			totalNodes: trackDefinition.nodes.length,
+			nodes: trackDefinition.nodes.map((node, index) => ({
+				...toUpgradeNodeView(node),
+				index,
+				status:
+					index < track.currentNodeIndex
+						? "completed"
+						: index === track.currentNodeIndex
+							? "current"
+							: index === track.currentNodeIndex + 1
+								? "available"
+								: "locked",
+			})),
+			maxed: track.maxed,
+		};
+	});
 }
 
 export function summarizeDatacenterInfrastructureFromState(

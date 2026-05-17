@@ -1,7 +1,7 @@
 ---
 name: Datacenter Upgrade Confirmation and Ladder UI
 description: Show canonical datacenter upgrade ladders in the web UI and require an explicit cost confirmation before spending capex on upgrades.
-status: created
+status: started
 created: 2026-05-17
 updated: 2026-05-17
 owner: game-logic, web
@@ -10,7 +10,7 @@ owner: game-logic, web
 ## Progress
 
 - [ ] **Phase 1 — Canonical upgrade ladder summaries**
-  - [ ] 1.1 Extend the game-logic datacenter upgrade query with ladder-node status metadata for every track node
+  - [x] 1.1 Extend the game-logic datacenter upgrade query with ladder-node status metadata for every track node
   - [ ] 1.2 Add regression tests for default, partially upgraded, and maxed upgrade tracks
 - [ ] **Phase 2 — Web ladder visualization**
   - [ ] 2.1 Render the upgrade ladder in `UpgradePanel` so each track shows completed, current, next, and locked nodes
