@@ -74,6 +74,7 @@
 .trackMeta,
 .trackStat,
 .trackNext,
+.trackWarning,
 .maxed {
   font-family: var(--font-mono);
 }
@@ -241,6 +242,11 @@
   color: var(--neon-amber);
 }
 
+.trackWarning {
+  color: var(--neon-amber);
+  font-size: var(--text-xs);
+}
+
 .maxed {
   color: var(--neon-lime);
   letter-spacing: 0.12em;
@@ -263,6 +269,15 @@
 .upgradeButton:hover {
   box-shadow: var(--glow-sm-cyan);
   background: rgba(94, 240, 255, 0.08);
+}
+
+.upgradeButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  border-color: var(--grid);
+  color: var(--fg-2);
+  background: transparent;
+  box-shadow: none;
 }
 
 @media (max-width: 767px) {
