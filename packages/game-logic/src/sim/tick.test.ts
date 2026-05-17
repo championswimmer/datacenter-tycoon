@@ -8,6 +8,7 @@ import { RELIABILITY_BASELINE_SCORE, RELIABILITY_MARKET_OFFER_COUNT, reliability
 import { CONTRACT_BREACH_AUTO_CANCEL_MONTHS } from "../contracts/lifecycle.js";
 import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
 import { tickOpex } from "../economy/opex.js";
+import { createPerformanceFixture } from "../perf/fixtures.js";
 import { advanceSubtick } from "./subtick.js";
 import { settleMonthlyTick, tick } from "./tick.js";
 import type {
@@ -580,6 +581,59 @@ test("tick from mid-month advances remaining subticks and settles exactly one mo
 	assert.deepEqual(viaTick, advancedBySubticks);
 	assert.equal(viaTick.tick, start.tick + 1);
 	assert.equal(viaTick.subtick, 0);
+});
+
+test("tick matches day-by-day subtick progression for a seeded medium performance fixture", () => {
+	const fixture = createPerformanceFixture("medium", { seed: 20260518 });
+	let viaSubticks = fixture.state;
+	for (let day = fixture.state.subtick; day < DAYS_PER_TICK; day += 1) {
+		viaSubticks = advanceSubtick(viaSubticks);
+	}
+
+	const viaTick = tick(fixture.state);
+
+	assert.deepEqual(viaTick, viaSubticks);
+	assert.equal(viaTick.tick, fixture.state.tick + 1);
+	assert.equal(viaTick.subtick, 0);
+});
+
+test("stress fixture tick keeps ledger ids, reliability, and repair transitions deterministic", () => {
+	const fixture = createPerformanceFixture("stress", { seed: 20260518 });
+	const first = tick(fixture.state);
+	const second = tick(fixture.state);
+	const newLedgerEntries = first.ledger.slice(fixture.state.ledger.length);
+	const firstRepairSnapshot = first.datacenters.flatMap((datacenter) =>
+		datacenter.placements.map((placement) => ({
+			dcId: datacenter.id,
+			placementId: placement.id,
+			health: placement.health,
+			repairProgressDays: placement.repairProgressDays,
+			lastFailureAtTick: placement.lastFailureAtTick,
+			lastFailureAtSubtick: placement.lastFailureAtSubtick,
+		})),
+	);
+	const secondRepairSnapshot = second.datacenters.flatMap((datacenter) =>
+		datacenter.placements.map((placement) => ({
+			dcId: datacenter.id,
+			placementId: placement.id,
+			health: placement.health,
+			repairProgressDays: placement.repairProgressDays,
+			lastFailureAtTick: placement.lastFailureAtTick,
+			lastFailureAtSubtick: placement.lastFailureAtSubtick,
+		})),
+	);
+
+	assert.deepEqual(first, second);
+	assert.ok(newLedgerEntries.length > 0);
+	assert.ok(newLedgerEntries.every((entry) => entry.tick === first.tick));
+	assert.deepEqual(
+		newLedgerEntries.map((entry) => entry.id),
+		second.ledger.slice(fixture.state.ledger.length).map((entry) => entry.id),
+	);
+	assert.deepEqual(first.player.reliability, second.player.reliability);
+	assert.deepEqual(firstRepairSnapshot, secondRepairSnapshot);
+	assert.ok(first.contracts.every((contract) => contract.lifecycleState !== "market_open" || contract.offeredAtTick <= first.tick));
+	assert.ok(first.contracts.every((contract) => contract.closedAtTick === undefined || contract.closedAtTick <= first.tick));
 });
 
 test("tick lowers reliability for repeated breached SLA months without auto-cancelling", () => {

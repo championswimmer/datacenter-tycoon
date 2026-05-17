@@ -17,10 +17,10 @@ owner: game-logic
   - [x] 2.1 Introduce ephemeral indexed game-state views
   - [x] 2.2 Reuse a single normalized contract list inside reducers and ticks
   - [x] 2.3 Replace repeated region/datacenter scans in action handlers
-- [ ] **Phase 3 — Tick hot-path optimisation**
+- [x] **Phase 3 — Tick hot-path optimisation**
   - [x] 3.1 Collapse repeated live-contract and assigned-demand scans during `tick()`
   - [x] 3.2 Cache per-datacenter opex inputs within a tick
-  - [ ] 3.3 Preserve deterministic maintenance and ledger behavior under benchmarks
+  - [x] 3.3 Preserve deterministic maintenance and ledger behavior under benchmarks
 - [ ] **Phase 4 — Capacity and fabric query optimisation**
   - [ ] 4.1 Add reusable capacity summaries for all datacenters in one pass
   - [ ] 4.2 Optimise fabric capacity summaries to avoid nested pool recomputation
