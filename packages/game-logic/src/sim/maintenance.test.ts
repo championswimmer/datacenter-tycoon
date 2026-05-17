@@ -13,6 +13,7 @@ import {
 	rackFailureChance,
 	rackFailureRiskView,
 	repairDurationDays,
+	repairProgressPerSubtick,
 	repairProgressPerTick,
 	repairSpeedMultiplier,
 } from "./maintenance.js";
@@ -62,6 +63,9 @@ test("repair speed scales with maintenance staff and clamps at the configured ma
 	assert.equal(repairSpeedMultiplier(4), 2);
 	assert.equal(repairSpeedMultiplier(40), MAX_REPAIR_SPEED_MULTIPLIER);
 
+	assert.equal(repairProgressPerSubtick(0), 1);
+	assert.equal(repairProgressPerSubtick(4), 2);
+	assert.equal(repairProgressPerSubtick(40), MAX_REPAIR_SPEED_MULTIPLIER);
 	assert.equal(repairProgressPerTick(0), DAYS_PER_TICK);
 	assert.equal(repairProgressPerTick(4), DAYS_PER_TICK * 2);
 	assert.equal(repairProgressPerTick(40), DAYS_PER_TICK * MAX_REPAIR_SPEED_MULTIPLIER);
@@ -70,9 +74,9 @@ test("repair speed scales with maintenance staff and clamps at the configured ma
 test("advanceRackRepair uses current staffing and clears repair progress when complete", () => {
 	const inProgress = advanceRackRepair(repairingRack({ repairProgressDays: 5 }), 1);
 	assert.equal(inProgress.health, "repairing");
-	assert.equal(inProgress.repairProgressDays, 42.5);
+	assert.equal(inProgress.repairProgressDays, 6.25);
 
-	const completed = advanceRackRepair(repairingRack({ repairProgressDays: BASE_REPAIR_DAYS - 10 }), 1);
+	const completed = advanceRackRepair(repairingRack({ repairProgressDays: BASE_REPAIR_DAYS - 1 }), 1);
 	assert.equal(completed.health, "healthy");
 	assert.equal("repairProgressDays" in completed, false);
 });
@@ -86,8 +90,17 @@ test("repairDurationDays halves the repair target in easy mode", () => {
 
 	const easyRepair = advanceRackRepair(repairingRack({ repairProgressDays: 0 }), 0, "easy");
 	const hardRepair = advanceRackRepair(repairingRack({ repairProgressDays: 0 }), 0, "hard");
-	assert.equal(easyRepair.health, "healthy");
+	assert.equal(easyRepair.health, "repairing");
 	assert.equal(hardRepair.health, "repairing");
+});
+
+test("advanceRackRepair completes once cumulative daily progress reaches the target", () => {
+	let rack = repairingRack();
+	for (let day = 0; day < BASE_REPAIR_DAYS; day += 1) {
+		rack = advanceRackRepair(rack, 0);
+	}
+	assert.equal(rack.health, "healthy");
+	assert.equal("repairProgressDays" in rack, false);
 });
 
 test("advanceRackRepair leaves healthy racks unchanged", () => {

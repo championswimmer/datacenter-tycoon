@@ -32,8 +32,12 @@ export function repairSpeedMultiplier(maintenanceStaff: number): number {
 	);
 }
 
+export function repairProgressPerSubtick(maintenanceStaff: number): number {
+	return repairSpeedMultiplier(maintenanceStaff);
+}
+
 export function repairProgressPerTick(maintenanceStaff: number): number {
-	return DAYS_PER_TICK * repairSpeedMultiplier(maintenanceStaff);
+	return DAYS_PER_TICK * repairProgressPerSubtick(maintenanceStaff);
 }
 
 export function repairDurationDays(difficulty: Difficulty = DEFAULT_DIFFICULTY): number {
@@ -99,7 +103,7 @@ export function advanceRackRepair(
 		return rack;
 	}
 
-	const nextRepairProgressDays = (rack.repairProgressDays ?? 0) + repairProgressPerTick(maintenanceStaff);
+	const nextRepairProgressDays = (rack.repairProgressDays ?? 0) + repairProgressPerSubtick(maintenanceStaff);
 	if (nextRepairProgressDays < repairDurationDays(difficulty)) {
 		return {
 			...rack,

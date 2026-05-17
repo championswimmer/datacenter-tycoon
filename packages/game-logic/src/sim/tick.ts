@@ -8,7 +8,7 @@ import {
 } from "../contracts/lifecycle.js";
 import { refreshContractMarket } from "../contracts/market.js";
 import { tickOpex, tickRevenue } from "../economy/opex.js";
-import { advanceRackRepair, rackAgeMonths, rackFailureChance } from "./maintenance.js";
+import { rackAgeMonths, rackFailureChance } from "./maintenance.js";
 import { rngFromState } from "./rng.js";
 import { advanceSubtick } from "./subtick.js";
 import type {
@@ -87,7 +87,7 @@ function processRackMaintenance(
 ): Datacenter {
 	const placements = datacenter.placements.map((placement): RackPlacement => {
 		if (placement.health === "repairing") {
-			return advanceRackRepair(placement, datacenter.maintenanceStaff, difficulty);
+			return placement;
 		}
 
 		const failureChance = rackFailureChance(rackAgeMonths(currentTick, placement), difficulty);
@@ -209,10 +209,6 @@ export function settleMonthlyTick(state: GameState): GameState {
 }
 
 export function tick(state: GameState): GameState {
-	if (state.subtick === 0) {
-		return settleMonthlyTick(state);
-	}
-
 	const targetTick = state.tick + 1;
 	let nextState = state;
 	while (nextState.tick < targetTick) {
