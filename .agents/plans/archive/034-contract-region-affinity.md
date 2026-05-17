@@ -1,7 +1,7 @@
 ---
 name: Contract Region Affinity
 description: Add optional region-affinity rules so some contracts can only be accepted in specific regional whitelists, then surface those constraints in game-logic, CLI, and web.
-status: started
+status: completed
 created: 2026-05-11
 updated: 2026-05-17
 owner: game-logic, cli, web
@@ -25,10 +25,10 @@ owner: game-logic, cli, web
   - [x] 4.1 Add selectors that summarize contract affinity and eligible datacenters from game-logic state
   - [x] 4.2 Surface affinity badges and region-whitelist copy in market, active, and historical contract views
   - [x] 4.3 Update accept/assignment UI so only region-eligible datacenters are presented as valid targets
-- [ ] **Phase 5 — Regression coverage and follow-on docs**
+- [x] **Phase 5 — Regression coverage and follow-on docs**
   - [x] 5.1 Add game-logic tests for unrestricted vs affine generation, save round-trips, and invalid-region acceptance
   - [x] 5.2 Add CLI and web tests for affinity rendering, JSON payloads, and region-mismatch messaging
-  - [ ] 5.3 Update plan/docs indexes and contributor guidance for future contract-market work
+  - [x] 5.3 Update plan/docs indexes and contributor guidance for future contract-market work
 
 ## Overview
 
@@ -219,6 +219,7 @@ export interface Contract {
 
 ## Changelog
 
+- 2026-05-17 — completed step 5.3 by archiving this plan, indexing it for future contract-market work, and adding CLI/web contributor guidance that region affinity must remain sourced from canonical game-logic selectors and errors.
 - 2026-05-17 — completed step 5.2 by locking in CLI JSON/text region-mismatch payloads and adding web query-boundary coverage that mirrors canonical affinity summaries and assignment eligibility.
 - 2026-05-17 — completed step 5.1 by adding game-logic regressions for canonical affinity whitelists, reduced-map fallback behavior, and round-tripping every supported affinity family.
 - 2026-05-17 — completed phase 4 by adding affinity-aware selectors, web card rendering, and assignment UI that only offers valid regional datacenters while explaining blocked regions.
