@@ -1,4 +1,5 @@
-import type { Datacenter, DatacenterSpec, Region } from "../types.js";
+import { regionIdsForContractAffinity } from "../catalog/regions.js";
+import type { ContractRegionAffinityKey, Datacenter, DatacenterSpec, Region, RegionId } from "../types.js";
 import { datacenterBaseInfrastructure } from "./datacenter.js";
 
 export function regionPowerUsed(regionId: string, datacenters: Datacenter[]): number {
@@ -29,4 +30,15 @@ export function canBuildInRegion(
 	const powerNeeded = regionPowerUsed(region.id, datacenters) + datacenterBaseInfrastructure(spec).gridImportCapacityKw;
 	const staffNeeded = regionStaffUsed(region.id, datacenters) + spec.staffCount;
 	return powerNeeded <= region.totalPowerAvailable && staffNeeded <= region.totalStaffAvailable;
+}
+
+export function resolveContractAffinityAllowedRegionIds(
+	regions: readonly Region[],
+	affinityKey?: ContractRegionAffinityKey,
+): RegionId[] {
+	if (!affinityKey) {
+		return regions.map((region) => region.id);
+	}
+
+	return regionIdsForContractAffinity(affinityKey, regions);
 }
