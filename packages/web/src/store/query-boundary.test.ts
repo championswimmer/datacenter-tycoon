@@ -12,6 +12,8 @@ import {
   summarizeDatacenterCapacityFromState,
   summarizeDatacenterFabricCapacityFromState,
   summarizeDatacenterFabricStatusFromState,
+  summarizeContractAssignmentFit,
+  summarizeContractRegionAffinity,
   summarizeDatacenterInfrastructureFromState,
   summarizeDatacenterUpgradeViewFromState,
   summarizeNetworkCapacityFromState,
@@ -34,12 +36,15 @@ import {
   selectDatacenterCapacitySummary,
   selectDatacenterFabricCapacitySummary,
   selectDatacenterFabricSummary,
+  selectContractAffinityView,
   selectDatacenterInfrastructureSummary,
   selectDatacenterMaintenanceStaffingView,
   selectDatacenterUpgradeSummary,
   selectFreeCapacity,
+  selectHistoricalContractViews,
   selectHistoricalContracts,
   selectMarket,
+  selectMarketContractViews,
   selectMarketFitSummaries,
   selectRackMoveTargets,
   selectRegionFabricSummary,
@@ -167,6 +172,78 @@ describe("web query-boundary selectors", () => {
       selectHistoricalContractsFromState(state).map((contract) => contract.id),
     );
     expect(selectMarketFitSummaries(state)).toEqual(summarizeOpenMarketContractFits(state));
+  });
+
+  it("mirrors canonical affinity summaries and assignment eligibility from game-logic", () => {
+    const euDc = makeDatacenter("dc-eu", "region-b", [placement("rack-eu", "C1", 0, 0)]);
+    const usaDc = makeDatacenter("dc-usa", "region-a", [placement("rack-usa", "C1", 0, 0)]);
+    const marketContract = makeContract("region-only", {
+      requirements: { vCpu: 64, ramGb: 128, storageTb: 8, gpuFlops: 0 },
+      regionAffinity: {
+        key: "eu",
+        allowedRegionIds: [regionId("region-b")],
+      },
+    });
+    const activeContract = makeContract("active-region", {
+      lifecycleState: "serving",
+      status: "active",
+      startedAtTick: 1,
+      assignedDcId: euDc.id,
+      regionAffinity: {
+        key: "eu",
+        allowedRegionIds: [regionId("region-b")],
+      },
+    });
+    const historicalContract = makeContract("history-region", {
+      lifecycleState: "completed",
+      status: "expired",
+      startedAtTick: 1,
+      assignedDcId: euDc.id,
+      regionAffinity: {
+        key: "eu",
+        allowedRegionIds: [regionId("region-b")],
+      },
+    });
+    const state = makeState({
+      datacenters: [usaDc, euDc],
+      contracts: [marketContract, activeContract, historicalContract],
+      contractMarket: [],
+      activeContracts: [],
+    });
+
+    expect(selectContractAffinityView(state, marketContract)).toEqual({
+      restricted: true,
+      key: "eu",
+      badgeLabel: "EU ONLY",
+      allowedRegionIds: [regionId("region-b")],
+      allowedRegions: ["RB · B City · Region B"],
+      summary: "EU ONLY · RB · B City · Region B",
+    });
+
+    const [marketView] = selectMarketContractViews(state);
+    expect(marketView?.fitSummary).toEqual(summarizeContractAssignmentFit(state, marketContract.id));
+    expect(marketView?.affinity).toEqual({
+      restricted: true,
+      key: "eu",
+      badgeLabel: "EU ONLY",
+      allowedRegionIds: summarizeContractRegionAffinity(marketContract, state.map.regions).allowedRegionIds,
+      allowedRegions: ["RB · B City · Region B"],
+      summary: "EU ONLY · RB · B City · Region B",
+    });
+    expect(marketView?.assignmentOptions.find((option) => option.dcId === usaDc.id)).toMatchObject({
+      regionEligible: false,
+      disabledReason: "wrong_region",
+    });
+    expect(marketView?.assignmentOptions.find((option) => option.dcId === euDc.id)).toMatchObject({
+      regionEligible: true,
+      disabledReason: null,
+      fits: true,
+    });
+    expect(selectHistoricalContractViews(state)[0]).toMatchObject({
+      contract: historicalContract,
+      assignedDcName: euDc.name,
+      assignedRegionLabel: "RB · B City · Region B",
+    });
   });
 
   it("mirrors canonical datacenter capacity and maintenance views", () => {
