@@ -24,6 +24,13 @@
   box-shadow: var(--glow-cyan), var(--shadow-float);
 }
 
+.panel::before {
+  content: "";
+  display: block;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(94, 240, 255, 0), rgba(94, 240, 255, 0.92), rgba(94, 240, 255, 0));
+}
+
 .header,
 .content,
 .footer {
@@ -82,11 +89,18 @@
   background: transparent;
   color: var(--fg-2);
   cursor: pointer;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease,
+    background 120ms ease,
+    transform 120ms ease;
 }
 
 .closeButton:hover {
   color: var(--neon-red);
   border-color: var(--neon-red);
+  background: rgba(255, 92, 138, 0.08);
+  transform: translateY(-1px);
 }
 
 .content {
@@ -118,6 +132,18 @@
   border: 1px solid var(--grid);
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.03);
+}
+
+.summaryCard {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.015);
+}
+
+.nodeCard:first-child {
+  border-color: rgba(94, 240, 255, 0.22);
+}
+
+.nodeCard:last-child {
+  border-color: rgba(255, 190, 82, 0.24);
 }
 
 .summaryLabel,
@@ -167,6 +193,10 @@
 .warning {
   font-size: var(--text-xs);
   color: var(--neon-amber);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid rgba(255, 190, 82, 0.3);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 190, 82, 0.08);
 }
 
 .actions {
@@ -177,13 +207,19 @@
 
 .cancelButton,
 .confirmButton {
-  min-height: 38px;
+  min-height: 40px;
   border-radius: var(--radius-sm);
   padding: 0 var(--space-3);
   font-size: var(--text-xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
 }
 
 .cancelButton {
@@ -192,10 +228,16 @@
   color: var(--fg-1);
 }
 
+.cancelButton:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .confirmButton {
   border: 1px solid var(--neon-cyan);
   background: rgba(94, 240, 255, 0.08);
   color: var(--neon-cyan);
+  box-shadow: inset 0 0 0 1px rgba(94, 240, 255, 0.08);
 }
 
 .confirmButton:disabled {
@@ -204,7 +246,13 @@
   box-shadow: none;
 }
 
+.confirmButton:not(:disabled):hover,
+.cancelButton:hover {
+  transform: translateY(-1px);
+}
+
 .confirmButton:not(:disabled):hover {
+  background: rgba(94, 240, 255, 0.12);
   box-shadow: var(--glow-sm-cyan);
 }
 

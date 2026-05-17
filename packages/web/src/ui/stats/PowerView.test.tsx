@@ -103,14 +103,14 @@ describe("PowerView", () => {
     expect(within(networkLadder).getByText(/Cat8 uplink/i)).toBeTruthy();
     expect(within(networkLadder).getByText(/Fiber uplink/i)).toBeTruthy();
     expect(within(networkLadder).getByText("Current")).toBeTruthy();
-    expect(within(networkLadder).getByText("Available next")).toBeTruthy();
+    expect(within(networkLadder).getByText("Ready next")).toBeTruthy();
     expect(within(networkLadder).getByText("Locked")).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: /Review upgrade to Hybrid cooling/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Review Hybrid cooling/i }));
 
-    expect(screen.getByRole("dialog", { name: /CONFIRM UPGRADE/i })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: /REVIEW UPGRADE PURCHASE/i })).toBeTruthy();
     expect(screen.getByText(/Cooling loop · Air cooling → Hybrid cooling/i)).toBeTruthy();
-    expect(screen.getByText(/Spend required to unlock Hybrid cooling/i)).toBeTruthy();
+    expect(screen.getByText(/Spend required right now to unlock Hybrid cooling/i)).toBeTruthy();
     expect(store.getState().datacenters.find((dc) => dc.id === dcId)?.upgrades?.currentNodeByTrack.cooling).toBe("air");
   });
 
@@ -118,11 +118,11 @@ describe("PowerView", () => {
     const { state, dcId } = stateWithDatacenterAndRack();
     const { store } = renderPowerView(state, dcId);
 
-    fireEvent.click(screen.getByRole("button", { name: /Review upgrade to Hybrid cooling/i }));
-    fireEvent.click(screen.getByRole("button", { name: "CANCEL" }));
+    fireEvent.click(screen.getByRole("button", { name: /Review Hybrid cooling/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
 
-    expect(screen.queryByRole("dialog", { name: /CONFIRM UPGRADE/i })).toBeNull();
-    expect(screen.getByRole("button", { name: /Review upgrade to Hybrid cooling/i })).toBeTruthy();
+    expect(screen.queryByRole("dialog", { name: /REVIEW UPGRADE PURCHASE/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /Review Hybrid cooling/i })).toBeTruthy();
     expect(store.getState().datacenters.find((dc) => dc.id === dcId)?.upgrades?.currentNodeByTrack.cooling).toBe("air");
   });
 
@@ -130,10 +130,10 @@ describe("PowerView", () => {
     const { state, dcId } = stateWithDatacenterAndRack();
     const { store } = renderPowerView(state, dcId);
 
-    fireEvent.click(screen.getByRole("button", { name: /Review upgrade to Hybrid cooling/i }));
-    fireEvent.click(screen.getByRole("button", { name: /CONFIRM — \$180,000/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Review Hybrid cooling/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Apply upgrade · \$180,000/i }));
 
-    expect(screen.queryByRole("dialog", { name: /CONFIRM UPGRADE/i })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: /REVIEW UPGRADE PURCHASE/i })).toBeNull();
     expect(screen.getAllByText(/HYBRID/).length).toBeGreaterThan(0);
     expect(screen.getByText(/UPKEEP \$900\/mo/)).toBeTruthy();
     expect(screen.getByText("MAXED")).toBeTruthy();
@@ -152,8 +152,8 @@ describe("PowerView", () => {
 
     renderPowerView(state, dcId);
 
-    expect(screen.getByText(/Need \$80,000 more cash to unlock this step\./i)).toBeTruthy();
-    const upgradeButton = screen.getByRole("button", { name: /Need \$80,000 more/i }) as HTMLButtonElement;
+    expect(screen.getByText(/Short \$80,000\. This step costs \$180,000 upfront\./i)).toBeTruthy();
+    const upgradeButton = screen.getByRole("button", { name: /Short \$80,000 · Hybrid cooling/i }) as HTMLButtonElement;
     expect(upgradeButton.disabled).toBe(true);
     expect(screen.queryByRole("dialog", { name: /CONFIRM UPGRADE/i })).toBeNull();
   });
@@ -167,7 +167,7 @@ describe("PowerView", () => {
     const networkLadder = screen.getByRole("list", { name: /Network uplink upgrade ladder/i });
     expect(within(networkLadder).getAllByText("Complete")).toHaveLength(2);
     expect(within(networkLadder).getByText("Current")).toBeTruthy();
-    expect(within(networkLadder).queryByText("Available next")).toBeNull();
+    expect(within(networkLadder).queryByText("Ready next")).toBeNull();
     expect(screen.getByText(/FABRIC READY/)).toBeTruthy();
   });
 
