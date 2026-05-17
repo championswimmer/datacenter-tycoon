@@ -3,6 +3,8 @@ import { useSelector } from "../../store/storeContext.js";
 import {
   selectDatacenter,
   selectDatacenterCapacitySummary,
+  selectDatacenterFabricCapacitySummary,
+  selectDatacenterFabricSummary,
   selectDatacenterInfrastructureSummary,
   selectDatacenterRackPowerSummary,
   selectDatacenterUpgradeSummary,
@@ -26,6 +28,8 @@ const EMPTY_USAGE = { powerKw: 0, heatOutputBtuPerHr: 0, bandwidthGbps: 0, slots
 export function PowerView({ dcId }: PowerViewProps) {
   const datacenter = useSelector((state) => selectDatacenter(state, dcId));
   const capacitySummary = useSelector((state) => selectDatacenterCapacitySummary(state, dcId));
+  const fabricCapacitySummary = useSelector((state) => selectDatacenterFabricCapacitySummary(state, dcId));
+  const fabricSummary = useSelector((state) => selectDatacenterFabricSummary(state, dcId));
   const infrastructure = useSelector((state) => selectDatacenterInfrastructureSummary(state, dcId));
   const upgradeSummary = useSelector((state) => selectDatacenterUpgradeSummary(state, dcId));
   const opexAgg = useSelector(selectOpexBreakdown);
@@ -36,8 +40,13 @@ export function PowerView({ dcId }: PowerViewProps) {
 
   const usage = usageAgg.perDc.find((entry) => entry.dcId === dcId)?.usage ?? EMPTY_USAGE;
   const opexEntry = opexAgg.perDc.find((entry) => entry.dcId === dcId);
-  const dcCapacity = capacitySummary?.usable ?? EMPTY_CAPACITY;
-  const dcFree = capacitySummary?.available ?? EMPTY_CAPACITY;
+  const showingPooledCapacity = fabricCapacitySummary?.connected ?? false;
+  const dcCapacity = showingPooledCapacity
+    ? fabricCapacitySummary?.usable ?? EMPTY_CAPACITY
+    : capacitySummary?.usable ?? EMPTY_CAPACITY;
+  const dcFree = showingPooledCapacity
+    ? fabricCapacitySummary?.available ?? EMPTY_CAPACITY
+    : capacitySummary?.available ?? EMPTY_CAPACITY;
 
   return (
     <div className={styles.view}>
@@ -48,8 +57,41 @@ export function PowerView({ dcId }: PowerViewProps) {
 
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>RACK CAPACITY</h3>
-        <CapacityTiles total={dcCapacity} free={dcFree} />
+        <CapacityTiles
+          total={dcCapacity}
+          free={dcFree}
+          modeLabel={showingPooledCapacity ? "REGIONAL FABRIC POOL" : "LOCAL SITE CAPACITY"}
+          detail={showingPooledCapacity
+            ? `${fabricCapacitySummary?.memberDcIds.length ?? 1}-site pooled block available to this datacenter`
+            : fabricSummary?.fabricEligible
+              ? "Upgrade-complete site; join from the region panel to pool capacity"
+              : fabricSummary?.fabricIneligibilityReason ?? "Standalone capacity only"}
+        />
       </section>
+
+      {fabricSummary && (
+        <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>REGIONAL FABRIC STATUS</h3>
+          <div className={styles.powerSplitGrid}>
+            <div className={styles.powerSplitCard}>
+              <span className={styles.powerSplitLabel}>Fabric state</span>
+              <span className={styles.powerSplitValue}>
+                {fabricSummary.fabricConnected ? "LINKED" : fabricSummary.fabricEligible ? "READY" : "LOCKED"}
+              </span>
+              <span className={styles.powerSplitHint}>
+                {fabricSummary.fabricConnected
+                  ? `${fabricSummary.memberDcIds.length} linked datacenters share one pool`
+                  : fabricSummary.linkBlockedReason ?? "Join from the region panel"}
+              </span>
+            </div>
+            <div className={styles.powerSplitCard}>
+              <span className={styles.powerSplitLabel}>Join cost</span>
+              <span className={styles.powerSplitValue}>${fabricSummary.joinCost.toLocaleString()}</span>
+              <span className={styles.powerSplitHint}>Charged once for each new fabric connection investment</span>
+            </div>
+          </div>
+        </section>
+      )}
 
       {infrastructure && upgradeSummary && (
         <section className={styles.section}>

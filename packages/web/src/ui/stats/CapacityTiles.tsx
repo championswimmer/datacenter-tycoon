@@ -3,7 +3,9 @@ import styles from "./CapacityTiles.module.css";
 
 interface CapacityTilesProps {
   total: Capacity;
-  free:  Capacity;
+  free: Capacity;
+  modeLabel?: string;
+  detail?: string;
 }
 
 function fmtNum(n: number): string {
@@ -12,7 +14,7 @@ function fmtNum(n: number): string {
   return String(Math.round(n));
 }
 
-export function CapacityTiles({ total, free }: CapacityTilesProps) {
+export function CapacityTiles({ total, free, modeLabel, detail }: CapacityTilesProps) {
   const used = {
     vCpu:      total.vCpu      - free.vCpu,
     ramGb:     total.ramGb     - free.ramGb,
@@ -28,7 +30,14 @@ export function CapacityTiles({ total, free }: CapacityTilesProps) {
   ];
 
   return (
-    <div className={styles.tiles}>
+    <div className={styles.wrap}>
+      {(modeLabel || detail) && (
+        <div className={styles.header}>
+          {modeLabel && <span className={styles.modeLabel}>{modeLabel}</span>}
+          {detail && <span className={styles.detail}>{detail}</span>}
+        </div>
+      )}
+      <div className={styles.tiles}>
       {tiles.map(t => {
         const usedPct = t.total > 0 ? (t.used / t.total) * 100 : 0;
         return (
@@ -49,6 +58,7 @@ export function CapacityTiles({ total, free }: CapacityTilesProps) {
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

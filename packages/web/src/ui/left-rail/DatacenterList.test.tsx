@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { newGame, reduce, DATACENTER_CATALOG } from "@datacenter-tycoon/game-logic";
+import { DATACENTER_CATALOG, newGame, reduce } from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "../../store/gameStore.js";
 import { StoreProvider } from "../../store/storeContext.js";
 import { DatacenterList } from "./DatacenterList.js";
@@ -12,6 +12,23 @@ function Wrapper({ children, state = newGame(42) }: {
 }) {
   const store = createGameStore(state);
   return <StoreProvider store={store}>{children}</StoreProvider>;
+}
+
+function upgradeDatacenterToFiber(state: ReturnType<typeof newGame>, dcId: ReturnType<typeof nextDcId>) {
+  return reduce(
+    reduce(state, {
+      type: "UpgradeDatacenter",
+      dcId,
+      trackId: "networkType",
+      targetNodeId: "cat8",
+    }),
+    {
+      type: "UpgradeDatacenter",
+      dcId,
+      trackId: "networkType",
+      targetNodeId: "fiber",
+    },
+  );
 }
 
 describe("DatacenterList", () => {
@@ -73,6 +90,34 @@ describe("DatacenterList", () => {
     );
     expect(screen.getByText(/FABRIC READY/)).toBeTruthy();
     expect(screen.getByText("FIBER")).toBeTruthy();
+  });
+
+  it("shows pooled fabric membership for linked datacenters", () => {
+    let state = newGame(42, { startingCash: 8_000_000 });
+    const dcA = nextDcId();
+    const dcB = nextDcId();
+    const firstRegionId = state.map.regions[0]!.id;
+
+    for (const dcId of [dcA, dcB] as const) {
+      state = reduce(state, {
+        type: "BuildDatacenter",
+        specId: DATACENTER_CATALOG.garage!.id,
+        dcId,
+        regionId: firstRegionId,
+      });
+      state = upgradeDatacenterToFiber(state, dcId);
+    }
+
+    state = reduce(state, { type: "FabricLink", sourceDcId: dcA, targetDcId: dcB });
+
+    render(
+      <Wrapper state={state}>
+        <DatacenterList currentRoute={{ view: "home" }} />
+      </Wrapper>,
+    );
+
+    expect(screen.getAllByText(/FABRIC LINKED/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/POOL 2 SITES/).length).toBeGreaterThan(0);
   });
 
   it("renders the New Datacenter button", () => {
