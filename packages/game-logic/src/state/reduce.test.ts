@@ -446,6 +446,33 @@ test("reduce persists later regional fabric joins and records capex entries for 
 	assert.equal(joinedState.player.cash, bootstrappedState.player.cash - REGIONAL_FABRIC_JOIN_COST);
 });
 
+test("reduce rejects invalid same-datacenter regional fabric joins with a stable error code", () => {
+	const state = newGame(42, { startingCash: 6_000_000 });
+	const firstRegionId = state.map.regions[0]!.id;
+	const dcA = datacenterId("dc-fabric-self");
+	const builtState = reduce(state, {
+		type: "BuildDatacenter",
+		specId: DATACENTER_CATALOG.garage.id,
+		dcId: dcA,
+		regionId: firstRegionId,
+	});
+	const fiberReadyState = upgradeDatacenterToFiber(builtState, dcA);
+
+	assert.throws(
+		() => reduce(fiberReadyState, { type: "FabricLink", sourceDcId: dcA, targetDcId: dcA }),
+		(error: unknown) => {
+			assert.ok(error instanceof FabricLinkError);
+			assert.deepEqual(error.data, {
+				code: "invalid_join",
+				sourceDcId: dcA,
+				targetDcId: dcA,
+				dcId: dcA,
+			});
+			return true;
+		},
+	);
+});
+
 test("reduce surfaces explicit regional fabric validation errors for duplicate, cross-region, and unknown joins", () => {
 	const state = newGame(42, { startingCash: 12_000_000 });
 	const firstRegionId = state.map.regions[0]!.id;
