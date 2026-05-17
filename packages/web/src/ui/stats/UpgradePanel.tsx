@@ -147,12 +147,25 @@ export function UpgradePanel({ dcId }: UpgradePanelProps) {
                   <span className={styles.trackNext}>NEXT · {track.nextNode.label}</span>
                   <span className={styles.trackStat}>Capex ${track.nextNode.capexCost.toLocaleString()}</span>
                   <span className={styles.trackStat}>Δ Opex +${track.nextNode.fixedMonthlyOpexDelta.toLocaleString()}/mo</span>
+                  {cash < track.nextNode.capexCost ? (
+                    <span className={styles.trackWarning}>
+                      Need ${(track.nextNode.capexCost - cash).toLocaleString()} more cash to unlock this step.
+                    </span>
+                  ) : null}
                   <button
                     type="button"
                     className={styles.upgradeButton}
                     onClick={() => setPendingTrackId(track.trackId)}
+                    disabled={cash < track.nextNode.capexCost}
+                    title={
+                      cash < track.nextNode.capexCost
+                        ? `Need $${(track.nextNode.capexCost - cash).toLocaleString()} more`
+                        : `Review upgrade to ${track.nextNode.label}`
+                    }
                   >
-                    Upgrade to {track.nextNode.label}
+                    {cash < track.nextNode.capexCost
+                      ? `Need $${(track.nextNode.capexCost - cash).toLocaleString()} more`
+                      : `Review upgrade to ${track.nextNode.label}`}
                   </button>
                 </>
               ) : (
