@@ -9,7 +9,7 @@ import type {
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import {
   selectAllDatacenters,
-  selectMarketFitSummaries,
+  selectMarketContractViews,
   selectReliabilitySummary,
   selectTick,
 } from "../../store/selectors.js";
@@ -49,7 +49,7 @@ function dealScoreLabel(score: number): string {
 
 export function MarketList({ contracts }: { contracts: Contract[] }) {
   const datacenters = useSelector(selectAllDatacenters);
-  const marketFitSummaries = useSelector(selectMarketFitSummaries);
+  const marketContractViews = useSelector(selectMarketContractViews);
   const tick = useSelector(selectTick);
   const reliability = useSelector(selectReliabilitySummary);
   const dispatch = useGameDispatch();
@@ -57,9 +57,9 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
 
   const [accepting, setAccepting] = useState<string | null>(null);
 
-  const fitSummaryById = useMemo(
-    () => new Map(marketFitSummaries.map((summary) => [summary.contractId, summary])),
-    [marketFitSummaries],
+  const marketViewById = useMemo(
+    () => new Map(marketContractViews.map((view) => [view.contract.id, view])),
+    [marketContractViews],
   );
 
   const handleAccept = useCallback((contractId: string, dcId: string) => {
@@ -78,7 +78,9 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
   return (
     <div className={styles.list}>
       {contracts.map((contract) => {
-        const fitSummary = fitSummaryById.get(contract.id);
+        const contractView = marketViewById.get(contract.id);
+        const fitSummary = contractView?.fitSummary;
+        const affinity = contractView?.affinity;
         const fit = fitSummary?.fitStatus ?? "none";
         const { months, days } = monthsAndDaysBetween(tick, fraction, contract.expiresAtTick, 0);
         const expired = months <= 0 && days <= 0;
@@ -139,6 +141,13 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
             </div>
 
             <RequirementsRow reqs={contract.requirements} />
+            <AffinitySummary
+              restricted={affinity?.restricted ?? false}
+              badgeLabel={affinity?.badgeLabel ?? "ANY REGION"}
+              detail={affinity?.restricted
+                ? `Allowed regions: ${affinity.allowedRegions.join(", ")}`
+                : "Deployable from any region."}
+            />
             <CapacityComparison reqs={contract.requirements} free={networkFree} />
 
             {reliabilityHint && (
@@ -185,6 +194,26 @@ function RequirementsRow({ reqs }: { reqs: Contract["requirements"] }) {
           <span className={styles.reqVal}>{item.val}</span>
         </span>
       ))}
+    </div>
+  );
+}
+
+function AffinitySummary({
+  restricted,
+  badgeLabel,
+  detail,
+}: {
+  restricted: boolean;
+  badgeLabel: string;
+  detail: string;
+}) {
+  return (
+    <div className={styles.affinityRow}>
+      <span className={[
+        styles.affinityBadge,
+        restricted ? styles.affinityBadgeRestricted : styles.affinityBadgeUnrestricted,
+      ].join(" ")}>{badgeLabel}</span>
+      <span className={styles.affinityDetail}>{detail}</span>
     </div>
   );
 }

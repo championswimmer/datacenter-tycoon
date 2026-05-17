@@ -1,6 +1,6 @@
-import type { Contract, ContractStatus } from "@datacenter-tycoon/game-logic";
+import type { ContractStatus } from "@datacenter-tycoon/game-logic";
 import { useSelector } from "../../store/storeContext.js";
-import { selectAllDatacenters, selectHistoricalContracts } from "../../store/selectors.js";
+import { selectHistoricalContractViews } from "../../store/selectors.js";
 import styles from "./ActiveList.module.css";
 
 function fmt(n: number): string {
@@ -18,14 +18,10 @@ const STATUS_LABEL: Record<ContractStatus, string> = {
 };
 
 export function CompletedList() {
-  const history = useSelector(selectHistoricalContracts);
-  const datacenters = useSelector(selectAllDatacenters);
+  const history = useSelector(selectHistoricalContractViews);
 
-  const dcName = (id: string | undefined) =>
-    datacenters.find((datacenter) => datacenter.id === id)?.name ?? "—";
-
-  const completedCount = history.filter((contract) => contract.lifecycleState === "completed").length;
-  const cancelledCount = history.filter((contract) => contract.lifecycleState === "cancelled").length;
+  const completedCount = history.filter((view) => view.contract.lifecycleState === "completed").length;
+  const cancelledCount = history.filter((view) => view.contract.lifecycleState === "cancelled").length;
 
   if (history.length === 0) {
     return <p className={styles.empty}>No historical contracts yet.</p>;
@@ -33,27 +29,39 @@ export function CompletedList() {
 
   return (
     <div className={styles.list}>
-      {history.map((contract: Contract) => (
-        <div key={contract.id} className={[styles.card, styles[`status-${contract.status}`]].join(" ")}>
-          <div className={styles.cardTop}>
-            <div className={styles.cardLeft}>
-              <span className={[styles.statusPill, styles[`pill-${contract.status}`]].join(" ")}>
-                {STATUS_LABEL[contract.status]}
-              </span>
-              <div className={styles.name}>{contract.name}</div>
-              <div className={styles.dcLabel}>→ {dcName(contract.assignedDcId)}</div>
-            </div>
-            <div className={styles.financials}>
-              <div className={contract.lifecycleState === "completed" ? styles.payment : styles.penaltyTotal}>
-                {contract.lifecycleState === "completed"
-                  ? `${fmt(contract.monthlyPayment)}/mo revenue`
-                  : `−${fmt(contract.penaltyPerMonth)}/mo penalty`}
+      {history.map((view) => {
+        const contract = view.contract;
+        return (
+          <div key={contract.id} className={[styles.card, styles[`status-${contract.status}`]].join(" ")}>
+            <div className={styles.cardTop}>
+              <div className={styles.cardLeft}>
+                <span className={[styles.statusPill, styles[`pill-${contract.status}`]].join(" ")}>
+                  {STATUS_LABEL[contract.status]}
+                </span>
+                <div className={styles.name}>{contract.name}</div>
+                <div className={styles.dcLabel}>→ {view.assignedDcName ?? "—"}</div>
+                <div className={styles.affinityRow}>
+                  <span className={[
+                    styles.affinityBadge,
+                    view.affinity.restricted ? styles.affinityBadgeRestricted : styles.affinityBadgeUnrestricted,
+                  ].join(" ")}>{view.affinity.badgeLabel}</span>
+                  <span className={styles.affinityDetail}>{view.affinity.restricted
+                    ? `Allowed regions: ${view.affinity.allowedRegions.join(", ")}`
+                    : "Deployable from any region."}</span>
+                </div>
               </div>
-              <div className={styles.termMeta}>{contract.termMonths} mo term</div>
+              <div className={styles.financials}>
+                <div className={contract.lifecycleState === "completed" ? styles.payment : styles.penaltyTotal}>
+                  {contract.lifecycleState === "completed"
+                    ? `${fmt(contract.monthlyPayment)}/mo revenue`
+                    : `−${fmt(contract.penaltyPerMonth)}/mo penalty`}
+                </div>
+                <div className={styles.termMeta}>{contract.termMonths} mo term</div>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       <div className={styles.aggregateFooter}>
         <span>Completed: <strong className={styles.footerRevenue}>{completedCount}</strong></span>

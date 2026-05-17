@@ -3,7 +3,7 @@ import { tickOpex } from "@datacenter-tycoon/game-logic";
 import type { Contract, ContractStatus } from "@datacenter-tycoon/game-logic";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import {
-  selectActiveContracts,
+  selectActiveContractViews,
   selectAllDatacenters,
   selectDatacenterCapacitySummary,
   selectReliabilitySummary,
@@ -29,7 +29,7 @@ const STATUS_LABEL: Record<ContractStatus, string> = {
 };
 
 export function ActiveList() {
-  const contracts = useSelector(selectActiveContracts);
+  const contractViews = useSelector(selectActiveContractViews);
   const datacenters = useSelector(selectAllDatacenters);
   const regions = useSelector((state) => state.map.regions);
   const tick = useSelector(selectTick);
@@ -49,7 +49,7 @@ export function ActiveList() {
   const dcName = (id: string | undefined) =>
     datacenters.find((datacenter) => datacenter.id === id)?.name ?? "—";
 
-  const sorted = useMemo(() => [...contracts].sort((a, b) => {
+  const sorted = useMemo(() => [...contractViews].sort((a, b) => {
     const order: Record<ContractStatus, number> = {
       breached: 0,
       active: 1,
@@ -57,8 +57,9 @@ export function ActiveList() {
       expired: 3,
       cancelled: 4,
     };
-    return order[a.status] - order[b.status];
-  }), [contracts]);
+    return order[a.contract.status] - order[b.contract.status];
+  }), [contractViews]);
+  const activeContracts = useMemo(() => contractViews.map((view) => view.contract), [contractViews]);
 
   if (sorted.length === 0) {
     return <p className={styles.empty}>No active contracts yet — accept one from the market.</p>;
@@ -66,7 +67,8 @@ export function ActiveList() {
 
   return (
     <div className={styles.list}>
-      {sorted.map((contract) => {
+      {sorted.map((view) => {
+        const contract = view.contract;
         const started = contract.startedAtTick ?? tick;
         const elapsedMonths = Math.max(0, tick - started);
         const progress = Math.min(1, elapsedMonths / Math.max(contract.termMonths, 1));
@@ -84,7 +86,7 @@ export function ActiveList() {
 
         const datacenter = datacenters.find((entry) => entry.id === contract.assignedDcId);
         const region = datacenter ? regions.find((entry) => entry.id === datacenter.regionId) : undefined;
-        const contractsOnDatacenter = contracts.filter((entry) => entry.assignedDcId === datacenter?.id);
+        const contractsOnDatacenter = activeContracts.filter((entry) => entry.assignedDcId === datacenter?.id);
         const attributedOpex = datacenter && region
           ? tickOpex(datacenter, region).total / Math.max(contractsOnDatacenter.length, 1)
           : 0;
@@ -115,6 +117,15 @@ export function ActiveList() {
                 </span>
                 <div className={styles.name}>{contract.name}</div>
                 <div className={styles.dcLabel}>→ {dcName(contract.assignedDcId)}</div>
+              <div className={styles.affinityRow}>
+                <span className={[
+                  styles.affinityBadge,
+                  view.affinity.restricted ? styles.affinityBadgeRestricted : styles.affinityBadgeUnrestricted,
+                ].join(" ")}>{view.affinity.badgeLabel}</span>
+                <span className={styles.affinityDetail}>{view.affinity.restricted
+                  ? `Allowed regions: ${view.affinity.allowedRegions.join(", ")}`
+                  : "Deployable from any region."}</span>
+              </div>
               </div>
               <div className={styles.financials}>
                 <div className={styles.payment}>{fmt(contract.monthlyPayment)}<span className={styles.unit}>/mo</span></div>

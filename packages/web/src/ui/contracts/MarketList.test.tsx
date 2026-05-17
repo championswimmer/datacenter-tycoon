@@ -77,6 +77,27 @@ describe("MarketList", () => {
     expect(screen.getByText("6 months left")).toBeTruthy();
   });
 
+  it("renders affinity badges and allowed-region copy for restricted offers", () => {
+    const state = buildMarketState();
+    const allowedRegionIds = state.map.regions
+      .filter((region) => region.id.toString().startsWith("eu_"))
+      .map((region) => region.id);
+    state.contractMarket = [{
+      ...state.contractMarket[0]!,
+      name: "EU Compliance Stack",
+      regionAffinity: {
+        key: "eu",
+        allowedRegionIds,
+      },
+    }];
+
+    renderMarket(state);
+
+    expect(screen.getByText("EU ONLY")).toBeTruthy();
+    expect(screen.getByText(/Allowed regions:/i)).toBeTruthy();
+    expect(screen.getByText(/DUB · Dublin · EU West/i)).toBeTruthy();
+  });
+
   it("shows silver-tier market hints when reliability is limiting longer work", () => {
     const state = buildMarketState();
     state.player.reliability = {
