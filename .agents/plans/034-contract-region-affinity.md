@@ -23,7 +23,7 @@ owner: game-logic, cli, web
   - [x] 3.3 Update TUI contract surfaces and CLI regression tests for affinity-aware presentation
 - [ ] **Phase 4 — Web contract UX and assignment flow**
   - [x] 4.1 Add selectors that summarize contract affinity and eligible datacenters from game-logic state
-  - [ ] 4.2 Surface affinity badges and region-whitelist copy in market, active, and historical contract views
+  - [x] 4.2 Surface affinity badges and region-whitelist copy in market, active, and historical contract views
   - [ ] 4.3 Update accept/assignment UI so only region-eligible datacenters are presented as valid targets
 - [ ] **Phase 5 — Regression coverage and follow-on docs**
   - [ ] 5.1 Add game-logic tests for unrestricted vs affine generation, save round-trips, and invalid-region acceptance
@@ -219,6 +219,7 @@ export interface Contract {
 
 ## Changelog
 
+- 2026-05-17 — completed step 4.2 by surfacing region-affinity badges and allowed-region copy across market, active, and history cards in the web UI with component regression coverage.
 - 2026-05-17 — completed step 4.1 by adding web selectors that summarize affinity badges, allowed regions, and eligible datacenter assignment options from canonical game-logic fit data.
 - 2026-05-17 — completed phase 3 by propagating contract affinity through CLI JSON/text/TUI surfaces and adding regression coverage for wrong-region errors and affinity rendering.
 - 2026-05-17 — completed step 3.2 by surfacing region affinity in CLI list/detail text output and formatting wrong-region accept failures for both humans and JSON callers.

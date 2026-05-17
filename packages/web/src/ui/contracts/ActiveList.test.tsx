@@ -74,6 +74,25 @@ describe("ActiveList", () => {
     expect(screen.getByText("1/3 mo · 2 months left")).toBeTruthy();
   });
 
+  it("renders affinity badges and allowed-region copy for active contracts", () => {
+    const state = buildActiveState();
+    const allowedRegionIds = state.map.regions
+      .filter((region) => region.id.toString().startsWith("us_"))
+      .map((region) => region.id);
+    state.activeContracts = [{
+      ...state.activeContracts[0]!,
+      regionAffinity: {
+        key: "usa",
+        allowedRegionIds,
+      },
+    }];
+
+    renderActive(state);
+
+    expect(screen.getByText("USA ONLY")).toBeTruthy();
+    expect(screen.getByText(/Allowed regions:/i)).toBeTruthy();
+  });
+
   it("shows positive SLA messaging after a fulfilled month", () => {
     const state = buildActiveState();
     state.player.reliability = {
