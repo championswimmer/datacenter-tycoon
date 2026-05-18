@@ -127,22 +127,50 @@ const selectDatacentersByRegionIndex = memoizeByInputs(
   },
 );
 
+function selectStoredContracts(state: Pick<GameState, "contracts">): Contract[] {
+  return state.contracts;
+}
+
+function selectStoredMarketContracts(
+  state: Pick<GameState, "contractMarket">,
+): Contract[] {
+  return state["contractMarket"];
+}
+
+function selectStoredActiveContracts(
+  state: Pick<GameState, "activeContracts">,
+): Contract[] {
+  return state["activeContracts"];
+}
+
 const selectContractBuckets = memoizeByInputs(
   (state: Pick<GameState, "contracts" | "contractMarket" | "activeContracts">) => [
-    state.contracts,
-    state.contractMarket,
-    state.activeContracts,
+    selectStoredContracts(state),
+    selectStoredMarketContracts(state),
+    selectStoredActiveContracts(state),
   ],
   (state) => bucketContractsFromState(state),
 );
 
 const selectMemoizedMarketFitSummaries = memoizeByInputs(
-  (state: GameState) => [state.contracts, state.contractMarket, state.activeContracts, state.datacenters, state.map.regions],
+  (state: GameState) => [
+    selectStoredContracts(state),
+    selectStoredMarketContracts(state),
+    selectStoredActiveContracts(state),
+    state.datacenters,
+    state.map.regions,
+  ],
   (state) => summarizeOpenMarketContractFits(state),
 );
 
 const selectMemoizedMarketContractViews = memoizeByInputs(
-  (state: GameState) => [state.contracts, state.contractMarket, state.activeContracts, state.datacenters, state.map.regions],
+  (state: GameState) => [
+    selectStoredContracts(state),
+    selectStoredMarketContracts(state),
+    selectStoredActiveContracts(state),
+    state.datacenters,
+    state.map.regions,
+  ],
   (state) => {
     const marketContracts = selectMarket(state);
     const fitSummaries = selectMemoizedMarketFitSummaries(state);
@@ -338,7 +366,7 @@ const selectMemoizedAllDatacenterFabricSummaries = memoizeByInputs(
 );
 
 const selectMemoizedCapacity = memoizeByInputs(
-  (state: GameState) => [state.datacenters, state.activeContracts],
+  (state: GameState) => [state.datacenters, selectStoredActiveContracts(state)],
   (state): AggregateCapacity => {
     const summary = selectNetworkCapacitySummary(state);
     return {
@@ -352,7 +380,13 @@ const selectMemoizedCapacity = memoizeByInputs(
 );
 
 const selectMemoizedOpexBreakdown = memoizeByInputs(
-  (state: GameState) => [state.datacenters, state.map.regions, state.contracts, state.contractMarket, state.activeContracts],
+  (state: GameState) => [
+    state.datacenters,
+    state.map.regions,
+    selectStoredContracts(state),
+    selectStoredMarketContracts(state),
+    selectStoredActiveContracts(state),
+  ],
   (state): AggregateOpex => {
     const activeContracts = selectActiveContracts(state);
     const regionsById = selectRegionIndex(state);
@@ -377,7 +411,12 @@ const selectMemoizedOpexBreakdown = memoizeByInputs(
 );
 
 const selectMemoizedRackPowerSummary = memoizeByInputs(
-  (state: GameState) => [state.datacenters, state.contracts, state.contractMarket, state.activeContracts],
+  (state: GameState) => [
+    state.datacenters,
+    selectStoredContracts(state),
+    selectStoredMarketContracts(state),
+    selectStoredActiveContracts(state),
+  ],
   (state): AggregateRackPowerSummary => {
     const perDc = state.datacenters.map((dc) => ({
       dcId: dc.id,

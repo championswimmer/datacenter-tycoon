@@ -31,7 +31,7 @@ owner: web
   - [x] 5.2 Limit synchronous localStorage reads during startup/session switches
   - [x] 5.3 Optimise large image assets and route-level payloads
 - [ ] **Phase 6 — Final validation and follow-up guardrails**
-  - [ ] 6.1 Re-run web typecheck, tests, build, and query-boundary audit
+  - [x] 6.1 Re-run web typecheck, tests, build, and query-boundary audit
   - [ ] 6.2 Document measured before/after results
   - [ ] 6.3 Add follow-up issues for non-trivial architectural work
 
@@ -250,6 +250,7 @@ Optimisation principles:
 
 ## Changelog
 
+- 2026-05-18 — Completed Phase 6.1 by re-running typecheck, the full web Vitest suite, production build/budget checks, and the query-boundary audit after fixing selector-closure cache invalidation in `useGameSelector`.
 - 2026-05-18 — Completed Phase 5.3 by shipping compressed responsive start-screen banner assets, dropping the largest image from ~1.07 MB to ~318 kB in production builds.
 - 2026-05-18 — Completed Phase 5.2 by reusing known latest-save ids during session replacement instead of synchronously re-reading localStorage.
 - 2026-05-18 — Completed Phase 5.1 by auditing serialized save/index byte sizes, caching save-index reads, and warning on oversized/quota-constrained writes.
