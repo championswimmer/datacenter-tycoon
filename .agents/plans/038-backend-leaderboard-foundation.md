@@ -27,7 +27,7 @@ owner: server
   - [x] 4.3 Add abuse-resistant submission rules
 - [ ] **Phase 5 — Railway deployment infrastructure**
   - [x] 5.1 Add Railway service configuration for the server
-  - [ ] 5.2 Add Postgres provisioning and environment documentation
+  - [x] 5.2 Add Postgres provisioning and environment documentation
   - [ ] 5.3 Decide whether Redis is required for leaderboard caching
 - [ ] **Phase 6 — Operations, CI, and documentation**
   - [ ] 6.1 Add server CI coverage for build, typecheck, tests, and migrations
