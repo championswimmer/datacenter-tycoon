@@ -14,6 +14,23 @@
   min-height: 120px;
 }
 
+.phoneLabeled {
+  padding-top: 1.35rem;
+}
+
+.phoneLabeled::before {
+  content: attr(data-slot-label);
+  position: absolute;
+  top: 0.4rem;
+  left: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--fg-2);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 /* Empty slot — button */
 button.slot {
   background: transparent;
@@ -52,4 +69,15 @@ button.slot:focus-visible .emptyPlus {
 div.slot {
   border: none;
   padding: 0;
+}
+
+@media (max-width: 767px) {
+  div.phoneLabeled {
+    padding-top: 1.4rem;
+  }
+
+  button.phoneLabeled {
+    align-items: flex-end;
+    padding-bottom: var(--space-3);
+  }
 }

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { RackActivityView, RackPlacement, RackSpec } from "@datacenter-tycoon/game-logic";
 import type { RackMaintenanceView } from "../../store/selectors.js";
 import { RackTile } from "./RackTile.js";
@@ -16,9 +17,10 @@ export interface SlotProps {
   onDecommission:    (placementId: RackPlacement["id"]) => void;
   onMove:            (placementId: RackPlacement["id"]) => void;
   layoutMode?:       "desktop" | "phone";
+  slotLabel?:        string;
 }
 
-export function Slot({
+export const Slot = memo(function Slot({
   row,
   position,
   placement,
@@ -31,10 +33,18 @@ export function Slot({
   onDecommission,
   onMove,
   layoutMode = "desktop",
+  slotLabel,
 }: SlotProps) {
+  const className = [
+    styles.slot,
+    layoutMode === "phone" ? styles.phone : "",
+    slotLabel ? styles.phoneLabeled : "",
+  ].join(" ");
+  const slotTitle = `Empty slot — Row ${String.fromCharCode(65 + row)}, Position ${position + 1}`;
+  const slotAriaLabel = `Empty slot row ${String.fromCharCode(65 + row)} position ${position + 1} — click to install rack`;
   if (placement && spec && maintenanceView) {
     return (
-      <div className={[styles.slot, layoutMode === "phone" ? styles.phone : ""].join(" ")}>
+      <div className={className} data-slot-label={slotLabel}>
         <RackTile
           placement={placement}
           maintenanceView={maintenanceView}
@@ -52,13 +62,14 @@ export function Slot({
 
   return (
     <button
-      className={[styles.slot, layoutMode === "phone" ? styles.phone : ""].join(" ")}
+      className={className}
+      data-slot-label={slotLabel}
       onClick={() => onOpenPicker(row, position)}
       onKeyDown={e => { if (e.key === "Enter" || e.key === " ") onOpenPicker(row, position); }}
-      title={`Empty slot — Row ${String.fromCharCode(65 + row)}, Position ${position + 1}`}
-      aria-label={`Empty slot row ${String.fromCharCode(65 + row)} position ${position + 1} — click to install rack`}
+      title={slotTitle}
+      aria-label={slotAriaLabel}
     >
       <span className={styles.emptyPlus}>+</span>
     </button>
   );
-}
+});
