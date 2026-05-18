@@ -29,3 +29,17 @@ Keep an eye on your cash flow, optimize your rack configurations, and expand you
 ## Developer Information
 
 If you are a human developer or an AI coding agent looking to contribute to the codebase, please see [AGENTS.md](./AGENTS.md) for code structure, style rules, contribution guidelines, and local development setup.
+
+## Backend leaderboard service
+
+The first deployable backend now lives in [`packages/server`](./packages/server).
+
+Useful commands:
+
+```bash
+npm run dev:server
+npm run check:migrations:server
+npm run ci:server
+```
+
+Deployment notes, environment variables, Railway setup, and the release checklist are documented in [`packages/server/README.md`](./packages/server/README.md).

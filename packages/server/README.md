@@ -11,7 +11,26 @@ Backend service for Datacenter Tycoon leaderboards and lightweight player regist
 - `GET /leaderboard?metric=...&period=all-time&limit=...`
 - `POST /leaderboard/runs`
 
-## Environment variables
+## Local development
+
+### Quickstart
+
+```bash
+npm install
+cp packages/server/.env.example packages/server/.env.local
+createdb datacenter_tycoon
+DATABASE_URL=postgres://localhost:5432/datacenter_tycoon npm run migrate -w @datacenter-tycoon/server
+npm run dev:server
+```
+
+The server can also be verified locally with:
+
+```bash
+npm run check:migrations:server
+npm run ci:server
+```
+
+### Environment variables
 
 Copy `packages/server/.env.example` into your own local env file or export the values directly before starting the server.
 
@@ -36,15 +55,41 @@ A minimal local setup can use any Postgres 15+ instance. For example:
 ```bash
 createdb datacenter_tycoon
 DATABASE_URL=postgres://localhost:5432/datacenter_tycoon npm run migrate -w @datacenter-tycoon/server
+npm run dev:server
 ```
 
-### Railway Postgres
+### Railway deployment
 
-1. Create the backend service from this monorepo using the checked-in `railway.toml`.
+This repository includes a checked-in `railway.toml` for the first backend launch, but the service has **not** been deployed automatically from this implementation session.
+
+1. Create the backend service from this monorepo in Railway.
 2. Add a Railway Postgres service to the same project.
 3. Attach the Postgres service so Railway injects `DATABASE_URL` into the backend service.
 4. Set `CORS_ALLOWED_ORIGINS` to the allowed web origin list for your deployed frontend.
-5. Confirm the pre-deploy migration command succeeds before exposing the public domain.
+5. Review production rate-limit values before enabling traffic.
+6. Confirm the pre-deploy migration command succeeds before exposing the public domain.
+7. Verify `/healthz`, `/version`, player registration, leaderboard submission, and leaderboard reads against the Railway URL.
+
+### Rollback considerations
+
+If the backend misbehaves after launch, the safest rollback is to disable online submission in the frontend by removing `VITE_API_BASE_URL` from the web deployment and redeploying the web app. Local gameplay continues to work without the backend.
+
+## CI and verification
+
+The main pull-request workflow now checks backend health through:
+
+```bash
+npm run typecheck
+npm run build
+npm run check:migrations:server
+npm run test:ci
+```
+
+For server-only verification, run:
+
+```bash
+npm run ci:server
+```
 
 ## Redis decision
 
