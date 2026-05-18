@@ -250,6 +250,135 @@ test("POST /leaderboard/runs surfaces database failures as internal errors", asy
   assert.match(json?.error.message ?? "", /database unavailable/);
 });
 
+test("GET /leaderboard returns ranked entries for a selected metric", async () => {
+  const players = new InMemoryPlayersRepository();
+  const leaderboard = new InMemoryLeaderboardRepository();
+  const alpha = await players.createPlayer({ username: "Alpha Cloud" });
+  const beta = await players.createPlayer({ username: "Beta Cloud" });
+  const gamma = await players.createPlayer({ username: "Gamma Cloud" });
+
+  await leaderboard.upsertRun({
+    playerId: beta.playerId,
+    clientRunId: "run-beta",
+    metrics: {
+      money: 950,
+      cumulativeRevenue: 1_400,
+      totalServers: 9,
+      computeCapacity: 50,
+      memoryCapacity: 300,
+      storageCapacity: 200,
+      gpuCapacity: 0,
+    },
+    gameMonth: 9,
+  });
+  await leaderboard.upsertRun({
+    playerId: gamma.playerId,
+    clientRunId: "run-gamma",
+    metrics: {
+      money: 700,
+      cumulativeRevenue: 1_900,
+      totalServers: 7,
+      computeCapacity: 30,
+      memoryCapacity: 250,
+      storageCapacity: 220,
+      gpuCapacity: 10,
+    },
+    gameMonth: 8,
+  });
+  await leaderboard.upsertRun({
+    playerId: alpha.playerId,
+    clientRunId: "run-alpha",
+    metrics: {
+      money: 1_200,
+      cumulativeRevenue: 1_100,
+      totalServers: 6,
+      computeCapacity: 40,
+      memoryCapacity: 200,
+      storageCapacity: 100,
+      gpuCapacity: 0,
+    },
+    gameMonth: 7,
+  });
+
+  const { app } = createLeaderboardApp({ players, leaderboard });
+  const { response, json } = await apiRequest<{
+    metric: string;
+    period: string;
+    limit: number;
+    entries: Array<{ rank: number; username: string; value: number }>;
+  }>(app, "/leaderboard?metric=money&period=all-time&limit=2");
+
+  assert.equal(response.status, 200);
+  assert.equal(json?.metric, "money");
+  assert.equal(json?.limit, 2);
+  assert.deepEqual(json?.entries.map((entry) => ({
+    rank: entry.rank,
+    username: entry.username,
+    value: entry.value,
+  })), [
+    { rank: 1, username: "Alpha Cloud", value: 1_200 },
+    { rank: 2, username: "Beta Cloud", value: 950 },
+  ]);
+});
+
+test("GET /leaderboard applies deterministic tie-breaking for equal metric values", async () => {
+  const fixedSubmittedAt = new Date("2026-05-18T12:00:00.000Z");
+  const players = new InMemoryPlayersRepository();
+  const leaderboard = new InMemoryLeaderboardRepository(() => fixedSubmittedAt);
+  const alpha = await players.createPlayer({ username: "Alpha Cloud" });
+  const bravo = await players.createPlayer({ username: "Bravo Cloud" });
+
+  await leaderboard.upsertRun({
+    playerId: bravo.playerId,
+    clientRunId: "bravo-run",
+    metrics: {
+      money: 500,
+      cumulativeRevenue: 500,
+      totalServers: 5,
+      computeCapacity: 10,
+      memoryCapacity: 20,
+      storageCapacity: 30,
+      gpuCapacity: 0,
+    },
+    gameMonth: 5,
+  });
+  await leaderboard.upsertRun({
+    playerId: alpha.playerId,
+    clientRunId: "alpha-run",
+    metrics: {
+      money: 500,
+      cumulativeRevenue: 500,
+      totalServers: 5,
+      computeCapacity: 10,
+      memoryCapacity: 20,
+      storageCapacity: 30,
+      gpuCapacity: 0,
+    },
+    gameMonth: 5,
+  });
+
+  const { app } = createLeaderboardApp({ players, leaderboard });
+  const { response, json } = await apiRequest<{
+    entries: Array<{ rank: number; username: string; value: number }>;
+  }>(app, "/leaderboard?metric=money&period=all-time&limit=5");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(json?.entries.map((entry) => entry.username), [
+    "Alpha Cloud",
+    "Bravo Cloud",
+  ]);
+});
+
+test("GET /leaderboard rejects invalid query parameters", async () => {
+  const { app } = createLeaderboardApp();
+  const { response, json } = await apiRequest<{
+    error: { code: string; message: string };
+  }>(app, "/leaderboard?metric=bogus&period=all-time&limit=10");
+
+  assert.equal(response.status, 400);
+  assert.equal(json?.error.code, "INVALID_LEADERBOARD_QUERY");
+});
+
 test("service-level register input types remain usable in fake repositories", async () => {
   const sampleInput: RegisterPlayerInput = {
     username: "Acme Cloud",

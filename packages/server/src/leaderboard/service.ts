@@ -1,5 +1,12 @@
 import { HttpError } from "../server/app.js";
 import type { PlayersRepository } from "../players/repository.js";
+import {
+  parseLeaderboardQuery,
+  queryLeaderboard,
+  type LeaderboardEntry,
+  type LeaderboardQuery,
+  LeaderboardQueryValidationError,
+} from "./queries.js";
 import type { LeaderboardRepository, LeaderboardUpsertResult } from "./repository.js";
 import {
   LeaderboardPlayerNotFoundError,
@@ -7,6 +14,24 @@ import {
   LeaderboardValidationError,
 } from "./types.js";
 import { parseLeaderboardRunSubmission } from "./validation.js";
+
+export async function queryLeaderboardEntries(
+  playersRepository: PlayersRepository,
+  leaderboardRepository: LeaderboardRepository,
+  searchParams: URLSearchParams,
+): Promise<{ query: LeaderboardQuery; entries: LeaderboardEntry[] }> {
+  try {
+    const query = parseLeaderboardQuery(searchParams);
+    const entries = await queryLeaderboard(playersRepository, leaderboardRepository, query);
+
+    return {
+      query,
+      entries,
+    };
+  } catch (error) {
+    throw normalizeLeaderboardError(error);
+  }
+}
 
 export async function submitLeaderboardRun(
   playersRepository: PlayersRepository,
@@ -33,6 +58,10 @@ export async function submitLeaderboardRun(
 
 function normalizeLeaderboardError(error: unknown): unknown {
   if (error instanceof LeaderboardValidationError) {
+    return new HttpError(400, error.code, error.message);
+  }
+
+  if (error instanceof LeaderboardQueryValidationError) {
     return new HttpError(400, error.code, error.message);
   }
 

@@ -17,10 +17,10 @@ owner: server
   - [x] 2.1 Model username registration and anonymous player ids
   - [x] 2.2 Implement username availability and registration endpoints
   - [x] 2.3 Wire frontend startup/play flow to register a username
-- [ ] **Phase 3 — Leaderboard persistence**
+- [x] **Phase 3 — Leaderboard persistence**
   - [x] 3.1 Add Postgres schema and migration workflow
   - [x] 3.2 Implement leaderboard submission storage
-  - [ ] 3.3 Implement leaderboard query endpoints
+  - [x] 3.3 Implement leaderboard query endpoints
 - [ ] **Phase 4 — Metric derivation and validation**
   - [ ] 4.1 Define accepted leaderboard metric payloads
   - [ ] 4.2 Derive or validate totals with `game-logic` helpers where possible
