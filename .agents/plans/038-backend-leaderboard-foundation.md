@@ -22,7 +22,7 @@ owner: server
   - [x] 3.2 Implement leaderboard submission storage
   - [x] 3.3 Implement leaderboard query endpoints
 - [ ] **Phase 4 — Metric derivation and validation**
-  - [ ] 4.1 Define accepted leaderboard metric payloads
+  - [x] 4.1 Define accepted leaderboard metric payloads
   - [ ] 4.2 Derive or validate totals with `game-logic` helpers where possible
   - [ ] 4.3 Add abuse-resistant submission rules
 - [ ] **Phase 5 — Railway deployment infrastructure**
