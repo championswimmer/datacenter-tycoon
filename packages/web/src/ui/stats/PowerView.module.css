@@ -19,7 +19,7 @@
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--fg-3);
+  color: var(--fg-2);
   padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--grid);
 }
@@ -34,7 +34,7 @@
 .none {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
-  color: var(--fg-3);
+  color: var(--fg-2);
 }
 
 .powerSplitGrid {
@@ -58,7 +58,7 @@
   font-size: var(--text-xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--fg-2);
+  color: var(--fg-1);
 }
 
 .powerSplitValue {
@@ -71,14 +71,14 @@
 .powerSplitHint {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
-  color: var(--fg-3);
+  color: var(--fg-1);
 }
 
 .powerExplainer {
   margin: 0;
   font-family: var(--font-mono);
   font-size: var(--text-sm);
-  color: var(--fg-2);
+  color: var(--fg-1);
   line-height: 1.45;
 }
 

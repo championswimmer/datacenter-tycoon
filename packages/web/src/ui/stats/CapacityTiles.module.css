@@ -24,7 +24,7 @@
 .detail {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
-  color: var(--fg-2);
+  color: var(--fg-1);
 }
 
 .tiles {
@@ -53,7 +53,7 @@
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--fg-3);
+  color: var(--fg-1);
 }
 
 .tileTotal {
@@ -65,7 +65,7 @@
 .unit {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
-  color: var(--fg-2);
+  color: var(--fg-1);
   font-weight: 400;
 }
 
@@ -90,8 +90,8 @@
   font-size: var(--text-xs);
 }
 
-.tileFree { color: var(--fg-2); }
-.tileUsed { color: var(--fg-3); }
+.tileFree { color: var(--fg-1); }
+.tileUsed { color: var(--fg-2); }
 
 /* Color variants */
 .color-cyan   .tileTotal { color: var(--neon-cyan);   text-shadow: var(--glow-cyan);    }
