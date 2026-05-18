@@ -68,6 +68,31 @@ export function UpgradePanel({ dcId }: UpgradePanelProps) {
     return null;
   }
 
+  const trackById = new Map(upgrades.tracks.map((track) => [track.trackId, track] as const));
+  const resourceColumns = [
+    {
+      key: "power",
+      infrastructureLabel: "POWER ENVELOPE",
+      infrastructureValue: `${infrastructure.effective.rackPowerCapacityKw} kW`,
+      infrastructureHint: `Base ${infrastructure.base.gridImportCapacityKw} grid + ${infrastructure.effective.onsiteGenerationCapacityKw} onsite`,
+      track: trackById.get("onsiteGeneration") ?? null,
+    },
+    {
+      key: "cooling",
+      infrastructureLabel: "COOLING MODE",
+      infrastructureValue: infrastructure.effective.coolingType.toUpperCase(),
+      infrastructureHint: `${Math.round(infrastructure.base.coolingCapacityBtuPerHr).toLocaleString()} → ${Math.round(infrastructure.effective.coolingCapacityBtuPerHr).toLocaleString()} BTU/hr`,
+      track: trackById.get("cooling") ?? null,
+    },
+    {
+      key: "network",
+      infrastructureLabel: "NETWORK TYPE",
+      infrastructureValue: infrastructure.effective.networkType.toUpperCase(),
+      infrastructureHint: `${infrastructure.base.bandwidthGbps} → ${infrastructure.effective.bandwidthGbps} Gbps`,
+      track: trackById.get("networkType") ?? null,
+    },
+  ] as const;
+
   return (
     <section className={styles.section}>
       <div className={styles.header}>
@@ -84,100 +109,91 @@ export function UpgradePanel({ dcId }: UpgradePanelProps) {
       </div>
 
       <div className={styles.infrastructureGrid}>
-        <div className={styles.infrastructureCard}>
-          <span className={styles.infrastructureLabel}>POWER ENVELOPE</span>
-          <span className={styles.infrastructureValue}>
-            {infrastructure.effective.rackPowerCapacityKw} kW
-          </span>
-          <span className={styles.infrastructureHint}>
-            Base {infrastructure.base.gridImportCapacityKw} grid + {infrastructure.effective.onsiteGenerationCapacityKw} onsite
-          </span>
-        </div>
-        <div className={styles.infrastructureCard}>
-          <span className={styles.infrastructureLabel}>COOLING MODE</span>
-          <span className={styles.infrastructureValue}>{infrastructure.effective.coolingType.toUpperCase()}</span>
-          <span className={styles.infrastructureHint}>
-            {Math.round(infrastructure.base.coolingCapacityBtuPerHr).toLocaleString()} → {Math.round(infrastructure.effective.coolingCapacityBtuPerHr).toLocaleString()} BTU/hr
-          </span>
-        </div>
-        <div className={styles.infrastructureCard}>
-          <span className={styles.infrastructureLabel}>NETWORK TYPE</span>
-          <span className={styles.infrastructureValue}>{infrastructure.effective.networkType.toUpperCase()}</span>
-          <span className={styles.infrastructureHint}>
-            {infrastructure.base.bandwidthGbps} → {infrastructure.effective.bandwidthGbps} Gbps
-          </span>
-        </div>
+        {resourceColumns.map((column) => (
+          <div key={column.key} className={styles.infrastructureCard}>
+            <span className={styles.infrastructureLabel}>{column.infrastructureLabel}</span>
+            <span className={styles.infrastructureValue}>{column.infrastructureValue}</span>
+            <span className={styles.infrastructureHint}>{column.infrastructureHint}</span>
+          </div>
+        ))}
       </div>
 
       <div className={styles.trackGrid}>
-        {upgrades.tracks.map((track) => (
-          <article key={track.trackId} className={styles.trackCard}>
-            <div className={styles.trackHeader}>
-              <div>
-                <span className={styles.trackLabel}>{track.label}</span>
-                <span className={styles.trackMeta}>
-                  {track.currentNodeIndex + 1} / {track.totalNodes} {track.presentation === "slots" ? "installed" : "level"}
-                </span>
-              </div>
-              <span className={styles.trackCurrent}>{track.currentNode.label}</span>
-            </div>
+        {resourceColumns.map((column) => {
+          const track = column.track;
+          if (!track) {
+            return null;
+          }
 
-            <div className={styles.trackBody}>
-              <div className={styles.ladderSummary}>
-                <span className={styles.trackStat}>Node ID: {track.currentNode.id}</span>
-                <span className={styles.trackStat}>Upkeep: ${track.currentNode.fixedMonthlyOpex.toLocaleString()}/mo</span>
-                <span className={styles.trackStat}>
-                  Reach: {track.currentNodeIndex + 1} of {track.totalNodes} {track.presentation === "slots" ? "installs" : "levels"}
-                </span>
+          return (
+            <article key={track.trackId} className={styles.trackCard}>
+              <div className={styles.trackHeader}>
+                <div>
+                  <span className={styles.trackLabel}>{track.label}</span>
+                  <span className={styles.trackMeta}>
+                    {track.currentNodeIndex + 1} / {track.totalNodes} {track.presentation === "slots" ? "installed" : "level"}
+                  </span>
+                </div>
+                <span className={styles.trackCurrent}>{track.currentNode.label}</span>
               </div>
 
-              <ol className={styles.ladder} aria-label={`${track.label} upgrade ladder`}>
-                {track.nodes.map((node) => (
-                  <li key={node.id} className={ladderNodeClassName(node.status)}>
-                    <span className={styles.ladderStep}>{node.index + 1}</span>
-                    <div className={styles.ladderCopy}>
-                      <span className={styles.ladderName}>{node.label}</span>
-                      <span className={styles.ladderMeta}>
-                        {LADDER_STATUS_LABEL[node.status]} · ${node.capexCost.toLocaleString()} capex · ${node.fixedMonthlyOpex.toLocaleString()}/mo
+              <div className={styles.trackBody}>
+                <div className={styles.ladderSummary}>
+                  <span className={styles.trackStat}>Node ID: {track.currentNode.id}</span>
+                  <span className={styles.trackStat}>Upkeep: ${track.currentNode.fixedMonthlyOpex.toLocaleString()}/mo</span>
+                  <span className={styles.trackStat}>
+                    Reach: {track.currentNodeIndex + 1} of {track.totalNodes} {track.presentation === "slots" ? "installs" : "levels"}
+                  </span>
+                </div>
+
+                <ol className={styles.ladder} aria-label={`${track.label} upgrade ladder`}>
+                  {track.nodes.map((node) => (
+                    <li key={node.id} className={ladderNodeClassName(node.status)}>
+                      <span className={styles.ladderStep}>{node.index + 1}</span>
+                      <div className={styles.ladderCopy}>
+                        <span className={styles.ladderName}>{node.label}</span>
+                        <span className={styles.ladderMeta}>
+                          {LADDER_STATUS_LABEL[node.status]} · ${node.capexCost.toLocaleString()} capex · ${node.fixedMonthlyOpex.toLocaleString()}/mo
+                        </span>
+                      </div>
+                      <span className={styles.ladderBadge}>{LADDER_STATUS_LABEL[node.status]}</span>
+                    </li>
+                  ))}
+                </ol>
+
+                {track.nextNode ? (
+                  <>
+                    <span className={styles.trackNext}>NEXT · {track.nextNode.label}</span>
+                    <span className={styles.trackStat}>Capex {formatMoney(track.nextNode.capexCost)}</span>
+                    <span className={styles.trackStat}>Δ Opex +{formatMoney(track.nextNode.fixedMonthlyOpexDelta)}/mo</span>
+                    {cash < track.nextNode.capexCost ? (
+                      <span className={styles.trackWarning}>
+                        Short {formatMoney(track.nextNode.capexCost - cash)}. This step costs {formatMoney(track.nextNode.capexCost)} upfront.
                       </span>
-                    </div>
-                    <span className={styles.ladderBadge}>{LADDER_STATUS_LABEL[node.status]}</span>
-                  </li>
-                ))}
-              </ol>
-
-              {track.nextNode ? (
-                <>
-                  <span className={styles.trackNext}>NEXT · {track.nextNode.label}</span>
-                  <span className={styles.trackStat}>Capex {formatMoney(track.nextNode.capexCost)}</span>
-                  <span className={styles.trackStat}>Δ Opex +{formatMoney(track.nextNode.fixedMonthlyOpexDelta)}/mo</span>
-                  {cash < track.nextNode.capexCost ? (
-                    <span className={styles.trackWarning}>
-                      Short {formatMoney(track.nextNode.capexCost - cash)}. This step costs {formatMoney(track.nextNode.capexCost)} upfront.
-                    </span>
-                  ) : null}
-                  <button
-                    type="button"
-                    className={styles.upgradeButton}
-                    onClick={() => setPendingTrackId(track.trackId)}
-                    disabled={cash < track.nextNode.capexCost}
-                    title={
-                      cash < track.nextNode.capexCost
-                        ? `Short ${formatMoney(track.nextNode.capexCost - cash)} for ${track.nextNode.label}`
-                        : `Review ${track.nextNode.label} upgrade for ${formatMoney(track.nextNode.capexCost)}`
-                    }
-                  >
-                    {cash < track.nextNode.capexCost
-                      ? `Short ${formatMoney(track.nextNode.capexCost - cash)} · ${track.nextNode.label}`
-                      : `Review ${track.nextNode.label} · ${formatMoney(track.nextNode.capexCost)}`}
-                  </button>
-                </>
-              ) : (
-                <span className={styles.maxed}>MAXED</span>
-              )}
-            </div>
-          </article>
-        ))}
+                    ) : null}
+                    <button
+                      type="button"
+                      className={styles.upgradeButton}
+                      onClick={() => setPendingTrackId(track.trackId)}
+                      disabled={cash < track.nextNode.capexCost}
+                      title={
+                        cash < track.nextNode.capexCost
+                          ? `Short ${formatMoney(track.nextNode.capexCost - cash)} for ${track.nextNode.label}`
+                          : `Review ${track.nextNode.label} upgrade for ${formatMoney(track.nextNode.capexCost)}`
+                      }
+                    >
+                      {cash < track.nextNode.capexCost
+                        ? `Short ${formatMoney(track.nextNode.capexCost - cash)} · ${track.nextNode.label}`
+                        : `Review ${track.nextNode.label} · ${formatMoney(track.nextNode.capexCost)}`}
+                    </button>
+                  </>
+                ) : (
+                  <span className={styles.maxed}>MAXED</span>
+                )}
+              </div>
+            </article>
+          );
+        })}
       </div>
       {pendingTrack?.nextNode ? (
         <UpgradeConfirmationModal

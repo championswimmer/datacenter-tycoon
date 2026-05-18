@@ -91,12 +91,15 @@ describe("PowerView", () => {
     expect(screen.getByText(/idle and repairing racks pay only baseline power/i)).toBeTruthy();
   });
 
-  it("renders canonical upgrade ladders and opens a confirmation modal before upgrading", () => {
+  it("renders canonical upgrade ladders in the same order as the infrastructure status cards and opens a confirmation modal before upgrading", () => {
     const { state, dcId } = stateWithDatacenterAndRack();
     const { store } = renderPowerView(state, dcId);
 
     expect(screen.getByText("UPGRADE TRACKS")).toBeTruthy();
     expect(screen.getByText(/FABRIC LOCKED/)).toBeTruthy();
+    expect(
+      screen.getAllByText(/^(Onsite generation|Cooling loop|Network uplink)$/i).map((node) => node.textContent),
+    ).toEqual(["Onsite generation", "Cooling loop", "Network uplink"]);
 
     const networkLadder = screen.getByRole("list", { name: /Network uplink upgrade ladder/i });
     expect(within(networkLadder).getByText(/Cat6 uplink/i)).toBeTruthy();
