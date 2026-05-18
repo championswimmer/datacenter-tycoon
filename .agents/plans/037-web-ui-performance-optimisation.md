@@ -17,10 +17,10 @@ owner: web
   - [x] 2.1 Add selector-level memoization for expensive aggregate views
   - [x] 2.2 Replace repeated linear lookups with indexed selector helpers
   - [x] 2.3 Reduce work performed by every store subscriber on each tick
-- [ ] **Phase 3 — Contract UI render-path optimisation**
+- [x] **Phase 3 — Contract UI render-path optimisation**
   - [x] 3.1 Move active-contract row derivation out of the render loop
   - [x] 3.2 Stabilize market-contract card props and child components
-  - [ ] 3.3 Collapse duplicate historical-contract scans
+  - [x] 3.3 Collapse duplicate historical-contract scans
 - [ ] **Phase 4 — Floor grid and visual primitive optimisation**
   - [ ] 4.1 Memoize rack placement lookup and slot coordinate lists
   - [ ] 4.2 Reduce large grid DOM and mobile/desktop duplicate work
@@ -250,6 +250,7 @@ Optimisation principles:
 
 ## Changelog
 
+- 2026-05-18 — Completed Phase 3.3 by summarizing historical contract counts in a single selector pass for the history footer.
 - 2026-05-18 — Completed Phase 3.2 by carrying stable market-card view models through the contracts page and memoizing market child primitives/selectors.
 - 2026-05-18 — Completed Phase 3.1 by precomputing active-contract margin, opex attribution, buffer warnings, and SLA hint data in stable selectors.
 - 2026-05-18 — Completed Phase 2.3 by threading last-action metadata through the store, debouncing tick autosaves, and gating audio subscriber work.

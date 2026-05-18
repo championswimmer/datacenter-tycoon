@@ -1,6 +1,6 @@
 import type { ContractStatus } from "@datacenter-tycoon/game-logic";
 import { useSelector } from "../../store/storeContext.js";
-import { selectHistoricalContractViews } from "../../store/selectors.js";
+import { selectHistoricalContractSummary } from "../../store/selectors.js";
 import styles from "./ActiveList.module.css";
 
 function fmt(n: number): string {
@@ -18,18 +18,15 @@ const STATUS_LABEL: Record<ContractStatus, string> = {
 };
 
 export function CompletedList() {
-  const history = useSelector(selectHistoricalContractViews);
+  const historySummary = useSelector(selectHistoricalContractSummary);
 
-  const completedCount = history.filter((view) => view.contract.lifecycleState === "completed").length;
-  const cancelledCount = history.filter((view) => view.contract.lifecycleState === "cancelled").length;
-
-  if (history.length === 0) {
+  if (historySummary.totalCount === 0) {
     return <p className={styles.empty}>No historical contracts yet.</p>;
   }
 
   return (
     <div className={styles.list}>
-      {history.map((view) => {
+      {historySummary.views.map((view) => {
         const contract = view.contract;
         return (
           <div key={contract.id} className={[styles.card, styles[`status-${contract.status}`]].join(" ")}>
@@ -64,11 +61,11 @@ export function CompletedList() {
       })}
 
       <div className={styles.aggregateFooter}>
-        <span>Completed: <strong className={styles.footerRevenue}>{completedCount}</strong></span>
+        <span>Completed: <strong className={styles.footerRevenue}>{historySummary.completedCount}</strong></span>
         <span className={styles.footerDivider}>|</span>
-        <span>Cancelled: <strong className={styles.footerPenalty}>{cancelledCount}</strong></span>
+        <span>Cancelled: <strong className={styles.footerPenalty}>{historySummary.cancelledCount}</strong></span>
         <span className={styles.footerDivider}>|</span>
-        <span>History: <strong>{history.length}</strong></span>
+        <span>History: <strong>{historySummary.totalCount}</strong></span>
       </div>
     </div>
   );

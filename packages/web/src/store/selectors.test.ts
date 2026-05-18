@@ -45,6 +45,7 @@ import {
   selectRegionFabricSummary,
   selectResourceUsage,
   selectMonthlyPnl,
+  selectHistoricalContractSummary,
   selectHistoricalContractViews,
   selectFreeCapacity,
   selectTotalRacks,
@@ -631,6 +632,47 @@ describe("contract affinity selectors", () => {
 
     expect(selectActiveContractViews(stateWithAssignments)[0]?.affinity.badgeLabel).toBe("USA ONLY");
     expect(selectHistoricalContractViews(stateWithAssignments)[0]?.affinity.badgeLabel).toBe("USA ONLY");
+  });
+
+  it("summarizes historical contract counts in a single derived view", () => {
+    const state = stateWithOneDc();
+    const dcId = state.datacenters[0]!.id;
+    const completedContract: Contract = {
+      id: "history-completed" as Contract["id"],
+      name: "Completed Contract",
+      requirements: { vCpu: 8, ramGb: 0, storageTb: 0, gpuFlops: 0 },
+      monthlyPayment: 12_000,
+      penaltyPerMonth: 4_000,
+      termMonths: 3,
+      slaTargetPercent: 90,
+      currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
+      lifecycleState: "completed",
+      status: "expired",
+      urgency: "standard",
+      tier: 1,
+      offeredAtTick: state.tick,
+      expiresAtTick: (state.tick + 3) as Contract["expiresAtTick"],
+      startedAtTick: state.tick,
+      assignedDcId: dcId,
+    };
+    const cancelledContract: Contract = {
+      ...completedContract,
+      id: "history-cancelled" as Contract["id"],
+      lifecycleState: "cancelled",
+      status: "cancelled",
+    };
+    const historicalState: GameState = {
+      ...state,
+      contracts: [completedContract, cancelledContract],
+      activeContracts: [],
+      contractMarket: [],
+    };
+
+    expect(selectHistoricalContractSummary(historicalState)).toMatchObject({
+      completedCount: 1,
+      cancelledCount: 1,
+      totalCount: 2,
+    });
   });
 });
 
