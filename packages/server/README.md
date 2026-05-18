@@ -46,6 +46,12 @@ DATABASE_URL=postgres://localhost:5432/datacenter_tycoon npm run migrate -w @dat
 4. Set `CORS_ALLOWED_ORIGINS` to the allowed web origin list for your deployed frontend.
 5. Confirm the pre-deploy migration command succeeds before exposing the public domain.
 
+## Redis decision
+
+Redis is **not required** for the first leaderboard launch. Indexed Postgres queries are the source of truth and should remain the only production dependency until real traffic proves caching is necessary.
+
+See [`docs/redis-decision.md`](./docs/redis-decision.md) for the rationale and revisit criteria.
+
 ## Trust model
 
 This first backend launch accepts **top-level run summaries**, not full save snapshots or deterministic replays.
