@@ -1,7 +1,7 @@
 ---
 name: Web UI Performance Optimisation
 description: Audit and optimise the React web UI for render frequency, derived-data churn, DOM size, persistence jank, and asset weight.
-status: started
+status: completed
 created: 2026-05-17
 updated: 2026-05-18
 owner: web
@@ -30,10 +30,10 @@ owner: web
   - [x] 5.1 Debounce and size-audit autosave writes
   - [x] 5.2 Limit synchronous localStorage reads during startup/session switches
   - [x] 5.3 Optimise large image assets and route-level payloads
-- [ ] **Phase 6 — Final validation and follow-up guardrails**
+- [x] **Phase 6 — Final validation and follow-up guardrails**
   - [x] 6.1 Re-run web typecheck, tests, build, and query-boundary audit
   - [x] 6.2 Document measured before/after results
-  - [ ] 6.3 Add follow-up issues for non-trivial architectural work
+  - [x] 6.3 Add follow-up issues for non-trivial architectural work
 
 ## Overview
 
@@ -247,9 +247,14 @@ Optimisation principles:
 - Selector and subscription audit points: `packages/web/src/store/useStore.ts:42-65`, `packages/web/src/store/selectors.ts:474-502`, `packages/web/src/store/selectors.ts:663-750`, `packages/web/src/store/persist.ts:137-158`, `packages/web/src/store/audioEvents.ts:18-105`.
 - UI audit points: `packages/web/src/ui/contracts/ActiveList.tsx:87-102`, `packages/web/src/ui/contracts/MarketList.tsx:205-334`, `packages/web/src/ui/floor/Grid.tsx:37-154`, `packages/web/src/ui/floor/RackTile.tsx:94-105`, `packages/web/src/theme/primitives/ProgressBar.tsx:52-62`.
 - Build baseline captured with `npm run build -w @datacenter-tycoon/web` on 2026-05-17 after installing workspace dependencies.
+- Follow-up issues:
+  - #48 — Evaluate route-level code splitting if web bundle budgets tighten.
+  - #49 — Investigate floor-grid virtualization for very large datacenters.
+  - #50 — Design a scalable save storage strategy beyond localStorage.
 
 ## Changelog
 
+- 2026-05-18 — Completed Phase 6.3 by opening follow-up issues #48, #49, and #50 for code-splitting, floor-grid virtualization, and long-term save storage migration.
 - 2026-05-18 — Completed Phase 6.2 by recording final before/after measurements in `packages/web/docs/performance.md`, including asset-size deltas and render-path comparisons.
 - 2026-05-18 — Completed Phase 6.1 by re-running typecheck, the full web Vitest suite, production build/budget checks, and the query-boundary audit after fixing selector-closure cache invalidation in `useGameSelector`.
 - 2026-05-18 — Completed Phase 5.3 by shipping compressed responsive start-screen banner assets, dropping the largest image from ~1.07 MB to ~318 kB in production builds.
