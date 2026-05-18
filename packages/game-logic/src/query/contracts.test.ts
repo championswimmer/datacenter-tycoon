@@ -174,6 +174,8 @@ test("summarizeContractAssignmentFit distinguishes exact, partial, and impossibl
 	assert.equal(partialFit?.fitStatus, "partial");
 	assert.deepEqual(partialFit?.networkAvailable, { vCpu: 128, ramGb: 512, storageTb: 16, gpuFlops: 0 });
 	assert.deepEqual(partialFit?.fittingDcIds, []);
+	// bestPoolAvailable should be the best single pool, not the sum of all pools
+	assert.deepEqual(partialFit?.bestPoolAvailable, { vCpu: 64, ramGb: 256, storageTb: 8, gpuFlops: 0 });
 
 	const noneState = makeState({
 		datacenters: [
