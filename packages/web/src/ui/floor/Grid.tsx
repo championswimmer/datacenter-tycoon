@@ -1,5 +1,5 @@
 import { RACK_CATALOG } from "@datacenter-tycoon/game-logic";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import type {
   Datacenter,
   RackActivityView,
@@ -89,7 +89,7 @@ export function getGridColumnIndexes(positionsPerRow: number): readonly number[]
   return columns;
 }
 
-export function Grid({
+export const Grid = memo(function Grid({
   datacenter,
   rackMaintenanceByPlacementId,
   rackActivityByPlacementId,
@@ -136,23 +136,22 @@ export function Grid({
                   : undefined;
 
                 return (
-                  <div key={slot.key} className={styles.mobileSlotCard}>
-                    <div className={styles.mobileSlotLabel}>{slot.slotLabel}</div>
-                    <Slot
-                      row={slot.row}
-                      position={slot.position}
-                      placement={placement}
-                      spec={spec}
-                      maintenanceView={maintenanceView}
-                      rackActivityView={rackActivityView}
-                      hasActiveContract={hasActiveContract}
-                      hasFault={hasFault}
-                      onOpenPicker={onSlotClick}
-                      onDecommission={onDecommission}
-                      onMove={onMove}
-                      layoutMode="phone"
-                    />
-                  </div>
+                  <Slot
+                    key={slot.key}
+                    row={slot.row}
+                    position={slot.position}
+                    slotLabel={slot.slotLabel}
+                    placement={placement}
+                    spec={spec}
+                    maintenanceView={maintenanceView}
+                    rackActivityView={rackActivityView}
+                    hasActiveContract={hasActiveContract}
+                    hasFault={hasFault}
+                    onOpenPicker={onSlotClick}
+                    onDecommission={onDecommission}
+                    onMove={onMove}
+                    layoutMode="phone"
+                  />
                 );
               })}
             </div>
@@ -221,4 +220,4 @@ export function Grid({
       </div>
     </div>
   );
-}
+});

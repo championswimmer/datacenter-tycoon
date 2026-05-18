@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { DatacenterId, GridPosition, RackPlacementId } from "@datacenter-tycoon/game-logic";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import {
@@ -28,21 +28,35 @@ export function FloorView({ dcId }: FloorViewProps) {
 
   if (!datacenter) return null;
 
-  const datacenterContracts = activeContracts.filter((contract) => contract.assignedDcId === datacenter.id);
-  const hasActiveContract = datacenterContracts.some((contract) => contract.lifecycleState === "serving");
-  const hasFault = datacenterContracts.some((contract) => contract.lifecycleState === "breached");
-
-  const handleDecommission = (placementId: RackPlacementId) => {
-    dispatch({ type: "RemoveRack", dcId: datacenter.id, placementId });
-  };
-  const handleMove = (placementId: RackPlacementId) => {
-    setMovePlacementId(placementId);
-  };
-  const rackMaintenanceByPlacementId = new Map(
-    rackMaintenanceViews.map((view) => [view.placementId, view]),
+  const datacenterContracts = useMemo(
+    () => activeContracts.filter((contract) => contract.assignedDcId === datacenter.id),
+    [activeContracts, datacenter.id],
   );
-  const rackActivityByPlacementId = new Map(
-    rackActivityViews.map((view) => [view.placementId, view]),
+  const hasActiveContract = useMemo(
+    () => datacenterContracts.some((contract) => contract.lifecycleState === "serving"),
+    [datacenterContracts],
+  );
+  const hasFault = useMemo(
+    () => datacenterContracts.some((contract) => contract.lifecycleState === "breached"),
+    [datacenterContracts],
+  );
+
+  const handleDecommission = useCallback((placementId: RackPlacementId) => {
+    dispatch({ type: "RemoveRack", dcId: datacenter.id, placementId });
+  }, [datacenter.id, dispatch]);
+  const handleMove = useCallback((placementId: RackPlacementId) => {
+    setMovePlacementId(placementId);
+  }, []);
+  const handleSlotClick = useCallback((row: number, position: number) => {
+    setPickerSlot({ row, position });
+  }, []);
+  const rackMaintenanceByPlacementId = useMemo(
+    () => new Map(rackMaintenanceViews.map((view) => [view.placementId, view] as const)),
+    [rackMaintenanceViews],
+  );
+  const rackActivityByPlacementId = useMemo(
+    () => new Map(rackActivityViews.map((view) => [view.placementId, view] as const)),
+    [rackActivityViews],
   );
 
   return (
@@ -53,7 +67,7 @@ export function FloorView({ dcId }: FloorViewProps) {
         rackActivityByPlacementId={rackActivityByPlacementId}
         hasActiveContract={hasActiveContract}
         hasFault={hasFault}
-        onSlotClick={(row, position) => setPickerSlot({ row, position })}
+        onSlotClick={handleSlotClick}
         onDecommission={handleDecommission}
         onMove={handleMove}
       />
