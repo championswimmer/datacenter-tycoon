@@ -25,10 +25,10 @@ owner: server
   - [x] 4.1 Define accepted leaderboard metric payloads
   - [x] 4.2 Derive or validate totals with `game-logic` helpers where possible
   - [x] 4.3 Add abuse-resistant submission rules
-- [ ] **Phase 5 — Railway deployment infrastructure**
+- [x] **Phase 5 — Railway deployment infrastructure**
   - [x] 5.1 Add Railway service configuration for the server
   - [x] 5.2 Add Postgres provisioning and environment documentation
-  - [ ] 5.3 Decide whether Redis is required for leaderboard caching
+  - [x] 5.3 Decide whether Redis is required for leaderboard caching
 - [ ] **Phase 6 — Operations, CI, and documentation**
   - [ ] 6.1 Add server CI coverage for build, typecheck, tests, and migrations
   - [ ] 6.2 Document local development and Railway deployment
