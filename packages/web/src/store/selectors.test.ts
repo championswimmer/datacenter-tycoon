@@ -21,8 +21,11 @@ import {
   selectReliabilityMarketEffectSummary,
   selectAllDatacenters,
   selectDatacenter,
+  selectDatacenterByIdIndex,
   selectDatacenterFabricCapacitySummary,
   selectDatacenterFabricSummary,
+  selectDatacenterOpex,
+  selectDatacenterResourceUsage,
   selectDatacenterMaintenanceView,
   selectDatacenterRackMaintenanceViews,
   selectActiveContracts,
@@ -37,6 +40,8 @@ import {
   selectCapacity,
   selectOpexBreakdown,
   selectRackPowerSummary,
+  selectRegionById,
+  selectRegionByIdIndex,
   selectRegionFabricSummary,
   selectResourceUsage,
   selectMonthlyPnl,
@@ -371,6 +376,15 @@ describe("selectDatacenter", () => {
     const dc = selectAllDatacenters(state)[0]!;
     expect(selectDatacenter(state, dc.id)).toBeDefined();
     expect(selectDatacenter(state, dc.id)!.id).toBe(dc.id);
+  });
+
+  it("builds a stable datacenter index for repeated lookups", () => {
+    const state = stateWithOneDc();
+    const dc = state.datacenters[0]!;
+    const index = selectDatacenterByIdIndex(state);
+
+    expect(index.get(dc.id)).toBe(dc);
+    expect(selectDatacenterByIdIndex({ ...state, audioEnabled: !(state.audioEnabled ?? true) })).toBe(index);
   });
 });
 
@@ -786,6 +800,14 @@ describe("selectResourceUsage", () => {
     expect(total.powerKw).toBeGreaterThan(0);
     expect(total.slotsUsed).toBe(1);
   });
+
+  it("exposes indexed per-datacenter usage and opex lookups", () => {
+    const state = stateWithDcAndRack();
+    const dc = state.datacenters[0]!;
+
+    expect(selectDatacenterResourceUsage(state, dc.id)).toEqual(selectResourceUsage(state).perDc[0]?.usage);
+    expect(selectDatacenterOpex(state, dc.id)).toEqual(selectOpexBreakdown(state).perDc[0]?.result);
+  });
 });
 
 describe("selectMonthlyPnl", () => {
@@ -886,5 +908,8 @@ describe("selector stability", () => {
     expect(selectResourceUsage(nextState)).toBe(selectResourceUsage(state));
     expect(selectAllRegionFabricSummaries(nextState)).toBe(selectAllRegionFabricSummaries(state));
     expect(selectAllDatacenterFabricSummaries(nextState)).toBe(selectAllDatacenterFabricSummaries(state));
+    expect(selectDatacenterByIdIndex(nextState)).toBe(selectDatacenterByIdIndex(state));
+    expect(selectRegionByIdIndex(nextState)).toBe(selectRegionByIdIndex(state));
+    expect(selectRegionById(nextState, nextState.map.regions[0]!.id)).toBe(selectRegionById(state, state.map.regions[0]!.id));
   });
 });

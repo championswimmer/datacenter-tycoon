@@ -7,11 +7,12 @@ import type {
 } from "@datacenter-tycoon/game-logic";
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import {
-  selectAllDatacenters,
   selectCash,
   selectDatacenter,
+  selectDatacenterByIdIndex,
   selectRackMoveTargets,
-  selectRegions,
+  selectRegionById,
+  selectRegionByIdIndex,
 } from "../../store/selectors.js";
 import { useDialogFocus } from "../dialogFocus.js";
 import styles from "./MoveRackModal.module.css";
@@ -41,21 +42,23 @@ interface CandidateInfo {
 export function MoveRackModal({ sourceDcId, placementId, onClose }: MoveRackModalProps) {
   const dispatch = useGameDispatch();
   const cash = useSelector(selectCash);
-  const allDatacenters = useSelector(selectAllDatacenters);
-  const regions = useSelector(selectRegions);
+  const datacenterById = useSelector(selectDatacenterByIdIndex);
+  const regionById = useSelector(selectRegionByIdIndex);
   const sourceDc = useSelector((state) => selectDatacenter(state, sourceDcId));
+  const sourceRegion = useSelector((state) => (
+    sourceDc ? selectRegionById(state, sourceDc.regionId) : undefined
+  ));
   const moveTargets = useSelector((state) => selectRackMoveTargets(state, sourceDcId, placementId));
 
   const placement = sourceDc?.placements.find((entry) => entry.id === placementId);
   const spec = placement ? RACK_CATALOG[placement.specId] : undefined;
-  const sourceRegion = regions.find((entry) => entry.id === sourceDc?.regionId);
 
   const candidates: CandidateInfo[] = moveTargets.map((target) => {
-    const datacenter = allDatacenters.find((entry) => entry.id === target.targetDcId);
+    const datacenter = datacenterById.get(target.targetDcId);
     return {
       dcId: target.targetDcId,
       name: datacenter?.name ?? target.targetDcId,
-      region: regions.find((entry) => entry.id === target.targetRegionId),
+      region: regionById.get(target.targetRegionId),
       availableSlots: target.availableSlots,
       moveCost: target.moveCost,
       sameRegion: target.sameRegion,

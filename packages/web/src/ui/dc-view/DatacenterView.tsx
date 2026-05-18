@@ -7,9 +7,9 @@ import {
   selectDatacenterMaintenanceStaffingView,
   selectDatacenterMaintenanceView,
   selectDatacenterRackPowerSummary,
+  selectDatacenterResourceUsage,
   selectDatacenterUpgradeSummary,
   selectRegionById,
-  selectResourceUsage,
 } from "../../store/selectors.js";
 import { navigate, type DcTab } from "../../router/hashRouter.js";
 import type { DatacenterId } from "@datacenter-tycoon/game-logic";
@@ -40,7 +40,9 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
   const infrastructure = useSelector((state) => selectDatacenterInfrastructureSummary(state, dcId as DatacenterId));
   const upgradeSummary = useSelector((state) => selectDatacenterUpgradeSummary(state, dcId as DatacenterId));
   const rackPowerSummary = useSelector((state) => selectDatacenterRackPowerSummary(state, dcId as DatacenterId));
-  const usageAgg = useSelector(selectResourceUsage);
+  const usage = useSelector((state) => (
+    selectDatacenterResourceUsage(state, dcId as DatacenterId) ?? EMPTY_USAGE
+  ));
   const region = useSelector((state) => datacenter ? selectRegionById(state, datacenter.regionId) : undefined);
   const dispatch = useGameDispatch();
 
@@ -56,7 +58,6 @@ export function DatacenterView({ dcId, tab }: DatacenterViewProps) {
     );
   }
 
-  const usage = usageAgg.perDc.find((entry) => entry.dcId === datacenter.id)?.usage ?? EMPTY_USAGE;
   const adjustMaintenanceStaff = (delta: number) => {
     if (!maintenanceStaffing) {
       return;

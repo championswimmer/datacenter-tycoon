@@ -1,7 +1,13 @@
 import { useState, useCallback } from "react";
 import type { RegionId } from "@datacenter-tycoon/game-logic";
 import { useSelector } from "../../store/storeContext.js";
-import { selectAllDatacenters, selectAllRegionFabricSummaries, selectCash, selectRegions } from "../../store/selectors.js";
+import {
+  selectAllDatacenters,
+  selectAllRegionFabricSummaries,
+  selectCash,
+  selectRegionById,
+  selectRegions,
+} from "../../store/selectors.js";
 import { RegionPanel } from "./RegionPanel.js";
 import { NewDatacenterModal } from "../onboarding/NewDatacenterModal.js";
 import { WorldMap } from "./WorldMap.js";
@@ -20,9 +26,9 @@ export function MapView() {
   const [selectedRegionId, setSelectedRegionId] = useState<RegionId | null>(null);
   const [showBuildModal, setShowBuildModal] = useState(false);
 
-  const selectedRegion = selectedRegionId
-    ? regions.find((r) => r.id === selectedRegionId) ?? null
-    : null;
+  const selectedRegion = useSelector((state) => (
+    selectedRegionId ? selectRegionById(state, selectedRegionId) ?? null : null
+  ));
 
   const openBuildModal = useCallback(() => setShowBuildModal(true), []);
   const closeBuildModal = useCallback(() => setShowBuildModal(false), []);

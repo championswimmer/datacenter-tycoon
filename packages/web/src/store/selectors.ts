@@ -490,6 +490,10 @@ export function selectDatacenter(
   return selectDatacenterIndex(state).get(id);
 }
 
+export function selectDatacenterByIdIndex(state: GameState): ReadonlyMap<DatacenterId, Datacenter> {
+  return selectDatacenterIndex(state);
+}
+
 export interface DatacenterMaintenanceView {
   dcId: DatacenterId;
   maintenanceStaff: number;
@@ -870,6 +874,20 @@ export interface AggregateResourceUsage {
   perDc: Array<{ dcId: DatacenterId; usage: DatacenterResourceUsage }>;
 }
 
+const selectMemoizedResourceUsageByDatacenterIndex = memoizeByInputs(
+  (state: GameState) => [selectMemoizedResourceUsage(state)],
+  (state) => new Map(
+    selectMemoizedResourceUsage(state).perDc.map((entry) => [entry.dcId, entry.usage] as const),
+  ),
+);
+
+const selectMemoizedOpexByDatacenterIndex = memoizeByInputs(
+  (state: GameState) => [selectMemoizedOpexBreakdown(state)],
+  (state) => new Map(
+    selectMemoizedOpexBreakdown(state).perDc.map((entry) => [entry.dcId, entry.result] as const),
+  ),
+);
+
 export interface AggregateRackPowerSummary {
   total: RackPowerSummary;
   perDc: Array<{ dcId: DatacenterId; summary: RackPowerSummary }>;
@@ -947,8 +965,26 @@ export function selectRegionById(
   return selectRegionIndex(state).get(regionId);
 }
 
+export function selectRegionByIdIndex(state: GameState): ReadonlyMap<RegionId, Region> {
+  return selectRegionIndex(state);
+}
+
 export function selectDatacentersByRegionId(state: GameState, regionId: RegionId): Datacenter[] {
   return selectDatacentersByRegionIndex(state).get(regionId) ?? [];
+}
+
+export function selectDatacenterResourceUsage(
+  state: GameState,
+  dcId: DatacenterId,
+): DatacenterResourceUsage | undefined {
+  return selectMemoizedResourceUsageByDatacenterIndex(state).get(dcId);
+}
+
+export function selectDatacenterOpex(
+  state: GameState,
+  dcId: DatacenterId,
+): OpexTickResult | undefined {
+  return selectMemoizedOpexByDatacenterIndex(state).get(dcId);
 }
 
 export function selectAudioEnabled(state: GameState): boolean {
