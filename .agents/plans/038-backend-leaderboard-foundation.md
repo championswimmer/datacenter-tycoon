@@ -19,7 +19,7 @@ owner: server
   - [x] 2.3 Wire frontend startup/play flow to register a username
 - [ ] **Phase 3 — Leaderboard persistence**
   - [x] 3.1 Add Postgres schema and migration workflow
-  - [ ] 3.2 Implement leaderboard submission storage
+  - [x] 3.2 Implement leaderboard submission storage
   - [ ] 3.3 Implement leaderboard query endpoints
 - [ ] **Phase 4 — Metric derivation and validation**
   - [ ] 4.1 Define accepted leaderboard metric payloads
