@@ -18,7 +18,7 @@ owner: web
   - [x] 2.2 Replace repeated linear lookups with indexed selector helpers
   - [x] 2.3 Reduce work performed by every store subscriber on each tick
 - [ ] **Phase 3 — Contract UI render-path optimisation**
-  - [ ] 3.1 Move active-contract row derivation out of the render loop
+  - [x] 3.1 Move active-contract row derivation out of the render loop
   - [ ] 3.2 Stabilize market-contract card props and child components
   - [ ] 3.3 Collapse duplicate historical-contract scans
 - [ ] **Phase 4 — Floor grid and visual primitive optimisation**
@@ -250,6 +250,7 @@ Optimisation principles:
 
 ## Changelog
 
+- 2026-05-18 — Completed Phase 3.1 by precomputing active-contract margin, opex attribution, buffer warnings, and SLA hint data in stable selectors.
 - 2026-05-18 — Completed Phase 2.3 by threading last-action metadata through the store, debouncing tick autosaves, and gating audio subscriber work.
 - 2026-05-18 — Completed Phase 2.2 with indexed datacenter/region/resource/opex selectors and switched key UI consumers away from repeated linear scans.
 - 2026-05-18 — Completed Phase 2.1 with memoized aggregate selectors for contracts, fabric, capacity, opex, rack power, and resource usage.
