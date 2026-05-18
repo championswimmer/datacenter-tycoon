@@ -9,6 +9,7 @@ import {
 	summarizeDatacenterFabricCapacityFromState,
 	summarizeDatacenterFabricStatusFromState,
 	summarizeDatacenterInfrastructureFromState,
+	summarizeDatacenterRackMaintenanceViewsFromState,
 	summarizeDatacenterUpgradeViewFromState,
 	summarizeNetworkCapacityFromState,
 	summarizeRegionFabricViewFromState,
@@ -171,6 +172,25 @@ test("summarizeDatacenterInfrastructureFromState exposes explicit base and effec
 		},
 		fabricEligible: false,
 	});
+});
+
+test("summarizeDatacenterRackMaintenanceViewsFromState uses rack-kind-aware repair targets", () => {
+	const dc = makeDatacenter("dc-1", "region-a", [
+		placement("rack-compute", "C1", 0, 0, { health: "repairing", repairProgressDays: 1 }),
+		placement("rack-gpu", "G1", 0, 1, { health: "repairing", repairProgressDays: 1 }),
+	], 0);
+	const state = makeState({ datacenters: [dc], difficulty: "hard" });
+
+	const views = summarizeDatacenterRackMaintenanceViewsFromState(state, dc.id);
+	const computeView = views.find((view) => view.placementId === rackPlacementId("rack-compute"));
+	const gpuView = views.find((view) => view.placementId === rackPlacementId("rack-gpu"));
+
+	assert.ok(computeView);
+	assert.ok(gpuView);
+	assert.equal(computeView!.repairEtaDays, 2);
+	assert.equal(computeView!.repairCompletionPercent, 33);
+	assert.equal(gpuView!.repairEtaDays, 8);
+	assert.equal(gpuView!.repairCompletionPercent, 11);
 });
 
 test("summarizeDatacenterUpgradeViewFromState exposes track affordances, upgrade opex, and fiber eligibility", () => {

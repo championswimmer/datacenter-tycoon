@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-	BASE_REPAIR_DAYS,
+	BASE_REPAIR_DAYS_BY_RACK_KIND,
 	DAYS_PER_TICK,
 	DIFFICULTY_CONFIG,
 	MAX_REPAIR_SPEED_MULTIPLIER,
@@ -89,17 +89,24 @@ test("advanceRackRepair uses current staffing and clears repair progress when co
 	assert.equal(inProgress.health, "repairing");
 	assert.equal(inProgress.repairProgressDays, 2.25);
 
-	const completed = advanceRackRepair(repairingRack({ repairProgressDays: BASE_REPAIR_DAYS - 1 }), 1);
+	const completed = advanceRackRepair(repairingRack({ repairProgressDays: BASE_REPAIR_DAYS_BY_RACK_KIND.compute - 1 }), 1);
 	assert.equal(completed.health, "healthy");
 	assert.equal("repairProgressDays" in completed, false);
 });
 
-test("repairDurationDays now targets short multi-day outages", () => {
-	assert.equal(BASE_REPAIR_DAYS, 3);
-	assert.equal(repairDurationDays("hard"), BASE_REPAIR_DAYS);
-	assert.equal(repairDurationDays("easy"), BASE_REPAIR_DAYS * DIFFICULTY_CONFIG.easy.repairTimeMultiplier);
-	assert.equal(repairDurationDays("hard"), 3);
-	assert.equal(repairDurationDays("easy"), 2.25);
+test("repairDurationDays now varies by rack kind while keeping non-GPU repairs to a few days", () => {
+	assert.deepEqual(BASE_REPAIR_DAYS_BY_RACK_KIND, {
+		compute: 3,
+		memory: 4,
+		storage: 5,
+		gpu: 9,
+	});
+	assert.equal(repairDurationDays("compute", "hard"), BASE_REPAIR_DAYS_BY_RACK_KIND.compute);
+	assert.equal(repairDurationDays("memory", "hard"), BASE_REPAIR_DAYS_BY_RACK_KIND.memory);
+	assert.equal(repairDurationDays("storage", "hard"), BASE_REPAIR_DAYS_BY_RACK_KIND.storage);
+	assert.equal(repairDurationDays("gpu", "hard"), BASE_REPAIR_DAYS_BY_RACK_KIND.gpu);
+	assert.equal(repairDurationDays("compute", "easy"), BASE_REPAIR_DAYS_BY_RACK_KIND.compute * DIFFICULTY_CONFIG.easy.repairTimeMultiplier);
+	assert.equal(repairDurationDays("gpu", "easy"), BASE_REPAIR_DAYS_BY_RACK_KIND.gpu * DIFFICULTY_CONFIG.easy.repairTimeMultiplier);
 
 	const easyRepair = advanceRackRepair(repairingRack({ repairProgressDays: 1.5 }), 0, "easy");
 	const hardRepair = advanceRackRepair(repairingRack({ repairProgressDays: 1.5 }), 0, "hard");
@@ -107,8 +114,8 @@ test("repairDurationDays now targets short multi-day outages", () => {
 	assert.equal(hardRepair.health, "repairing");
 });
 
-test("advanceRackRepair completes in roughly 2-3 subticks at baseline staffing", () => {
-	let hardRack = repairingRack();
+test("advanceRackRepair completes compute repairs in roughly 2-3 subticks at baseline staffing", () => {
+	let hardRack = repairingRack({ kind: "compute" });
 	let easyRack = repairingRack();
 	for (let day = 0; day < 2; day += 1) {
 		hardRack = advanceRackRepair(hardRack, 0, "hard");
@@ -121,6 +128,28 @@ test("advanceRackRepair completes in roughly 2-3 subticks at baseline staffing",
 	const easyOnDayThree = advanceRackRepair(easyRack, 0, "easy");
 	assert.equal(hardOnDayThree.health, "healthy");
 	assert.equal(easyOnDayThree.health, "healthy");
+});
+
+test("advanceRackRepair keeps GPU racks down materially longer than compute racks at baseline staffing", () => {
+	let gpuRack = repairingRack({ kind: "gpu", specId: rackSpecId("G1") });
+	for (let day = 0; day < 8; day += 1) {
+		gpuRack = advanceRackRepair(gpuRack, 0, "hard");
+	}
+	assert.equal(gpuRack.health, "repairing");
+
+	gpuRack = advanceRackRepair(gpuRack, 0, "hard");
+	assert.equal(gpuRack.health, "healthy");
+});
+
+test("extra maintenance staff reduces GPU repair time as well as compute repair time", () => {
+	let baselineGpuRack = repairingRack({ kind: "gpu", specId: rackSpecId("G1") });
+	let staffedGpuRack = repairingRack({ kind: "gpu", specId: rackSpecId("G1") });
+	for (let day = 0; day < 5; day += 1) {
+		baselineGpuRack = advanceRackRepair(baselineGpuRack, 0, "hard");
+		staffedGpuRack = advanceRackRepair(staffedGpuRack, 4, "hard");
+	}
+	assert.equal(baselineGpuRack.health, "repairing");
+	assert.equal(staffedGpuRack.health, "healthy");
 });
 
 test("advanceRackRepair leaves healthy racks unchanged", () => {

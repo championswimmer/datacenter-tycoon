@@ -1,13 +1,13 @@
 import {
-	BASE_REPAIR_DAYS,
 	BASE_REPAIR_SPEED_MULTIPLIER,
 	DEFAULT_DIFFICULTY,
 	DAYS_PER_TICK,
 	DIFFICULTY_CONFIG,
 	MAX_REPAIR_SPEED_MULTIPLIER,
 	REPAIR_SPEED_BONUS_PER_MAINTENANCE_STAFF,
+	repairBaseDaysForRackKind,
 } from "../balance/index.js";
-import type { Difficulty, Rack, RackPlacement, RackHealthStatus, RackPlacementId, Tick } from "../types.js";
+import type { Difficulty, Rack, RackHealthStatus, RackKind, RackPlacement, RackPlacementId, Tick } from "../types.js";
 
 function clamp(value: number, min: number, max: number): number {
 	return Math.min(max, Math.max(min, value));
@@ -51,8 +51,15 @@ export function repairProgressPerTick(maintenanceStaff: number): number {
 	return DAYS_PER_TICK * repairProgressPerSubtick(maintenanceStaff);
 }
 
-export function repairDurationDays(difficulty: Difficulty = DEFAULT_DIFFICULTY): number {
-	return BASE_REPAIR_DAYS * DIFFICULTY_CONFIG[difficulty].repairTimeMultiplier;
+function rackKindFromRepairTarget(target: Pick<Rack, "kind"> | RackKind): RackKind {
+	return typeof target === "string" ? target : target.kind;
+}
+
+export function repairDurationDays(
+	target: Pick<Rack, "kind"> | RackKind,
+	difficulty: Difficulty = DEFAULT_DIFFICULTY,
+): number {
+	return repairBaseDaysForRackKind(rackKindFromRepairTarget(target)) * DIFFICULTY_CONFIG[difficulty].repairTimeMultiplier;
 }
 
 // ── Rack failure-risk view ───────────────────────────────────────────────────
@@ -127,7 +134,7 @@ export function advanceRackRepair(
 	}
 
 	const nextRepairProgressDays = (rack.repairProgressDays ?? 0) + repairProgressPerSubtick(maintenanceStaff);
-	if (nextRepairProgressDays < repairDurationDays(difficulty)) {
+	if (nextRepairProgressDays < repairDurationDays(rack, difficulty)) {
 		return {
 			...rack,
 			repairProgressDays: nextRepairProgressDays,
