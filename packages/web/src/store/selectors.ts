@@ -218,6 +218,7 @@ const selectMemoizedMarketContractViews = memoizeByInputs(
         slaProgress: summarizeContractSlaProgress(contract),
         dealScore: contractDealScore(contract),
         networkAvailable: fitSummary.networkAvailable,
+        bestPoolAvailable: fitSummary.bestPoolAvailable,
         assignedDatacenter: contract.assignedDcId ? datacentersById.get(contract.assignedDcId) ?? null : null,
       };
     });
@@ -805,6 +806,7 @@ export interface MarketContractView {
   slaProgress: ContractSlaProgressView;
   dealScore: number;
   networkAvailable: Capacity;
+  bestPoolAvailable: Capacity;
   assignedDatacenter: Datacenter | null;
 }
 
