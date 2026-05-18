@@ -21,11 +21,11 @@ owner: web
   - [x] 3.1 Move active-contract row derivation out of the render loop
   - [x] 3.2 Stabilize market-contract card props and child components
   - [x] 3.3 Collapse duplicate historical-contract scans
-- [ ] **Phase 4 — Floor grid and visual primitive optimisation**
+- [x] **Phase 4 — Floor grid and visual primitive optimisation**
   - [x] 4.1 Memoize rack placement lookup and slot coordinate lists
   - [x] 4.2 Reduce large grid DOM and mobile/desktop duplicate work
   - [x] 4.3 Replace repeated decorative element allocation in rack/progress primitives
-  - [ ] 4.4 Reduce costly rack tile paint effects
+  - [x] 4.4 Reduce costly rack tile paint effects
 - [ ] **Phase 5 — Persistence, assets, and startup cost**
   - [ ] 5.1 Debounce and size-audit autosave writes
   - [ ] 5.2 Limit synchronous localStorage reads during startup/session switches
@@ -250,6 +250,7 @@ Optimisation principles:
 
 ## Changelog
 
+- 2026-05-18 — Completed Phase 4.4 by replacing rack filter-based boot animation with transform/opacity motion and adding reduced-motion guards.
 - 2026-05-18 — Completed Phase 4.3 by converting progress bars to a CSS-segmented fill track and collapsing rack blade allocation into a single decorative layer.
 - 2026-05-18 — Completed Phase 4.2 by memoizing floor-view callbacks/maps, memo-wrapping grid/slot rendering, and collapsing extra phone slot wrapper DOM.
 - 2026-05-18 — Completed Phase 4.1 with cached floor-grid placement lookups, row models, and column indexes plus regression coverage for stable references.
