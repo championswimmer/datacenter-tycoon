@@ -34,7 +34,7 @@ const FIT_ICON: Record<FitDisplayStatus, string> = {
 };
 const FIT_LABEL: Record<FitDisplayStatus, string> = {
   fits: "DC available",
-  partial: "No single DC fits",
+  partial: "No single capacity pool covers this – grow your regional fabric",
   none: "Insufficient capacity",
   "wrong-region": "No eligible datacenter region",
 };
@@ -114,7 +114,13 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
         const expiryLabel = expired ? "EXPIRED" : formatRemaining(months, days);
         const urgent = !expired && months === 0 && days <= 7;
         const isAccepting = accepting === contract.id;
-        const networkFree = fitSummary?.networkAvailable ?? ZERO_CAPACITY;
+        // For "partial" fit, show the best single pool's capacity so users can see which
+        // resource dimension is the bottleneck (will show red chips), rather than the
+        // total network capacity which would misleadingly show all green.
+        const networkFree = fitSummary
+          ? (fit === "partial" ? fitSummary.bestPoolAvailable : fitSummary.networkAvailable)
+          : ZERO_CAPACITY;
+        const capacityLabel = fit === "partial" ? "BEST POOL CAPACITY" : "FREE CAPACITY";
         const score = contractDealScore(contract);
         const category = CATEGORY_MAP[contract.name];
         const reliabilityHint = (reliability.band === "silver" || reliability.band === "bronze")
@@ -128,6 +134,9 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
                 text: `${reliability.band.charAt(0).toUpperCase() + reliability.band.slice(1)} reliability is helping surface longer-term offers like this.`,
               }
             : null;
+        const fabricHint = fit === "partial"
+          ? "Your total available capacity is sufficient, but no single datacenter pool covers this contract alone. Join more datacenters to a regional fabric to consolidate capacity."
+          : null;
 
         return (
           <div key={contract.id} className={[styles.card, styles[`fit-${fit}`]].join(" ")}>
@@ -175,7 +184,7 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
                 ? `Allowed regions: ${affinity.allowedRegions.join(", ")}`
                 : "Deployable from any region."}
             />
-            <CapacityComparison reqs={contract.requirements} free={networkFree} />
+            <CapacityComparison reqs={contract.requirements} free={networkFree} label={capacityLabel} />
             <div className={styles.meta}>
               <span>{contractView?.slaProgress.slaTargetPercent ?? contract.slaTargetPercent}% SLA</span>
               <span className={styles.dot}>·</span>
@@ -186,6 +195,10 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
 
             {reliabilityHint && (
               <div className={[styles.reliabilityHint, reliabilityHint.tone].join(" ")}>{reliabilityHint.text}</div>
+            )}
+
+            {fabricHint && (
+              <div className={[styles.reliabilityHint, styles.reliabilityHintNegative].join(" ")}>{fabricHint}</div>
             )}
 
             {!isAccepting ? (
@@ -251,7 +264,7 @@ function AffinitySummary({
   );
 }
 
-function CapacityComparison({ reqs, free }: { reqs: Contract["requirements"]; free: Capacity }) {
+function CapacityComparison({ reqs, free, label = "FREE CAPACITY" }: { reqs: Contract["requirements"]; free: Capacity; label?: string }) {
   const items = [
     { label: "vCPU", req: reqs.vCpu, free: free.vCpu, suffix: "" },
     { label: "RAM", req: reqs.ramGb, free: free.ramGb, suffix: " GB" },
@@ -261,7 +274,7 @@ function CapacityComparison({ reqs, free }: { reqs: Contract["requirements"]; fr
 
   return (
     <div className={styles.capacityCompare}>
-      <span className={styles.capacityLabel}>FREE CAPACITY</span>
+      <span className={styles.capacityLabel}>{label}</span>
       <div className={styles.capacityList}>
         {items.map((item) => {
           const ok = item.free >= item.req;

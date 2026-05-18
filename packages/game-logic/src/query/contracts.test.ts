@@ -174,6 +174,8 @@ test("summarizeContractAssignmentFit distinguishes exact, partial, and impossibl
 	assert.equal(partialFit?.fitStatus, "partial");
 	assert.deepEqual(partialFit?.networkAvailable, { vCpu: 128, ramGb: 512, storageTb: 16, gpuFlops: 0 });
 	assert.deepEqual(partialFit?.fittingDcIds, []);
+	// C0 = 64 vCpu, 256 ramGb, 8 storageTb; each DC alone is the max across two identical standalone DCs
+	assert.deepEqual(partialFit?.bestPoolAvailable, { vCpu: 64, ramGb: 256, storageTb: 8, gpuFlops: 0 });
 
 	const noneState = makeState({
 		datacenters: [
@@ -260,6 +262,56 @@ test("summarizeOpenMarketContractFits matches per-contract fit summaries across 
 	assert.equal(batch[1]?.fitStatus, "none");
 	assert.deepEqual(batch[0]?.fittingDcIds, [datacenterId("dc-a"), datacenterId("dc-b")]);
 	assert.deepEqual(batch[1]?.eligibleDcIds, [datacenterId("dc-c")]);
+});
+
+test("bestPoolAvailable reflects fabric pool capacity when only some DCs are in the fabric", () => {
+	// dc-a and dc-b are in a fabric (pool = 128 vCpu), dc-c is standalone (64 vCpu)
+	// Contract requires 150 vCpu — more than any single pool but less than total network (192)
+	// bestPoolAvailable should reflect the best single pool: the fabric pool (128 vCpu from dc-a+dc-b)
+	const state = makeState({
+		datacenters: [
+			makeDatacenter("dc-a", [placement("rack-a", "C0", 0, 0)], "region-a" as GameState["map"]["regions"][number]["id"]),
+			makeDatacenter("dc-b", [placement("rack-b", "C0", 0, 0)], "region-a" as GameState["map"]["regions"][number]["id"]),
+			makeDatacenter("dc-c", [placement("rack-c", "C0", 0, 0)], "region-a" as GameState["map"]["regions"][number]["id"]),
+		],
+		contracts: [
+			makeContract("large", {
+				requirements: { vCpu: 150, ramGb: 200, storageTb: 5, gpuFlops: 0 },
+			}),
+		],
+		map: {
+			regions: [
+				{
+					id: "region-a" as GameState["map"]["regions"][number]["id"],
+					fabric: { memberDcIds: [datacenterId("dc-a"), datacenterId("dc-b")] },
+				},
+			],
+		},
+	});
+	const fit = summarizeContractAssignmentFit(state, contractId("large"));
+
+	// Total network: fabric pool (128) + standalone dc-c (64) = 192 vCpu => partial
+	assert.equal(fit?.fitStatus, "partial");
+	assert.deepEqual(fit?.networkAvailable, { vCpu: 192, ramGb: 768, storageTb: 24, gpuFlops: 0 });
+	assert.deepEqual(fit?.fittingDcIds, []);
+	// bestPoolAvailable: fabric pool (128) > standalone dc-c (64), so best is the fabric
+	assert.deepEqual(fit?.bestPoolAvailable, { vCpu: 128, ramGb: 512, storageTb: 16, gpuFlops: 0 });
+
+	// After joining dc-c to the fabric, pool becomes 192 vCpu => fits
+	const stateWithFullFabric = makeState({
+		...state,
+		map: {
+			regions: [
+				{
+					id: "region-a" as GameState["map"]["regions"][number]["id"],
+					fabric: { memberDcIds: [datacenterId("dc-a"), datacenterId("dc-b"), datacenterId("dc-c")] },
+				},
+			],
+		},
+	});
+	const fitAfter = summarizeContractAssignmentFit(stateWithFullFabric, contractId("large"));
+	assert.equal(fitAfter?.fitStatus, "fits");
+	assert.deepEqual(fitAfter?.fittingDcIds, [datacenterId("dc-a"), datacenterId("dc-b"), datacenterId("dc-c")]);
 });
 
 test("contractDealScore stays in game-logic for consumer sorting and filtering", () => {

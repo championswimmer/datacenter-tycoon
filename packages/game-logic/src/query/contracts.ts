@@ -87,6 +87,13 @@ export interface ContractAssignmentFitSummary {
 	regionAffinity: ContractRegionAffinitySummary;
 	fitStatus: ContractAssignmentFitStatus;
 	networkAvailable: Capacity;
+	/**
+	 * Element-wise maximum available capacity across all region-eligible candidate pools.
+	 * When fitStatus is "partial", no single pool covers all requirements, but
+	 * bestPoolAvailable shows the ceiling of what any one pool can offer per dimension,
+	 * making it easy to identify which resource is the bottleneck.
+	 */
+	bestPoolAvailable: Capacity;
 	candidates: ContractAssignmentFitCandidate[];
 	eligibleDcIds: DatacenterId[];
 	fittingDcIds: DatacenterId[];
@@ -328,6 +335,16 @@ function summarizeContractAssignmentFitForContractWithContext(
 		}
 	}
 
+	const bestPoolAvailable: Capacity = { ...EMPTY_CAPACITY };
+	for (const candidate of candidates) {
+		if (candidate.regionEligible) {
+			bestPoolAvailable.vCpu = Math.max(bestPoolAvailable.vCpu, candidate.available.vCpu);
+			bestPoolAvailable.ramGb = Math.max(bestPoolAvailable.ramGb, candidate.available.ramGb);
+			bestPoolAvailable.storageTb = Math.max(bestPoolAvailable.storageTb, candidate.available.storageTb);
+			bestPoolAvailable.gpuFlops = Math.max(bestPoolAvailable.gpuFlops, candidate.available.gpuFlops);
+		}
+	}
+
 	const fitStatus: ContractAssignmentFitStatus = fittingDcIds.length > 0
 		? "fits"
 		: canCoverRequirements(networkAvailable, contract.requirements)
@@ -340,6 +357,7 @@ function summarizeContractAssignmentFitForContractWithContext(
 		regionAffinity,
 		fitStatus,
 		networkAvailable,
+		bestPoolAvailable,
 		candidates,
 		eligibleDcIds,
 		fittingDcIds,
