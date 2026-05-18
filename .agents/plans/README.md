@@ -12,7 +12,7 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 - [`037-web-ui-performance-optimisation.md`](./037-web-ui-performance-optimisation.md) — Audit and optimise the React web UI for render frequency, derived-data churn, DOM size, persistence jank, and asset weight. _status: created_
 - [`037-core-game-logic-performance-optimisation.md`](./037-core-game-logic-performance-optimisation.md) — Profile and optimise core game-logic hot paths across tick processing, capacity queries, state lookups, and derived views. _status: created_
 - [`038-backend-leaderboard-foundation.md`](./038-backend-leaderboard-foundation.md) — Build the first deployable backend for username registration, top-level leaderboard submissions, and Railway-hosted infrastructure. _status: created_
-- [`039-game-balance-repair-and-contract-mix.md`](./039-game-balance-repair-and-contract-mix.md) — Rebalance repair durations, maintenance staffing impact, unrestricted contract availability, and late-game GPU/non-GPU market variety. _status: started_
+- [`039-game-balance-repair-and-contract-mix.md`](./039-game-balance-repair-and-contract-mix.md) — Rebalance repair durations, maintenance staffing impact, unrestricted contract availability, and late-game GPU/non-GPU market variety. _status: completed_
 
 ## Archive
 
