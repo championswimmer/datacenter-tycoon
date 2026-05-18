@@ -1,7 +1,7 @@
 import {
+	contractsFromState,
 	isHistoricalContract,
 	isLiveContract,
-	selectContractByIdFromState,
 	selectHistoricalContractsFromState,
 	selectLiveContractsFromState,
 	selectOpenMarketContractsFromState,
@@ -111,7 +111,7 @@ export function presentContractById(
 	snapshot: Pick<GameState, "contracts" | "contractMarket" | "activeContracts">,
 	contractId: string,
 ): CliContractView | undefined {
-	const contract = selectContractByIdFromState(snapshot, contractId as Contract["id"]);
+	const contract = contractsFromState(snapshot).find((candidate) => candidate.id === (contractId as Contract["id"]));
 	if (!contract) {
 		return undefined;
 	}

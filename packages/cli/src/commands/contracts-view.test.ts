@@ -10,6 +10,7 @@ import {
 	formatContractRequirements,
 	presentAcceptedContract,
 	presentContract,
+	presentContractById,
 	presentContractBuckets,
 	presentContracts,
 } from "./contracts-view.js";
@@ -164,4 +165,21 @@ test("presentContractBuckets returns empty history when all accepted contracts a
 
 	assert.equal(buckets.active.length, 1);
 	assert.equal(buckets.history.length, 0);
+});
+
+test("presentContractById resolves canonical contracts without requiring full query state", () => {
+	const base = newGame(7).contractMarket[0]!;
+	const activeContract = { ...base, id: "c-active" as typeof base.id, status: "active" as const, startedAtTick: 1, assignedDcId: "dc-1" as const };
+	const snapshot = {
+		contracts: [activeContract],
+		contractMarket: [],
+		activeContracts: [],
+	};
+
+	const present = presentContractById(snapshot, activeContract.id);
+	const missing = presentContractById(snapshot, "missing-contract-id");
+
+	assert.equal(present?.id, activeContract.id);
+	assert.equal(present?.bucket, "active");
+	assert.equal(missing, undefined);
 });
