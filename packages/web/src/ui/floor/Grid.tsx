@@ -1,4 +1,5 @@
 import { RACK_CATALOG } from "@datacenter-tycoon/game-logic";
+import { useMemo } from "react";
 import type {
   Datacenter,
   RackActivityView,
@@ -21,6 +22,73 @@ export interface GridProps {
   onMove:            (placementId: RackPlacementId) => void;
 }
 
+interface GridCoordinate {
+  row: number;
+  position: number;
+  rowLabel: string;
+  slotLabel: string;
+  key: string;
+}
+
+interface GridRowModel {
+  row: number;
+  rowLabel: string;
+  slots: readonly GridCoordinate[];
+}
+
+const placementLookupCache = new WeakMap<readonly RackPlacement[], ReadonlyMap<string, RackPlacement>>();
+const rowCoordinateCache = new Map<string, readonly GridRowModel[]>();
+const columnIndexCache = new Map<number, readonly number[]>();
+
+export function getRackPlacementLookup(
+  placements: readonly RackPlacement[],
+): ReadonlyMap<string, RackPlacement> {
+  const cached = placementLookupCache.get(placements);
+  if (cached) {
+    return cached;
+  }
+
+  const lookup = new Map<string, RackPlacement>();
+  for (const placement of placements) {
+    lookup.set(`${placement.row},${placement.position}`, placement);
+  }
+  placementLookupCache.set(placements, lookup);
+  return lookup;
+}
+
+export function getGridRowModels(rows: number, positionsPerRow: number): readonly GridRowModel[] {
+  const cacheKey = `${rows}x${positionsPerRow}`;
+  const cached = rowCoordinateCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const rowModels = Array.from({ length: rows }, (_, row) => ({
+    row,
+    rowLabel: String.fromCharCode(65 + row),
+    slots: Array.from({ length: positionsPerRow }, (_, position) => ({
+      row,
+      position,
+      rowLabel: String.fromCharCode(65 + row),
+      slotLabel: `Slot ${position + 1}`,
+      key: `${row}:${position}`,
+    })),
+  }));
+  rowCoordinateCache.set(cacheKey, rowModels);
+  return rowModels;
+}
+
+export function getGridColumnIndexes(positionsPerRow: number): readonly number[] {
+  const cached = columnIndexCache.get(positionsPerRow);
+  if (cached) {
+    return cached;
+  }
+
+  const columns = Array.from({ length: positionsPerRow }, (_, index) => index);
+  columnIndexCache.set(positionsPerRow, columns);
+  return columns;
+}
+
 export function Grid({
   datacenter,
   rackMaintenanceByPlacementId,
@@ -33,31 +101,32 @@ export function Grid({
 }: GridProps) {
   const { rows, positionsPerRow } = datacenter.spec;
   const isPhoneViewport = useIsPhoneViewport();
-
-  // Build a fast lookup: "row,pos" → placement
-  const placementMap = new Map<string, RackPlacement>();
-  for (const p of datacenter.placements) {
-    placementMap.set(`${p.row},${p.position}`, p);
-  }
+  const placementMap = getRackPlacementLookup(datacenter.placements);
+  const rowModels = getGridRowModels(rows, positionsPerRow);
+  const columnIndexes = getGridColumnIndexes(positionsPerRow);
+  const desktopGridStyle = useMemo(
+    () => ({ "--cols": positionsPerRow } as React.CSSProperties),
+    [positionsPerRow],
+  );
 
   if (isPhoneViewport) {
     return (
       <div className={styles.mobileWrapper}>
-        {Array.from({ length: rows }, (_, r) => (
+        {rowModels.map((rowModel) => (
           <section
-            key={r}
+            key={rowModel.row}
             className={styles.mobileRowGroup}
             role="group"
-            aria-labelledby={`mobile-row-${r}`}
+            aria-labelledby={`mobile-row-${rowModel.row}`}
           >
-            <div id={`mobile-row-${r}`} className={styles.mobileRowHeader}>
-              <span className={styles.mobileRowLabel}>ROW {String.fromCharCode(65 + r)}</span>
+            <div id={`mobile-row-${rowModel.row}`} className={styles.mobileRowHeader}>
+              <span className={styles.mobileRowLabel}>ROW {rowModel.rowLabel}</span>
               <span className={styles.mobileRowMeta}>{positionsPerRow} slots</span>
             </div>
 
             <div className={styles.mobileSlotList}>
-              {Array.from({ length: positionsPerRow }, (_, p) => {
-                const placement = placementMap.get(`${r},${p}`);
+              {rowModel.slots.map((slot) => {
+                const placement = placementMap.get(`${slot.row},${slot.position}`);
                 const spec = placement ? RACK_CATALOG[placement.specId] : undefined;
                 const maintenanceView = placement
                   ? rackMaintenanceByPlacementId.get(placement.id)
@@ -67,11 +136,11 @@ export function Grid({
                   : undefined;
 
                 return (
-                  <div key={p} className={styles.mobileSlotCard}>
-                    <div className={styles.mobileSlotLabel}>Slot {p + 1}</div>
+                  <div key={slot.key} className={styles.mobileSlotCard}>
+                    <div className={styles.mobileSlotLabel}>{slot.slotLabel}</div>
                     <Slot
-                      row={r}
-                      position={p}
+                      row={slot.row}
+                      position={slot.position}
                       placement={placement}
                       spec={spec}
                       maintenanceView={maintenanceView}
@@ -98,31 +167,31 @@ export function Grid({
       {/* ── Column headers ── */}
       <div
         className={styles.colHeaders}
-        style={{ "--cols": positionsPerRow } as React.CSSProperties}
+        style={desktopGridStyle}
       >
         <div className={styles.corner} />
-        {Array.from({ length: positionsPerRow }, (_, i) => (
-          <div key={i} className={styles.colLabel}>{i + 1}</div>
+        {columnIndexes.map((index) => (
+          <div key={index} className={styles.colLabel}>{index + 1}</div>
         ))}
       </div>
 
       {/* ── Row grid ── */}
       <div className={styles.rows}>
-        {Array.from({ length: rows }, (_, r) => (
+        {rowModels.map((rowModel) => (
           <div
-            key={r}
+            key={rowModel.row}
             className={styles.row}
-            style={{ "--cols": positionsPerRow } as React.CSSProperties}
+            style={desktopGridStyle}
           >
             {/* Row label (A, B, C…) */}
             <div className={styles.rowLabel}>
-              {String.fromCharCode(65 + r)}
+              {rowModel.rowLabel}
             </div>
 
             {/* Slots */}
-            {Array.from({ length: positionsPerRow }, (_, p) => {
-              const placement = placementMap.get(`${r},${p}`);
-              const spec      = placement ? RACK_CATALOG[placement.specId] : undefined;
+            {rowModel.slots.map((slot) => {
+              const placement = placementMap.get(`${slot.row},${slot.position}`);
+              const spec = placement ? RACK_CATALOG[placement.specId] : undefined;
               const maintenanceView = placement
                 ? rackMaintenanceByPlacementId.get(placement.id)
                 : undefined;
@@ -131,9 +200,9 @@ export function Grid({
                 : undefined;
               return (
                 <Slot
-                  key={p}
-                  row={r}
-                  position={p}
+                  key={slot.key}
+                  row={slot.row}
+                  position={slot.position}
                   placement={placement}
                   spec={spec}
                   maintenanceView={maintenanceView}
