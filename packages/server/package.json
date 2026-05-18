@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "build": "tsc -b",
+    "build:deploy": "npm run build -w @datacenter-tycoon/game-logic && npm run build",
     "dev": "tsx watch src/index.ts",
     "migrate": "tsx src/db/migrate.ts",
     "start": "node dist/index.js",

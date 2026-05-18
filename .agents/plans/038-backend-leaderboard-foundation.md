@@ -26,7 +26,7 @@ owner: server
   - [x] 4.2 Derive or validate totals with `game-logic` helpers where possible
   - [x] 4.3 Add abuse-resistant submission rules
 - [ ] **Phase 5 — Railway deployment infrastructure**
-  - [ ] 5.1 Add Railway service configuration for the server
+  - [x] 5.1 Add Railway service configuration for the server
   - [ ] 5.2 Add Postgres provisioning and environment documentation
   - [ ] 5.3 Decide whether Redis is required for leaderboard caching
 - [ ] **Phase 6 — Operations, CI, and documentation**
