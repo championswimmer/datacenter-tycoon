@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import type { RackActivityView, RackPlacement, RackSpec } from "@datacenter-tycoon/game-logic";
 import type { RackMaintenanceView } from "../../store/selectors.js";
 import { LedSegment } from "../../theme/primitives/index.js";
@@ -25,10 +25,20 @@ const KIND_LABEL: Record<RackSpec["kind"], string> = {
   gpu:     "GPU",
 };
 
-// 6 blade stripes for the visual stack
-const BLADE_COUNT = 6;
+const tierPipIndexCache = new Map<number, readonly number[]>();
 
-export function RackTile({
+function getTierPipIndexes(tier: number): readonly number[] {
+  const cached = tierPipIndexCache.get(tier);
+  if (cached) {
+    return cached;
+  }
+
+  const indexes = Array.from({ length: tier }, (_, index) => index);
+  tierPipIndexCache.set(tier, indexes);
+  return indexes;
+}
+
+export const RackTile = memo(function RackTile({
   placement,
   maintenanceView,
   rackActivity,
@@ -92,19 +102,15 @@ export function RackTile({
       {/* ── Bezel ── */}
       <div className={styles.bezel}>
         <div className={styles.tierPips}>
-          {Array.from({ length: spec.tier }, (_, i) => (
-            <span key={i} className={styles.pip} />
+          {getTierPipIndexes(spec.tier).map((index) => (
+            <span key={index} className={styles.pip} />
           ))}
         </div>
         <span className={styles.specId}>{spec.id}</span>
       </div>
 
       {/* ── Blade stripes ── */}
-      <div className={styles.blades}>
-        {Array.from({ length: BLADE_COUNT }, (_, i) => (
-          <div key={i} className={styles.blade} />
-        ))}
-      </div>
+      <div className={styles.blades} aria-hidden="true" />
 
       {/* ── LED row + kind badge ── */}
       <div className={styles.ledRow}>
@@ -166,4 +172,4 @@ export function RackTile({
       >×</button>
     </div>
   );
-}
+});

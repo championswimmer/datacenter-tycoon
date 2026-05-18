@@ -85,23 +85,52 @@
 
 .blades {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
   padding: 2px 4px;
   overflow: hidden;
-}
-
-.blade {
-  flex: 1;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
   border-radius: 1px;
-  min-height: 3px;
 }
 
-.kind-compute .blade { background: rgba(94,240,255,.12);  }
-.kind-memory  .blade { background: rgba(96,165,250,.12);  }
-.kind-storage .blade { background: rgba(192,132,252,.12); }
-.kind-gpu     .blade { background: rgba(255,177,60,.12);  }
+.kind-compute .blades {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(94,240,255,.12) 0,
+    rgba(94,240,255,.12) calc((100% / 6) - 2px),
+    transparent calc((100% / 6) - 2px),
+    transparent calc(100% / 6)
+  );
+}
+
+.kind-memory .blades {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(96,165,250,.12) 0,
+    rgba(96,165,250,.12) calc((100% / 6) - 2px),
+    transparent calc((100% / 6) - 2px),
+    transparent calc(100% / 6)
+  );
+}
+
+.kind-storage .blades {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(192,132,252,.12) 0,
+    rgba(192,132,252,.12) calc((100% / 6) - 2px),
+    transparent calc((100% / 6) - 2px),
+    transparent calc(100% / 6)
+  );
+}
+
+.kind-gpu .blades {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(255,177,60,.12) 0,
+    rgba(255,177,60,.12) calc((100% / 6) - 2px),
+    transparent calc((100% / 6) - 2px),
+    transparent calc(100% / 6)
+  );
+}
 
 /* ── LED row ──────────────────────────────────────────────── */
 

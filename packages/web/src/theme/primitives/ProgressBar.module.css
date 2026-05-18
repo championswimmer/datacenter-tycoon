@@ -6,29 +6,44 @@
 }
 
 .track {
-  display: flex;
-  gap: 2px;
-  align-items: center;
+  --segment-gap: 2px;
+  display: inline-flex;
   flex: 1;
+  position: relative;
+  overflow: hidden;
+  border-radius: 2px;
+  min-height: 8px;
+  background: repeating-linear-gradient(
+    to right,
+    var(--bg-3) 0,
+    var(--bg-3) calc((100% / var(--segment-count, 20)) - var(--segment-gap)),
+    transparent calc((100% / var(--segment-count, 20)) - var(--segment-gap)),
+    transparent calc(100% / var(--segment-count, 20))
+  );
 }
 
-.segment {
-  flex: 1;
-  height: 100%;
-  border-radius: 1px;
-  transition: background var(--duration-fast), box-shadow var(--duration-fast);
-}
-
-.empty {
-  background: var(--bg-3);
+.track::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--fill-width, 0%);
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    to right,
+    var(--progress-fill, var(--neon-cyan)) 0,
+    var(--progress-fill, var(--neon-cyan)) calc((100% / var(--segment-count, 20)) - var(--segment-gap)),
+    transparent calc((100% / var(--segment-count, 20)) - var(--segment-gap)),
+    transparent calc(100% / var(--segment-count, 20))
+  );
+  box-shadow: 0 0 4px var(--progress-fill, var(--neon-cyan));
 }
 
 /* Filled colors */
-.filled-cyan    { background: var(--neon-cyan);    box-shadow: 0 0 3px var(--neon-cyan); }
-.filled-amber   { background: var(--neon-amber);   box-shadow: 0 0 3px var(--neon-amber); }
-.filled-lime    { background: var(--neon-lime);     box-shadow: 0 0 3px var(--neon-lime); }
-.filled-red     { background: var(--neon-red);      box-shadow: 0 0 3px var(--neon-red); }
-.filled-magenta { background: var(--neon-magenta);  box-shadow: 0 0 3px var(--neon-magenta); }
+.filled-cyan    { --progress-fill: var(--neon-cyan); }
+.filled-amber   { --progress-fill: var(--neon-amber); }
+.filled-lime    { --progress-fill: var(--neon-lime); }
+.filled-red     { --progress-fill: var(--neon-red); }
+.filled-magenta { --progress-fill: var(--neon-magenta); }
 
 .label {
   font-family: var(--font-mono);
@@ -43,6 +58,6 @@
   50% { opacity: 0.6; }
 }
 
-.pulse {
+.pulse::before {
   animation: pulse-glow 1.2s ease-in-out infinite;
 }

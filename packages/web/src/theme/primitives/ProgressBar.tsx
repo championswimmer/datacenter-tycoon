@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import styles from "./ProgressBar.module.css";
 
 export interface ProgressBarProps {
@@ -37,8 +38,12 @@ export function ProgressBar({
   pulse = false,
 }: ProgressBarProps) {
   const pct = Math.min(Math.max(value / max, 0), 1);
-  const filled = Math.round(pct * segments);
   const resolvedColor = resolveColor(color, pct);
+  const trackStyle = useMemo(() => ({
+    height,
+    "--fill-width": `${pct * 100}%`,
+    "--segment-count": String(Math.max(1, segments)),
+  } as React.CSSProperties), [height, pct, segments]);
 
   return (
     <span
@@ -49,17 +54,14 @@ export function ProgressBar({
       aria-valuemax={max}
       aria-label={label}
     >
-      <span className={[styles.track, pulse ? styles.pulse : ""].join(" ")} style={{ height }}>
-        {Array.from({ length: segments }, (_, i) => (
-          <span
-            key={i}
-            className={[
-              styles.segment,
-              i < filled ? styles[`filled-${resolvedColor}`] : styles.empty,
-            ].join(" ")}
-          />
-        ))}
-      </span>
+      <span
+        className={[
+          styles.track,
+          styles[`filled-${resolvedColor}`],
+          pulse ? styles.pulse : "",
+        ].join(" ")}
+        style={trackStyle}
+      />
       {showLabel && (
         <span className={styles.label}>{Math.round(pct * 100)}%</span>
       )}
