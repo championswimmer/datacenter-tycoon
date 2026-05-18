@@ -7,6 +7,7 @@
   "scripts": {
     "build": "tsc -b",
     "dev": "tsx watch src/index.ts",
+    "migrate": "tsx src/db/migrate.ts",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "node --test --import tsx $(find src -type f -name '*.test.ts' | sort)",
@@ -14,10 +15,12 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@datacenter-tycoon/game-logic": "*"
+    "@datacenter-tycoon/game-logic": "*",
+    "pg": "^8.21.0"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",
+    "@types/pg": "^8.20.0",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"
   }
