@@ -75,6 +75,8 @@ export function getCurrentGameId(): string | null {
 
 /** The number of Tick actions between automatic saves. */
 export const AUTOSAVE_EVERY_TICKS = 5;
+/** Debounce window for Tick-driven autosaves so writes happen off the dispatch critical path. */
+export const AUTOSAVE_TICK_DEBOUNCE_MS = 150;
 
 // ── Low-level read / write ─────────────────────────────────────────────────────
 
@@ -137,24 +139,62 @@ export function clearAllSaves(): void {
 export function attachAutosave(
   store: GameStore,
   everyTicks = AUTOSAVE_EVERY_TICKS,
+  tickDebounceMs = AUTOSAVE_TICK_DEBOUNCE_MS,
 ): () => void {
   let lastSavedTick = store.getState().tick;
+  let pendingState: GameState | null = null;
+  let pendingTimer: ReturnType<typeof setTimeout> | null = null;
 
-  return store.subscribe(() => {
+  const flushPendingSave = () => {
+    if (!pendingState) {
+      return;
+    }
+
+    writeSave(pendingState);
+    lastSavedTick = pendingState.tick;
+    pendingState = null;
+    if (pendingTimer) {
+      clearTimeout(pendingTimer);
+      pendingTimer = null;
+    }
+  };
+
+  const scheduleTickSave = (state: GameState) => {
+    pendingState = state;
+    if (pendingTimer) {
+      clearTimeout(pendingTimer);
+    }
+    pendingTimer = setTimeout(() => {
+      pendingTimer = null;
+      flushPendingSave();
+    }, tickDebounceMs);
+  };
+
+  const unsubscribe = store.subscribe(() => {
     const state = store.getState();
-    const isTick = state.tick > lastSavedTick;
+    const lastAction = store.getLastAction();
+    const isTick = lastAction?.type === "Tick";
 
     if (isTick) {
       if (state.tick - lastSavedTick >= everyTicks) {
-        writeSave(state);
-        lastSavedTick = state.tick;
+        scheduleTickSave(state);
       }
-    } else {
-      // Non-tick action (PlaceRack, AcceptContract, etc.) — save now
-      writeSave(state);
-      lastSavedTick = state.tick;
+      return;
     }
+
+    pendingState = null;
+    if (pendingTimer) {
+      clearTimeout(pendingTimer);
+      pendingTimer = null;
+    }
+    writeSave(state);
+    lastSavedTick = state.tick;
   });
+
+  return () => {
+    flushPendingSave();
+    unsubscribe();
+  };
 }
 
 // ── Bootstrap helper ───────────────────────────────────────────────────────────

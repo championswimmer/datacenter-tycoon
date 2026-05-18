@@ -22,13 +22,16 @@ describe("createGameStore", () => {
     const initial = newGame(seed);
     const store = createGameStore(initial);
     expect(store.getState()).toBe(initial);
+    expect(store.getLastAction()).toBeNull();
   });
 
   it("dispatch() applies the action and updates state", () => {
     const store = createGameStore(newGame(seed));
     const before = store.getState().tick;
-    store.dispatch({ type: "Tick" });
+    const action = { type: "Tick" } as const;
+    store.dispatch(action);
     expect(store.getState().tick).toBe(before + 1);
+    expect(store.getLastAction()).toEqual(action);
   });
 
   it("dispatch() notifies all subscribers", () => {
@@ -84,11 +87,14 @@ describe("createGameStore", () => {
   it("getState() inside subscriber sees the updated state", () => {
     const store = createGameStore(newGame(seed));
     let tickSeenInSubscriber = -1;
+    let actionSeenInSubscriber: string | null = null;
     store.subscribe(() => {
       tickSeenInSubscriber = store.getState().tick;
+      actionSeenInSubscriber = store.getLastAction()?.type ?? null;
     });
     store.dispatch({ type: "Tick" });
     expect(tickSeenInSubscriber).toBe(1);
+    expect(actionSeenInSubscriber).toBe("Tick");
   });
 
   it("dispatch() keeps platinum reliability market expansion after hydration", () => {

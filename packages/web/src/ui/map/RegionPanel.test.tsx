@@ -114,6 +114,7 @@ describe("RegionPanel", () => {
 
     const throwingStore: GameStore = {
       getState: () => state,
+      getLastAction: () => null,
       subscribe: () => () => {},
       dispatch: () => {
         throw new FabricLinkError(

@@ -9,15 +9,33 @@ import {
   selectTotalServers,
 } from "./selectors.js";
 
+const AMBIENT_LOAD_ACTIONS = new Set([
+  "BuildDatacenter",
+  "PlaceRack",
+  "RemoveRack",
+  "MoveRack",
+]);
+
+function haveSameContractIds(
+  nextContracts: ReturnType<typeof selectActiveContracts>,
+  prevContracts: ReturnType<typeof selectActiveContracts>,
+): boolean {
+  return nextContracts.length === prevContracts.length
+    && nextContracts.every((contract, index) => contract.id === prevContracts[index]?.id);
+}
+
 export function attachAudioEvents(store: GameStore): () => void {
   let prevActive = selectActiveContracts(store.getState());
   let prevCash = store.getState().player.cash;
+  let prevAmbientSpeed: number | null = null;
+  let prevAmbientPaused: boolean | null = null;
   let musicStarted = false;
   let ambientStarted = false;
 
   return store.subscribe(() => {
     const state = store.getState();
     const settings = selectAudioSettings(state);
+    const lastActionType = store.getLastAction()?.type;
 
     if (settings.master) {
       if (settings.music) {
@@ -31,23 +49,39 @@ export function attachAudioEvents(store: GameStore): () => void {
       }
 
       if (settings.ambient) {
+        const ambientNeedsUsageRefresh = !ambientStarted || Boolean(lastActionType && AMBIENT_LOAD_ACTIONS.has(lastActionType));
+
         if (!ambientStarted) {
           ambient.start();
           ambientStarted = true;
+          prevAmbientSpeed = null;
+          prevAmbientPaused = null;
         }
 
-        const usage = selectResourceUsage(state);
-        const capacity = selectCapacity(state);
-        const servers = selectTotalServers(state);
-        const load = capacity.total.vCpu > 0
-          ? Math.min(1, usage.total.powerKw / (capacity.total.vCpu * 0.5))
-          : 0;
-        ambient.setUsage(load, servers);
-        ambient.setSpeed(state.game.speed);
-        ambient.setPaused(state.game.paused);
+        if (ambientNeedsUsageRefresh) {
+          const usage = selectResourceUsage(state);
+          const capacity = selectCapacity(state);
+          const servers = selectTotalServers(state);
+          const load = capacity.total.vCpu > 0
+            ? Math.min(1, usage.total.powerKw / (capacity.total.vCpu * 0.5))
+            : 0;
+          ambient.setUsage(load, servers);
+        }
+
+        if (prevAmbientSpeed !== state.game.speed) {
+          ambient.setSpeed(state.game.speed);
+          prevAmbientSpeed = state.game.speed;
+        }
+
+        if (prevAmbientPaused !== state.game.paused) {
+          ambient.setPaused(state.game.paused);
+          prevAmbientPaused = state.game.paused;
+        }
       } else if (ambientStarted) {
         ambient.stop();
         ambientStarted = false;
+        prevAmbientSpeed = null;
+        prevAmbientPaused = null;
       }
     } else {
       if (musicStarted) {
@@ -58,12 +92,15 @@ export function attachAudioEvents(store: GameStore): () => void {
         ambient.stop();
         ambientStarted = false;
       }
+      prevAmbientSpeed = null;
+      prevAmbientPaused = null;
     }
 
     const currActive = selectActiveContracts(state);
+    const activeIdsChanged = !haveSameContractIds(currActive, prevActive);
 
     if (settings.master) {
-      if (settings.sfx) {
+      if (settings.sfx && activeIdsChanged) {
         const currActiveIds = new Set(currActive.map((contract) => contract.id));
         const prevActiveIds = new Set(prevActive.map((contract) => contract.id));
         const historicalById = new Map(
