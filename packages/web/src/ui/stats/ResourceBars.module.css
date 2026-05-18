@@ -19,7 +19,7 @@
   font-size: 0.6rem;
   font-weight: 600;
   letter-spacing: 0.1em;
-  color: var(--fg-3);
+  color: var(--fg-2);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -44,7 +44,7 @@
   font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.1em;
-  color: var(--fg-2);
+  color: var(--fg-1);
   text-align: right;
 }
 
@@ -61,7 +61,7 @@
 }
 
 .numSep {
-  color: var(--fg-3);
+  color: var(--fg-2);
   margin: 0 3px;
 }
 

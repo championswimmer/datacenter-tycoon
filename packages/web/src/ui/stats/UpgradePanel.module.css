@@ -19,14 +19,14 @@
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--fg-3);
+  color: var(--fg-2);
 }
 
 .copy {
   margin: var(--space-1) 0 0;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
-  color: var(--fg-2);
+  color: var(--fg-1);
   line-height: 1.45;
   max-width: 56ch;
 }
@@ -84,7 +84,7 @@
   font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--fg-3);
+  color: var(--fg-1);
 }
 
 .infrastructureValue,
@@ -100,7 +100,7 @@
 .trackStat,
 .trackNext {
   font-size: var(--text-xs);
-  color: var(--fg-2);
+  color: var(--fg-1);
 }
 
 .trackGrid {
@@ -176,7 +176,7 @@
 }
 
 .ladderNodeLocked {
-  opacity: 0.72;
+  opacity: 0.84;
 }
 
 .ladderStep,
@@ -195,7 +195,7 @@
   border-radius: 999px;
   border: 1px solid currentColor;
   font-size: var(--text-xs);
-  color: var(--fg-2);
+  color: var(--fg-1);
 }
 
 .ladderCopy {
@@ -212,7 +212,7 @@
 
 .ladderMeta {
   font-size: var(--text-xs);
-  color: var(--fg-2);
+  color: var(--fg-1);
 }
 
 .ladderBadge {
@@ -220,7 +220,7 @@
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--fg-2);
+  color: var(--fg-1);
 }
 
 .ladderNodeCompleted .ladderBadge,
