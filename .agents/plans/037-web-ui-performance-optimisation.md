@@ -32,7 +32,7 @@ owner: web
   - [x] 5.3 Optimise large image assets and route-level payloads
 - [ ] **Phase 6 — Final validation and follow-up guardrails**
   - [x] 6.1 Re-run web typecheck, tests, build, and query-boundary audit
-  - [ ] 6.2 Document measured before/after results
+  - [x] 6.2 Document measured before/after results
   - [ ] 6.3 Add follow-up issues for non-trivial architectural work
 
 ## Overview
@@ -250,6 +250,7 @@ Optimisation principles:
 
 ## Changelog
 
+- 2026-05-18 — Completed Phase 6.2 by recording final before/after measurements in `packages/web/docs/performance.md`, including asset-size deltas and render-path comparisons.
 - 2026-05-18 — Completed Phase 6.1 by re-running typecheck, the full web Vitest suite, production build/budget checks, and the query-boundary audit after fixing selector-closure cache invalidation in `useGameSelector`.
 - 2026-05-18 — Completed Phase 5.3 by shipping compressed responsive start-screen banner assets, dropping the largest image from ~1.07 MB to ~318 kB in production builds.
 - 2026-05-18 — Completed Phase 5.2 by reusing known latest-save ids during session replacement instead of synchronously re-reading localStorage.
