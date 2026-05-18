@@ -1,18 +1,25 @@
 import { fileURLToPath } from "node:url";
-import { ConfigError, type ServerConfig, loadServerConfig } from "./config.js";
+import { ConfigError, loadServerConfig } from "./config.js";
 import { createHealthRoutes } from "./routes/health.js";
 import { createServerApp } from "./server/app.js";
 import { createNodeHttpServer } from "./server/node-http.js";
+import type { AppDependencies } from "./types.js";
 
-export function createApp(config: ServerConfig) {
-  return createServerApp({ routes: createHealthRoutes(config) });
+export function createApp(dependencies: AppDependencies) {
+  return createServerApp({
+    context: dependencies,
+    routes: createHealthRoutes(),
+  });
 }
 
 export function startServer(
   env: Record<string, string | undefined> = process.env,
 ): ReturnType<typeof createNodeHttpServer> {
   const config = loadServerConfig(env);
-  const app = createApp(config);
+  const app = createApp({
+    config,
+    services: {},
+  });
   const server = createNodeHttpServer(app);
 
   server.listen(config.port, config.host, () => {

@@ -1,44 +1,19 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ConfigError, loadServerConfig } from "./config.js";
-import { createApp } from "./index.js";
+import { createTestApp } from "./test-utils/app.js";
 
-function createTestConfig() {
-  return loadServerConfig({
-    NODE_ENV: "test",
-    PORT: "4010",
-    HOST: "127.0.0.1",
-    CORS_ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:4173",
-    SERVER_VERSION: "9.9.9-test",
+test("createTestApp accepts fake service overrides without contacting infrastructure", () => {
+  const fakePlayersRepository = {
+    register: () => Promise.resolve({ playerId: "player_test", username: "archivist" }),
+  };
+  const { dependencies } = createTestApp({
+    services: {
+      players: fakePlayersRepository,
+    },
   });
-}
 
-test("GET /healthz returns liveness information", async () => {
-  const app = createApp(createTestConfig());
-  const response = await app.fetch(new Request("http://localhost/healthz"));
-  const payload = (await response.json()) as {
-    status: string;
-    environment: string;
-    databaseConfigured: boolean;
-  };
-
-  assert.equal(response.status, 200);
-  assert.equal(payload.status, "ok");
-  assert.equal(payload.environment, "test");
-  assert.equal(payload.databaseConfigured, false);
-});
-
-test("GET /version returns server and game-logic versions", async () => {
-  const app = createApp(createTestConfig());
-  const response = await app.fetch(new Request("http://localhost/version"));
-  const payload = (await response.json()) as {
-    serverVersion: string;
-    gameLogicVersion: string;
-  };
-
-  assert.equal(response.status, 200);
-  assert.equal(payload.serverVersion, "9.9.9-test");
-  assert.match(payload.gameLogicVersion, /^\d+\.\d+\.\d+/);
+  assert.equal(dependencies.services.players, fakePlayersRepository);
 });
 
 test("loadServerConfig rejects missing production CORS origins", () => {

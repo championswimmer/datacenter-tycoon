@@ -1,13 +1,12 @@
-import type { ServerConfig } from "../config.js";
 import type { ServerRoute } from "../server/app.js";
 import { jsonResponse } from "../server/app.js";
 
-export function createHealthRoutes(config: ServerConfig): readonly ServerRoute[] {
+export function createHealthRoutes(): readonly ServerRoute[] {
   return [
     {
       method: "GET",
       pathname: "/healthz",
-      handler: () =>
+      handler: (_request, { config }) =>
         jsonResponse({
           status: "ok",
           environment: config.environment,
@@ -17,7 +16,7 @@ export function createHealthRoutes(config: ServerConfig): readonly ServerRoute[]
     {
       method: "GET",
       pathname: "/version",
-      handler: () =>
+      handler: (_request, { config }) =>
         jsonResponse({
           serverVersion: config.serverVersion,
           gameLogicVersion: config.gameLogicVersion,

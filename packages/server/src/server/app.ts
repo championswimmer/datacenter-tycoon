@@ -1,7 +1,12 @@
+import type { AppDependencies } from "../types.js";
+
 export interface ServerRoute {
   method: string;
   pathname: string;
-  handler: (request: Request) => Promise<Response> | Response;
+  handler: (
+    request: Request,
+    dependencies: AppDependencies,
+  ) => Promise<Response> | Response;
 }
 
 export interface ServerApp {
@@ -9,12 +14,13 @@ export interface ServerApp {
 }
 
 export interface CreateServerAppOptions {
+  context: AppDependencies;
   routes: readonly ServerRoute[];
   onError?: (error: unknown) => Promise<Response> | Response;
 }
 
 export function createServerApp(options: CreateServerAppOptions): ServerApp {
-  const { routes, onError = defaultErrorHandler } = options;
+  const { context, routes, onError = defaultErrorHandler } = options;
 
   return {
     async fetch(request: Request): Promise<Response> {
@@ -37,7 +43,7 @@ export function createServerApp(options: CreateServerAppOptions): ServerApp {
       }
 
       try {
-        return await route.handler(request);
+        return await route.handler(request, context);
       } catch (error) {
         return await onError(error);
       }

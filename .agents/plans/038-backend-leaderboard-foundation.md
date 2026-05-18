@@ -9,10 +9,10 @@ owner: server
 
 ## Progress
 
-- [ ] **Phase 1 — Backend API foundation**
+- [x] **Phase 1 — Backend API foundation**
   - [x] 1.1 Choose and scaffold the server HTTP boundary
   - [x] 1.2 Add health, version, and environment validation endpoints
-  - [ ] 1.3 Add server test utilities for API requests
+  - [x] 1.3 Add server test utilities for API requests
 - [ ] **Phase 2 — Player identity without passwords**
   - [ ] 2.1 Model username registration and anonymous player ids
   - [ ] 2.2 Implement username availability and registration endpoints
