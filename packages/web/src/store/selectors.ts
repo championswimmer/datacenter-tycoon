@@ -157,19 +157,36 @@ const selectMemoizedMarketContractViews = memoizeByInputs(
         activeContracts: [],
       })[0]!;
       const candidateByDcId = new Map(fitSummary.candidates.map((candidate) => [candidate.dcId, candidate] as const));
+      const affinity = buildContractAffinityView(state, contract);
+      const assignmentOptions: ContractAssignmentOptionView[] = [];
+      const eligibleAssignmentOptions: ContractAssignmentOptionView[] = [];
+      const blockedAssignmentOptions: ContractAssignmentOptionView[] = [];
+
+      for (const datacenter of state.datacenters) {
+        const option = buildAssignmentOptionView(
+          state,
+          datacenter,
+          candidateByDcId.get(datacenter.id),
+        );
+        assignmentOptions.push(option);
+        if (option.regionEligible) {
+          eligibleAssignmentOptions.push(option);
+        } else {
+          blockedAssignmentOptions.push(option);
+        }
+      }
 
       return {
         contract,
-        affinity: buildContractAffinityView(state, contract),
+        affinity,
+        affinityDetail: affinity.restricted
+          ? `Allowed regions: ${affinity.allowedRegions.join(", ")}`
+          : "Deployable from any region.",
         fitSummary,
         eligibleDatacenterIds: [...fitSummary.eligibleDcIds],
-        assignmentOptions: state.datacenters.map((datacenter) =>
-          buildAssignmentOptionView(
-            state,
-            datacenter,
-            candidateByDcId.get(datacenter.id),
-          )
-        ),
+        assignmentOptions,
+        eligibleAssignmentOptions,
+        blockedAssignmentOptions,
         slaProgress: summarizeContractSlaProgress(contract),
         dealScore: contractDealScore(contract),
         networkAvailable: fitSummary.networkAvailable,
@@ -716,9 +733,12 @@ export interface ContractAssignmentOptionView {
 export interface MarketContractView {
   contract: Contract;
   affinity: ContractAffinityView;
+  affinityDetail: string;
   fitSummary: ContractAssignmentFitSummary;
   eligibleDatacenterIds: DatacenterId[];
   assignmentOptions: ContractAssignmentOptionView[];
+  eligibleAssignmentOptions: ContractAssignmentOptionView[];
+  blockedAssignmentOptions: ContractAssignmentOptionView[];
   slaProgress: ContractSlaProgressView;
   dealScore: number;
   networkAvailable: Capacity;
