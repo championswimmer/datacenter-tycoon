@@ -1,5 +1,10 @@
 import type { Pool } from "pg";
 import {
+  getMetricValue,
+  type LeaderboardQuery,
+  type LeaderboardQueryMetric,
+} from "./queries.js";
+import {
   createLeaderboardRunRecord,
   generateLeaderboardRunId,
   leaderboardRunMatchesSubmission,
@@ -15,10 +20,16 @@ export interface LeaderboardUpsertResult {
 
 export interface LeaderboardRepository {
   upsertRun(submission: LeaderboardRunSubmission): Promise<LeaderboardUpsertResult>;
+  listRuns(query: LeaderboardQuery): Promise<LeaderboardRunRecord[]>;
 }
 
 export class InMemoryLeaderboardRepository implements LeaderboardRepository {
   readonly #runsByKey = new Map<string, LeaderboardRunRecord>();
+  readonly #clock: () => Date;
+
+  constructor(clock: () => Date = () => new Date()) {
+    this.#clock = clock;
+  }
 
   async upsertRun(submission: LeaderboardRunSubmission): Promise<LeaderboardUpsertResult> {
     const key = buildRunKey(submission.playerId, submission.clientRunId);
@@ -37,9 +48,12 @@ export class InMemoryLeaderboardRepository implements LeaderboardRepository {
       };
     }
 
+    const submittedAt = this.#clock();
     const run = createLeaderboardRunRecord({
       ...submission,
       runId: generateLeaderboardRunId(),
+      submittedAt,
+      updatedAt: submittedAt,
     });
     this.#runsByKey.set(key, run);
 
@@ -47,6 +61,12 @@ export class InMemoryLeaderboardRepository implements LeaderboardRepository {
       created: true,
       run,
     };
+  }
+
+  async listRuns(query: LeaderboardQuery): Promise<LeaderboardRunRecord[]> {
+    return [...this.#runsByKey.values()]
+      .sort((left, right) => compareLeaderboardRuns(left, right, query.metric))
+      .slice(0, query.limit);
   }
 }
 
@@ -170,6 +190,34 @@ export class PostgresLeaderboardRepository implements LeaderboardRepository {
     }
   }
 
+  async listRuns(query: LeaderboardQuery): Promise<LeaderboardRunRecord[]> {
+    const metricExpression = resolveMetricExpression(query.metric);
+    const result = await this.#database.query<LeaderboardRunRow>(
+      `
+        SELECT
+          id,
+          player_id,
+          client_run_id,
+          money,
+          cumulative_revenue,
+          total_servers,
+          compute_capacity,
+          memory_capacity,
+          storage_capacity,
+          gpu_capacity,
+          game_month,
+          submitted_at,
+          updated_at
+        FROM leaderboard_runs
+        ORDER BY ${metricExpression} DESC, submitted_at ASC, client_run_id ASC, id ASC
+        LIMIT $1
+      `,
+      [query.limit],
+    );
+
+    return result.rows.map((row) => mapLeaderboardRunRow(row));
+  }
+
   private async findRun(
     playerId: string,
     clientRunId: string,
@@ -202,6 +250,53 @@ export class PostgresLeaderboardRepository implements LeaderboardRepository {
 
 function buildRunKey(playerId: string, clientRunId: string): string {
   return `${playerId}:${clientRunId}`;
+}
+
+function compareLeaderboardRuns(
+  left: LeaderboardRunRecord,
+  right: LeaderboardRunRecord,
+  metric: LeaderboardQueryMetric,
+): number {
+  const metricDelta = getMetricValue(right, metric) - getMetricValue(left, metric);
+
+  if (metricDelta !== 0) {
+    return metricDelta;
+  }
+
+  const submittedAtDelta = left.submittedAt.getTime() - right.submittedAt.getTime();
+
+  if (submittedAtDelta !== 0) {
+    return submittedAtDelta;
+  }
+
+  const clientRunDelta = left.clientRunId.localeCompare(right.clientRunId);
+
+  if (clientRunDelta !== 0) {
+    return clientRunDelta;
+  }
+
+  return left.runId.localeCompare(right.runId);
+}
+
+function resolveMetricExpression(metric: LeaderboardQueryMetric): string {
+  switch (metric) {
+    case "money":
+      return "money";
+    case "cumulativeRevenue":
+      return "cumulative_revenue";
+    case "totalServers":
+      return "total_servers";
+    case "computeCapacity":
+      return "compute_capacity";
+    case "memoryCapacity":
+      return "memory_capacity";
+    case "storageCapacity":
+      return "storage_capacity";
+    case "gpuCapacity":
+      return "gpu_capacity";
+    case "totalCapacity":
+      return "(compute_capacity + memory_capacity + storage_capacity + gpu_capacity)";
+  }
 }
 
 function mapLeaderboardRunRow(row: LeaderboardRunRow | undefined): LeaderboardRunRecord {

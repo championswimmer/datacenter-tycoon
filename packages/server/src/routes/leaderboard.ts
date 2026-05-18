@@ -1,10 +1,40 @@
-import { submitLeaderboardRun } from "../leaderboard/service.js";
+import { queryLeaderboardEntries, submitLeaderboardRun } from "../leaderboard/service.js";
+import type { LeaderboardEntry } from "../leaderboard/queries.js";
 import type { LeaderboardRunRecord } from "../leaderboard/types.js";
 import type { ServerRoute } from "../server/app.js";
 import { HttpError, jsonResponse } from "../server/app.js";
 
 export function createLeaderboardRoutes(): readonly ServerRoute[] {
   return [
+    {
+      method: "GET",
+      pathname: "/leaderboard",
+      handler: async (request, { services }) => {
+        const playersRepository = services.players;
+        const leaderboardRepository = services.leaderboard;
+
+        if (!playersRepository || !leaderboardRepository) {
+          throw new HttpError(
+            503,
+            "LEADERBOARD_UNAVAILABLE",
+            "Online leaderboard submission is not configured.",
+          );
+        }
+
+        const { query, entries } = await queryLeaderboardEntries(
+          playersRepository,
+          leaderboardRepository,
+          new URL(request.url).searchParams,
+        );
+
+        return jsonResponse({
+          metric: query.metric,
+          period: query.period,
+          limit: query.limit,
+          entries: entries.map((entry) => serializeLeaderboardEntry(entry)),
+        });
+      },
+    },
     {
       method: "POST",
       pathname: "/leaderboard/runs",
@@ -56,5 +86,18 @@ function serializeLeaderboardRun(run: LeaderboardRunRecord) {
     gameMonth: run.gameMonth,
     submittedAt: run.submittedAt.toISOString(),
     updatedAt: run.updatedAt.toISOString(),
+  };
+}
+
+function serializeLeaderboardEntry(entry: LeaderboardEntry) {
+  return {
+    rank: entry.rank,
+    playerId: entry.playerId,
+    username: entry.username,
+    metric: entry.metric,
+    value: entry.value,
+    submittedAt: entry.submittedAt.toISOString(),
+    gameMonth: entry.gameMonth,
+    metrics: entry.metrics,
   };
 }
