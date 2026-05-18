@@ -1,14 +1,22 @@
 import { fileURLToPath } from "node:url";
 import { ConfigError, loadServerConfig } from "./config.js";
+import { InMemoryPlayersRepository } from "./players/repository.js";
 import { createHealthRoutes } from "./routes/health.js";
+import { createPlayerRoutes } from "./routes/players.js";
 import { createServerApp } from "./server/app.js";
 import { createNodeHttpServer } from "./server/node-http.js";
 import type { AppDependencies } from "./types.js";
 
 export function createApp(dependencies: AppDependencies) {
   return createServerApp({
-    context: dependencies,
-    routes: createHealthRoutes(),
+    context: {
+      ...dependencies,
+      services: {
+        ...dependencies.services,
+        players: dependencies.services.players ?? new InMemoryPlayersRepository(),
+      },
+    },
+    routes: [...createHealthRoutes(), ...createPlayerRoutes()],
   });
 }
 

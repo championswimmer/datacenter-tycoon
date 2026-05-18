@@ -9,6 +9,15 @@ export interface RegisterPlayerInput {
   username: string;
 }
 
+export class UsernameUnavailableError extends Error {
+  readonly code = "USERNAME_UNAVAILABLE";
+
+  constructor(message: string) {
+    super(message);
+    this.name = "UsernameUnavailableError";
+  }
+}
+
 export interface PlayersRepository {
   findByNormalizedUsername(normalizedUsername: string): Promise<RegisteredPlayer | null>;
   findByPlayerId(playerId: string): Promise<RegisteredPlayer | null>;
@@ -34,7 +43,7 @@ export class InMemoryPlayersRepository implements PlayersRepository {
     const existingPlayerId = this.#playerIdsByNormalizedUsername.get(parsed.normalizedUsername);
 
     if (existingPlayerId) {
-      throw new Error(`Username is already taken: ${parsed.username}`);
+      throw new UsernameUnavailableError(`Username is already taken: ${parsed.username}`);
     }
 
     const player = createRegisteredPlayer({
