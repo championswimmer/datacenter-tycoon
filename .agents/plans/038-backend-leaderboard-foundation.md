@@ -21,10 +21,10 @@ owner: server
   - [x] 3.1 Add Postgres schema and migration workflow
   - [x] 3.2 Implement leaderboard submission storage
   - [x] 3.3 Implement leaderboard query endpoints
-- [ ] **Phase 4 — Metric derivation and validation**
+- [x] **Phase 4 — Metric derivation and validation**
   - [x] 4.1 Define accepted leaderboard metric payloads
   - [x] 4.2 Derive or validate totals with `game-logic` helpers where possible
-  - [ ] 4.3 Add abuse-resistant submission rules
+  - [x] 4.3 Add abuse-resistant submission rules
 - [ ] **Phase 5 — Railway deployment infrastructure**
   - [ ] 5.1 Add Railway service configuration for the server
   - [ ] 5.2 Add Postgres provisioning and environment documentation
@@ -287,3 +287,4 @@ interface LeaderboardSubmission {
 
 - 2026-05-18 — Created initial backend leaderboard foundation plan.
 - 2026-05-18 — Started implementation and added a manual post-code rollout checklist.
+- 2026-05-18 — Added monotonic leaderboard updates, rate limiting, and an explicit trust-model note for backend submissions.

@@ -30,3 +30,18 @@ test("loadServerConfig rejects missing production CORS origins", () => {
     },
   );
 });
+
+test("loadServerConfig rejects invalid rate-limit configuration", () => {
+  assert.throws(
+    () =>
+      loadServerConfig({
+        NODE_ENV: "test",
+        PLAYER_REGISTRATION_RATE_LIMIT_MAX_REQUESTS: "0",
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof ConfigError);
+      assert.match(error.message, /PLAYER_REGISTRATION_RATE_LIMIT_MAX_REQUESTS/);
+      return true;
+    },
+  );
+});

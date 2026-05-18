@@ -1,6 +1,12 @@
 import { VERSION as gameLogicVersion } from "@datacenter-tycoon/game-logic";
+import type { RateLimitRule } from "./rate-limit/fixed-window.js";
 
 export type ServerEnvironment = "development" | "test" | "production";
+
+export interface ServerRateLimitConfig {
+  playerRegistration: RateLimitRule;
+  leaderboardSubmission: RateLimitRule;
+}
 
 export interface ServerConfig {
   environment: ServerEnvironment;
@@ -8,6 +14,7 @@ export interface ServerConfig {
   port: number;
   corsAllowedOrigins: readonly string[];
   databaseUrl?: string;
+  rateLimits: ServerRateLimitConfig;
   serverVersion: string;
   gameLogicVersion: string;
 }
@@ -29,6 +36,32 @@ export function loadServerConfig(
   const host = env.HOST?.trim() || "0.0.0.0";
   const corsAllowedOrigins = parseCorsAllowedOrigins(environment, env.CORS_ALLOWED_ORIGINS);
   const databaseUrl = env.DATABASE_URL?.trim() || undefined;
+  const rateLimits = {
+    playerRegistration: {
+      windowMs: parsePositiveInteger(
+        env.PLAYER_REGISTRATION_RATE_LIMIT_WINDOW_MS,
+        60_000,
+        "PLAYER_REGISTRATION_RATE_LIMIT_WINDOW_MS",
+      ),
+      maxRequests: parsePositiveInteger(
+        env.PLAYER_REGISTRATION_RATE_LIMIT_MAX_REQUESTS,
+        10,
+        "PLAYER_REGISTRATION_RATE_LIMIT_MAX_REQUESTS",
+      ),
+    },
+    leaderboardSubmission: {
+      windowMs: parsePositiveInteger(
+        env.LEADERBOARD_SUBMISSION_RATE_LIMIT_WINDOW_MS,
+        60_000,
+        "LEADERBOARD_SUBMISSION_RATE_LIMIT_WINDOW_MS",
+      ),
+      maxRequests: parsePositiveInteger(
+        env.LEADERBOARD_SUBMISSION_RATE_LIMIT_MAX_REQUESTS,
+        120,
+        "LEADERBOARD_SUBMISSION_RATE_LIMIT_MAX_REQUESTS",
+      ),
+    },
+  } satisfies ServerRateLimitConfig;
   const serverVersion = env.SERVER_VERSION?.trim() || env.npm_package_version?.trim() || "0.1.0";
 
   return {
@@ -37,6 +70,7 @@ export function loadServerConfig(
     port,
     corsAllowedOrigins,
     databaseUrl,
+    rateLimits,
     serverVersion,
     gameLogicVersion,
   };
@@ -89,4 +123,22 @@ function parseCorsAllowedOrigins(
   }
 
   return ["http://localhost:5173"];
+}
+
+function parsePositiveInteger(
+  value: string | undefined,
+  defaultValue: number,
+  fieldName: string,
+): number {
+  if (value === undefined || value.trim() === "") {
+    return defaultValue;
+  }
+
+  const parsed = Number(value);
+
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new ConfigError(`${fieldName} must be a positive integer. Received: ${value}`);
+  }
+
+  return parsed;
 }

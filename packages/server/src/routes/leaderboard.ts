@@ -1,6 +1,10 @@
 import { queryLeaderboardEntries, submitLeaderboardRun } from "../leaderboard/service.js";
 import type { LeaderboardEntry } from "../leaderboard/queries.js";
 import type { LeaderboardRunRecord } from "../leaderboard/types.js";
+import {
+  getClientRateLimitKey,
+  type RateLimitRule,
+} from "../rate-limit/fixed-window.js";
 import type { ServerRoute } from "../server/app.js";
 import { HttpError, jsonResponse } from "../server/app.js";
 
@@ -38,7 +42,7 @@ export function createLeaderboardRoutes(): readonly ServerRoute[] {
     {
       method: "POST",
       pathname: "/leaderboard/runs",
-      handler: async (request, { services }) => {
+      handler: async (request, { services, config }) => {
         const playersRepository = services.players;
         const leaderboardRepository = services.leaderboard;
 
@@ -47,6 +51,17 @@ export function createLeaderboardRoutes(): readonly ServerRoute[] {
             503,
             "LEADERBOARD_UNAVAILABLE",
             "Online leaderboard submission is not configured.",
+          );
+        }
+
+        const rateLimiter = services.rateLimiter;
+
+        if (rateLimiter) {
+          enforceRateLimit(
+            request,
+            rateLimiter,
+            config.rateLimits.leaderboardSubmission,
+            "leaderboard submissions",
           );
         }
 
@@ -100,4 +115,21 @@ function serializeLeaderboardEntry(entry: LeaderboardEntry) {
     gameMonth: entry.gameMonth,
     metrics: entry.metrics,
   };
+}
+
+function enforceRateLimit(
+  request: Request,
+  rateLimiter: { consume: (scope: string, key: string, rule: RateLimitRule) => { allowed: boolean; retryAfterSeconds: number } },
+  rule: RateLimitRule,
+  resourceName: string,
+): void {
+  const decision = rateLimiter.consume(resourceName, getClientRateLimitKey(request), rule);
+
+  if (!decision.allowed) {
+    throw new HttpError(
+      429,
+      "RATE_LIMITED",
+      `Too many ${resourceName}. Retry after ${decision.retryAfterSeconds} seconds.`,
+    );
+  }
 }

@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { apiRequest, createTestApp } from "../test-utils/app.js";
 import type { PlayersRepository, RegisterPlayerInput } from "../players/repository.js";
 import { UsernameUnavailableError } from "../players/repository.js";
+import type { RateLimiter, RateLimitRule } from "../rate-limit/fixed-window.js";
 
 test("GET /players/availability reports a username as available", async () => {
   const { app } = createTestApp();
@@ -133,6 +134,38 @@ test("GET /players/availability rejects invalid usernames", async () => {
 
   assert.equal(response.status, 400);
   assert.equal(json?.error.code, "INVALID_USERNAME");
+});
+
+test("POST /players rate-limits repeated registration attempts from the same client", async () => {
+  class DenyAllRateLimiter implements RateLimiter {
+    consume(_scope: string, _key: string, _rule: RateLimitRule) {
+      return {
+        allowed: false,
+        retryAfterSeconds: 42,
+        remaining: 0,
+      };
+    }
+  }
+
+  const { app } = createTestApp({
+    services: {
+      rateLimiter: new DenyAllRateLimiter(),
+    },
+  });
+  const { response, json } = await apiRequest<{
+    error: { code: string; message: string };
+  }>(app, "/players", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-forwarded-for": "203.0.113.10",
+    },
+    body: JSON.stringify({ username: "Acme Cloud" }),
+  });
+
+  assert.equal(response.status, 429);
+  assert.equal(json?.error.code, "RATE_LIMITED");
+  assert.match(json?.error.message ?? "", /Retry after 42 seconds/);
 });
 
 test("service-level username unavailable errors preserve their user-friendly contract", async () => {
