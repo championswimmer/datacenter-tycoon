@@ -26,6 +26,10 @@ import { createEmptyContractSlaWindow, pickContractSlaTargetPercent } from "./sl
 type TermRange = readonly [minMonths: number, maxMonths: number];
 
 export type ContractTermBand = "short" | "standard" | "long";
+export interface ContractGenerationConstraints {
+	requireUnrestricted?: boolean;
+	requireNonGpu?: boolean;
+}
 
 type ContractAffinitySelection = ContractRegionAffinityKey | "global";
 
@@ -244,11 +248,12 @@ function pickWeighted<T>(rng: Rng, values: ReadonlyArray<{ value: T; weight: num
 	return values[values.length - 1]!.value;
 }
 
-function availableThemes(difficulty: number): readonly ContractTheme[] {
-	if (difficulty < 0.25) {
-		return CONTRACT_THEMES.filter((t) => t.weights.gpuFlops === 0);
+function availableThemes(difficulty: number, constraints: ContractGenerationConstraints = {}): readonly ContractTheme[] {
+	let themes = difficulty < 0.25 ? CONTRACT_THEMES.filter((t) => t.weights.gpuFlops === 0) : CONTRACT_THEMES;
+	if (constraints.requireNonGpu) {
+		themes = themes.filter((theme) => theme.weights.gpuFlops === 0);
 	}
-	return CONTRACT_THEMES;
+	return themes;
 }
 
 function generateContractName(rng: Rng, theme: ContractTheme): string {
@@ -320,7 +325,11 @@ function createRegionAffinity(
 	rng: Rng,
 	theme: ContractTheme,
 	regions: readonly Pick<Region, "id">[],
+	requireUnrestricted = false,
 ): ContractRegionAffinity | undefined {
+	if (requireUnrestricted) {
+		return undefined;
+	}
 	const selectedAffinity = pickWeighted(
 		rng,
 		theme.affinityWeights.map((option) => ({ value: option.key, weight: option.weight })),
@@ -381,9 +390,10 @@ export function generateContract(
 	difficulty: number,
 	policy: ContractGenerationPolicy = BASELINE_CONTRACT_GENERATION_POLICY,
 	regions: readonly Pick<Region, "id">[] = Object.values(REGION_CATALOG),
+	constraints: ContractGenerationConstraints = {},
 ): Contract {
 	const normalizedDifficulty = clampDifficulty(difficulty);
-	const theme = pickOne(rng, availableThemes(normalizedDifficulty));
+	const theme = pickOne(rng, availableThemes(normalizedDifficulty, constraints));
 	const requirements = createRequirements(rng, theme, normalizedDifficulty);
 	const contractName = generateContractName(rng, theme);
 	const weightedValue = contractValue(requirements);
@@ -414,7 +424,7 @@ export function generateContract(
 	termMonths = applyTermBias(termMonths, policy);
 
 	const tier: ContractTier = normalizedDifficulty < 0.35 ? 1 : normalizedDifficulty < 0.7 ? 2 : 3;
-	const regionAffinity = createRegionAffinity(rng, theme, regions);
+	const regionAffinity = createRegionAffinity(rng, theme, regions, constraints.requireUnrestricted === true);
 
 	const termRateMultiplier = monthlyRateMultiplierForTerm(termMonths);
 	const monthlyPayment = roundMoneyToNearest(
@@ -461,19 +471,28 @@ export function generateContractForTermBand(
 	desiredBand: ContractTermBand,
 	policy: ContractGenerationPolicy = BASELINE_CONTRACT_GENERATION_POLICY,
 	regions: readonly Pick<Region, "id">[] = Object.values(REGION_CATALOG),
+	constraints: ContractGenerationConstraints = {},
 ): Contract {
-	let fallback = generateContract(rng, difficulty, policy, regions);
-	if (contractTermBand(fallback.termMonths) === desiredBand) {
+	const satisfiesConstraints = (contract: Contract): boolean =>
+		(!constraints.requireUnrestricted || !contract.regionAffinity) &&
+		(!constraints.requireNonGpu || contract.requirements.gpuFlops === 0);
+
+	let fallback = generateContract(rng, difficulty, policy, regions, constraints);
+	let constrainedFallback = satisfiesConstraints(fallback) ? fallback : undefined;
+	if (contractTermBand(fallback.termMonths) === desiredBand && satisfiesConstraints(fallback)) {
 		return fallback;
 	}
 
 	for (let attempt = 1; attempt < MARKET_BAND_GENERATION_ATTEMPTS; attempt++) {
-		const candidate = generateContract(rng, difficulty, policy, regions);
+		const candidate = generateContract(rng, difficulty, policy, regions, constraints);
 		fallback = candidate;
-		if (contractTermBand(candidate.termMonths) === desiredBand) {
+		if (satisfiesConstraints(candidate)) {
+			constrainedFallback = candidate;
+		}
+		if (contractTermBand(candidate.termMonths) === desiredBand && satisfiesConstraints(candidate)) {
 			return candidate;
 		}
 	}
 
-	return fallback;
+	return constrainedFallback ?? fallback;
 }

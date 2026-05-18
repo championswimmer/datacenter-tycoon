@@ -9,24 +9,24 @@ owner: game-logic
 
 ## Progress
 
-- [ ] **Phase 1 — Baseline audit and balance targets**
+- [x] **Phase 1 — Baseline audit and balance targets**
   - [x] 1.1 Audit current repair and contract-market balance levers
-  - [ ] 1.2 Lock target repair windows and market-composition floors
-  - [ ] 1.3 Record validation baseline and known local blockers
-- [ ] **Phase 2 — Rack-aware repair duration model**
-  - [ ] 2.1 Replace the single repair baseline with rack-kind-aware repair targets
-  - [ ] 2.2 Thread rack-aware repair targets through simulation and query helpers
-  - [ ] 2.3 Expand maintenance regression tests for normal-vs-GPU repairs and staffing effects
-- [ ] **Phase 3 — Deterministic market-composition guardrails**
-  - [ ] 3.1 Add explicit unrestricted/global-offer floor rules during market fill
-  - [ ] 3.2 Add explicit non-GPU-offer floor rules for late-game markets
-  - [ ] 3.3 Keep GPU offers present without letting late-game demand become purely GPU-only
-- [ ] **Phase 4 — Balance versioning, tests, and docs**
-  - [ ] 4.1 Bump `BALANCE_VERSION` and update balance-sensitive assertions
-  - [ ] 4.2 Update generator/market tests for unrestricted and non-GPU floor guarantees
-  - [ ] 4.3 Add changelog/docs notes explaining the rebalance rationale
+  - [x] 1.2 Lock target repair windows and market-composition floors
+  - [x] 1.3 Record validation baseline and known local blockers
+- [x] **Phase 2 — Rack-aware repair duration model**
+  - [x] 2.1 Replace the single repair baseline with rack-kind-aware repair targets
+  - [x] 2.2 Thread rack-aware repair targets through simulation and query helpers
+  - [x] 2.3 Expand maintenance regression tests for normal-vs-GPU repairs and staffing effects
+- [x] **Phase 3 — Deterministic market-composition guardrails**
+  - [x] 3.1 Add explicit unrestricted/global-offer floor rules during market fill
+  - [x] 3.2 Add explicit non-GPU-offer floor rules for late-game markets
+  - [x] 3.3 Keep GPU offers present without letting late-game demand become purely GPU-only
+- [x] **Phase 4 — Balance versioning, tests, and docs**
+  - [x] 4.1 Bump `BALANCE_VERSION` and update balance-sensitive assertions
+  - [x] 4.2 Update generator/market tests for unrestricted and non-GPU floor guarantees
+  - [x] 4.3 Add changelog/docs notes explaining the rebalance rationale
 - [ ] **Phase 5 — Verification and wrap-up**
-  - [ ] 5.1 Run targeted game-logic validation commands
+  - [x] 5.1 Run targeted game-logic validation commands
   - [ ] 5.2 Run CodeQL review and resolve localized findings
   - [ ] 5.3 Update this plan to reflect completed work and remaining follow-ups
 
@@ -229,3 +229,4 @@ function generateContractWithConstraints(
 ## Changelog
 
 - 2026-05-18 — created and started after auditing current repair and contract-market balance levers.
+- 2026-05-18 — implemented rack-kind-aware repair targets, deterministic unrestricted/non-GPU market floors, updated tests, and recorded the `BALANCE_VERSION` 6 rationale.

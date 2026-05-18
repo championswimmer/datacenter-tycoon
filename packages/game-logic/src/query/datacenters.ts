@@ -229,9 +229,9 @@ export function summarizeDatacenterRackMaintenanceViewsFromState(
 ): DatacenterRackMaintenanceStatusView[] {
 	const datacenter = getDatacenterOrThrow(state.datacenters, dcId);
 	const repairProgressDaysPerSubtick = repairProgressPerSubtick(datacenter.maintenanceStaff);
-	const repairTargetDays = repairDurationDays(state.difficulty);
 
 	return datacenter.placements.map((placement) => {
+		const repairTargetDays = repairDurationDays(placement, state.difficulty);
 		const repairProgressDays = placement.repairProgressDays ?? 0;
 		const remainingRepairDays = Math.max(0, repairTargetDays - repairProgressDays);
 		const riskView = rackFailureRiskView(state.tick, placement, state.difficulty);

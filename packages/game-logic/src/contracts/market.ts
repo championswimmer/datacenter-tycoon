@@ -1,3 +1,4 @@
+import { minimumNonGpuMarketOffers, minimumUnrestrictedMarketOffers } from "../balance/index.js";
 import { reliabilityMarketPolicyForScore } from "../balance/reliability.js";
 import { summarizeFabricCapacityForDatacenter } from "../entities/fabric.js";
 import { rngFromState } from "../sim/rng.js";
@@ -11,7 +12,7 @@ import type {
 	GameState,
 	RegionId,
 } from "../types.js";
-import { contractTermBand, generateContractForTermBand, type ContractTermBand } from "./generator.js";
+import { contractTermBand, generateContractForTermBand, type ContractGenerationConstraints, type ContractTermBand } from "./generator.js";
 import { contractsFromState, selectLiveContracts, selectOpenMarketContracts, withDerivedContractViews } from "./lifecycle.js";
 
 export interface ContractCapacityFailure {
@@ -126,6 +127,39 @@ function nextDesiredMarketBand(existingOffers: readonly { termMonths: number }[]
 	return desiredMix[existingOffers.length % desiredMix.length] ?? "standard";
 }
 
+function countUnrestrictedOffers(offers: readonly Pick<Contract, "regionAffinity">[]): number {
+	return offers.filter((offer) => !offer.regionAffinity).length;
+}
+
+function countNonGpuOffers(offers: readonly Pick<Contract, "requirements">[]): number {
+	return offers.filter((offer) => offer.requirements.gpuFlops === 0).length;
+}
+
+function nextGenerationConstraints(existingOffers: readonly Contract[], offerTarget: number): ContractGenerationConstraints {
+	const remainingSlots = Math.max(0, offerTarget - existingOffers.length);
+	if (remainingSlots === 0) {
+		return {};
+	}
+
+	const unrestrictedGap = Math.max(0, minimumUnrestrictedMarketOffers(offerTarget) - countUnrestrictedOffers(existingOffers));
+	const nonGpuGap = Math.max(0, minimumNonGpuMarketOffers(offerTarget) - countNonGpuOffers(existingOffers));
+	const constraints: ContractGenerationConstraints = {};
+
+	if (unrestrictedGap > 0) {
+		constraints.requireUnrestricted = unrestrictedGap >= remainingSlots;
+	}
+	if (nonGpuGap > 0) {
+		constraints.requireNonGpu = nonGpuGap >= remainingSlots;
+	}
+
+	if (unrestrictedGap > 0 && nonGpuGap > 0 && remainingSlots <= unrestrictedGap + nonGpuGap) {
+		constraints.requireUnrestricted = true;
+		constraints.requireNonGpu = true;
+	}
+
+	return constraints;
+}
+
 function fillMarketOffers(
 	existingOffers: readonly Contract[],
 	state: GameState,
@@ -139,7 +173,15 @@ function fillMarketOffers(
 	while (offers.length < offerTarget) {
 		const difficulty = marketDifficulty(state.tick, rng.next());
 		const desiredBand = nextDesiredMarketBand(offers, offerTarget);
-		const generatedContract = generateContractForTermBand(rng, difficulty, desiredBand, marketPolicy, state.map.regions);
+		const constraints = nextGenerationConstraints(offers, offerTarget);
+		const generatedContract = generateContractForTermBand(
+			rng,
+			difficulty,
+			desiredBand,
+			marketPolicy,
+			state.map.regions,
+			constraints,
+		);
 		offers.push({
 			...generatedContract,
 			offeredAtTick: state.tick,

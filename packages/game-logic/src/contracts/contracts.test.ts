@@ -4,6 +4,7 @@ import test from "node:test";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { REGION_CATALOG, regionIdsForContractAffinity } from "../catalog/regions.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
+import { minimumNonGpuMarketOffers, minimumUnrestrictedMarketOffers } from "../balance/contracts.js";
 import {
 	RELIABILITY_BASELINE_SCORE,
 	RELIABILITY_MARKET_OFFER_COUNT,
@@ -760,6 +761,45 @@ test("refreshContractMarket deliberately mixes short and long offers", () => {
 	assert.ok(bands.includes("long"), `expected long-term offers, got ${bands.join(", ")}`);
 	assert.ok(uniqueNames.size >= 3, `expected naming variety, got ${Array.from(uniqueNames).join(", ")}`);
 	assert.deepEqual(refreshContractMarket(state), refreshed);
+});
+
+test("refreshContractMarket enforces unrestricted and non-GPU offer floors in later markets", () => {
+	const state = makeState({
+		tick: tick(30),
+		rngState: 777,
+		contractMarket: [],
+	});
+
+	const refreshed = refreshContractMarket(state);
+	const unrestrictedCount = refreshed.contractMarket.filter((contract) => !contract.regionAffinity).length;
+	const nonGpuCount = refreshed.contractMarket.filter((contract) => contract.requirements.gpuFlops === 0).length;
+
+	assert.ok(
+		unrestrictedCount >= minimumUnrestrictedMarketOffers(refreshed.contractMarket.length),
+		`expected unrestricted floor, got ${unrestrictedCount} of ${refreshed.contractMarket.length}`,
+	);
+	assert.ok(
+		nonGpuCount >= minimumNonGpuMarketOffers(refreshed.contractMarket.length),
+		`expected non-GPU floor, got ${nonGpuCount} of ${refreshed.contractMarket.length}`,
+	);
+});
+
+test("late-game contract refreshes keep non-GPU offers available across representative seeds", () => {
+	const sampleSeeds = [101, 202, 303, 404, 505, 606];
+	for (const seed of sampleSeeds) {
+		const refreshed = refreshContractMarket(
+			makeState({
+				tick: tick(36),
+				rngState: seed,
+				contractMarket: [],
+			}),
+		);
+		const nonGpuCount = refreshed.contractMarket.filter((contract) => contract.requirements.gpuFlops === 0).length;
+		assert.ok(
+			nonGpuCount >= minimumNonGpuMarketOffers(refreshed.contractMarket.length),
+			`seed ${seed} should keep non-GPU offers in the market`,
+		);
+	}
 });
 
 test("generateContract produces rush, anchor, and standard urgency types over a large sample", () => {

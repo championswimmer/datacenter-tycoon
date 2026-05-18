@@ -3,6 +3,10 @@
 ## Unreleased
 
 ### Changed
+- bumped `@datacenter-tycoon/game-logic` `BALANCE_VERSION` to `6` for the rack-repair and contract-market rebalance
+- changed rack repairs to use rack-kind-aware targets: compute `3` days, memory `4`, storage `5`, and GPU `9` on hard difficulty before staffing bonuses apply
+- kept maintenance staffing as a repair-speed multiplier so extra maintenance heads still shorten every repair class, including GPUs
+- added deterministic contract-market floor rules so refreshed markets keep enough unrestricted/global offers and enough non-GPU offers even in later-stage play
 - bumped `@datacenter-tycoon/game-logic` `BALANCE_VERSION` to `5` for day-level repair timing
 - shortened base rack repair targets to `3` days on hard / `2.25` days on easy before staffing bonuses apply
 - bumped `@datacenter-tycoon/game-logic` `BALANCE_VERSION` to `4` for the global easier-balance pass
