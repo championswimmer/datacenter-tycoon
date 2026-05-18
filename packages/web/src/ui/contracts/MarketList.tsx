@@ -163,7 +163,10 @@ export function MarketList({ contractViews }: { contractViews: MarketContractVie
               badgeLabel={view.affinity.badgeLabel}
               detail={view.affinityDetail}
             />
-            <CapacityComparison reqs={contract.requirements} free={view.networkAvailable ?? ZERO_CAPACITY} />
+            <CapacityComparison 
+              reqs={contract.requirements} 
+              free={view.fitSummary.fitStatus === "partial" ? view.bestPoolAvailable : (view.networkAvailable ?? ZERO_CAPACITY)} 
+            />
             <div className={styles.meta}>
               <span>{view.slaProgress.slaTargetPercent}% SLA</span>
               <span className={styles.dot}>·</span>
