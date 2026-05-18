@@ -1,7 +1,7 @@
 ---
 name: Game Balance Repair and Contract Mix
 description: Rebalance repair durations, maintenance staffing impact, unrestricted contract availability, and late-game GPU/non-GPU market variety.
-status: started
+status: completed
 created: 2026-05-18
 updated: 2026-05-18
 owner: game-logic
@@ -25,10 +25,10 @@ owner: game-logic
   - [x] 4.1 Bump `BALANCE_VERSION` and update balance-sensitive assertions
   - [x] 4.2 Update generator/market tests for unrestricted and non-GPU floor guarantees
   - [x] 4.3 Add changelog/docs notes explaining the rebalance rationale
-- [ ] **Phase 5 — Verification and wrap-up**
+- [x] **Phase 5 — Verification and wrap-up**
   - [x] 5.1 Run targeted game-logic validation commands
-  - [ ] 5.2 Run CodeQL review and resolve localized findings
-  - [ ] 5.3 Update this plan to reflect completed work and remaining follow-ups
+  - [x] 5.2 Run CodeQL review and resolve localized findings
+  - [x] 5.3 Update this plan to reflect completed work and remaining follow-ups
 
 ## Overview
 
@@ -230,3 +230,4 @@ function generateContractWithConstraints(
 
 - 2026-05-18 — created and started after auditing current repair and contract-market balance levers.
 - 2026-05-18 — implemented rack-kind-aware repair targets, deterministic unrestricted/non-GPU market floors, updated tests, and recorded the `BALANCE_VERSION` 6 rationale.
+- 2026-05-18 — completed after targeted `@datacenter-tycoon/game-logic` validation and a clean CodeQL pass.
