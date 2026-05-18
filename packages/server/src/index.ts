@@ -4,6 +4,7 @@ import { ConfigError, type ServerConfig, loadServerConfig } from "./config.js";
 import { PostgresLeaderboardRepository } from "./leaderboard/repository.js";
 import { PostgresPlayersRepository } from "./players/postgres-repository.js";
 import { InMemoryPlayersRepository } from "./players/repository.js";
+import { InMemoryFixedWindowRateLimiter } from "./rate-limit/fixed-window.js";
 import { createHealthRoutes } from "./routes/health.js";
 import { createLeaderboardRoutes } from "./routes/leaderboard.js";
 import { createPlayerRoutes } from "./routes/players.js";
@@ -70,6 +71,7 @@ function createDefaultServices(config: ServerConfig): ServerServices {
   if (!config.databaseUrl) {
     return {
       players: new InMemoryPlayersRepository(),
+      rateLimiter: new InMemoryFixedWindowRateLimiter(),
     };
   }
 
@@ -80,5 +82,6 @@ function createDefaultServices(config: ServerConfig): ServerServices {
   return {
     players: new PostgresPlayersRepository(pool),
     leaderboard: new PostgresLeaderboardRepository(pool),
+    rateLimiter: new InMemoryFixedWindowRateLimiter(),
   };
 }

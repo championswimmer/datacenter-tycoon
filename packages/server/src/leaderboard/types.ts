@@ -56,6 +56,15 @@ export class LeaderboardRunConflictError extends Error {
   }
 }
 
+export class LeaderboardRunRegressionError extends Error {
+  readonly code = "NON_MONOTONIC_RUN_UPDATE";
+
+  constructor(message: string) {
+    super(message);
+    this.name = "LeaderboardRunRegressionError";
+  }
+}
+
 export function generateLeaderboardRunId(): string {
   return `run_${crypto.randomUUID().replaceAll("-", "")}`;
 }

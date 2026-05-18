@@ -11,6 +11,7 @@ import type { LeaderboardRepository, LeaderboardUpsertResult } from "./repositor
 import {
   LeaderboardPlayerNotFoundError,
   LeaderboardRunConflictError,
+  LeaderboardRunRegressionError,
   LeaderboardValidationError,
 } from "./types.js";
 import { parseLeaderboardRunSubmission } from "./validation.js";
@@ -70,6 +71,10 @@ function normalizeLeaderboardError(error: unknown): unknown {
   }
 
   if (error instanceof LeaderboardRunConflictError) {
+    return new HttpError(409, error.code, error.message);
+  }
+
+  if (error instanceof LeaderboardRunRegressionError) {
     return new HttpError(409, error.code, error.message);
   }
 

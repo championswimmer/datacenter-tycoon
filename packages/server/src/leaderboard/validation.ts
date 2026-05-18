@@ -1,11 +1,13 @@
+import type { LeaderboardRunRecord, LeaderboardRunSubmission } from "./types.js";
 import {
   LEADERBOARD_METRIC_KEYS,
   type LeaderboardMetrics,
-  type LeaderboardRunSubmission,
+  LeaderboardRunRegressionError,
   LeaderboardValidationError,
 } from "./types.js";
 
 const CLIENT_RUN_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
+export const MAX_LEADERBOARD_GAME_MONTH = 10_000;
 
 export function parseLeaderboardRunSubmission(payload: unknown): LeaderboardRunSubmission {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
@@ -16,7 +18,7 @@ export function parseLeaderboardRunSubmission(payload: unknown): LeaderboardRunS
   const playerId = parseRequiredString(record.playerId, "playerId");
   const clientRunId = parseClientRunId(record.clientRunId);
   const metrics = parseLeaderboardMetrics(record.metrics);
-  const gameMonth = parseNonNegativeSafeInteger(record.gameMonth, "gameMonth");
+  const gameMonth = parseGameMonth(record.gameMonth);
 
   return {
     playerId,
@@ -24,6 +26,23 @@ export function parseLeaderboardRunSubmission(payload: unknown): LeaderboardRunS
     metrics,
     gameMonth,
   };
+}
+
+export function assertMonotonicRunUpdate(
+  existingRun: LeaderboardRunRecord,
+  submission: LeaderboardRunSubmission,
+): void {
+  if (submission.gameMonth < existingRun.gameMonth) {
+    throw new LeaderboardRunRegressionError(
+      `gameMonth ${submission.gameMonth} cannot move backwards from ${existingRun.gameMonth} for clientRunId ${submission.clientRunId}.`,
+    );
+  }
+
+  if (submission.metrics.cumulativeRevenue < existingRun.metrics.cumulativeRevenue) {
+    throw new LeaderboardRunRegressionError(
+      `cumulativeRevenue ${submission.metrics.cumulativeRevenue} cannot move backwards from ${existingRun.metrics.cumulativeRevenue} for clientRunId ${submission.clientRunId}.`,
+    );
+  }
 }
 
 function parseRequiredString(value: unknown, fieldName: string): string {
@@ -89,6 +108,18 @@ function parseLeaderboardMetrics(value: unknown): LeaderboardMetrics {
     ),
     gpuCapacity: parseNonNegativeSafeInteger(metricsRecord.gpuCapacity, "metrics.gpuCapacity"),
   };
+}
+
+function parseGameMonth(value: unknown): number {
+  const gameMonth = parseNonNegativeSafeInteger(value, "gameMonth");
+
+  if (gameMonth > MAX_LEADERBOARD_GAME_MONTH) {
+    throw new LeaderboardValidationError(
+      `gameMonth must be at most ${MAX_LEADERBOARD_GAME_MONTH}. Received: ${gameMonth}`,
+    );
+  }
+
+  return gameMonth;
 }
 
 function parseNonNegativeSafeInteger(value: unknown, fieldName: string): number {

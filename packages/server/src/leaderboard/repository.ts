@@ -8,10 +8,10 @@ import {
   createLeaderboardRunRecord,
   generateLeaderboardRunId,
   leaderboardRunMatchesSubmission,
-  LeaderboardRunConflictError,
   type LeaderboardRunRecord,
   type LeaderboardRunSubmission,
 } from "./types.js";
+import { assertMonotonicRunUpdate } from "./validation.js";
 
 export interface LeaderboardUpsertResult {
   created: boolean;
@@ -36,15 +36,25 @@ export class InMemoryLeaderboardRepository implements LeaderboardRepository {
     const existingRun = this.#runsByKey.get(key);
 
     if (existingRun) {
-      if (!leaderboardRunMatchesSubmission(existingRun, submission)) {
-        throw new LeaderboardRunConflictError(
-          `clientRunId ${submission.clientRunId} is already associated with a different run summary.`,
-        );
+      if (leaderboardRunMatchesSubmission(existingRun, submission)) {
+        return {
+          created: false,
+          run: existingRun,
+        };
       }
+
+      assertMonotonicRunUpdate(existingRun, submission);
+      const updatedRun = createLeaderboardRunRecord({
+        ...submission,
+        runId: existingRun.runId,
+        submittedAt: existingRun.submittedAt,
+        updatedAt: this.#clock(),
+      });
+      this.#runsByKey.set(key, updatedRun);
 
       return {
         created: false,
-        run: existingRun,
+        run: updatedRun,
       };
     }
 
@@ -101,16 +111,7 @@ export class PostgresLeaderboardRepository implements LeaderboardRepository {
     const existingRun = await this.findRun(submission.playerId, submission.clientRunId);
 
     if (existingRun) {
-      if (!leaderboardRunMatchesSubmission(existingRun, submission)) {
-        throw new LeaderboardRunConflictError(
-          `clientRunId ${submission.clientRunId} is already associated with a different run summary.`,
-        );
-      }
-
-      return {
-        created: false,
-        run: existingRun,
-      };
+      return this.handleExistingRun(existingRun, submission);
     }
 
     const runId = generateLeaderboardRunId();
@@ -177,16 +178,7 @@ export class PostgresLeaderboardRepository implements LeaderboardRepository {
         throw error;
       }
 
-      if (!leaderboardRunMatchesSubmission(conflictedRun, submission)) {
-        throw new LeaderboardRunConflictError(
-          `clientRunId ${submission.clientRunId} is already associated with a different run summary.`,
-        );
-      }
-
-      return {
-        created: false,
-        run: conflictedRun,
-      };
+      return this.handleExistingRun(conflictedRun, submission);
     }
   }
 
@@ -216,6 +208,66 @@ export class PostgresLeaderboardRepository implements LeaderboardRepository {
     );
 
     return result.rows.map((row) => mapLeaderboardRunRow(row));
+  }
+
+  private async handleExistingRun(
+    existingRun: LeaderboardRunRecord,
+    submission: LeaderboardRunSubmission,
+  ): Promise<LeaderboardUpsertResult> {
+    if (leaderboardRunMatchesSubmission(existingRun, submission)) {
+      return {
+        created: false,
+        run: existingRun,
+      };
+    }
+
+    assertMonotonicRunUpdate(existingRun, submission);
+    const result = await this.#database.query<LeaderboardRunRow>(
+      `
+        UPDATE leaderboard_runs
+        SET
+          money = $2,
+          cumulative_revenue = $3,
+          total_servers = $4,
+          compute_capacity = $5,
+          memory_capacity = $6,
+          storage_capacity = $7,
+          gpu_capacity = $8,
+          game_month = $9,
+          updated_at = NOW()
+        WHERE id = $1
+        RETURNING
+          id,
+          player_id,
+          client_run_id,
+          money,
+          cumulative_revenue,
+          total_servers,
+          compute_capacity,
+          memory_capacity,
+          storage_capacity,
+          gpu_capacity,
+          game_month,
+          submitted_at,
+          updated_at
+      `,
+      [
+        existingRun.runId,
+        submission.metrics.money,
+        submission.metrics.cumulativeRevenue,
+        submission.metrics.totalServers,
+        submission.metrics.computeCapacity,
+        submission.metrics.memoryCapacity,
+        submission.metrics.storageCapacity,
+        submission.metrics.gpuCapacity,
+        submission.gameMonth,
+      ],
+    );
+
+    return {
+      created: false,
+      run: mapLeaderboardRunRow(result.rows[0]),
+    };
   }
 
   private async findRun(

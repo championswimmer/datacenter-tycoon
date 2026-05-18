@@ -1,3 +1,7 @@
+import {
+  getClientRateLimitKey,
+  type RateLimitRule,
+} from "../rate-limit/fixed-window.js";
 import type { ServerRoute } from "../server/app.js";
 import { HttpError, jsonResponse } from "../server/app.js";
 import {
@@ -41,11 +45,22 @@ export function createPlayerRoutes(): readonly ServerRoute[] {
     {
       method: "POST",
       pathname: "/players",
-      handler: async (request, { services }) => {
+      handler: async (request, { services, config }) => {
         const repository = services.players;
 
         if (!repository) {
           throw new HttpError(503, "PLAYERS_UNAVAILABLE", "Player registration is not configured.");
+        }
+
+        const rateLimiter = services.rateLimiter;
+
+        if (rateLimiter) {
+          enforceRateLimit(
+            request,
+            rateLimiter,
+            config.rateLimits.playerRegistration,
+            "player registrations",
+          );
         }
 
         const body = await parseRegistrationRequest(request);
@@ -77,4 +92,21 @@ async function parseRegistrationRequest(request: Request): Promise<{ username: s
   }
 
   return { username };
+}
+
+function enforceRateLimit(
+  request: Request,
+  rateLimiter: { consume: (scope: string, key: string, rule: RateLimitRule) => { allowed: boolean; retryAfterSeconds: number } },
+  rule: RateLimitRule,
+  resourceName: string,
+): void {
+  const decision = rateLimiter.consume(resourceName, getClientRateLimitKey(request), rule);
+
+  if (!decision.allowed) {
+    throw new HttpError(
+      429,
+      "RATE_LIMITED",
+      `Too many ${resourceName}. Retry after ${decision.retryAfterSeconds} seconds.`,
+    );
+  }
 }

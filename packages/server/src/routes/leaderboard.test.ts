@@ -3,6 +3,7 @@ import { newGame, summarizeLeaderboardFromState } from "@datacenter-tycoon/game-
 import { test } from "node:test";
 import type { RegisterPlayerInput } from "../players/repository.js";
 import { InMemoryPlayersRepository, type PlayersRepository } from "../players/repository.js";
+import type { RateLimiter, RateLimitRule } from "../rate-limit/fixed-window.js";
 import {
   InMemoryLeaderboardRepository,
   type LeaderboardRepository,
@@ -22,11 +23,13 @@ async function registerPlayer(app: ReturnType<typeof createTestApp>["app"]) {
 function createLeaderboardApp(options?: {
   players?: PlayersRepository;
   leaderboard?: LeaderboardRepository;
+  rateLimiter?: RateLimiter;
 }) {
   return createTestApp({
     services: {
       players: options?.players ?? new InMemoryPlayersRepository(),
       leaderboard: options?.leaderboard ?? new InMemoryLeaderboardRepository(),
+      rateLimiter: options?.rateLimiter,
     },
   });
 }
@@ -199,7 +202,62 @@ test("POST /leaderboard/runs rejects invalid metric payloads", async () => {
   assert.equal(json?.error.code, "INVALID_LEADERBOARD_SUBMISSION");
 });
 
-test("POST /leaderboard/runs rejects conflicting retries for the same client run id", async () => {
+test("POST /leaderboard/runs updates the stored run when the same client run progresses", async () => {
+  const { app } = createLeaderboardApp();
+  const player = await registerPlayer(app);
+
+  await apiRequest(app, "/leaderboard/runs", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      playerId: player?.playerId,
+      clientRunId: "run-progress",
+      metrics: {
+        money: 10,
+        cumulativeRevenue: 10,
+        totalServers: 1,
+        computeCapacity: 10,
+        memoryCapacity: 10,
+        storageCapacity: 10,
+        gpuCapacity: 0,
+      },
+      gameMonth: 1,
+    }),
+  });
+
+  const { response, json } = await apiRequest<{
+    created: boolean;
+    run: {
+      metrics: { money: number; cumulativeRevenue: number; totalServers: number };
+      gameMonth: number;
+    };
+  }>(app, "/leaderboard/runs", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      playerId: player?.playerId,
+      clientRunId: "run-progress",
+      metrics: {
+        money: 999,
+        cumulativeRevenue: 25,
+        totalServers: 2,
+        computeCapacity: 20,
+        memoryCapacity: 10,
+        storageCapacity: 10,
+        gpuCapacity: 0,
+      },
+      gameMonth: 2,
+    }),
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(json?.created, false);
+  assert.equal(json?.run.metrics.money, 999);
+  assert.equal(json?.run.metrics.cumulativeRevenue, 25);
+  assert.equal(json?.run.gameMonth, 2);
+});
+
+test("POST /leaderboard/runs rejects non-monotonic retries for the same client run id", async () => {
   const { app } = createLeaderboardApp();
   const player = await registerPlayer(app);
 
@@ -218,7 +276,7 @@ test("POST /leaderboard/runs rejects conflicting retries for the same client run
         storageCapacity: 10,
         gpuCapacity: 0,
       },
-      gameMonth: 1,
+      gameMonth: 2,
     }),
   });
 
@@ -232,7 +290,7 @@ test("POST /leaderboard/runs rejects conflicting retries for the same client run
       clientRunId: "run-conflict",
       metrics: {
         money: 999,
-        cumulativeRevenue: 10,
+        cumulativeRevenue: 9,
         totalServers: 1,
         computeCapacity: 10,
         memoryCapacity: 10,
@@ -244,7 +302,7 @@ test("POST /leaderboard/runs rejects conflicting retries for the same client run
   });
 
   assert.equal(response.status, 409);
-  assert.equal(json?.error.code, "CLIENT_RUN_CONFLICT");
+  assert.equal(json?.error.code, "NON_MONOTONIC_RUN_UPDATE");
 });
 
 test("POST /leaderboard/runs surfaces database failures as internal errors", async () => {
@@ -413,6 +471,50 @@ test("GET /leaderboard rejects invalid query parameters", async () => {
 
   assert.equal(response.status, 400);
   assert.equal(json?.error.code, "INVALID_LEADERBOARD_QUERY");
+});
+
+test("POST /leaderboard/runs rate-limits repeated submissions from the same client", async () => {
+  class DenyAllRateLimiter implements RateLimiter {
+    consume(_scope: string, _key: string, _rule: RateLimitRule) {
+      return {
+        allowed: false,
+        retryAfterSeconds: 15,
+        remaining: 0,
+      };
+    }
+  }
+
+  const { app } = createLeaderboardApp({
+    rateLimiter: new DenyAllRateLimiter(),
+  });
+  const player = await registerPlayer(app);
+  const { response, json } = await apiRequest<{
+    error: { code: string; message: string };
+  }>(app, "/leaderboard/runs", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-forwarded-for": "198.51.100.24",
+    },
+    body: JSON.stringify({
+      playerId: player?.playerId,
+      clientRunId: "run-limited",
+      metrics: {
+        money: 1,
+        cumulativeRevenue: 1,
+        totalServers: 1,
+        computeCapacity: 1,
+        memoryCapacity: 1,
+        storageCapacity: 1,
+        gpuCapacity: 1,
+      },
+      gameMonth: 1,
+    }),
+  });
+
+  assert.equal(response.status, 429);
+  assert.equal(json?.error.code, "RATE_LIMITED");
+  assert.match(json?.error.message ?? "", /Retry after 15 seconds/);
 });
 
 test("service-level register input types remain usable in fake repositories", async () => {
