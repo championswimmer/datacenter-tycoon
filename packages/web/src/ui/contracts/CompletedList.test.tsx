@@ -73,4 +73,28 @@ describe("CompletedList", () => {
     expect(screen.getByText(/Allowed regions:/i)).toBeTruthy();
     expect(screen.getByText(/DUB · Dublin · EU West/i)).toBeTruthy();
   });
+
+  it("renders single-pass history counts in the aggregate footer", () => {
+    const state = buildHistoricalState();
+    state.contracts = [
+      state.contracts[0]!,
+      {
+        ...state.contracts[0]!,
+        id: "contract-history-2" as Contract["id"],
+        lifecycleState: "cancelled",
+        status: "cancelled",
+      },
+    ];
+
+    renderCompleted(state);
+
+    const footer = screen.getByText((_content, element) => Boolean(
+      element?.textContent?.includes("Completed: 1")
+      && element.textContent.includes("Cancelled: 1")
+      && element.textContent.includes("History: 2")
+      && element.className.includes("aggregateFooter")
+    ));
+
+    expect(footer).toBeTruthy();
+  });
 });

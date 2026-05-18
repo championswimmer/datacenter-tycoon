@@ -222,6 +222,30 @@ const ACTIVE_CONTRACT_STATUS_ORDER: Record<Contract["status"], number> = {
   cancelled: 4,
 };
 
+const selectMemoizedHistoricalContractSummary = memoizeByInputs(
+  (state: GameState) => [selectHistoricalContractViews(state)],
+  (state): HistoricalContractSummary => {
+    const views = selectHistoricalContractViews(state);
+    let completedCount = 0;
+    let cancelledCount = 0;
+
+    for (const view of views) {
+      if (view.contract.lifecycleState === "completed") {
+        completedCount += 1;
+      } else if (view.contract.lifecycleState === "cancelled") {
+        cancelledCount += 1;
+      }
+    }
+
+    return {
+      views,
+      completedCount,
+      cancelledCount,
+      totalCount: views.length,
+    };
+  },
+);
+
 const selectMemoizedActiveContractViews = memoizeByInputs(
   (state: GameState) => [
     selectActiveContracts(state),
@@ -753,6 +777,13 @@ export interface AssignedContractView {
   slaProgress: ContractSlaProgressView;
 }
 
+export interface HistoricalContractSummary {
+  views: AssignedContractView[];
+  completedCount: number;
+  cancelledCount: number;
+  totalCount: number;
+}
+
 export interface ActiveContractView extends AssignedContractView {
   assignedDatacenter: Datacenter | null;
   attributedOpex: Money;
@@ -849,6 +880,10 @@ export function selectActiveContractViews(state: GameState): ActiveContractView[
 
 export function selectHistoricalContractViews(state: GameState): AssignedContractView[] {
   return selectAssignedContractViews(state, selectHistoricalContracts(state));
+}
+
+export function selectHistoricalContractSummary(state: GameState): HistoricalContractSummary {
+  return selectMemoizedHistoricalContractSummary(state);
 }
 
 export function selectRackMoveTargets(
