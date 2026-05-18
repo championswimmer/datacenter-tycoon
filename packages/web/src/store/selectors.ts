@@ -197,6 +197,90 @@ const selectMemoizedAssignedContractViews = memoizeByInputs(
   },
 );
 
+const ACTIVE_CONTRACT_STATUS_ORDER: Record<Contract["status"], number> = {
+  breached: 0,
+  active: 1,
+  offered: 2,
+  expired: 3,
+  cancelled: 4,
+};
+
+const selectMemoizedActiveContractViews = memoizeByInputs(
+  (state: GameState) => [
+    selectActiveContracts(state),
+    state.datacenters,
+    state.map.regions,
+    state.player.reliability.score,
+    state.player.reliability.recentOutcomes,
+    selectMemoizedOpexBreakdown(state),
+  ],
+  (state): ActiveContractView[] => {
+    const activeContracts = selectActiveContracts(state);
+    const datacentersById = selectDatacenterIndex(state);
+    const opexByDcId = selectMemoizedOpexByDatacenterIndex(state);
+    const networkCapacity = selectNetworkCapacitySummary(state);
+    const availableCapacityByDcId = new Map(
+      networkCapacity.perDc.map((entry) => [entry.dcId, entry.available] as const),
+    );
+    const activeCountByDcId = new Map<DatacenterId, number>();
+    for (const contract of activeContracts) {
+      if (!contract.assignedDcId) {
+        continue;
+      }
+      activeCountByDcId.set(contract.assignedDcId, (activeCountByDcId.get(contract.assignedDcId) ?? 0) + 1);
+    }
+
+    const latestOutcomeByContractId = new Map<ContractId, ContractSlaOutcome>();
+    for (let index = state.player.reliability.recentOutcomes.length - 1; index >= 0; index -= 1) {
+      const outcome = state.player.reliability.recentOutcomes[index]!;
+      if (!latestOutcomeByContractId.has(outcome.contractId)) {
+        latestOutcomeByContractId.set(outcome.contractId, outcome);
+      }
+    }
+
+    const reliabilityBand = reliabilityBandForScore(state.player.reliability.score);
+
+    return [...activeContracts]
+      .map((contract) => {
+        const assignedDatacenter = contract.assignedDcId
+          ? datacentersById.get(contract.assignedDcId) ?? null
+          : null;
+        const attributedOpex = assignedDatacenter
+          ? (opexByDcId.get(assignedDatacenter.id)?.total ?? 0) / Math.max(activeCountByDcId.get(assignedDatacenter.id) ?? 1, 1)
+          : 0;
+        const free = assignedDatacenter ? availableCapacityByDcId.get(assignedDatacenter.id) : undefined;
+        const capacityBufferLow = free !== undefined && (
+          free.vCpu < contract.requirements.vCpu * 0.1 ||
+          free.ramGb < contract.requirements.ramGb * 0.1 ||
+          (contract.requirements.storageTb > 0 && free.storageTb < contract.requirements.storageTb * 0.1) ||
+          (contract.requirements.gpuFlops > 0 && free.gpuFlops < contract.requirements.gpuFlops * 0.1)
+        );
+        const latestOutcome = latestOutcomeByContractId.get(contract.id);
+        const slaHint = contract.lifecycleState === "breached"
+          ? "SLA hit: this breach already hurt reliability. Recover service now or cancellation will damage it again."
+          : latestOutcome?.kind === "fulfilled"
+            ? "SLA credit: this contract improved reliability last month — keep it stable to preserve market access."
+            : (reliabilityBand === "silver" || reliabilityBand === "bronze")
+              ? "SLA recovery: clean delivery here helps restore reputation and future offer volume."
+              : "SLA impact: fulfilled months improve future contract access and longer-term opportunities.";
+
+        return {
+          contract,
+          affinity: buildContractAffinityView(state, contract),
+          assignedDcName: assignedDatacenter?.name ?? null,
+          assignedRegionLabel: assignedDatacenter ? formatRegionLabel(state, assignedDatacenter.regionId) : null,
+          assignedDatacenter,
+          slaProgress: summarizeContractSlaProgress(contract),
+          attributedOpex,
+          margin: contract.monthlyPayment - attributedOpex,
+          capacityBufferLow,
+          slaHint,
+        };
+      })
+      .sort((a, b) => ACTIVE_CONTRACT_STATUS_ORDER[a.contract.status] - ACTIVE_CONTRACT_STATUS_ORDER[b.contract.status]);
+  },
+);
+
 const selectMemoizedAllRegionFabricSummaries = memoizeByInputs(
   (state: GameState) => [state.datacenters, state.map.regions],
   (state) => summarizeAllRegionFabricViewsFromState(state),
@@ -649,6 +733,14 @@ export interface AssignedContractView {
   slaProgress: ContractSlaProgressView;
 }
 
+export interface ActiveContractView extends AssignedContractView {
+  assignedDatacenter: Datacenter | null;
+  attributedOpex: Money;
+  margin: Money;
+  capacityBufferLow: boolean;
+  slaHint: string;
+}
+
 function formatRegionLabel(state: Pick<GameState, "map">, regionId: RegionId): string {
   return selectRegionLabelIndex(state).get(regionId) ?? regionId;
 }
@@ -731,8 +823,8 @@ export function selectAssignedContractViews(
   return selectMemoizedAssignedContractViews(state, contracts);
 }
 
-export function selectActiveContractViews(state: GameState): AssignedContractView[] {
-  return selectAssignedContractViews(state, selectActiveContracts(state));
+export function selectActiveContractViews(state: GameState): ActiveContractView[] {
+  return selectMemoizedActiveContractViews(state);
 }
 
 export function selectHistoricalContractViews(state: GameState): AssignedContractView[] {
