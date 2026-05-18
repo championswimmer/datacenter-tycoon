@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { newGame } from "@datacenter-tycoon/game-logic";
-import type { Difficulty } from "@datacenter-tycoon/game-logic";
+import type { Difficulty, GameState } from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "./store/gameStore.js";
 import type { SaveInfo, StoreSession } from "./store/persist.js";
 
@@ -34,9 +34,14 @@ vi.mock("./ui/shell/Shell.js", () => ({
 
 import App from "./App.js";
 
-function makeSession(kind: "fresh" | "loaded"): StoreSession {
+function makeSession(
+  kind: "fresh" | "loaded",
+  configureState?: (state: GameState) => GameState,
+): StoreSession {
+  const baseState = newGame(kind === "fresh" ? 11 : 22);
+
   return {
-    store: createGameStore(newGame(kind === "fresh" ? 11 : 22)),
+    store: createGameStore(configureState ? configureState(baseState) : baseState),
     stopAutosave: vi.fn(),
     isFreshStart: kind === "fresh",
   };
@@ -186,6 +191,66 @@ describe("App start flow", () => {
         difficulty: "easy",
         playerName: "Cloud Atlas",
       });
+    });
+  });
+
+  it("submits a shared leaderboard snapshot once gameplay has progressed", async () => {
+    localStorage.setItem(
+      PLAYER_IDENTITY_KEY,
+      JSON.stringify({ playerId: "player_abc", username: "Cloud Atlas" }),
+    );
+    persistMocks.latestSave = savedGameInfo;
+    persistMocks.createLoadedSession.mockImplementation(() => makeSession("loaded", (state) => ({
+      ...state,
+      tick: 2,
+      player: {
+        ...state.player,
+        cash: 1_725_000,
+      },
+    })));
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({
+        created: true,
+        run: {
+          runId: "run_123",
+          playerId: "player_abc",
+          clientRunId: "game-123",
+          metrics: {
+            money: 1_725_000,
+            cumulativeRevenue: 0,
+            totalServers: 0,
+            computeCapacity: 0,
+            memoryCapacity: 0,
+            storageCapacity: 0,
+            gpuCapacity: 0,
+          },
+          gameMonth: 2,
+          submittedAt: "2026-05-18T12:00:00.000Z",
+          updatedAt: "2026-05-18T12:00:00.000Z",
+        },
+      }), {
+        status: 201,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Load Game" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://api.dctycoon.test/leaderboard/runs",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    const [, requestInit] = fetchMock.mock.calls[0] ?? [];
+    expect(JSON.parse(String(requestInit?.body))).toMatchObject({
+      playerId: "player_abc",
+      gameMonth: 2,
+      metrics: {
+        money: 1_725_000,
+      },
     });
   });
 });

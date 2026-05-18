@@ -1,6 +1,11 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { Difficulty } from "@datacenter-tycoon/game-logic";
 import {
+  buildLeaderboardRunSubmission,
+  LeaderboardSubmissionError,
+  submitLeaderboardRun,
+} from "./online/leaderboard.js";
+import {
   isRegistrationUnavailableError,
   PlayerRegistrationError,
   registerPlayer,
@@ -29,6 +34,7 @@ const ThemePlayground = lazy(
 type StartChoice = "load" | "new";
 
 const OFFLINE_LEADERBOARD_NOTICE = "Online leaderboard registration is unavailable right now. New runs from this device will stay local until the backend is reachable again.";
+const LEADERBOARD_SYNC_UNAVAILABLE_NOTICE = "Online leaderboard sync is unavailable right now. This run will keep progressing locally until the backend is reachable again.";
 
 function createAppSession(
   choice: StartChoice,
@@ -141,6 +147,75 @@ function useAppSession(): AppSessionController {
       setIsStarting(false);
     }
   }, [playerIdentity, replaceSession, usernameDraft]);
+
+  useEffect(() => {
+    if (!session || !playerIdentity) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    let lastSubmittedSignature: string | null = null;
+
+    const submitSnapshot = async () => {
+      const state = session.store.getState();
+
+      if (state.tick < 1) {
+        return;
+      }
+
+      const submission = buildLeaderboardRunSubmission(playerIdentity.playerId, state);
+      const signature = JSON.stringify(submission);
+
+      if (signature === lastSubmittedSignature) {
+        return;
+      }
+
+      try {
+        await submitLeaderboardRun(submission);
+        lastSubmittedSignature = signature;
+        if (!cancelled) {
+          setStatusMessage((current) =>
+            current === LEADERBOARD_SYNC_UNAVAILABLE_NOTICE ? null : current);
+        }
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        if (error instanceof LeaderboardSubmissionError) {
+          if (error.code === "ONLINE_LEADERBOARD_DISABLED") {
+            return;
+          }
+
+          console.warn("[leaderboard] Failed to sync run summary:", error.message);
+        }
+
+        setStatusMessage((current) => current ?? LEADERBOARD_SYNC_UNAVAILABLE_NOTICE);
+      }
+    };
+
+    const scheduleSubmission = () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+
+      timeout = setTimeout(() => {
+        void submitSnapshot();
+      }, 750);
+    };
+
+    scheduleSubmission();
+    const unsubscribe = session.store.subscribe(scheduleSubmission);
+
+    return () => {
+      cancelled = true;
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+      unsubscribe();
+    };
+  }, [playerIdentity, session]);
 
   return {
     session,
