@@ -1,25 +1,38 @@
-import { VERSION } from "@datacenter-tycoon/game-logic";
 import { fileURLToPath } from "node:url";
+import { ConfigError, type ServerConfig, loadServerConfig } from "./config.js";
+import { createHealthRoutes } from "./routes/health.js";
 import { createServerApp } from "./server/app.js";
 import { createNodeHttpServer } from "./server/node-http.js";
 
-export function createApp() {
-  return createServerApp({ routes: [] });
+export function createApp(config: ServerConfig) {
+  return createServerApp({ routes: createHealthRoutes(config) });
 }
 
-export function startServer(port = 3000): ReturnType<typeof createNodeHttpServer> {
-  const app = createApp();
+export function startServer(
+  env: Record<string, string | undefined> = process.env,
+): ReturnType<typeof createNodeHttpServer> {
+  const config = loadServerConfig(env);
+  const app = createApp(config);
   const server = createNodeHttpServer(app);
 
-  server.listen(port, () => {
-    console.log(`Datacenter Tycoon server listening on :${port} (game-logic v${VERSION})`);
+  server.listen(config.port, config.host, () => {
+    console.log(
+      `Datacenter Tycoon server listening on ${config.host}:${config.port} (game-logic v${config.gameLogicVersion})`,
+    );
   });
 
   return server;
 }
 
 if (isDirectExecution(import.meta.url)) {
-  startServer();
+  try {
+    startServer();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown startup error";
+    const prefix = error instanceof ConfigError ? "Invalid server configuration" : "Server failed to start";
+    console.error(`${prefix}: ${message}`);
+    process.exitCode = 1;
+  }
 }
 
 function isDirectExecution(moduleUrl: string): boolean {
