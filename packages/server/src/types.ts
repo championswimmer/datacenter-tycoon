@@ -1,7 +1,8 @@
 import type { ServerConfig } from "./config.js";
+import type { PlayersRepository } from "./players/repository.js";
 
 export interface ServerServices {
-  players?: unknown;
+  players?: PlayersRepository;
   leaderboard?: unknown;
 }
 
