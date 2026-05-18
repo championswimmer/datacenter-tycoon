@@ -355,8 +355,25 @@ function loadSavedState(gameId?: string): GameState | null {
   return loadSave("datacenter-tycoon:save-v1");
 }
 
-export function createFreshSession(difficulty: Difficulty = "hard"): StoreSession {
-  return createStoreSession(newGame(Math.floor(Math.random() * 2 ** 31), { difficulty }), true);
+export interface CreateFreshSessionOptions {
+  difficulty?: Difficulty;
+  playerName?: string;
+}
+
+export function createFreshSession(
+  options: Difficulty | CreateFreshSessionOptions = "hard",
+): StoreSession {
+  const resolvedOptions = typeof options === "string"
+    ? { difficulty: options }
+    : options;
+
+  return createStoreSession(
+    newGame(Math.floor(Math.random() * 2 ** 31), {
+      difficulty: resolvedOptions.difficulty,
+      playerName: resolvedOptions.playerName,
+    }),
+    true,
+  );
 }
 
 export function createLoadedSession(gameId?: string): StoreSession | null {

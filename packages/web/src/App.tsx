@@ -1,5 +1,10 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { Difficulty } from "@datacenter-tycoon/game-logic";
+import {
+  isRegistrationUnavailableError,
+  PlayerRegistrationError,
+  registerPlayer,
+} from "./online/players.js";
 import type { SaveInfo } from "./store/persist.js";
 import {
   createFreshSession,
@@ -7,6 +12,11 @@ import {
   getLatestSaveInfo,
   type StoreSession,
 } from "./store/persist.js";
+import {
+  getStoredPlayerIdentity,
+  writeStoredPlayerIdentity,
+  type StoredPlayerIdentity,
+} from "./store/playerIdentity.js";
 import { StoreProvider } from "./store/storeContext.js";
 import { Shell } from "./ui/shell/Shell.js";
 import { StartScreen } from "./ui/start/StartScreen.js";
@@ -18,32 +28,51 @@ const ThemePlayground = lazy(
 
 type StartChoice = "load" | "new";
 
+const OFFLINE_LEADERBOARD_NOTICE = "Online leaderboard registration is unavailable right now. New runs from this device will stay local until the backend is reachable again.";
+
 function createAppSession(
   choice: StartChoice,
   difficulty: Difficulty,
   latestSaveGameId: string | null,
+  playerName?: string,
 ): StoreSession {
   if (choice === "load") {
-    return createLoadedSession(latestSaveGameId ?? undefined) ?? createFreshSession(difficulty);
+    return createLoadedSession(latestSaveGameId ?? undefined)
+      ?? createFreshSession({ difficulty, playerName });
   }
 
-  return createFreshSession(difficulty);
+  return createFreshSession({ difficulty, playerName });
 }
 
 interface AppSessionController {
   session: StoreSession | null;
   hasSavedGame: boolean;
   latestSave: SaveInfo | null;
+  playerIdentity: StoredPlayerIdentity | null;
+  usernameDraft: string;
+  statusMessage: string | null;
+  startError: string | null;
+  isStarting: boolean;
   selectedDifficulty: Difficulty;
   selectDifficulty: (difficulty: Difficulty) => void;
-  startNewGame: () => void;
+  setUsernameDraft: (username: string) => void;
+  startNewGame: () => Promise<void>;
   loadLatestGame: () => void;
 }
 
 function useAppSession(): AppSessionController {
   const [session, setSession] = useState<StoreSession | null>(null);
   const [latestSave, setLatestSave] = useState<SaveInfo | null>(() => getLatestSaveInfo());
+  const [playerIdentity, setPlayerIdentity] = useState<StoredPlayerIdentity | null>(
+    () => getStoredPlayerIdentity(),
+  );
+  const [usernameDraft, setUsernameDraft] = useState<string>(
+    () => getStoredPlayerIdentity()?.username ?? getLatestSaveInfo()?.playerName ?? "",
+  );
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>("hard");
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [startError, setStartError] = useState<string | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
   const sessionRef = useRef<StoreSession | null>(null);
 
   useEffect(() => {
@@ -56,22 +85,77 @@ function useAppSession(): AppSessionController {
     };
   }, []);
 
-  const replaceSession = useCallback((choice: StartChoice) => {
-    const nextSession = createAppSession(choice, selectedDifficulty, latestSave?.gameId ?? null);
+  const replaceSession = useCallback((choice: StartChoice, playerName?: string) => {
+    const nextSession = createAppSession(
+      choice,
+      selectedDifficulty,
+      latestSave?.gameId ?? null,
+      playerName,
+    );
     sessionRef.current?.stopAutosave();
     sessionRef.current = nextSession;
     setSession(nextSession);
     setLatestSave((currentLatestSave) => currentLatestSave);
   }, [latestSave?.gameId, selectedDifficulty]);
 
+  const startNewGame = useCallback(async () => {
+    setStartError(null);
+
+    if (playerIdentity) {
+      setStatusMessage(null);
+      replaceSession("new", playerIdentity.username);
+      return;
+    }
+
+    const requestedUsername = usernameDraft.trim().replace(/\s+/g, " ");
+
+    if (!requestedUsername) {
+      setStartError("Enter a username before starting your first run.");
+      return;
+    }
+
+    setIsStarting(true);
+
+    try {
+      const identity = await registerPlayer(requestedUsername);
+      writeStoredPlayerIdentity(identity);
+      setPlayerIdentity(identity);
+      setUsernameDraft(identity.username);
+      setStatusMessage(null);
+      replaceSession("new", identity.username);
+    } catch (error) {
+      if (isRegistrationUnavailableError(error)) {
+        setStatusMessage(OFFLINE_LEADERBOARD_NOTICE);
+        replaceSession("new", requestedUsername);
+        return;
+      }
+
+      if (error instanceof PlayerRegistrationError) {
+        setStartError(error.message);
+        return;
+      }
+
+      setStatusMessage(OFFLINE_LEADERBOARD_NOTICE);
+      replaceSession("new", requestedUsername);
+    } finally {
+      setIsStarting(false);
+    }
+  }, [playerIdentity, replaceSession, usernameDraft]);
+
   return {
     session,
     hasSavedGame: latestSave !== null,
     latestSave,
+    playerIdentity,
+    usernameDraft,
+    statusMessage,
+    startError,
+    isStarting,
     selectedDifficulty,
     selectDifficulty: setSelectedDifficulty,
-    startNewGame: () => replaceSession("new"),
-    loadLatestGame: () => replaceSession("load"),
+    setUsernameDraft,
+    startNewGame,
+    loadLatestGame: () => replaceSession("load", playerIdentity?.username ?? usernameDraft.trim()),
   };
 }
 
@@ -80,8 +164,14 @@ export default function App() {
     session,
     hasSavedGame,
     latestSave,
+    playerIdentity,
+    usernameDraft,
+    statusMessage,
+    startError,
+    isStarting,
     selectedDifficulty,
     selectDifficulty,
+    setUsernameDraft,
     startNewGame,
     loadLatestGame,
   } = useAppSession();
@@ -100,8 +190,14 @@ export default function App() {
       <StartScreen
         hasSavedGame={hasSavedGame}
         latestSave={latestSave}
+        playerIdentity={playerIdentity}
+        usernameDraft={usernameDraft}
+        statusMessage={statusMessage}
+        startError={startError}
+        isStarting={isStarting}
         selectedDifficulty={selectedDifficulty}
         onSelectDifficulty={selectDifficulty}
+        onUsernameDraftChange={setUsernameDraft}
         onPlay={startNewGame}
         onLoadGame={loadLatestGame}
         onNewGame={startNewGame}
@@ -110,8 +206,15 @@ export default function App() {
   }
 
   return (
-    <StoreProvider store={session.store}>
-      <Shell shouldAutoOpenTutorial={session.isFreshStart} />
-    </StoreProvider>
+    <>
+      {statusMessage && (
+        <div className={styles.statusBanner} role="status">
+          {statusMessage}
+        </div>
+      )}
+      <StoreProvider store={session.store}>
+        <Shell shouldAutoOpenTutorial={session.isFreshStart} />
+      </StoreProvider>
+    </>
   );
 }

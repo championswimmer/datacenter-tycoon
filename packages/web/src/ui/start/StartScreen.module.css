@@ -48,13 +48,34 @@
   color: var(--fg-0);
 }
 
-.saveSummary {
+.saveSummary,
+.identityCard,
+.identitySection,
+.statusMessage,
+.errorMessage {
   display: grid;
   gap: var(--space-3);
   padding: var(--space-4);
-  border: 1px solid rgba(138, 160, 200, 0.28);
   border-radius: 14px;
+}
+
+.saveSummary,
+.identityCard,
+.identitySection {
+  border: 1px solid rgba(138, 160, 200, 0.28);
   background: rgba(17, 24, 42, 0.78);
+}
+
+.statusMessage {
+  border: 1px solid rgba(255, 196, 82, 0.36);
+  background: rgba(53, 34, 5, 0.82);
+  color: #ffe3a6;
+}
+
+.errorMessage {
+  border: 1px solid rgba(255, 116, 116, 0.36);
+  background: rgba(68, 18, 18, 0.82);
+  color: #ffd0d0;
 }
 
 .saveSummaryLabel,
@@ -120,10 +141,37 @@
   background: rgba(94, 240, 255, 0.08);
 }
 
-.difficultyHint {
+.difficultyHint,
+.identityHint {
   margin: 0;
   color: var(--fg-1);
   font-size: var(--text-sm);
+}
+
+.identityLabel {
+  font-size: var(--text-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-1);
+}
+
+.identityInput {
+  min-height: var(--touch-target-comfortable);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid rgba(138, 160, 200, 0.32);
+  border-radius: 12px;
+  background: rgba(8, 12, 20, 0.84);
+  color: var(--fg-0);
+  font-size: var(--text-base);
+}
+
+.identityInput::placeholder {
+  color: rgba(210, 220, 255, 0.45);
+}
+
+.identityInput:focus-visible {
+  outline: 2px solid rgba(94, 240, 255, 0.7);
+  outline-offset: 2px;
 }
 
 .actions {
@@ -147,7 +195,8 @@
     transform var(--duration-fast) var(--ease-in-out),
     box-shadow var(--duration-fast) var(--ease-in-out),
     background-color var(--duration-fast) var(--ease-in-out),
-    border-color var(--duration-fast) var(--ease-in-out);
+    border-color var(--duration-fast) var(--ease-in-out),
+    opacity var(--duration-fast) var(--ease-in-out);
 }
 
 .playAction,
@@ -176,6 +225,15 @@
 .secondaryAction:focus-visible {
   box-shadow: var(--glow-cyan);
   background: rgba(94, 240, 255, 0.08);
+}
+
+.playAction:disabled,
+.primaryAction:disabled,
+.secondaryAction:disabled {
+  opacity: 0.7;
+  cursor: wait;
+  transform: none;
+  box-shadow: none;
 }
 
 @media (max-width: 1023px) {

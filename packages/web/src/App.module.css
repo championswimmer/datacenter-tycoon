@@ -8,3 +8,18 @@
   font-size: var(--text-sm);
   letter-spacing: 0.1em;
 }
+
+.statusBanner {
+  position: fixed;
+  top: max(var(--space-4), var(--safe-area-top));
+  left: 50%;
+  z-index: calc(var(--z-overlay) + 1);
+  width: min(calc(100% - (2 * var(--space-4))), 720px);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid rgba(255, 196, 82, 0.4);
+  border-radius: 14px;
+  background: rgba(53, 34, 5, 0.92);
+  color: #ffe3a6;
+  box-shadow: var(--shadow-float);
+  transform: translateX(-50%);
+}
