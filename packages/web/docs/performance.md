@@ -56,6 +56,44 @@ Interpretation notes:
 - Representative save payload from the baseline harness: **13,789 bytes**.
 - Expanded manual save sample from the audit (3 datacenters / 24 racks / 24 ticks): ≈ **27,317 bytes** (~26.7 KB).
 
+## Post-optimisation snapshot (captured 2026-05-18)
+
+### Final React/UI observations
+
+| Scenario | Commits | Total actual duration | Max actual duration | Wall-clock |
+| --- | ---: | ---: | ---: | ---: |
+| Start screen load | 1 | 5.38 ms | 5.38 ms | 9.26 ms |
+| First shell render | 1 | 17.00 ms | 17.00 ms | 20.19 ms |
+| Active contracts page | 1 | 2.19 ms | 2.19 ms | 2.74 ms |
+| Market contracts page | 1 | 1.97 ms | 1.97 ms | 2.38 ms |
+| Large floor grid | 1 | 4.91 ms | 4.91 ms | 5.52 ms |
+| High-speed tick burst | 2 | 1.63 ms | 1.19 ms | 13.94 ms |
+
+Final save/load snapshot from the same harness:
+
+- Serialize: **0.08 ms**
+- Deserialize: **0.16 ms**
+- Payload size: **13,789 bytes** for the harness scenario
+
+### Before / after highlights
+
+| Metric | Before | After | Delta |
+| --- | ---: | ---: | ---: |
+| Largest emitted image asset | 1.02 MB | 317.64 kB | -68.9% |
+| Largest JS asset (gzip) | 133.74 kB | 132.07 kB | -1.2% |
+| Largest CSS asset (gzip) | 21.13 kB | 20.90 kB | -1.1% |
+| Large floor grid render duration | 5.46 ms | 4.91 ms | -10.1% |
+| High-speed tick burst total duration | 1.93 ms | 1.63 ms | -15.5% |
+| High-speed tick burst commits | 2 | 2 | stable |
+| Representative save payload | 13,789 bytes | 13,789 bytes | unchanged size, now audited/warned |
+| Latest-save localStorage reads during session switch | repeated sync reads | cached/known latest id reused | reduced sync startup work |
+
+### Validation notes
+
+- `useGameSelector` now invalidates cached selector output when the selector closure itself changes, which prevents stale derived values when a component changes local state or props without a store dispatch.
+- Autosave writes now expose byte-audit metadata and warn on oversized/quota-constrained writes.
+- The start screen now ships responsive banner assets (`game-banner-001.jpg` + `game-banner-001-mobile.jpg`) through a `<picture>` element.
+
 ## Initial warning budgets
 
 | Metric | Warning budget | How it is checked |
@@ -66,7 +104,7 @@ Interpretation notes:
 | Representative save payload | 80 kB | `src/performance/perfBaseline.test.tsx` / save fixture output |
 | High-speed tick burst re-render budget | ≤ 3 commits for the harness scenario | `src/performance/perfBaseline.test.tsx` |
 
-These start as warning budgets rather than merge blockers so the team can ratchet them down as the optimisation work lands. `npm run perf:budgets:strict -w @datacenter-tycoon/web` flips the asset checks into hard-fail mode.
+These start as warning budgets rather than merge blockers so the team can ratchet them down as the optimisation work lands. `npm run perf:budgets:strict -w @datacenter-tycoon/web` flips the asset checks into hard-fail mode. The current post-optimisation build sits below all three checked asset budgets.
 
 ### Scenarios to watch during optimisation
 
