@@ -13,6 +13,8 @@
     "test:ci": "mkdir -p coverage && vitest run --coverage --reporter=default --reporter=junit --outputFile.junit=coverage/junit.xml",
     "test:watch": "vitest",
     "perf:baseline": "vitest run src/performance/perfBaseline.test.tsx",
+    "perf:budgets": "npm run build && node ./scripts/checkPerfBudgets.mjs",
+    "perf:budgets:strict": "npm run build && node ./scripts/checkPerfBudgets.mjs --strict",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {

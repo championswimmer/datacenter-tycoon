@@ -11,7 +11,7 @@ owner: web
 
 - [ ] **Phase 1 — Measurement and budgets**
   - [x] 1.1 Add a repeatable performance baseline
-  - [ ] 1.2 Define bundle, save-size, and render-frequency budgets
+  - [x] 1.2 Define bundle, save-size, and render-frequency budgets
   - [ ] 1.3 Add targeted regression coverage for selector stability
 - [ ] **Phase 2 — Selector and subscription churn**
   - [ ] 2.1 Add selector-level memoization for expensive aggregate views
@@ -250,5 +250,6 @@ Optimisation principles:
 
 ## Changelog
 
+- 2026-05-18 — Added build-checked warning budgets for JS, CSS, image, save-size, and tick render scenarios.
 - 2026-05-18 — Added a repeatable Vitest-based performance baseline harness and baseline notes.
 - 2026-05-17 — Created from a static web UI performance audit.

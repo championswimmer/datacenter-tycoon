@@ -19,7 +19,7 @@ The baseline harness records the key render-path scenarios called out in plan 03
 - high-speed tick burst
 - save/load cycle serialization timings
 
-Build output captures the production asset sizes.
+Build output captures the production asset sizes. `npm run perf:budgets -w @datacenter-tycoon/web` builds the package and checks the current warning budgets against the emitted dist assets.
 
 ## Pre-optimisation baseline (captured 2026-05-17/18)
 
@@ -50,10 +50,23 @@ Interpretation notes:
 
 ### Build + payload observations
 
-- Largest start-screen image: `assets/images/game-banner-001.jpg` ≈ **1.07 MB**.
-- Main JS bundle: ≈ **402.80 kB** raw / **131.21 kB gzip**.
-- Main CSS bundle: ≈ **135.19 kB** raw / **21.13 kB gzip**.
-- Representative save payload (3 datacenters / 24 racks / 24 ticks): ≈ **27,317 bytes** (~26.7 KB).
+- Largest emitted start-screen image: `dist/assets/game-banner-001-*.jpg` ≈ **1.02 MB** raw (source asset remains about **1.07 MB** before optimisation).
+- Largest JS bundle: ≈ **410.93 kB** raw / **133.74 kB gzip**.
+- Largest CSS bundle: ≈ **135.19 kB** raw / **21.13 kB gzip**.
+- Representative save payload from the baseline harness: **13,789 bytes**.
+- Expanded manual save sample from the audit (3 datacenters / 24 racks / 24 ticks): ≈ **27,317 bytes** (~26.7 KB).
+
+## Initial warning budgets
+
+| Metric | Warning budget | How it is checked |
+| --- | ---: | --- |
+| Largest JS asset (gzip) | 150 kB | `npm run perf:budgets -w @datacenter-tycoon/web` |
+| Largest CSS asset (gzip) | 30 kB | `npm run perf:budgets -w @datacenter-tycoon/web` |
+| Largest image asset (raw) | 1.10 MB | `npm run perf:budgets -w @datacenter-tycoon/web` |
+| Representative save payload | 80 kB | `src/performance/perfBaseline.test.tsx` / save fixture output |
+| High-speed tick burst re-render budget | ≤ 3 commits for the harness scenario | `src/performance/perfBaseline.test.tsx` |
+
+These start as warning budgets rather than merge blockers so the team can ratchet them down as the optimisation work lands. `npm run perf:budgets:strict -w @datacenter-tycoon/web` flips the asset checks into hard-fail mode.
 
 ### Scenarios to watch during optimisation
 
