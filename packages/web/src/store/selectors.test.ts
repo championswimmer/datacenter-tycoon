@@ -28,6 +28,7 @@ import {
   selectActiveContracts,
   selectActiveContractViews,
   selectAllRegionFabricSummaries,
+  selectAllDatacenterFabricSummaries,
   selectContractAffinityView,
   selectMarket,
   selectMarketContractViews,
@@ -148,6 +149,77 @@ function withReliability(
         ...overrides,
       },
     },
+  };
+}
+
+function stateWithSelectorStabilityData(): GameState {
+  const { state, dcIds: [dcA, dcB] } = stateWithLinkedFabric();
+  const marketContract: Contract = {
+    id: "selector-market" as Contract["id"],
+    name: "Selector Market",
+    requirements: { vCpu: 16, ramGb: 0, storageTb: 0, gpuFlops: 0 },
+    monthlyPayment: 18_000,
+    penaltyPerMonth: 5_000,
+    termMonths: 3,
+    slaTargetPercent: 90,
+    currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
+    lifecycleState: "market_open",
+    status: "offered",
+    urgency: "standard",
+    tier: 1,
+    offeredAtTick: state.tick,
+    expiresAtTick: (state.tick + 6) as Contract["expiresAtTick"],
+  };
+  const activeContract: Contract = {
+    id: "selector-active" as Contract["id"],
+    name: "Selector Active",
+    requirements: { vCpu: 8, ramGb: 32, storageTb: 0, gpuFlops: 0 },
+    monthlyPayment: 22_000,
+    penaltyPerMonth: 6_000,
+    termMonths: 6,
+    slaTargetPercent: 90,
+    currentSlaWindow: { sampledDays: 10, servedDays: 9, failedDays: 1 },
+    lifecycleState: "serving",
+    status: "active",
+    urgency: "standard",
+    tier: 1,
+    offeredAtTick: 0,
+    expiresAtTick: 6,
+    startedAtTick: 0,
+    assignedDcId: dcA,
+  };
+  const historicalContract: Contract = {
+    id: "selector-history" as Contract["id"],
+    name: "Selector History",
+    requirements: { vCpu: 0, ramGb: 64, storageTb: 8, gpuFlops: 0 },
+    monthlyPayment: 12_000,
+    penaltyPerMonth: 4_000,
+    termMonths: 2,
+    slaTargetPercent: 80,
+    currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
+    lifecycleState: "completed",
+    status: "expired",
+    urgency: "standard",
+    tier: 1,
+    offeredAtTick: 0,
+    expiresAtTick: 2,
+    startedAtTick: 0,
+    assignedDcId: dcB,
+  };
+
+  return {
+    ...state,
+    tick: 4,
+    contracts: [historicalContract, activeContract, marketContract],
+    activeContracts: [activeContract],
+    contractMarket: [marketContract],
+  };
+}
+
+function withUnrelatedAudioChange(state: GameState): GameState {
+  return {
+    ...state,
+    audioEnabled: !(state.audioEnabled ?? true),
   };
 }
 
@@ -797,5 +869,22 @@ describe("fabric selectors", () => {
       memberDcIds: state.datacenters.map((dc) => dc.id),
     });
     expect(selectAllRegionFabricSummaries(state).some((summary) => summary.regionId === regionId && summary.active)).toBe(true);
+  });
+});
+
+describe("selector stability", () => {
+  it("preserves expensive selector references across unrelated state changes", () => {
+    const state = stateWithSelectorStabilityData();
+    const nextState = withUnrelatedAudioChange(state);
+
+    expect(selectMarketContractViews(nextState)).toBe(selectMarketContractViews(state));
+    expect(selectActiveContractViews(nextState)).toBe(selectActiveContractViews(state));
+    expect(selectHistoricalContractViews(nextState)).toBe(selectHistoricalContractViews(state));
+    expect(selectCapacity(nextState)).toBe(selectCapacity(state));
+    expect(selectOpexBreakdown(nextState)).toBe(selectOpexBreakdown(state));
+    expect(selectRackPowerSummary(nextState)).toBe(selectRackPowerSummary(state));
+    expect(selectResourceUsage(nextState)).toBe(selectResourceUsage(state));
+    expect(selectAllRegionFabricSummaries(nextState)).toBe(selectAllRegionFabricSummaries(state));
+    expect(selectAllDatacenterFabricSummaries(nextState)).toBe(selectAllDatacenterFabricSummaries(state));
   });
 });

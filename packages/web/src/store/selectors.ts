@@ -1,12 +1,14 @@
 import {
   DAYS_PER_TICK,
   RELIABILITY_BASELINE_SCORE,
+  contractDealScore,
   datacenterMaintenanceSummary,
   datacenterUsage,
   rackAgeMonths,
   reliabilityBandForScore,
   reliabilityMarketPolicyForScore,
   summarizeContractSlaProgress,
+  bucketContractsFromState,
   summarizeDatacenterRackMaintenanceViewsFromState,
   repairProgressPerTick,
   listRackMoveTargets,
@@ -58,11 +60,253 @@ import type {
   RackHealthStatus,
   RackPlacementId,
   RackPowerSummary,
+  Region,
   RegionFabricView,
   RegionId,
   ReliabilityBand,
   Tick,
+  AudioSettings,
 } from "@datacenter-tycoon/game-logic";
+
+function haveSameInputs(nextInputs: readonly unknown[], prevInputs: readonly unknown[]): boolean {
+  return nextInputs.length === prevInputs.length
+    && nextInputs.every((input, index) => Object.is(input, prevInputs[index]));
+}
+
+function memoizeByInputs<Args extends unknown[], Result>(
+  getInputs: (...args: Args) => readonly unknown[],
+  compute: (...args: Args) => Result,
+): (...args: Args) => Result {
+  let hasResult = false;
+  let lastInputs: readonly unknown[] = [];
+  let lastResult!: Result;
+
+  return (...args: Args): Result => {
+    const nextInputs = getInputs(...args);
+    if (hasResult && haveSameInputs(nextInputs, lastInputs)) {
+      return lastResult;
+    }
+
+    lastResult = compute(...args);
+    lastInputs = nextInputs;
+    hasResult = true;
+    return lastResult;
+  };
+}
+
+const selectDatacenterIndex = memoizeByInputs(
+  (state: Pick<GameState, "datacenters">) => [state.datacenters],
+  (state) => new Map(state.datacenters.map((datacenter) => [datacenter.id, datacenter] as const)),
+);
+
+const selectRegionIndex = memoizeByInputs(
+  (state: Pick<GameState, "map">) => [state.map.regions],
+  (state) => new Map(state.map.regions.map((region) => [region.id, region] as const)),
+);
+
+const selectRegionLabelIndex = memoizeByInputs(
+  (state: Pick<GameState, "map">) => [state.map.regions],
+  (state) => new Map(
+    state.map.regions.map((region) => [region.id, `${region.code} · ${region.city} · ${region.name}`] as const),
+  ),
+);
+
+const selectDatacentersByRegionIndex = memoizeByInputs(
+  (state: Pick<GameState, "datacenters">) => [state.datacenters],
+  (state) => {
+    const grouped = new Map<RegionId, Datacenter[]>();
+    for (const datacenter of state.datacenters) {
+      const group = grouped.get(datacenter.regionId);
+      if (group) {
+        group.push(datacenter);
+      } else {
+        grouped.set(datacenter.regionId, [datacenter]);
+      }
+    }
+    return grouped;
+  },
+);
+
+const selectContractBuckets = memoizeByInputs(
+  (state: Pick<GameState, "contracts" | "contractMarket" | "activeContracts">) => [
+    state.contracts,
+    state.contractMarket,
+    state.activeContracts,
+  ],
+  (state) => bucketContractsFromState(state),
+);
+
+const selectMemoizedMarketFitSummaries = memoizeByInputs(
+  (state: GameState) => [state.contracts, state.contractMarket, state.activeContracts, state.datacenters, state.map.regions],
+  (state) => summarizeOpenMarketContractFits(state),
+);
+
+const selectMemoizedMarketContractViews = memoizeByInputs(
+  (state: GameState) => [state.contracts, state.contractMarket, state.activeContracts, state.datacenters, state.map.regions],
+  (state) => {
+    const marketContracts = selectMarket(state);
+    const fitSummaries = selectMemoizedMarketFitSummaries(state);
+    const fitSummaryById = new Map(fitSummaries.map((summary) => [summary.contractId, summary] as const));
+    const datacentersById = selectDatacenterIndex(state);
+
+    return marketContracts.map((contract) => {
+      const fitSummary = fitSummaryById.get(contract.id) ?? summarizeOpenMarketContractFits({
+        ...state,
+        contracts: [contract],
+        contractMarket: [contract],
+        activeContracts: [],
+      })[0]!;
+      const candidateByDcId = new Map(fitSummary.candidates.map((candidate) => [candidate.dcId, candidate] as const));
+
+      return {
+        contract,
+        affinity: buildContractAffinityView(state, contract),
+        fitSummary,
+        eligibleDatacenterIds: [...fitSummary.eligibleDcIds],
+        assignmentOptions: state.datacenters.map((datacenter) =>
+          buildAssignmentOptionView(
+            state,
+            datacenter,
+            candidateByDcId.get(datacenter.id),
+          )
+        ),
+        slaProgress: summarizeContractSlaProgress(contract),
+        dealScore: contractDealScore(contract),
+        networkAvailable: fitSummary.networkAvailable,
+        assignedDatacenter: contract.assignedDcId ? datacentersById.get(contract.assignedDcId) ?? null : null,
+      };
+    });
+  },
+);
+
+const selectMemoizedAssignedContractViews = memoizeByInputs(
+  (state: GameState, contracts: Contract[]) => [contracts, state.datacenters, state.map.regions],
+  (state, contracts) => {
+    const datacentersById = selectDatacenterIndex(state);
+
+    return contracts.map((contract) => {
+      const assignedDc = contract.assignedDcId ? datacentersById.get(contract.assignedDcId) : undefined;
+      return {
+        contract,
+        affinity: buildContractAffinityView(state, contract),
+        assignedDcName: assignedDc?.name ?? null,
+        assignedRegionLabel: assignedDc ? formatRegionLabel(state, assignedDc.regionId) : null,
+        slaProgress: summarizeContractSlaProgress(contract),
+      };
+    });
+  },
+);
+
+const selectMemoizedAllRegionFabricSummaries = memoizeByInputs(
+  (state: GameState) => [state.datacenters, state.map.regions],
+  (state) => summarizeAllRegionFabricViewsFromState(state),
+);
+
+const selectMemoizedAllDatacenterFabricSummaries = memoizeByInputs(
+  (state: GameState) => [state.datacenters, state.map.regions],
+  (state) => selectMemoizedAllRegionFabricSummaries(state).flatMap((regionSummary) =>
+    regionSummary.datacenters.map((summary) => ({
+      dcId: summary.dcId,
+      summary,
+    })),
+  ),
+);
+
+const selectMemoizedCapacity = memoizeByInputs(
+  (state: GameState) => [state.datacenters, state.activeContracts],
+  (state): AggregateCapacity => {
+    const summary = selectNetworkCapacitySummary(state);
+    return {
+      total: summary.installed,
+      perDc: summary.perDc.map((entry) => ({
+        dcId: entry.dcId,
+        capacity: entry.installed,
+      })),
+    };
+  },
+);
+
+const selectMemoizedOpexBreakdown = memoizeByInputs(
+  (state: GameState) => [state.datacenters, state.map.regions, state.contracts, state.contractMarket, state.activeContracts],
+  (state): AggregateOpex => {
+    const activeContracts = selectActiveContracts(state);
+    const regionsById = selectRegionIndex(state);
+
+    const perDc = state.datacenters.map((dc) => {
+      const region = regionsById.get(dc.regionId);
+      if (!region) {
+        throw new Error(`Region not found for datacenter: ${dc.regionId}`);
+      }
+      return {
+        dcId: dc.id,
+        result: tickOpex(dc, region, activeContracts),
+      };
+    });
+
+    const total = Math.round(
+      perDc.reduce((sum, { result }) => sum + result.total, 0) * 100,
+    ) / 100;
+
+    return { total, perDc };
+  },
+);
+
+const selectMemoizedRackPowerSummary = memoizeByInputs(
+  (state: GameState) => [state.datacenters, state.contracts, state.contractMarket, state.activeContracts],
+  (state): AggregateRackPowerSummary => {
+    const perDc = state.datacenters.map((dc) => ({
+      dcId: dc.id,
+      summary: selectDatacenterRackPowerSummaryFromState(state, dc.id),
+    }));
+
+    const total = perDc.reduce<RackPowerSummary>(
+      (acc, { summary }) => ({
+        reservedPowerKw: acc.reservedPowerKw + summary.reservedPowerKw,
+        idleBaselinePowerKw: acc.idleBaselinePowerKw + summary.idleBaselinePowerKw,
+        activePowerKw: acc.activePowerKw + summary.activePowerKw,
+        billedPowerKw: acc.billedPowerKw + summary.billedPowerKw,
+        activeRackCount: acc.activeRackCount + summary.activeRackCount,
+        idleRackCount: acc.idleRackCount + summary.idleRackCount,
+        repairingRackCount: acc.repairingRackCount + summary.repairingRackCount,
+        totalRackCount: acc.totalRackCount + summary.totalRackCount,
+      }),
+      {
+        reservedPowerKw: 0,
+        idleBaselinePowerKw: 0,
+        activePowerKw: 0,
+        billedPowerKw: 0,
+        activeRackCount: 0,
+        idleRackCount: 0,
+        repairingRackCount: 0,
+        totalRackCount: 0,
+      },
+    );
+
+    return { total, perDc };
+  },
+);
+
+const selectMemoizedResourceUsage = memoizeByInputs(
+  (state: GameState) => [state.datacenters],
+  (state): AggregateResourceUsage => {
+    const perDc = state.datacenters.map((dc) => ({
+      dcId: dc.id,
+      usage: datacenterUsage(dc),
+    }));
+
+    const total: DatacenterResourceUsage = perDc.reduce(
+      (acc, { usage }) => ({
+        powerKw: acc.powerKw + usage.powerKw,
+        heatOutputBtuPerHr: acc.heatOutputBtuPerHr + usage.heatOutputBtuPerHr,
+        bandwidthGbps: acc.bandwidthGbps + usage.bandwidthGbps,
+        slotsUsed: acc.slotsUsed + usage.slotsUsed,
+      }),
+      { powerKw: 0, heatOutputBtuPerHr: 0, bandwidthGbps: 0, slotsUsed: 0 },
+    );
+
+    return { total, perDc };
+  },
+);
 
 // ── Primitive selectors ───────────────────────────────────────────────────────
 
@@ -243,7 +487,7 @@ export function selectDatacenter(
   state: GameState,
   id: DatacenterId,
 ): Datacenter | undefined {
-  return state.datacenters.find((dc) => dc.id === id);
+  return selectDatacenterIndex(state).get(id);
 }
 
 export interface DatacenterMaintenanceView {
@@ -314,11 +558,11 @@ export function selectDatacenterRackMaintenanceViews(
  * Does not include market-open or historical contracts.
  */
 export function selectActiveContracts(state: GameState): Contract[] {
-  return selectLiveContractsFromState(state);
+  return selectContractBuckets(state).live;
 }
 
 export function selectHistoricalContracts(state: GameState): Contract[] {
-  return selectHistoricalContractsFromState(state);
+  return selectContractBuckets(state).historical;
 }
 
 export function selectDatacenterRackActivityViews(
@@ -347,11 +591,11 @@ export function selectDatacenterRackPowerSummary(
 
 /** All contracts currently on the open market. */
 export function selectMarket(state: GameState): Contract[] {
-  return selectOpenMarketContractsFromState(state);
+  return selectContractBuckets(state).market;
 }
 
 export function selectMarketFitSummaries(state: GameState): ContractAssignmentFitSummary[] {
-  return summarizeOpenMarketContractFits(state);
+  return selectMemoizedMarketFitSummaries(state);
 }
 
 const CONTRACT_AFFINITY_BADGE_LABELS: Record<ContractRegionAffinityKey, string> = {
@@ -388,6 +632,9 @@ export interface MarketContractView {
   eligibleDatacenterIds: DatacenterId[];
   assignmentOptions: ContractAssignmentOptionView[];
   slaProgress: ContractSlaProgressView;
+  dealScore: number;
+  networkAvailable: Capacity;
+  assignedDatacenter: Datacenter | null;
 }
 
 export interface AssignedContractView {
@@ -399,8 +646,7 @@ export interface AssignedContractView {
 }
 
 function formatRegionLabel(state: Pick<GameState, "map">, regionId: RegionId): string {
-  const region = state.map.regions.find((entry) => entry.id === regionId);
-  return region ? `${region.code} · ${region.city} · ${region.name}` : regionId;
+  return selectRegionLabelIndex(state).get(regionId) ?? regionId;
 }
 
 function buildContractAffinityView(
@@ -471,50 +717,14 @@ export function selectContractAffinityView(
 }
 
 export function selectMarketContractViews(state: GameState): MarketContractView[] {
-  const marketContracts = selectMarket(state);
-  const fitSummaries = selectMarketFitSummaries(state);
-  const fitSummaryById = new Map(fitSummaries.map((summary) => [summary.contractId, summary]));
-
-  return marketContracts.map((contract) => {
-    const fitSummary = fitSummaryById.get(contract.id) ?? summarizeOpenMarketContractFits({
-      ...state,
-      contracts: [contract],
-      contractMarket: [contract],
-      activeContracts: [],
-    })[0]!;
-    const candidateByDcId = new Map(fitSummary.candidates.map((candidate) => [candidate.dcId, candidate]));
-
-    return {
-      contract,
-      affinity: buildContractAffinityView(state, contract),
-      fitSummary,
-      eligibleDatacenterIds: [...fitSummary.eligibleDcIds],
-      assignmentOptions: state.datacenters.map((datacenter) =>
-        buildAssignmentOptionView(
-          state,
-          datacenter,
-          candidateByDcId.get(datacenter.id),
-        )
-      ),
-      slaProgress: summarizeContractSlaProgress(contract),
-    };
-  });
+  return selectMemoizedMarketContractViews(state);
 }
 
 export function selectAssignedContractViews(
   state: GameState,
   contracts: Contract[],
 ): AssignedContractView[] {
-  return contracts.map((contract) => {
-    const assignedDc = state.datacenters.find((datacenter) => datacenter.id === contract.assignedDcId);
-    return {
-      contract,
-      affinity: buildContractAffinityView(state, contract),
-      assignedDcName: assignedDc?.name ?? null,
-      assignedRegionLabel: assignedDc ? formatRegionLabel(state, assignedDc.regionId) : null,
-      slaProgress: summarizeContractSlaProgress(contract),
-    };
-  });
+  return selectMemoizedAssignedContractViews(state, contracts);
 }
 
 export function selectActiveContractViews(state: GameState): AssignedContractView[] {
@@ -624,30 +834,18 @@ export function selectRegionFabricSummary(
 }
 
 export function selectAllRegionFabricSummaries(state: GameState): RegionFabricView[] {
-  return summarizeAllRegionFabricViewsFromState(state);
+  return selectMemoizedAllRegionFabricSummaries(state);
 }
 
 export function selectAllDatacenterFabricSummaries(
   state: GameState,
 ): Array<{ dcId: DatacenterId; summary: DatacenterFabricStatusView }> {
-  return selectAllRegionFabricSummaries(state).flatMap((regionSummary) =>
-    regionSummary.datacenters.map((summary) => ({
-      dcId: summary.dcId,
-      summary,
-    })),
-  );
+  return selectMemoizedAllDatacenterFabricSummaries(state);
 }
 
 /** Total installed and per-DC installed capacity (vCPU / RAM / Storage / GPU). */
 export function selectCapacity(state: GameState): AggregateCapacity {
-  const summary = selectNetworkCapacitySummary(state);
-  return {
-    total: summary.installed,
-    perDc: summary.perDc.map((entry) => ({
-      dcId: entry.dcId,
-      capacity: entry.installed,
-    })),
-  };
+  return selectMemoizedCapacity(state);
 }
 
 export interface AggregateOpex {
@@ -662,25 +860,7 @@ export interface AggregateOpex {
  * Uses `tickOpex` from game-logic — never recomputes economy here.
  */
 export function selectOpexBreakdown(state: GameState): AggregateOpex {
-  const activeContracts = selectActiveContracts(state);
-
-  const perDc = state.datacenters.map((dc) => {
-    const region = state.map.regions.find((r) => r.id === dc.regionId);
-    // Fallback to a default region if not found (should not happen in normal gameplay)
-    if (!region) {
-      throw new Error(`Region not found for datacenter: ${dc.regionId}`);
-    }
-    return {
-      dcId: dc.id,
-      result: tickOpex(dc, region, activeContracts),
-    };
-  });
-
-  const total = Math.round(
-    perDc.reduce((sum, { result }) => sum + result.total, 0) * 100,
-  ) / 100;
-
-  return { total, perDc };
+  return selectMemoizedOpexBreakdown(state);
 }
 
 export interface AggregateResourceUsage {
@@ -700,55 +880,12 @@ export interface AggregateRackPowerSummary {
  * Reserved power reflects placement headroom usage, billed power reflects this month's active workload.
  */
 export function selectRackPowerSummary(state: GameState): AggregateRackPowerSummary {
-  const perDc = state.datacenters.map((dc) => ({
-    dcId: dc.id,
-    summary: selectDatacenterRackPowerSummaryFromState(state, dc.id),
-  }));
-
-  const total = perDc.reduce<RackPowerSummary>(
-    (acc, { summary }) => ({
-      reservedPowerKw: acc.reservedPowerKw + summary.reservedPowerKw,
-      idleBaselinePowerKw: acc.idleBaselinePowerKw + summary.idleBaselinePowerKw,
-      activePowerKw: acc.activePowerKw + summary.activePowerKw,
-      billedPowerKw: acc.billedPowerKw + summary.billedPowerKw,
-      activeRackCount: acc.activeRackCount + summary.activeRackCount,
-      idleRackCount: acc.idleRackCount + summary.idleRackCount,
-      repairingRackCount: acc.repairingRackCount + summary.repairingRackCount,
-      totalRackCount: acc.totalRackCount + summary.totalRackCount,
-    }),
-    {
-      reservedPowerKw: 0,
-      idleBaselinePowerKw: 0,
-      activePowerKw: 0,
-      billedPowerKw: 0,
-      activeRackCount: 0,
-      idleRackCount: 0,
-      repairingRackCount: 0,
-      totalRackCount: 0,
-    },
-  );
-
-  return { total, perDc };
+  return selectMemoizedRackPowerSummary(state);
 }
 
 /** Real-time resource usage (power, cooling, bandwidth, slots). */
 export function selectResourceUsage(state: GameState): AggregateResourceUsage {
-  const perDc = state.datacenters.map((dc) => ({
-    dcId: dc.id,
-    usage: datacenterUsage(dc),
-  }));
-
-  const total: DatacenterResourceUsage = perDc.reduce(
-    (acc, { usage }) => ({
-      powerKw: acc.powerKw + usage.powerKw,
-      heatOutputBtuPerHr: acc.heatOutputBtuPerHr + usage.heatOutputBtuPerHr,
-      bandwidthGbps: acc.bandwidthGbps + usage.bandwidthGbps,
-      slotsUsed: acc.slotsUsed + usage.slotsUsed,
-    }),
-    { powerKw: 0, heatOutputBtuPerHr: 0, bandwidthGbps: 0, slotsUsed: 0 },
-  );
-
-  return { total, perDc };
+  return selectMemoizedResourceUsage(state);
 }
 
 export interface MonthlyPnl {
@@ -806,19 +943,19 @@ export function selectRegions(state: GameState): import("@datacenter-tycoon/game
 export function selectRegionById(
   state: GameState,
   regionId: RegionId,
-): import("@datacenter-tycoon/game-logic").Region | undefined {
-  return state.map.regions.find((r) => r.id === regionId);
+): Region | undefined {
+  return selectRegionIndex(state).get(regionId);
 }
 
 export function selectDatacentersByRegionId(state: GameState, regionId: RegionId): Datacenter[] {
-  return state.datacenters.filter((dc) => dc.regionId === regionId);
+  return selectDatacentersByRegionIndex(state).get(regionId) ?? [];
 }
 
 export function selectAudioEnabled(state: GameState): boolean {
   return state.audioEnabled ?? true;
 }
 
-export function selectAudioSettings(state: GameState): import("@datacenter-tycoon/game-logic").AudioSettings {
+export function selectAudioSettings(state: GameState): AudioSettings {
   return state.audioSettings ?? {
     master: state.audioEnabled ?? true,
     music: true,
