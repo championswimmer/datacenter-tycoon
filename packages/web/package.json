@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:ci": "mkdir -p coverage && vitest run --coverage --reporter=default --reporter=junit --outputFile.junit=coverage/junit.xml",
     "test:watch": "vitest",
+    "perf:baseline": "vitest run src/performance/perfBaseline.test.tsx",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
