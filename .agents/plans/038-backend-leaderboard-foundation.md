@@ -31,7 +31,7 @@ owner: server
   - [x] 5.3 Decide whether Redis is required for leaderboard caching
 - [ ] **Phase 6 — Operations, CI, and documentation**
   - [x] 6.1 Add server CI coverage for build, typecheck, tests, and migrations
-  - [ ] 6.2 Document local development and Railway deployment
+  - [x] 6.2 Document local development and Railway deployment
   - [ ] 6.3 Add release-readiness checks for the first backend launch
 
 ## Overview
@@ -288,3 +288,4 @@ interface LeaderboardSubmission {
 - 2026-05-18 — Created initial backend leaderboard foundation plan.
 - 2026-05-18 — Started implementation and added a manual post-code rollout checklist.
 - 2026-05-18 — Added monotonic leaderboard updates, rate limiting, and an explicit trust-model note for backend submissions.
+- 2026-05-18 — Added CI migration checks and local/Railway backend runbooks.
