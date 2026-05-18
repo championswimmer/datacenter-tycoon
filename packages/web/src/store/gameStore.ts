@@ -3,6 +3,7 @@ import type { Action, GameState } from "@datacenter-tycoon/game-logic";
 
 export interface GameStore {
   getState(): GameState;
+  getLastAction(): Action | null;
   dispatch(action: Action): void;
   subscribe(cb: () => void): () => void;
 }
@@ -15,6 +16,7 @@ export interface GameStore {
  */
 export function createGameStore(initial: GameState): GameStore {
   let state = initial;
+  let lastAction: Action | null = null;
   const subscribers = new Set<() => void>();
 
   return {
@@ -22,8 +24,13 @@ export function createGameStore(initial: GameState): GameStore {
       return state;
     },
 
+    getLastAction() {
+      return lastAction;
+    },
+
     dispatch(action: Action) {
       state = reduce(state, action);
+      lastAction = action;
       // Notify all subscribers. Copy to array first so that a subscriber
       // that unsubscribes during iteration doesn't affect the current batch.
       for (const cb of [...subscribers]) {

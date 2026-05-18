@@ -13,10 +13,10 @@ owner: web
   - [x] 1.1 Add a repeatable performance baseline
   - [x] 1.2 Define bundle, save-size, and render-frequency budgets
   - [x] 1.3 Add targeted regression coverage for selector stability
-- [ ] **Phase 2 — Selector and subscription churn**
+- [x] **Phase 2 — Selector and subscription churn**
   - [x] 2.1 Add selector-level memoization for expensive aggregate views
   - [x] 2.2 Replace repeated linear lookups with indexed selector helpers
-  - [ ] 2.3 Reduce work performed by every store subscriber on each tick
+  - [x] 2.3 Reduce work performed by every store subscriber on each tick
 - [ ] **Phase 3 — Contract UI render-path optimisation**
   - [ ] 3.1 Move active-contract row derivation out of the render loop
   - [ ] 3.2 Stabilize market-contract card props and child components
@@ -250,6 +250,7 @@ Optimisation principles:
 
 ## Changelog
 
+- 2026-05-18 — Completed Phase 2.3 by threading last-action metadata through the store, debouncing tick autosaves, and gating audio subscriber work.
 - 2026-05-18 — Completed Phase 2.2 with indexed datacenter/region/resource/opex selectors and switched key UI consumers away from repeated linear scans.
 - 2026-05-18 — Completed Phase 2.1 with memoized aggregate selectors for contracts, fabric, capacity, opex, rack power, and resource usage.
 - 2026-05-18 — Added selector stability regression coverage and selector-level structural-sharing caches.

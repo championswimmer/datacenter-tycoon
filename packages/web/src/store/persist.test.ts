@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { newGame, reduce } from "@datacenter-tycoon/game-logic";
 import {
   loadSave,
@@ -8,6 +8,7 @@ import {
   attachAutosave,
   bootstrapStore,
   AUTOSAVE_EVERY_TICKS,
+  AUTOSAVE_TICK_DEBOUNCE_MS,
   createFreshSession,
   createLoadedSession,
   getLatestSaveInfo,
@@ -33,6 +34,10 @@ const TEST_KEY = "test:save";
 
 beforeEach(() => {
   vi.stubGlobal("localStorage", makeLocalStorageMock());
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 // ── loadSave ──────────────────────────────────────────────────────────────────
@@ -153,46 +158,71 @@ describe("attachAutosave", () => {
     expect(loadSave(state.gameId)).not.toBeNull();
   });
 
-  it("saves only every AUTOSAVE_EVERY_TICKS ticks", () => {
+  it("debounces tick autosaves until the threshold and timer elapse", () => {
+    vi.useFakeTimers();
     const state = newGame(42);
     const store = createGameStore(state);
-    attachAutosave(store, AUTOSAVE_EVERY_TICKS);
+    attachAutosave(store, AUTOSAVE_EVERY_TICKS, AUTOSAVE_TICK_DEBOUNCE_MS);
     const setItemSpy = vi.spyOn(localStorage, "setItem");
-
-    // We expect initial calls during bootstrap or setup to be cleared
     setItemSpy.mockClear();
 
-    // First N-1 ticks should NOT trigger a save
     for (let i = 0; i < AUTOSAVE_EVERY_TICKS - 1; i++) {
       store.dispatch({ type: "Tick" });
     }
-    
-    // Check it didn't save for ANY of those ticks
-    // setItem is called twice per writeSave (save data + index)
+
     expect(setItemSpy).not.toHaveBeenCalled();
 
-    // The Nth tick triggers a save
     store.dispatch({ type: "Tick" });
+    expect(setItemSpy).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(AUTOSAVE_TICK_DEBOUNCE_MS - 1);
+    expect(setItemSpy).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
     expect(setItemSpy).toHaveBeenCalled();
   });
 
-  it("stop function halts autosave", () => {
+  it("flushes the latest tick state after coalescing multiple pending tick saves", () => {
+    vi.useFakeTimers();
     const state = newGame(42);
     const store = createGameStore(state);
-    const stop = attachAutosave(store, 1);
+    attachAutosave(store, 1, AUTOSAVE_TICK_DEBOUNCE_MS);
+
+    store.dispatch({ type: "Tick" });
+    store.dispatch({ type: "Tick" });
+    store.dispatch({ type: "Tick" });
+    vi.advanceTimersByTime(AUTOSAVE_TICK_DEBOUNCE_MS);
+
+    const loaded = loadSave(state.gameId);
+    expect(loaded?.tick).toBe(store.getState().tick);
+  });
+
+  it("stop function flushes pending autosave and halts future autosave", () => {
+    vi.useFakeTimers();
+    const state = newGame(42);
+    const store = createGameStore(state);
+    const stop = attachAutosave(store, 1, AUTOSAVE_TICK_DEBOUNCE_MS);
+
+    store.dispatch({ type: "Tick" });
     stop();
 
+    expect(loadSave(state.gameId)?.tick).toBe(1);
+
     const setItemSpy = vi.spyOn(localStorage, "setItem");
+    setItemSpy.mockClear();
     store.dispatch({ type: "Tick" });
+    vi.runAllTimers();
     expect(setItemSpy).not.toHaveBeenCalled();
   });
 
   it("loaded state matches state at time of autosave", () => {
+    vi.useFakeTimers();
     const state = newGame(42);
     const store = createGameStore(state);
-    attachAutosave(store, 1);
+    attachAutosave(store, 1, AUTOSAVE_TICK_DEBOUNCE_MS);
     store.dispatch({ type: "Tick" });
     store.dispatch({ type: "Tick" });
+    vi.advanceTimersByTime(AUTOSAVE_TICK_DEBOUNCE_MS);
 
     const loaded = loadSave(state.gameId);
     expect(loaded!.tick).toBe(store.getState().tick);
