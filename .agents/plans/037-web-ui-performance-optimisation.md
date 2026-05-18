@@ -26,10 +26,10 @@ owner: web
   - [x] 4.2 Reduce large grid DOM and mobile/desktop duplicate work
   - [x] 4.3 Replace repeated decorative element allocation in rack/progress primitives
   - [x] 4.4 Reduce costly rack tile paint effects
-- [ ] **Phase 5 — Persistence, assets, and startup cost**
+- [x] **Phase 5 — Persistence, assets, and startup cost**
   - [x] 5.1 Debounce and size-audit autosave writes
   - [x] 5.2 Limit synchronous localStorage reads during startup/session switches
-  - [ ] 5.3 Optimise large image assets and route-level payloads
+  - [x] 5.3 Optimise large image assets and route-level payloads
 - [ ] **Phase 6 — Final validation and follow-up guardrails**
   - [ ] 6.1 Re-run web typecheck, tests, build, and query-boundary audit
   - [ ] 6.2 Document measured before/after results
@@ -250,6 +250,7 @@ Optimisation principles:
 
 ## Changelog
 
+- 2026-05-18 — Completed Phase 5.3 by shipping compressed responsive start-screen banner assets, dropping the largest image from ~1.07 MB to ~318 kB in production builds.
 - 2026-05-18 — Completed Phase 5.2 by reusing known latest-save ids during session replacement instead of synchronously re-reading localStorage.
 - 2026-05-18 — Completed Phase 5.1 by auditing serialized save/index byte sizes, caching save-index reads, and warning on oversized/quota-constrained writes.
 - 2026-05-18 — Completed Phase 4.4 by replacing rack filter-based boot animation with transform/opacity motion and adding reduced-motion guards.
