@@ -23,8 +23,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Typecheck workspaces
+        run: npm run typecheck
+
       - name: Build packages
         run: npm run build
+
+      - name: Validate server migrations
+        run: npm run check:migrations:server
 
       - name: Run tests
         run: npm run test:ci
