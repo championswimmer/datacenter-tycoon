@@ -24,7 +24,7 @@ owner: web
 - [ ] **Phase 4 — Floor grid and visual primitive optimisation**
   - [x] 4.1 Memoize rack placement lookup and slot coordinate lists
   - [x] 4.2 Reduce large grid DOM and mobile/desktop duplicate work
-  - [ ] 4.3 Replace repeated decorative element allocation in rack/progress primitives
+  - [x] 4.3 Replace repeated decorative element allocation in rack/progress primitives
   - [ ] 4.4 Reduce costly rack tile paint effects
 - [ ] **Phase 5 — Persistence, assets, and startup cost**
   - [ ] 5.1 Debounce and size-audit autosave writes
@@ -250,6 +250,7 @@ Optimisation principles:
 
 ## Changelog
 
+- 2026-05-18 — Completed Phase 4.3 by converting progress bars to a CSS-segmented fill track and collapsing rack blade allocation into a single decorative layer.
 - 2026-05-18 — Completed Phase 4.2 by memoizing floor-view callbacks/maps, memo-wrapping grid/slot rendering, and collapsing extra phone slot wrapper DOM.
 - 2026-05-18 — Completed Phase 4.1 with cached floor-grid placement lookups, row models, and column indexes plus regression coverage for stable references.
 - 2026-05-18 — Completed Phase 3.3 by summarizing historical contract counts in a single selector pass for the history footer.
