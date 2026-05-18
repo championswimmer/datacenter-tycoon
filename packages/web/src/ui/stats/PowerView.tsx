@@ -6,10 +6,10 @@ import {
   selectDatacenterFabricCapacitySummary,
   selectDatacenterFabricSummary,
   selectDatacenterInfrastructureSummary,
+  selectDatacenterOpex,
   selectDatacenterRackPowerSummary,
+  selectDatacenterResourceUsage,
   selectDatacenterUpgradeSummary,
-  selectOpexBreakdown,
-  selectResourceUsage,
 } from "../../store/selectors.js";
 import { ResourceBars } from "./ResourceBars.js";
 import { CapacityTiles } from "./CapacityTiles.js";
@@ -32,14 +32,12 @@ export function PowerView({ dcId }: PowerViewProps) {
   const fabricSummary = useSelector((state) => selectDatacenterFabricSummary(state, dcId));
   const infrastructure = useSelector((state) => selectDatacenterInfrastructureSummary(state, dcId));
   const upgradeSummary = useSelector((state) => selectDatacenterUpgradeSummary(state, dcId));
-  const opexAgg = useSelector(selectOpexBreakdown);
-  const usageAgg = useSelector(selectResourceUsage);
+  const opexEntry = useSelector((state) => selectDatacenterOpex(state, dcId));
+  const usage = useSelector((state) => selectDatacenterResourceUsage(state, dcId) ?? EMPTY_USAGE);
   const rackPowerSummary = useSelector((state) => selectDatacenterRackPowerSummary(state, dcId));
 
   if (!datacenter) return null;
 
-  const usage = usageAgg.perDc.find((entry) => entry.dcId === dcId)?.usage ?? EMPTY_USAGE;
-  const opexEntry = opexAgg.perDc.find((entry) => entry.dcId === dcId);
   const showingPooledCapacity = fabricCapacitySummary?.connected ?? false;
   const dcCapacity = showingPooledCapacity
     ? fabricCapacitySummary?.usable ?? EMPTY_CAPACITY
@@ -158,8 +156,8 @@ export function PowerView({ dcId }: PowerViewProps) {
       <div className={styles.bottom}>
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>OPEX BREAKDOWN</h3>
-          {opexEntry && opexEntry.result.total > 0 ? (
-            <OpexCard total={opexEntry.result.total} breakdown={opexEntry.result.breakdown} />
+          {opexEntry && opexEntry.total > 0 ? (
+            <OpexCard total={opexEntry.total} breakdown={opexEntry.breakdown} />
           ) : (
             <p className={styles.none}>No operating costs yet — install racks to generate opex.</p>
           )}
