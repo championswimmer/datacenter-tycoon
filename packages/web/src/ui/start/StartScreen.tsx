@@ -2,6 +2,7 @@ import type { Difficulty } from "@datacenter-tycoon/game-logic";
 import { formatGameDateShort, tickToGameDate } from "../../store/gameTime.js";
 import type { SaveInfo } from "../../store/persist.js";
 import gameBannerUrl from "@assets/images/game-banner-001.jpg";
+import gameBannerMobileUrl from "@assets/images/game-banner-001-mobile.jpg";
 import styles from "./StartScreen.module.css";
 
 interface StartScreenProps {
@@ -43,12 +44,23 @@ export function StartScreen({
 
   return (
     <main className={styles.root}>
-      <img
-        className={styles.bannerImage}
-        src={gameBannerUrl}
-        alt=""
-        aria-hidden="true"
-      />
+      <picture>
+        <source
+          media="(max-width: 767px)"
+          srcSet={`${gameBannerMobileUrl} 900w, ${gameBannerUrl} 1376w`}
+          sizes="100vw"
+        />
+        <img
+          className={styles.bannerImage}
+          src={gameBannerUrl}
+          srcSet={`${gameBannerMobileUrl} 900w, ${gameBannerUrl} 1376w`}
+          sizes="100vw"
+          decoding="async"
+          loading="eager"
+          alt=""
+          aria-hidden="true"
+        />
+      </picture>
 
       <div className={styles.overlay} />
 
