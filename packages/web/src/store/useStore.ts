@@ -48,15 +48,31 @@ export function useGameSelector<T>(
   const selectorRef = useRef(selector);
   selectorRef.current = selector;
 
-  // Cache: { state, value } — recomputed only when the state object changes.
-  const cache = useRef<{ state: GameState; value: T } | null>(null);
+  // Cache: { state, selector, value } — recomputed when the state object or
+  // selector closure changes. This keeps prop/local-state dependent selectors
+  // correct across rerenders while still preserving stable snapshots for the
+  // same state + selector pair.
+  const cache = useRef<{
+    state: GameState;
+    selector: (state: GameState) => T;
+    value: T;
+  } | null>(null);
 
   // getSnapshot is stable (recreated only if `store` changes, which never
   // happens in practice since we use a singleton store).
   const getSnapshot = useCallback(() => {
     const state = store.getState();
-    if (!cache.current || cache.current.state !== state) {
-      cache.current = { state, value: selectorRef.current(state) };
+    const currentSelector = selectorRef.current;
+    if (
+      !cache.current
+      || cache.current.state !== state
+      || cache.current.selector !== currentSelector
+    ) {
+      cache.current = {
+        state,
+        selector: currentSelector,
+        value: currentSelector(state),
+      };
     }
     return cache.current.value;
   }, [store]);
