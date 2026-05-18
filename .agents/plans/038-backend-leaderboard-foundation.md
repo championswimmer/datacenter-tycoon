@@ -1,7 +1,7 @@
 ---
 name: Backend Leaderboard Foundation
 description: Build the first deployable backend for username registration, top-level leaderboard submissions, and Railway-hosted infrastructure.
-status: created
+status: started
 created: 2026-05-18
 updated: 2026-05-18
 owner: server
@@ -10,7 +10,7 @@ owner: server
 ## Progress
 
 - [ ] **Phase 1 — Backend API foundation**
-  - [ ] 1.1 Choose and scaffold the server HTTP boundary
+  - [x] 1.1 Choose and scaffold the server HTTP boundary
   - [ ] 1.2 Add health, version, and environment validation endpoints
   - [ ] 1.3 Add server test utilities for API requests
 - [ ] **Phase 2 — Player identity without passwords**
@@ -44,7 +44,7 @@ Datacenter Tycoon currently has a placeholder `@datacenter-tycoon/server` packag
 flowchart LR
     Web[packages/web] -->|register username| Server[packages/server API]
     Web -->|submit leaderboard metrics| Server
-    Server -->|validate / derive where possible| Logic[@datacenter-tycoon/game-logic]
+    Server -->|validate / derive where possible| Logic["@datacenter-tycoon/game-logic"]
     Server -->|persist players + submissions| Postgres[(Railway Postgres)]
     Server -. optional cache .-> Redis[(Railway Redis)]
     Server -->|read ranked views| Web
@@ -271,6 +271,19 @@ interface LeaderboardSubmission {
 - [Railway Postgres](https://docs.railway.com/guides/postgresql)
 - [Railway Redis](https://docs.railway.com/guides/redis)
 
+## Manual rollout checklist (not yet executed)
+
+- [ ] Create the Railway project/service for `@datacenter-tycoon/server`.
+- [ ] Add a Railway Postgres service and attach its `DATABASE_URL` to the server.
+- [ ] Configure production environment variables (`PORT`, `DATABASE_URL`, CORS origin list, and any rate-limit settings introduced by this plan).
+- [ ] Run the production migration command against Railway Postgres before enabling public traffic.
+- [ ] Point `api.dctycoon.arnav.tech` DNS to the Railway-provided domain.
+- [ ] Add `api.dctycoon.arnav.tech` as a custom domain in Railway and wait for TLS issuance.
+- [ ] Verify `/healthz`, `/version`, player registration, leaderboard submission, and leaderboard reads against the Railway URL.
+- [ ] Update the web frontend production environment to use `https://api.dctycoon.arnav.tech`.
+- [ ] Decide whether to enable the backend publicly immediately or keep leaderboard submission disabled behind a frontend flag.
+
 ## Changelog
 
 - 2026-05-18 — Created initial backend leaderboard foundation plan.
+- 2026-05-18 — Started implementation and added a manual post-code rollout checklist.
