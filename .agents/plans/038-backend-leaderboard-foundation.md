@@ -13,10 +13,10 @@ owner: server
   - [x] 1.1 Choose and scaffold the server HTTP boundary
   - [x] 1.2 Add health, version, and environment validation endpoints
   - [x] 1.3 Add server test utilities for API requests
-- [ ] **Phase 2 — Player identity without passwords**
+- [x] **Phase 2 — Player identity without passwords**
   - [x] 2.1 Model username registration and anonymous player ids
   - [x] 2.2 Implement username availability and registration endpoints
-  - [ ] 2.3 Wire frontend startup/play flow to register a username
+  - [x] 2.3 Wire frontend startup/play flow to register a username
 - [ ] **Phase 3 — Leaderboard persistence**
   - [ ] 3.1 Add Postgres schema and migration workflow
   - [ ] 3.2 Implement leaderboard submission storage

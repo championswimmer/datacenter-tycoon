@@ -1,4 +1,5 @@
 import type { Difficulty } from "@datacenter-tycoon/game-logic";
+import type { StoredPlayerIdentity } from "../../store/playerIdentity.js";
 import { formatGameDateShort, tickToGameDate } from "../../store/gameTime.js";
 import type { SaveInfo } from "../../store/persist.js";
 import gameBannerUrl from "@assets/images/game-banner-001.jpg";
@@ -8,11 +9,17 @@ import styles from "./StartScreen.module.css";
 interface StartScreenProps {
   hasSavedGame: boolean;
   latestSave: SaveInfo | null;
+  playerIdentity: StoredPlayerIdentity | null;
+  usernameDraft: string;
+  statusMessage: string | null;
+  startError: string | null;
+  isStarting: boolean;
   selectedDifficulty: Difficulty;
   onSelectDifficulty: (difficulty: Difficulty) => void;
-  onPlay: () => void;
+  onUsernameDraftChange: (username: string) => void;
+  onPlay: () => void | Promise<void>;
   onLoadGame: () => void;
-  onNewGame: () => void;
+  onNewGame: () => void | Promise<void>;
 }
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -29,8 +36,14 @@ const timestampFormatter = new Intl.DateTimeFormat(undefined, {
 export function StartScreen({
   hasSavedGame,
   latestSave,
+  playerIdentity,
+  usernameDraft,
+  statusMessage,
+  startError,
+  isStarting,
   selectedDifficulty,
   onSelectDifficulty,
+  onUsernameDraftChange,
   onPlay,
   onLoadGame,
   onNewGame,
@@ -96,6 +109,49 @@ export function StartScreen({
           </p>
         </div>
 
+        {playerIdentity ? (
+          <div className={styles.identityCard}>
+            <div className={styles.saveSummaryLabel}>Online identity</div>
+            <div className={styles.saveSummaryValue}>{playerIdentity.username}</div>
+            <p className={styles.identityHint}>
+              This browser will submit future leaderboard runs as this player.
+            </p>
+          </div>
+        ) : (
+          <div className={styles.identitySection}>
+            <label className={styles.identityLabel} htmlFor="start-username">
+              Leaderboard name
+            </label>
+            <input
+              id="start-username"
+              className={styles.identityInput}
+              type="text"
+              autoComplete="nickname"
+              spellCheck={false}
+              maxLength={24}
+              value={usernameDraft}
+              onChange={(event) => onUsernameDraftChange(event.target.value)}
+              placeholder="Acme Cloud"
+            />
+            <p className={styles.identityHint}>
+              Pick a display name for this browser before your first run. If the backend is down,
+              you can still keep playing locally.
+            </p>
+          </div>
+        )}
+
+        {statusMessage && (
+          <div className={styles.statusMessage} role="status">
+            {statusMessage}
+          </div>
+        )}
+
+        {startError && (
+          <div className={styles.errorMessage} role="alert">
+            {startError}
+          </div>
+        )}
+
         {hasSavedGame ? (
           <>
             {latestSave && (
@@ -125,15 +181,25 @@ export function StartScreen({
               <button type="button" className={styles.primaryAction} onClick={onLoadGame}>
                 Load Game
               </button>
-              <button type="button" className={styles.secondaryAction} onClick={onNewGame}>
-                New Game
+              <button
+                type="button"
+                className={styles.secondaryAction}
+                onClick={onNewGame}
+                disabled={isStarting}
+              >
+                {isStarting ? "Starting…" : "New Game"}
               </button>
             </div>
           </>
         ) : (
           <div className={styles.actions}>
-            <button type="button" className={styles.playAction} onClick={onPlay}>
-              Play
+            <button
+              type="button"
+              className={styles.playAction}
+              onClick={onPlay}
+              disabled={isStarting}
+            >
+              {isStarting ? "Starting…" : "Play"}
             </button>
           </div>
         )}

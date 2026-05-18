@@ -291,6 +291,17 @@ describe("session creation helpers", () => {
     expect(session.store.getState().difficulty).toBe("easy");
   });
 
+  it("creates a fresh session with a requested player name", () => {
+    const session = createFreshSession({
+      difficulty: "easy",
+      playerName: "Acme Cloud",
+    });
+
+    expect(session.isFreshStart).toBe(true);
+    expect(session.store.getState().difficulty).toBe("easy");
+    expect(session.store.getState().player.name).toBe("Acme Cloud");
+  });
+
   it("restores a loaded session when a save exists", () => {
     const state = reduce(newGame(77), { type: "Tick" });
     writeSave(state);

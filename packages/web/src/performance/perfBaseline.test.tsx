@@ -333,8 +333,17 @@ describe("web performance baseline harness", () => {
             playerName: TEST_PLAYER,
             updatedAt: Date.now(),
           }}
+          playerIdentity={{
+            playerId: "player_perf",
+            username: TEST_PLAYER,
+          }}
+          usernameDraft={TEST_PLAYER}
+          statusMessage={null}
+          startError={null}
+          isStarting={false}
           selectedDifficulty="hard"
           onSelectDifficulty={() => {}}
+          onUsernameDraftChange={() => {}}
           onPlay={() => {}}
           onLoadGame={() => {}}
           onNewGame={() => {}}
