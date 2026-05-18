@@ -8,7 +8,7 @@ import {
 } from "@datacenter-tycoon/game-logic";
 import type { RackActivityView } from "@datacenter-tycoon/game-logic";
 import type { RackMaintenanceView } from "../../store/selectors.js";
-import { Grid } from "./Grid.js";
+import { Grid, getGridColumnIndexes, getGridRowModels, getRackPlacementLookup } from "./Grid.js";
 import { nextDcId, nextRackPlacementId } from "../../store/ids.js";
 
 function buildState() {
@@ -64,6 +64,17 @@ function activityMapFor(
 }
 
 describe("Grid", () => {
+  it("reuses memoized placement lookups and coordinate lists for unchanged inputs", () => {
+    const { state, dcId } = buildState();
+    const dc = state.datacenters.find((entry) => entry.id === dcId)!;
+
+    expect(getRackPlacementLookup(dc.placements)).toBe(getRackPlacementLookup(dc.placements));
+    expect(getGridRowModels(dc.spec.rows, dc.spec.positionsPerRow)).toBe(
+      getGridRowModels(dc.spec.rows, dc.spec.positionsPerRow),
+    );
+    expect(getGridColumnIndexes(dc.spec.positionsPerRow)).toBe(getGridColumnIndexes(dc.spec.positionsPerRow));
+  });
+
   it("renders correct number of empty slots for a garage DC (2×4=8)", () => {
     const { state, dcId } = buildState();
     const dc = state.datacenters.find(d => d.id === dcId)!;

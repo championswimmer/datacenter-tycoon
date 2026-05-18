@@ -22,7 +22,7 @@ owner: web
   - [x] 3.2 Stabilize market-contract card props and child components
   - [x] 3.3 Collapse duplicate historical-contract scans
 - [ ] **Phase 4 — Floor grid and visual primitive optimisation**
-  - [ ] 4.1 Memoize rack placement lookup and slot coordinate lists
+  - [x] 4.1 Memoize rack placement lookup and slot coordinate lists
   - [ ] 4.2 Reduce large grid DOM and mobile/desktop duplicate work
   - [ ] 4.3 Replace repeated decorative element allocation in rack/progress primitives
   - [ ] 4.4 Reduce costly rack tile paint effects
@@ -250,6 +250,7 @@ Optimisation principles:
 
 ## Changelog
 
+- 2026-05-18 — Completed Phase 4.1 with cached floor-grid placement lookups, row models, and column indexes plus regression coverage for stable references.
 - 2026-05-18 — Completed Phase 3.3 by summarizing historical contract counts in a single selector pass for the history footer.
 - 2026-05-18 — Completed Phase 3.2 by carrying stable market-card view models through the contracts page and memoizing market child primitives/selectors.
 - 2026-05-18 — Completed Phase 3.1 by precomputing active-contract margin, opex attribution, buffer warnings, and SLA hint data in stable selectors.
