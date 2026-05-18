@@ -11,6 +11,7 @@ See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) fo
 - [`037-subticks.md`](./037-subticks.md) — Introduce day-level subticks beneath monthly ticks for repairs, SLA accounting, and other lightweight intra-month simulation. _status: completed_
 - [`037-web-ui-performance-optimisation.md`](./037-web-ui-performance-optimisation.md) — Audit and optimise the React web UI for render frequency, derived-data churn, DOM size, persistence jank, and asset weight. _status: created_
 - [`037-core-game-logic-performance-optimisation.md`](./037-core-game-logic-performance-optimisation.md) — Profile and optimise core game-logic hot paths across tick processing, capacity queries, state lookups, and derived views. _status: created_
+- [`038-backend-leaderboard-foundation.md`](./038-backend-leaderboard-foundation.md) — Build the first deployable backend for username registration, top-level leaderboard submissions, and Railway-hosted infrastructure. _status: created_
 
 ## Archive
 
