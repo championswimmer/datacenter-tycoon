@@ -1,16 +1,11 @@
+import { LEADERBOARD_METRIC_KEYS, totalLeaderboardCapacity } from "@datacenter-tycoon/game-logic";
 import type { PlayersRepository } from "../players/repository.js";
 import type { LeaderboardRepository } from "./repository.js";
 import type { LeaderboardMetrics, LeaderboardRunRecord } from "./types.js";
 
 export const LEADERBOARD_QUERY_METRICS = [
-  "money",
-  "cumulativeRevenue",
-  "totalServers",
+  ...LEADERBOARD_METRIC_KEYS,
   "totalCapacity",
-  "computeCapacity",
-  "memoryCapacity",
-  "storageCapacity",
-  "gpuCapacity",
 ] as const;
 
 export type LeaderboardQueryMetric = (typeof LEADERBOARD_QUERY_METRICS)[number];
@@ -99,10 +94,7 @@ export function getMetricValue(
   metric: LeaderboardQueryMetric,
 ): number {
   if (metric === "totalCapacity") {
-    return run.metrics.computeCapacity
-      + run.metrics.memoryCapacity
-      + run.metrics.storageCapacity
-      + run.metrics.gpuCapacity;
+    return totalLeaderboardCapacity(run.metrics);
   }
 
   return run.metrics[metric];

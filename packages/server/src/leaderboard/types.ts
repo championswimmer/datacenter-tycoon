@@ -1,24 +1,10 @@
-export const LEADERBOARD_METRIC_KEYS = [
-  "money",
-  "cumulativeRevenue",
-  "totalServers",
-  "computeCapacity",
-  "memoryCapacity",
-  "storageCapacity",
-  "gpuCapacity",
-] as const;
+import {
+  LEADERBOARD_METRIC_KEYS,
+  type LeaderboardMetrics,
+} from "@datacenter-tycoon/game-logic";
 
-export type LeaderboardMetricKey = (typeof LEADERBOARD_METRIC_KEYS)[number];
-
-export interface LeaderboardMetrics {
-  money: number;
-  cumulativeRevenue: number;
-  totalServers: number;
-  computeCapacity: number;
-  memoryCapacity: number;
-  storageCapacity: number;
-  gpuCapacity: number;
-}
+export type { LeaderboardMetricKey, LeaderboardMetrics } from "@datacenter-tycoon/game-logic";
+export { LEADERBOARD_METRIC_KEYS } from "@datacenter-tycoon/game-logic";
 
 export interface LeaderboardRunSubmission {
   playerId: string;
