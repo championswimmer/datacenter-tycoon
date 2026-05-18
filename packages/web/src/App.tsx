@@ -18,9 +18,13 @@ const ThemePlayground = lazy(
 
 type StartChoice = "load" | "new";
 
-function createAppSession(choice: StartChoice, difficulty: Difficulty): StoreSession {
+function createAppSession(
+  choice: StartChoice,
+  difficulty: Difficulty,
+  latestSaveGameId: string | null,
+): StoreSession {
   if (choice === "load") {
-    return createLoadedSession() ?? createFreshSession(difficulty);
+    return createLoadedSession(latestSaveGameId ?? undefined) ?? createFreshSession(difficulty);
   }
 
   return createFreshSession(difficulty);
@@ -53,12 +57,12 @@ function useAppSession(): AppSessionController {
   }, []);
 
   const replaceSession = useCallback((choice: StartChoice) => {
-    const nextSession = createAppSession(choice, selectedDifficulty);
+    const nextSession = createAppSession(choice, selectedDifficulty, latestSave?.gameId ?? null);
     sessionRef.current?.stopAutosave();
     sessionRef.current = nextSession;
     setSession(nextSession);
-    setLatestSave(getLatestSaveInfo());
-  }, [selectedDifficulty]);
+    setLatestSave((currentLatestSave) => currentLatestSave);
+  }, [latestSave?.gameId, selectedDifficulty]);
 
   return {
     session,

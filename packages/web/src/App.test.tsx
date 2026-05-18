@@ -71,24 +71,31 @@ describe("App start flow", () => {
     expect(screen.getByText("Acme Cloud")).toBeTruthy();
   });
 
-  it("enters the existing save when Load Game is clicked", () => {
+  it("enters the existing save when Load Game is clicked without re-reading latest save info", () => {
     persistMocks.latestSave = savedGameInfo;
 
     render(<App />);
+    const initialReadCount = persistMocks.getLatestSaveInfo.mock.calls.length;
+
     fireEvent.click(screen.getByRole("button", { name: "Load Game" }));
 
     expect(persistMocks.createLoadedSession).toHaveBeenCalledTimes(1);
+    expect(persistMocks.createLoadedSession).toHaveBeenCalledWith(savedGameInfo.gameId);
+    expect(persistMocks.getLatestSaveInfo.mock.calls.length).toBe(initialReadCount);
     expect(screen.getByTestId("shell").getAttribute("data-auto-open")).toBe("false");
   });
 
-  it("creates a fresh session when New Game is clicked", () => {
+  it("creates a fresh session when New Game is clicked without re-reading latest save info", () => {
     persistMocks.latestSave = savedGameInfo;
 
     render(<App />);
+    const initialReadCount = persistMocks.getLatestSaveInfo.mock.calls.length;
+
     fireEvent.click(screen.getByRole("button", { name: "New Game" }));
 
     expect(persistMocks.createFreshSession).toHaveBeenCalledTimes(1);
     expect(persistMocks.createFreshSession).toHaveBeenCalledWith("hard");
+    expect(persistMocks.getLatestSaveInfo.mock.calls.length).toBe(initialReadCount);
     expect(screen.getByTestId("shell").getAttribute("data-auto-open")).toBe("true");
   });
 
