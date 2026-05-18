@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
-import { DAYS_PER_TICK, contractDealScore } from "@datacenter-tycoon/game-logic";
+import { memo, useCallback, useState } from "react";
+import { DAYS_PER_TICK } from "@datacenter-tycoon/game-logic";
 import type {
   Capacity,
   Contract,
@@ -8,11 +8,11 @@ import type {
 import { useSelector, useGameDispatch } from "../../store/storeContext.js";
 import {
   selectAllDatacenters,
-  selectMarketContractViews,
   selectReliabilitySummary,
   selectSubtick,
   selectTick,
   type ContractAssignmentOptionView,
+  type MarketContractView,
 } from "../../store/selectors.js";
 import { useTickFraction } from "../../store/tickFractionStore.js";
 import { monthsAndDaysBetween, formatRemaining } from "../../store/gameTime.js";
@@ -68,9 +68,8 @@ function fitDisplayStatus(
   return fitStatus;
 }
 
-export function MarketList({ contracts }: { contracts: Contract[] }) {
-  const datacenters = useSelector(selectAllDatacenters);
-  const marketContractViews = useSelector(selectMarketContractViews);
+export function MarketList({ contractViews }: { contractViews: MarketContractView[] }) {
+  const datacenterCount = useSelector(selectAllDatacenters).length;
   const tick = useSelector(selectTick);
   const subtick = useSelector(selectSubtick);
   const reliability = useSelector(selectReliabilitySummary);
@@ -78,11 +77,6 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
   const fraction = useTickFraction();
 
   const [accepting, setAccepting] = useState<string | null>(null);
-
-  const marketViewById = useMemo(
-    () => new Map(marketContractViews.map((view) => [view.contract.id, view])),
-    [marketContractViews],
-  );
 
   const handleAccept = useCallback((contractId: string, dcId: string) => {
     dispatch({
@@ -93,29 +87,25 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
     setAccepting(null);
   }, [dispatch]);
 
-  if (contracts.length === 0) {
+  if (contractViews.length === 0) {
     return <p className={styles.empty}>No contracts match the current filter.</p>;
   }
 
   return (
     <div className={styles.list}>
-      {contracts.map((contract) => {
-        const contractView = marketViewById.get(contract.id);
-        const fitSummary = contractView?.fitSummary;
-        const affinity = contractView?.affinity;
+      {contractViews.map((view) => {
+        const contract = view.contract;
         const fit = fitDisplayStatus(
-          affinity?.restricted ?? false,
-          contractView?.eligibleDatacenterIds ?? [],
-          fitSummary?.fitStatus ?? "none",
-          datacenters.length,
+          view.affinity.restricted,
+          view.eligibleDatacenterIds,
+          view.fitSummary.fitStatus,
+          datacenterCount,
         );
         const { months, days } = monthsAndDaysBetween(tick, (subtick + fraction) / DAYS_PER_TICK, contract.expiresAtTick, 0);
         const expired = months <= 0 && days <= 0;
         const expiryLabel = expired ? "EXPIRED" : formatRemaining(months, days);
         const urgent = !expired && months === 0 && days <= 7;
         const isAccepting = accepting === contract.id;
-        const networkFree = fitSummary?.networkAvailable ?? ZERO_CAPACITY;
-        const score = contractDealScore(contract);
         const category = CATEGORY_MAP[contract.name];
         const reliabilityHint = (reliability.band === "silver" || reliability.band === "bronze")
           ? {
@@ -162,24 +152,22 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
               </div>
               <div className={styles.financials}>
                 <div className={styles.payment}>{fmt(contract.monthlyPayment)}<span className={styles.unit}>/mo</span></div>
-                <div className={styles.dealScore}>{dealScoreLabel(score)}</div>
+                <div className={styles.dealScore}>{dealScoreLabel(view.dealScore)}</div>
                 <div className={styles.penalty}>−{fmt(contract.penaltyPerMonth)}<span className={styles.unit}>/mo breach</span></div>
               </div>
             </div>
 
             <RequirementsRow reqs={contract.requirements} />
             <AffinitySummary
-              restricted={affinity?.restricted ?? false}
-              badgeLabel={affinity?.badgeLabel ?? "ANY REGION"}
-              detail={affinity?.restricted
-                ? `Allowed regions: ${affinity.allowedRegions.join(", ")}`
-                : "Deployable from any region."}
+              restricted={view.affinity.restricted}
+              badgeLabel={view.affinity.badgeLabel}
+              detail={view.affinityDetail}
             />
-            <CapacityComparison reqs={contract.requirements} free={networkFree} />
+            <CapacityComparison reqs={contract.requirements} free={view.networkAvailable ?? ZERO_CAPACITY} />
             <div className={styles.meta}>
-              <span>{contractView?.slaProgress.slaTargetPercent ?? contract.slaTargetPercent}% SLA</span>
+              <span>{view.slaProgress.slaTargetPercent}% SLA</span>
               <span className={styles.dot}>·</span>
-              <span>up to {contractView?.slaProgress.maxFailedDays ?? 0} failed day{(contractView?.slaProgress.maxFailedDays ?? 0) === 1 ? "" : "s"}/mo</span>
+              <span>up to {view.slaProgress.maxFailedDays} failed day{view.slaProgress.maxFailedDays === 1 ? "" : "s"}/mo</span>
               <span className={styles.dot}>·</span>
               <span>{contract.slaTargetPercent >= 95 ? "strict penalty protection" : contract.slaTargetPercent <= 80 ? "forgiving anchor uptime" : "balanced uptime target"}</span>
             </div>
@@ -192,14 +180,15 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
               <button
                 className={styles.acceptBtn}
                 onClick={() => setAccepting(contract.id)}
-                disabled={fit !== "fits" || datacenters.length === 0}
+                disabled={fit !== "fits" || datacenterCount === 0}
               >
                 ACCEPT CONTRACT
               </button>
             ) : (
               <DcSelector
                 contract={contract}
-                assignmentOptions={contractView?.assignmentOptions ?? []}
+                eligibleOptions={view.eligibleAssignmentOptions}
+                blockedOptions={view.blockedAssignmentOptions}
                 onSelect={(dcId) => handleAccept(contract.id, dcId)}
                 onCancel={() => setAccepting(null)}
               />
@@ -211,7 +200,7 @@ export function MarketList({ contracts }: { contracts: Contract[] }) {
   );
 }
 
-function RequirementsRow({ reqs }: { reqs: Contract["requirements"] }) {
+const RequirementsRow = memo(function RequirementsRow({ reqs }: { reqs: Contract["requirements"] }) {
   const items = [
     reqs.vCpu > 0 && { label: "vCPU", val: reqs.vCpu.toLocaleString(), color: "cyan" },
     reqs.ramGb > 0 && { label: "RAM", val: `${reqs.ramGb.toLocaleString()} GB`, color: "blue" },
@@ -229,9 +218,8 @@ function RequirementsRow({ reqs }: { reqs: Contract["requirements"] }) {
       ))}
     </div>
   );
-}
-
-function AffinitySummary({
+});
+const AffinitySummary = memo(function AffinitySummary({
   restricted,
   badgeLabel,
   detail,
@@ -249,9 +237,8 @@ function AffinitySummary({
       <span className={styles.affinityDetail}>{detail}</span>
     </div>
   );
-}
-
-function CapacityComparison({ reqs, free }: { reqs: Contract["requirements"]; free: Capacity }) {
+});
+const CapacityComparison = memo(function CapacityComparison({ reqs, free }: { reqs: Contract["requirements"]; free: Capacity }) {
   const items = [
     { label: "vCPU", req: reqs.vCpu, free: free.vCpu, suffix: "" },
     { label: "RAM", req: reqs.ramGb, free: free.ramGb, suffix: " GB" },
@@ -280,22 +267,20 @@ function CapacityComparison({ reqs, free }: { reqs: Contract["requirements"]; fr
       </div>
     </div>
   );
-}
-
-function DcSelector({
+});
+const DcSelector = memo(function DcSelector({
   contract,
-  assignmentOptions,
+  eligibleOptions,
+  blockedOptions,
   onSelect,
   onCancel,
 }: {
   contract: Contract;
-  assignmentOptions: ContractAssignmentOptionView[];
+  eligibleOptions: ContractAssignmentOptionView[];
+  blockedOptions: ContractAssignmentOptionView[];
   onSelect: (dcId: string) => void;
   onCancel: () => void;
 }) {
-  const eligibleOptions = assignmentOptions.filter((option) => option.regionEligible);
-  const blockedOptions = assignmentOptions.filter((option) => !option.regionEligible);
-
   return (
     <div className={styles.dcSelector}>
       <span className={styles.dcSelectorLabel}>Click an eligible datacenter to accept this contract:</span>
@@ -340,4 +325,4 @@ function DcSelector({
       <button className={styles.dcCancelBtn} onClick={onCancel}>Cancel</button>
     </div>
   );
-}
+});

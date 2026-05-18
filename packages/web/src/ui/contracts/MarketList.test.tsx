@@ -12,6 +12,7 @@ import { createGameStore } from "../../store/gameStore.js";
 import { StoreProvider } from "../../store/storeContext.js";
 import { nextDcId, nextRackPlacementId } from "../../store/ids.js";
 import { MarketList } from "./MarketList.js";
+import { selectMarketContractViews } from "../../store/selectors.js";
 
 function buildMarketState(): GameState {
   let state = newGame(42, { playerName: "Acme Corp" });
@@ -163,9 +164,10 @@ function buildWrongRegionState(): GameState {
 
 function renderMarket(state = buildMarketState()) {
   const store = createGameStore(state);
+  const contractIds = new Set(store.getState().contractMarket.map((contract) => contract.id));
   render(
     <StoreProvider store={store}>
-      <MarketList contracts={store.getState().contractMarket} />
+      <MarketList contractViews={selectMarketContractViews(store.getState()).filter((view) => contractIds.has(view.contract.id))} />
     </StoreProvider>,
   );
   return store;

@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { contractDealScore } from "@datacenter-tycoon/game-logic";
 import { MarketList } from "./MarketList.js";
 import { ActiveList } from "./ActiveList.js";
 import { CompletedList } from "./CompletedList.js";
@@ -7,8 +6,7 @@ import { useSelector } from "../../store/storeContext.js";
 import {
   selectActiveContracts,
   selectHistoricalContracts,
-  selectMarket,
-  selectMarketFitSummaries,
+  selectMarketContractViews,
   selectReliabilitySummary,
   selectReliabilityMarketEffectSummary,
 } from "../../store/selectors.js";
@@ -39,17 +37,11 @@ export function ContractsPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [filter, setFilter] = useState<FilterKey>("all");
 
-  const market = useSelector(selectMarket);
-  const marketFitSummaries = useSelector(selectMarketFitSummaries);
+  const marketViews = useSelector(selectMarketContractViews);
   const active = useSelector(selectActiveContracts);
   const history = useSelector(selectHistoricalContracts);
   const reliability = useSelector(selectReliabilitySummary);
   const reliabilityFx = useSelector(selectReliabilityMarketEffectSummary);
-
-  const fitSummaryById = useMemo(
-    () => new Map(marketFitSummaries.map((summary) => [summary.contractId, summary])),
-    [marketFitSummaries],
-  );
 
   const handleSort = (key: SortKey) => {
     if (key === sortKey) {
@@ -61,34 +53,34 @@ export function ContractsPage() {
   };
 
   const filteredAndSorted = useMemo(() => {
-    let list = [...market];
+    let list = [...marketViews];
 
     if (filter === "fits") {
-      list = list.filter((contract) => fitSummaryById.get(contract.id)?.fitStatus === "fits");
+      list = list.filter((view) => view.fitSummary.fitStatus === "fits");
     } else if (filter === "highValue") {
-      list = list.filter((contract) => contractDealScore(contract) >= 1.2);
+      list = list.filter((view) => view.dealScore >= 1.2);
     } else if (filter === "rush") {
-      list = list.filter((contract) => contract.urgency === "rush");
+      list = list.filter((view) => view.contract.urgency === "rush");
     } else if (filter === "anchor") {
-      list = list.filter((contract) => contract.urgency === "anchor");
+      list = list.filter((view) => view.contract.urgency === "anchor");
     }
 
     const dir = sortDir === "asc" ? 1 : -1;
     list.sort((a, b) => {
       switch (sortKey) {
         case "payment":
-          return dir * (a.monthlyPayment - b.monthlyPayment);
+          return dir * (a.contract.monthlyPayment - b.contract.monthlyPayment);
         case "term":
-          return dir * (a.termMonths - b.termMonths);
+          return dir * (a.contract.termMonths - b.contract.termMonths);
         case "expiry":
-          return dir * (a.expiresAtTick - b.expiresAtTick);
+          return dir * (a.contract.expiresAtTick - b.contract.expiresAtTick);
         case "score":
-          return dir * (contractDealScore(a) - contractDealScore(b));
+          return dir * (a.dealScore - b.dealScore);
       }
     });
 
     return list;
-  }, [filter, fitSummaryById, market, sortDir, sortKey]);
+  }, [filter, marketViews, sortDir, sortKey]);
 
   return (
     <div className={styles.page}>
@@ -131,7 +123,7 @@ export function ContractsPage() {
           onClick={() => setTab("market")}
         >
           MARKET
-          <span className={styles.badge}>{market.length}</span>
+          <span className={styles.badge}>{marketViews.length}</span>
         </button>
         <button
           role="tab"
@@ -189,7 +181,7 @@ export function ContractsPage() {
       )}
 
       <div className={styles.content} role="tabpanel">
-        {tab === "market" && <MarketList contracts={filteredAndSorted} />}
+        {tab === "market" && <MarketList contractViews={filteredAndSorted} />}
         {tab === "active" && <ActiveList />}
         {tab === "history" && <CompletedList />}
       </div>

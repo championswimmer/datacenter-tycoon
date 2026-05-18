@@ -20,6 +20,7 @@ import { ActiveList } from "../ui/contracts/ActiveList.js";
 import { MarketList } from "../ui/contracts/MarketList.js";
 import { Grid } from "../ui/floor/Grid.js";
 import type { RackMaintenanceView } from "../store/selectors.js";
+import { selectMarketContractViews } from "../store/selectors.js";
 import type { RackActivityView } from "@datacenter-tycoon/game-logic";
 
 interface RenderMetric {
@@ -354,7 +355,7 @@ describe("web performance baseline harness", () => {
       measureRenderScenario(
         "market-contracts-page",
         <StoreProvider store={createGameStore(contractsState)}>
-          <MarketList contracts={contractsState.contractMarket} />
+          <MarketList contractViews={selectMarketContractViews(contractsState)} />
         </StoreProvider>,
       ),
       measureRenderScenario(
