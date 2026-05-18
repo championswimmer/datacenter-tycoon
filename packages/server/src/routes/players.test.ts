@@ -1,0 +1,142 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { apiRequest, createTestApp } from "../test-utils/app.js";
+import type { PlayersRepository, RegisterPlayerInput } from "../players/repository.js";
+import { UsernameUnavailableError } from "../players/repository.js";
+
+test("GET /players/availability reports a username as available", async () => {
+  const { app } = createTestApp();
+  const { response, json } = await apiRequest<{
+    username: string;
+    available: boolean;
+  }>(app, "/players/availability?username=Acme%20Cloud");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(json, {
+    username: "Acme Cloud",
+    available: true,
+  });
+});
+
+test("GET /players/availability reports duplicate normalized usernames as unavailable", async () => {
+  const { app } = createTestApp();
+
+  await apiRequest(app, "/players", {
+    method: "POST",
+    body: JSON.stringify({ username: "Acme Cloud" }),
+    headers: { "content-type": "application/json" },
+  });
+
+  const { response, json } = await apiRequest<{
+    username: string;
+    available: boolean;
+  }>(app, "/players/availability?username=  acme   cloud  ");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(json, {
+    username: "acme cloud",
+    available: false,
+  });
+});
+
+test("POST /players registers a username and returns the new player identity", async () => {
+  const { app } = createTestApp();
+  const { response, json } = await apiRequest<{
+    playerId: string;
+    username: string;
+  }>(app, "/players", {
+    method: "POST",
+    body: JSON.stringify({ username: "  Acme Cloud  " }),
+    headers: { "content-type": "application/json" },
+  });
+
+  assert.equal(response.status, 201);
+  assert.equal(json?.username, "Acme Cloud");
+  assert.match(json?.playerId ?? "", /^player_[a-f0-9]{32}$/);
+});
+
+test("POST /players rejects duplicate usernames with a stable error code", async () => {
+  const { app } = createTestApp();
+
+  await apiRequest(app, "/players", {
+    method: "POST",
+    body: JSON.stringify({ username: "Acme Cloud" }),
+    headers: { "content-type": "application/json" },
+  });
+
+  const { response, json } = await apiRequest<{
+    error: { code: string; message: string };
+  }>(app, "/players", {
+    method: "POST",
+    body: JSON.stringify({ username: "acme cloud" }),
+    headers: { "content-type": "application/json" },
+  });
+
+  assert.equal(response.status, 409);
+  assert.equal(json?.error.code, "USERNAME_UNAVAILABLE");
+});
+
+test("POST /players rejects invalid usernames", async () => {
+  const { app } = createTestApp();
+  const { response, json } = await apiRequest<{
+    error: { code: string; message: string };
+  }>(app, "/players", {
+    method: "POST",
+    body: JSON.stringify({ username: "!!" }),
+    headers: { "content-type": "application/json" },
+  });
+
+  assert.equal(response.status, 400);
+  assert.equal(json?.error.code, "INVALID_USERNAME");
+});
+
+test("POST /players surfaces persistence failures as internal errors", async () => {
+  class BrokenPlayersRepository implements PlayersRepository {
+    async findByNormalizedUsername(): Promise<null> {
+      return null;
+    }
+
+    async findByPlayerId(): Promise<null> {
+      return null;
+    }
+
+    async createPlayer(_input: RegisterPlayerInput): Promise<never> {
+      throw new Error("database unavailable");
+    }
+
+    async touchPlayer(): Promise<void> {}
+  }
+
+  const { app } = createTestApp({
+    services: {
+      players: new BrokenPlayersRepository(),
+    },
+  });
+  const { response, json } = await apiRequest<{
+    error: { code: string; message: string };
+  }>(app, "/players", {
+    method: "POST",
+    body: JSON.stringify({ username: "Acme Cloud" }),
+    headers: { "content-type": "application/json" },
+  });
+
+  assert.equal(response.status, 500);
+  assert.equal(json?.error.code, "INTERNAL_SERVER_ERROR");
+  assert.match(json?.error.message ?? "", /database unavailable/);
+});
+
+test("GET /players/availability rejects invalid usernames", async () => {
+  const { app } = createTestApp();
+  const { response, json } = await apiRequest<{
+    error: { code: string; message: string };
+  }>(app, "/players/availability?username=%20%20");
+
+  assert.equal(response.status, 400);
+  assert.equal(json?.error.code, "INVALID_USERNAME");
+});
+
+test("service-level username unavailable errors preserve their user-friendly contract", async () => {
+  const error = new UsernameUnavailableError("Username is already taken.");
+
+  assert.equal(error.code, "USERNAME_UNAVAILABLE");
+});

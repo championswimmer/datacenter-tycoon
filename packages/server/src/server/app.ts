@@ -1,5 +1,17 @@
 import type { AppDependencies } from "../types.js";
 
+export class HttpError extends Error {
+  readonly status: number;
+  readonly code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.name = "HttpError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
 export interface ServerRoute {
   method: string;
   pathname: string;
@@ -68,6 +80,18 @@ export function jsonResponse(
 }
 
 function defaultErrorHandler(error: unknown): Response {
+  if (error instanceof HttpError) {
+    return jsonResponse(
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+        },
+      },
+      { status: error.status },
+    );
+  }
+
   const message = error instanceof Error ? error.message : "Unknown server error";
 
   return jsonResponse(

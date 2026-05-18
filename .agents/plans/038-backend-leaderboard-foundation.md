@@ -15,7 +15,7 @@ owner: server
   - [x] 1.3 Add server test utilities for API requests
 - [ ] **Phase 2 — Player identity without passwords**
   - [x] 2.1 Model username registration and anonymous player ids
-  - [ ] 2.2 Implement username availability and registration endpoints
+  - [x] 2.2 Implement username availability and registration endpoints
   - [ ] 2.3 Wire frontend startup/play flow to register a username
 - [ ] **Phase 3 — Leaderboard persistence**
   - [ ] 3.1 Add Postgres schema and migration workflow
