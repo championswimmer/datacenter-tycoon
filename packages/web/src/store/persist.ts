@@ -10,6 +10,9 @@ import { attachAudioEvents } from "./audioEvents.js";
 
 const SAVE_PREFIX = "datacenter-tycoon:save-v1";
 const SAVE_INDEX_KEY = "datacenter-tycoon:save-index";
+const BYTE_ENCODER = new TextEncoder();
+let saveIndexCache: SaveInfo[] | null = null;
+let lastSaveAudit: SaveStorageAudit | null = null;
 
 export function getSaveKey(gameId: string): string {
   return `${SAVE_PREFIX}:${gameId}`;
@@ -23,11 +26,74 @@ export interface SaveInfo {
   updatedAt: number;
 }
 
+export interface SaveStorageAudit {
+  payloadBytes: number;
+  indexBytes: number;
+  totalBytes: number;
+}
+
+export interface SaveWriteOptions {
+  payloadWarnBytes?: number;
+  indexWarnBytes?: number;
+}
+
+export const SAVE_PAYLOAD_WARN_BYTES = 128 * 1024;
+export const SAVE_INDEX_WARN_BYTES = 32 * 1024;
+
+function cloneSaveInfo(info: SaveInfo): SaveInfo {
+  return { ...info };
+}
+
+function cloneSaveIndex(index: SaveInfo[]): SaveInfo[] {
+  return index.map(cloneSaveInfo);
+}
+
+function byteLength(value: string): number {
+  return BYTE_ENCODER.encode(value).byteLength;
+}
+
+function buildSaveInfo(state: GameState, updatedAt = Date.now()): SaveInfo {
+  return {
+    gameId: state.gameId,
+    tick: state.tick,
+    cash: state.player.cash,
+    playerName: state.player.name,
+    updatedAt,
+  };
+}
+
+function upsertSaveIndex(index: SaveInfo[], info: SaveInfo): SaveInfo[] {
+  const nextIndex = cloneSaveIndex(index);
+  const existingIndex = nextIndex.findIndex((entry) => entry.gameId === info.gameId);
+
+  if (existingIndex >= 0) {
+    nextIndex.splice(existingIndex, 1);
+  }
+
+  nextIndex.unshift(cloneSaveInfo(info));
+  return nextIndex;
+}
+
+function setSaveIndexCache(index: SaveInfo[]): void {
+  saveIndexCache = cloneSaveIndex(index);
+}
+
+export function invalidateSaveIndexCache(): void {
+  saveIndexCache = null;
+}
+
 export function getSaveIndex(): SaveInfo[] {
+  if (saveIndexCache) {
+    return cloneSaveIndex(saveIndexCache);
+  }
+
   try {
     const raw = localStorage.getItem(SAVE_INDEX_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const parsed = raw ? JSON.parse(raw) as SaveInfo[] : [];
+    setSaveIndexCache(parsed);
+    return cloneSaveIndex(parsed);
   } catch {
+    setSaveIndexCache([]);
     return [];
   }
 }
@@ -40,33 +106,57 @@ export function hasAnySaves(): boolean {
   return getLatestSaveInfo() !== null;
 }
 
-function updateSaveIndex(state: GameState): void {
-  const index = getSaveIndex();
-  const existingIndex = index.findIndex(s => s.gameId === state.gameId);
-  const info: SaveInfo = {
-    gameId: state.gameId,
-    tick: state.tick,
-    cash: state.player.cash,
-    playerName: state.player.name,
-    updatedAt: Date.now(),
+function buildSaveIndexSnapshot(state: GameState, updatedAt = Date.now()): {
+  index: SaveInfo[];
+  latest: SaveInfo;
+  indexJson: string;
+  indexBytes: number;
+} {
+  const latest = buildSaveInfo(state, updatedAt);
+  const index = upsertSaveIndex(getSaveIndex(), latest);
+  const indexJson = JSON.stringify(index);
+
+  return {
+    index,
+    latest,
+    indexJson,
+    indexBytes: byteLength(indexJson),
   };
+}
 
-  if (existingIndex >= 0) {
-    const item = index[existingIndex];
-    if (item) {
-        item.tick = info.tick;
-        item.cash = info.cash;
-        item.playerName = info.playerName;
-        item.updatedAt = info.updatedAt;
-        // Move to top
-        index.splice(existingIndex, 1);
-        index.unshift(item);
-    }
-  } else {
-    index.unshift(info);
+export function inspectSaveStorage(state: GameState, updatedAt = Date.now()): SaveStorageAudit {
+  const payloadBytes = byteLength(serialize(state));
+  const { indexBytes } = buildSaveIndexSnapshot(state, updatedAt);
+
+  return {
+    payloadBytes,
+    indexBytes,
+    totalBytes: payloadBytes + indexBytes,
+  };
+}
+
+export function getLastSaveAudit(): SaveStorageAudit | null {
+  return lastSaveAudit;
+}
+
+function isQuotaExceededError(error: unknown): boolean {
+  return error instanceof DOMException && (
+    error.name === "QuotaExceededError"
+    || error.name === "NS_ERROR_DOM_QUOTA_REACHED"
+    || error.code === 22
+  );
+}
+
+function warnIfSaveIsLarge(
+  audit: SaveStorageAudit,
+  payloadWarnBytes: number,
+  indexWarnBytes: number,
+): void {
+  if (audit.payloadBytes > payloadWarnBytes || audit.indexBytes > indexWarnBytes) {
+    console.warn(
+      `[persist] Large save snapshot: payload=${audit.payloadBytes}B, index=${audit.indexBytes}B, total=${audit.totalBytes}B`,
+    );
   }
-
-  localStorage.setItem(SAVE_INDEX_KEY, JSON.stringify(index));
 }
 
 export function getCurrentGameId(): string | null {
@@ -94,21 +184,50 @@ export function loadSave(keyOrGameId: string): GameState | null {
 }
 
 /** Persist a GameState snapshot to localStorage. Silently swallows quota errors. */
-export function writeSave(state: GameState): void {
+export function writeSave(
+  state: GameState,
+  options: SaveWriteOptions = {},
+): SaveStorageAudit | null {
+  const payloadWarnBytes = options.payloadWarnBytes ?? SAVE_PAYLOAD_WARN_BYTES;
+  const indexWarnBytes = options.indexWarnBytes ?? SAVE_INDEX_WARN_BYTES;
+
   try {
     const key = getSaveKey(state.gameId);
-    localStorage.setItem(key, serialize(state));
-    updateSaveIndex(state);
+    const payloadJson = serialize(state);
+    const payloadBytes = byteLength(payloadJson);
+    const { index, indexJson, indexBytes } = buildSaveIndexSnapshot(state);
+
+    localStorage.setItem(key, payloadJson);
+    localStorage.setItem(SAVE_INDEX_KEY, indexJson);
+    setSaveIndexCache(index);
+
+    lastSaveAudit = {
+      payloadBytes,
+      indexBytes,
+      totalBytes: payloadBytes + indexBytes,
+    };
+    warnIfSaveIsLarge(lastSaveAudit, payloadWarnBytes, indexWarnBytes);
+    return lastSaveAudit;
   } catch (err) {
-    console.warn("[persist] Failed to write save:", err);
+    const snapshot = inspectSaveStorage(state);
+    lastSaveAudit = snapshot;
+    if (isQuotaExceededError(err)) {
+      console.warn(
+        `[persist] Failed to write save because localStorage quota was exceeded (payload=${snapshot.payloadBytes}B, index=${snapshot.indexBytes}B).`,
+      );
+    } else {
+      console.warn("[persist] Failed to write save:", err);
+    }
+    return null;
   }
 }
 
 /** Remove the save from localStorage (used by "New Game"). */
 export function clearSave(gameId: string): void {
   localStorage.removeItem(getSaveKey(gameId));
-  const index = getSaveIndex().filter(s => s.gameId !== gameId);
+  const index = getSaveIndex().filter((entry) => entry.gameId !== gameId);
   localStorage.setItem(SAVE_INDEX_KEY, JSON.stringify(index));
+  setSaveIndexCache(index);
 }
 
 /** Wipe all game saves and the index from localStorage. */
@@ -120,6 +239,8 @@ export function clearAllSaves(): void {
     }
     localStorage.removeItem(SAVE_INDEX_KEY);
     localStorage.removeItem("datacenter-tycoon:save-v1"); // Legacy key
+    setSaveIndexCache([]);
+    lastSaveAudit = null;
   } catch (err) {
     console.warn("[persist] Failed to clear all saves:", err);
   }

@@ -9,11 +9,17 @@ import {
   bootstrapStore,
   AUTOSAVE_EVERY_TICKS,
   AUTOSAVE_TICK_DEBOUNCE_MS,
+  SAVE_INDEX_WARN_BYTES,
+  SAVE_PAYLOAD_WARN_BYTES,
   createFreshSession,
   createLoadedSession,
+  getLastSaveAudit,
   getLatestSaveInfo,
+  getSaveIndex,
   getSaveKey,
   hasAnySaves,
+  inspectSaveStorage,
+  invalidateSaveIndexCache,
 } from "./persist.js";
 import { createGameStore } from "./gameStore.js";
 
@@ -34,6 +40,7 @@ const TEST_KEY = "test:save";
 
 beforeEach(() => {
   vi.stubGlobal("localStorage", makeLocalStorageMock());
+  invalidateSaveIndexCache();
 });
 
 afterEach(() => {
@@ -81,19 +88,42 @@ describe("loadSave", () => {
 // ── writeSave ─────────────────────────────────────────────────────────────────
 
 describe("writeSave", () => {
-  it("writes to localStorage", () => {
+  it("writes to localStorage and records save-audit bytes", () => {
     const state = newGame(7);
-    writeSave(state);
+    const audit = writeSave(state);
     expect(localStorage.setItem).toHaveBeenCalled();
+    expect(audit?.payloadBytes).toBeGreaterThan(0);
+    expect(audit?.indexBytes).toBeGreaterThan(0);
+    expect(getLastSaveAudit()).toEqual(audit);
+  });
+
+  it("can inspect save storage without writing", () => {
+    const state = newGame(13);
+    const audit = inspectSaveStorage(state);
+
+    expect(audit.payloadBytes).toBeGreaterThan(0);
+    expect(audit.indexBytes).toBeGreaterThan(0);
+    expect(audit.totalBytes).toBe(audit.payloadBytes + audit.indexBytes);
+  });
+
+  it("warns when payload/index size exceeds configured thresholds", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    writeSave(newGame(5), {
+      payloadWarnBytes: SAVE_PAYLOAD_WARN_BYTES - SAVE_PAYLOAD_WARN_BYTES + 1,
+      indexWarnBytes: SAVE_INDEX_WARN_BYTES - SAVE_INDEX_WARN_BYTES + 1,
+    });
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("Large save snapshot"));
+    warnSpy.mockRestore();
   });
 
   it("silently swallows quota errors", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.mocked(localStorage.setItem).mockImplementationOnce(() => {
-      throw new DOMException("QuotaExceededError");
+      throw new DOMException("Quota exceeded", "QuotaExceededError");
     });
     expect(() => writeSave(newGame(1))).not.toThrow();
-    expect(warnSpy).toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("quota was exceeded"));
     warnSpy.mockRestore();
   });
 });
@@ -137,6 +167,20 @@ describe("save index helpers", () => {
 
     expect(hasAnySaves()).toBe(true);
     expect(getLatestSaveInfo()?.gameId).toBe(latest.gameId);
+  });
+
+  it("memoizes index reads until the cache is invalidated", () => {
+    const state = newGame(3);
+    writeSave(state);
+    vi.mocked(localStorage.getItem).mockClear();
+
+    expect(getSaveIndex()).toHaveLength(1);
+    expect(getLatestSaveInfo()?.gameId).toBe(state.gameId);
+    expect(localStorage.getItem).not.toHaveBeenCalled();
+
+    invalidateSaveIndexCache();
+    expect(getSaveIndex()).toHaveLength(1);
+    expect(localStorage.getItem).toHaveBeenCalledTimes(1);
   });
 
   it("returns false/null when no saves exist", () => {
