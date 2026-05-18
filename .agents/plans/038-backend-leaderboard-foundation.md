@@ -30,7 +30,7 @@ owner: server
   - [x] 5.2 Add Postgres provisioning and environment documentation
   - [x] 5.3 Decide whether Redis is required for leaderboard caching
 - [ ] **Phase 6 — Operations, CI, and documentation**
-  - [ ] 6.1 Add server CI coverage for build, typecheck, tests, and migrations
+  - [x] 6.1 Add server CI coverage for build, typecheck, tests, and migrations
   - [ ] 6.2 Document local development and Railway deployment
   - [ ] 6.3 Add release-readiness checks for the first backend launch
 
