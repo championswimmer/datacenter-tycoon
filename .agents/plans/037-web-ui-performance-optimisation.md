@@ -14,7 +14,7 @@ owner: web
   - [x] 1.2 Define bundle, save-size, and render-frequency budgets
   - [x] 1.3 Add targeted regression coverage for selector stability
 - [ ] **Phase 2 — Selector and subscription churn**
-  - [ ] 2.1 Add selector-level memoization for expensive aggregate views
+  - [x] 2.1 Add selector-level memoization for expensive aggregate views
   - [ ] 2.2 Replace repeated linear lookups with indexed selector helpers
   - [ ] 2.3 Reduce work performed by every store subscriber on each tick
 - [ ] **Phase 3 — Contract UI render-path optimisation**
@@ -250,6 +250,7 @@ Optimisation principles:
 
 ## Changelog
 
+- 2026-05-18 — Completed Phase 2.1 with memoized aggregate selectors for contracts, fabric, capacity, opex, rack power, and resource usage.
 - 2026-05-18 — Added selector stability regression coverage and selector-level structural-sharing caches.
 - 2026-05-18 — Added build-checked warning budgets for JS, CSS, image, save-size, and tick render scenarios.
 - 2026-05-18 — Added a repeatable Vitest-based performance baseline harness and baseline notes.
