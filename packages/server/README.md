@@ -97,6 +97,10 @@ Redis is **not required** for the first leaderboard launch. Indexed Postgres que
 
 See [`docs/redis-decision.md`](./docs/redis-decision.md) for the rationale and revisit criteria.
 
+## Release readiness
+
+See [`docs/release-checklist.md`](./docs/release-checklist.md) for the first-launch smoke tests, rollback steps, and operational checks.
+
 ## Trust model
 
 This first backend launch accepts **top-level run summaries**, not full save snapshots or deterministic replays.
