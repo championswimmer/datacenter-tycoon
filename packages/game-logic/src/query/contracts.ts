@@ -56,6 +56,15 @@ function canCoverRequirements(capacity: Capacity, requirements: Capacity): boole
 	);
 }
 
+function maxCapacity(a: Capacity, b: Capacity): Capacity {
+	return {
+		vCpu: Math.max(a.vCpu, b.vCpu),
+		ramGb: Math.max(a.ramGb, b.ramGb),
+		storageTb: Math.max(a.storageTb, b.storageTb),
+		gpuFlops: Math.max(a.gpuFlops, b.gpuFlops),
+	};
+}
+
 export interface ContractBuckets<TContract extends Pick<Contract, "assignedDcId" | "lifecycleState"> = Contract> {
 	market: TContract[];
 	live: TContract[];
@@ -87,6 +96,7 @@ export interface ContractAssignmentFitSummary {
 	regionAffinity: ContractRegionAffinitySummary;
 	fitStatus: ContractAssignmentFitStatus;
 	networkAvailable: Capacity;
+	bestPoolAvailable: Capacity;
 	candidates: ContractAssignmentFitCandidate[];
 	eligibleDcIds: DatacenterId[];
 	fittingDcIds: DatacenterId[];
@@ -289,6 +299,7 @@ function summarizeContractAssignmentFitForContractWithContext(
 	const candidates: ContractAssignmentFitCandidate[] = [];
 	const eligibleDcIds: DatacenterId[] = [];
 	const fittingDcIds: DatacenterId[] = [];
+	let bestPoolAvailable = { ...EMPTY_CAPACITY };
 
 	for (const template of context.candidateTemplates) {
 		const fitsCapacity = canCoverRequirements(template.available, contract.requirements);
@@ -306,6 +317,7 @@ function summarizeContractAssignmentFitForContractWithContext(
 		candidates.push(candidate);
 		if (regionEligible) {
 			eligibleDcIds.push(candidate.dcId);
+			bestPoolAvailable = maxCapacity(bestPoolAvailable, candidate.available);
 		}
 		if (candidate.fits) {
 			fittingDcIds.push(candidate.dcId);
@@ -340,6 +352,7 @@ function summarizeContractAssignmentFitForContractWithContext(
 		regionAffinity,
 		fitStatus,
 		networkAvailable,
+		bestPoolAvailable,
 		candidates,
 		eligibleDcIds,
 		fittingDcIds,
