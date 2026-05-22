@@ -189,6 +189,19 @@ function useAppSession(): AppSessionController {
           }
 
           console.warn("[leaderboard] Failed to sync run summary:", error.message);
+
+          // Permanent 4xx errors (except 429 rate-limiting) are not transient:
+          // mark this snapshot as already-attempted so we don't re-submit on
+          // every store tick and mislead the user about backend availability.
+          const isPermanentClientError = error.status !== null
+            && error.status >= 400
+            && error.status < 500
+            && error.status !== 429;
+
+          if (isPermanentClientError) {
+            lastSubmittedSignature = signature;
+            return;
+          }
         }
 
         setStatusMessage((current) => current ?? LEADERBOARD_SYNC_UNAVAILABLE_NOTICE);
