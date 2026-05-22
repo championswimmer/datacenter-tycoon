@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ConfigError, loadServerConfig } from "./config.js";
+import type { PlayersRepository } from "./players/repository.js";
 import { createTestApp } from "./test-utils/app.js";
 
 test("createTestApp accepts fake service overrides without contacting infrastructure", () => {
-  const fakePlayersRepository = {
-    register: () => Promise.resolve({ playerId: "player_test", username: "archivist" }),
+  const fakePlayersRepository: PlayersRepository = {
+    findByNormalizedUsername: () => Promise.resolve(null),
+    findByPlayerId: () => Promise.resolve(null),
+    createPlayer: () => Promise.reject(new Error("not implemented")),
+    touchPlayer: () => Promise.resolve(),
   };
   const { dependencies } = createTestApp({
     services: {
