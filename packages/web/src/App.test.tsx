@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { newGame } from "@datacenter-tycoon/game-logic";
 import type { Difficulty, GameState } from "@datacenter-tycoon/game-logic";
 import { createGameStore } from "./store/gameStore.js";
@@ -66,6 +66,10 @@ beforeEach(() => {
   persistMocks.getLatestSaveInfo.mockImplementation(() => persistMocks.latestSave);
   persistMocks.createFreshSession.mockImplementation(() => makeSession("fresh"));
   persistMocks.createLoadedSession.mockImplementation(() => makeSession("loaded"));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("App start flow", () => {
@@ -156,6 +160,7 @@ describe("App start flow", () => {
   });
 
   it("falls back to local play when the backend is unavailable", async () => {
+    vi.useFakeTimers();
     fetchMock.mockRejectedValue(new TypeError("fetch failed"));
 
     render(<App />);
@@ -164,15 +169,23 @@ describe("App start flow", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Play" }));
 
-    await waitFor(() => {
-      expect(persistMocks.createFreshSession).toHaveBeenCalledWith({
-        difficulty: "hard",
-        playerName: "Offline Ops",
-      });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
     });
 
+    expect(persistMocks.createFreshSession).toHaveBeenCalledWith({
+      difficulty: "hard",
+      playerName: "Offline Ops",
+    });
     expect(localStorage.getItem(PLAYER_IDENTITY_KEY)).toBeNull();
     expect(screen.getByText(/stay local until the backend is reachable again/i)).toBeTruthy();
+
+    act(() => {
+      vi.advanceTimersByTime(3_000);
+    });
+
+    expect(screen.queryByText(/stay local until the backend is reachable again/i)).toBeNull();
   });
 
   it("uses the selected difficulty for a fresh game", async () => {

@@ -35,6 +35,7 @@ type StartChoice = "load" | "new";
 
 const OFFLINE_LEADERBOARD_NOTICE = "Online leaderboard registration is unavailable right now. New runs from this device will stay local until the backend is reachable again.";
 const LEADERBOARD_SYNC_UNAVAILABLE_NOTICE = "Online leaderboard sync is unavailable right now. This run will keep progressing locally until the backend is reachable again.";
+const TRANSIENT_STATUS_MESSAGE_DURATION_MS = 3_000;
 
 function createAppSession(
   choice: StartChoice,
@@ -147,6 +148,22 @@ function useAppSession(): AppSessionController {
       setIsStarting(false);
     }
   }, [playerIdentity, replaceSession, usernameDraft]);
+
+  useEffect(() => {
+    if (statusMessage !== OFFLINE_LEADERBOARD_NOTICE) {
+      return undefined;
+    }
+
+    const timeout = setTimeout(() => {
+      setStatusMessage((current) =>
+        current === OFFLINE_LEADERBOARD_NOTICE ? null : current
+      );
+    }, TRANSIENT_STATUS_MESSAGE_DURATION_MS);
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [statusMessage]);
 
   useEffect(() => {
     if (!session || !playerIdentity) {
