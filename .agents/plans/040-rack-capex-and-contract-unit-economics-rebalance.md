@@ -1,7 +1,7 @@
 ---
 name: Rack Capex and Contract Unit-Economics Rebalance
 description: Reprice compute, memory, and storage racks against rough real-world hardware costs and rebalance contract payouts to restore healthier margins.
-status: created
+status: started
 created: 2026-05-24
 updated: 2026-05-24
 owner: game-logic
@@ -10,7 +10,7 @@ owner: game-logic
 ## Progress
 
 - [ ] **Phase 1 — Audit and target bands**
-  - [ ] 1.1 Add a deterministic economics audit that reports rack capex/unit, minimum opex/unit, and generated contract payout/unit
+  - [x] 1.1 Add a deterministic economics audit that reports rack capex/unit, minimum opex/unit, and generated contract payout/unit
   - [ ] 1.2 Lock target ordering and profitability bands for storage vs compute vs memory lanes
 - [ ] **Phase 2 — Rack capex and recurring-cost rebalance**
   - [ ] 2.1 Reprice storage racks so same-tier storage racks are cheaper than same-tier memory racks while preserving monotonic progression
