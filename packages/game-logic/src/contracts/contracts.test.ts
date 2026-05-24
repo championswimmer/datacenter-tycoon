@@ -19,6 +19,7 @@ import {
 	generateContract,
 	generateContractForTermBand,
 	marketDifficulty,
+	monthlyPaymentForRequirements,
 	monthlyRateMultiplierForTerm,
 	refreshContractMarket,
 } from "../contracts/index.js";
@@ -163,6 +164,17 @@ test("generateContract is deterministic for the same seed and difficulty", () =>
 	assert.ok([80, 90, 95].includes(first.slaTargetPercent));
 	assert.deepEqual(first.currentSlaWindow, { sampledDays: 0, servedDays: 0, failedDays: 0 });
 	assert.ok(first.requirements.vCpu > 0 || first.requirements.ramGb > 0 || first.requirements.storageTb > 0);
+});
+
+
+test("monthlyPaymentForRequirements reproduces generated contract pricing", () => {
+	const difficulty = 0.45;
+	const contract = generateContract(createRng(12345), difficulty);
+
+	assert.equal(
+		monthlyPaymentForRequirements(contract.requirements, difficulty, contract.termMonths, contract.urgency),
+		contract.monthlyPayment,
+	);
 });
 
 const MODERN_CONTRACT_NAME_SUFFIXES = [

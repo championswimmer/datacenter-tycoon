@@ -200,12 +200,26 @@ const REQUIREMENT_UNITS = {
 	gpuFlops: 1_100,
 } as const;
 
-export const PRICING_WEIGHTS = {
+export type ContractPricingUnit = keyof ContractRequirements;
+export type ContractPricingWeights = Readonly<Record<ContractPricingUnit, number>>;
+
+export interface ContractPricingConfig {
+	baseMonthlyFee: Money;
+	weights: ContractPricingWeights;
+}
+
+export const PRICING_WEIGHTS: ContractPricingWeights = {
 	vCpu: 40,
 	ramGb: 1.8,
 	storageTb: 25,
 	gpuFlops: 35,
-} as const;
+};
+
+export const BASE_CONTRACT_MONTHLY_FEE = 5_000;
+export const DEFAULT_CONTRACT_PRICING: ContractPricingConfig = {
+	baseMonthlyFee: BASE_CONTRACT_MONTHLY_FEE,
+	weights: PRICING_WEIGHTS,
+};
 
 export const OFFER_DURATION_TICKS = 6;
 export const SHORT_TERM_MAX_MONTHS = 6;
@@ -283,6 +297,33 @@ export function monthlyRateMultiplierForTerm(termMonths: number): number {
 	);
 }
 
+export function contractDifficultyPriceMultiplier(difficulty: number): number {
+	return 0.8 + clampDifficulty(difficulty) * 0.25;
+}
+
+export function paymentMultiplierForUrgency(urgency: ContractUrgency): number {
+	switch (urgency) {
+		case "rush":
+			return 1.4;
+		case "anchor":
+			return 0.75;
+		default:
+			return 1;
+	}
+}
+
+export function contractMarginalPriceMultiplier(
+	difficulty: number,
+	termMonths: number,
+	urgency: ContractUrgency,
+): number {
+	return (
+		contractDifficultyPriceMultiplier(difficulty) *
+		paymentMultiplierForUrgency(urgency) *
+		monthlyRateMultiplierForTerm(termMonths)
+	);
+}
+
 export function contractTermBand(termMonths: number): ContractTermBand {
 	if (termMonths <= SHORT_TERM_MAX_MONTHS) {
 		return "short";
@@ -312,12 +353,30 @@ function createRequirements(rng: Rng, theme: ContractTheme, difficulty: number):
 	};
 }
 
-function contractValue(requirements: ContractRequirements): number {
+export function contractValue(
+	requirements: ContractRequirements,
+	pricingWeights: ContractPricingWeights = PRICING_WEIGHTS,
+): number {
 	return (
-		requirements.vCpu * PRICING_WEIGHTS.vCpu +
-		requirements.ramGb * PRICING_WEIGHTS.ramGb +
-		requirements.storageTb * PRICING_WEIGHTS.storageTb +
-		requirements.gpuFlops * PRICING_WEIGHTS.gpuFlops
+		requirements.vCpu * pricingWeights.vCpu +
+		requirements.ramGb * pricingWeights.ramGb +
+		requirements.storageTb * pricingWeights.storageTb +
+		requirements.gpuFlops * pricingWeights.gpuFlops
+	);
+}
+
+export function monthlyPaymentForRequirements(
+	requirements: ContractRequirements,
+	difficulty: number,
+	termMonths: number,
+	urgency: ContractUrgency,
+	pricing: ContractPricingConfig = DEFAULT_CONTRACT_PRICING,
+): Money {
+	return roundMoneyToNearest(
+		(pricing.baseMonthlyFee + contractValue(requirements, pricing.weights) * contractDifficultyPriceMultiplier(difficulty)) *
+			paymentMultiplierForUrgency(urgency) *
+			monthlyRateMultiplierForTerm(termMonths),
+		100,
 	);
 }
 
@@ -396,14 +455,12 @@ export function generateContract(
 	const theme = pickOne(rng, availableThemes(normalizedDifficulty, constraints));
 	const requirements = createRequirements(rng, theme, normalizedDifficulty);
 	const contractName = generateContractName(rng, theme);
-	const weightedValue = contractValue(requirements);
 
 	const urgencyRoll = rng.next();
 	const urgencyThresholds = urgencyThresholdsForPolicy(policy);
 	let urgency: ContractUrgency = "standard";
 	let offerDuration = OFFER_DURATION_TICKS;
 	let termMonths = rollTermMonths(rng, theme.standardTermRange, normalizedDifficulty);
-	let paymentMultiplier = 1;
 	let penaltyMultiplier = 1;
 
 	// Reliability only reshapes urgency thresholds and final term length. Difficulty,
@@ -412,12 +469,10 @@ export function generateContract(
 		urgency = "rush";
 		offerDuration = 2;
 		termMonths = rollTermMonths(rng, theme.rushTermRange, normalizedDifficulty);
-		paymentMultiplier = 1.4;
 		penaltyMultiplier = 1.2;
 	} else if (urgencyRoll < urgencyThresholds.anchorThreshold) {
 		urgency = "anchor";
 		termMonths = rollTermMonths(rng, theme.anchorTermRange, normalizedDifficulty);
-		paymentMultiplier = 0.75;
 		penaltyMultiplier = 0.6;
 	}
 
@@ -426,11 +481,7 @@ export function generateContract(
 	const tier: ContractTier = normalizedDifficulty < 0.35 ? 1 : normalizedDifficulty < 0.7 ? 2 : 3;
 	const regionAffinity = createRegionAffinity(rng, theme, regions, constraints.requireUnrestricted === true);
 
-	const termRateMultiplier = monthlyRateMultiplierForTerm(termMonths);
-	const monthlyPayment = roundMoneyToNearest(
-		(5_000 + weightedValue * (0.8 + normalizedDifficulty * 0.25)) * paymentMultiplier * termRateMultiplier,
-		100,
-	);
+	const monthlyPayment = monthlyPaymentForRequirements(requirements, normalizedDifficulty, termMonths, urgency);
 	const penaltyPerMonth = roundMoneyToNearest(
 		Math.max(1_000, monthlyPayment * (0.4 + rng.next() * 0.15)) * penaltyMultiplier,
 		100,
