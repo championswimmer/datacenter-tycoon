@@ -19,7 +19,7 @@ owner: game-logic
   - [x] 3.1 Reweight contract pricing toward vCPU and RAM, then choose the smallest payout uplift that fixes margins
   - [x] 3.2 Bump `BALANCE_VERSION` and update balance-sensitive tests
 - [ ] **Phase 4 — Validation and follow-through**
-  - [ ] 4.1 Verify starter, warehouse, and mixed-fleet economics with tests and scripted comparisons
+  - [x] 4.1 Verify starter, warehouse, and mixed-fleet economics with tests and scripted comparisons
   - [ ] 4.2 Record playtest outcomes and archive the plan after the rebalance ships
 
 ## Overview
