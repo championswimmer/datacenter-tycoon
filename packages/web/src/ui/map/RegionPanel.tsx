@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { canBuildInRegion, DATACENTER_CATALOG, FabricLinkError } from "@datacenter-tycoon/game-logic";
+import { canBuildInRegion, DATACENTER_CATALOG, FabricLinkError, regionalOpexMultiplierLabel } from "@datacenter-tycoon/game-logic";
 import type { Datacenter, Region } from "@datacenter-tycoon/game-logic";
 import { useGameDispatch, useSelector } from "../../store/storeContext.js";
 import { selectCash, selectRegionFabricSummary } from "../../store/selectors.js";
@@ -26,6 +26,7 @@ export function RegionPanel({ region, datacenters, onClose, onBuild }: RegionPan
 
   const powerRemaining = region.totalPowerAvailable - region.powerUsed;
   const staffRemaining = region.totalStaffAvailable - region.staffUsed;
+  const opexProfileLabel = regionalOpexMultiplierLabel(region.id);
 
   const powerRemainingPct = region.totalPowerAvailable > 0
     ? powerRemaining / region.totalPowerAvailable
@@ -116,6 +117,7 @@ export function RegionPanel({ region, datacenters, onClose, onBuild }: RegionPan
           <EconTile label="Staff Wage" value={`$${region.staffWage.toLocaleString()}/mo`} color="lime" />
           <EconTile label="Tax Rate" value={`${(region.taxRate * 100).toFixed(0)}%`} color="amber" />
         </div>
+        <p className={styles.fabricHint}>Regional OpEx profile: {opexProfileLabel} vs US East baseline.</p>
 
         {/* ── Availability ── */}
         <div className={styles.availability}>

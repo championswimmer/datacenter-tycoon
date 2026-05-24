@@ -12,7 +12,7 @@ const regions: Region[] = [
     city: "Ashburn",
     name: "US East",
     coordinates: { x: 24, y: 35.5 },
-    powerCostPerKwh: 0.07,
+    powerCostPerKwh: 0.08,
     staffWage: 6500,
     taxRate: 0.06,
     totalPowerAvailable: 10000,
@@ -26,8 +26,8 @@ const regions: Region[] = [
     city: "Boardman",
     name: "US West",
     coordinates: { x: 15, y: 33 },
-    powerCostPerKwh: 0.05,
-    staffWage: 5800,
+    powerCostPerKwh: 0.06,
+    staffWage: 6175,
     taxRate: 0.07,
     totalPowerAvailable: 8000,
     totalStaffAvailable: 400,
@@ -40,8 +40,8 @@ const regions: Region[] = [
     city: "Dublin",
     name: "EU West",
     coordinates: { x: 44, y: 26 },
-    powerCostPerKwh: 0.12,
-    staffWage: 5200,
+    powerCostPerKwh: 0.18,
+    staffWage: 5850,
     taxRate: 0.125,
     totalPowerAvailable: 5000,
     totalStaffAvailable: 350,
@@ -98,10 +98,10 @@ describe("RegionTable", () => {
       <RegionTable regions={regions} datacenters={[]} selectedRegionId={null} onSelectRegion={() => {}} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /Power/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Power Cap/i }));
     expect(getCodes(container)).toEqual(["IAD", "PDX", "DUB"]);
 
-    fireEvent.click(screen.getByRole("button", { name: /Power/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Power Cap/i }));
     expect(getCodes(container)).toEqual(["DUB", "PDX", "IAD"]);
   });
 
@@ -129,6 +129,15 @@ describe("RegionTable", () => {
     );
 
     expect(onSelectRegion).toHaveBeenCalledWith(regionId("us_east"));
+  });
+
+  it("renders regional labor and OpEx profile columns", () => {
+    render(
+      <RegionTable regions={regions} datacenters={[]} selectedRegionId={null} onSelectRegion={() => {}} />,
+    );
+
+    expect(screen.getByText("$6,500")).toBeTruthy();
+    expect(screen.getByText("Power 2.25x / Labor 0.90x")).toBeTruthy();
   });
 
   it("expands datacenter details beneath regions that already host facilities", () => {
