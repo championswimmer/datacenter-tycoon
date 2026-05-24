@@ -9,9 +9,9 @@ owner: game-logic
 
 ## Progress
 
-- [ ] **Phase 1 — Audit and target bands**
+- [x] **Phase 1 — Audit and target bands**
   - [x] 1.1 Add a deterministic economics audit that reports rack capex/unit, minimum opex/unit, and generated contract payout/unit
-  - [ ] 1.2 Lock target ordering and profitability bands for storage vs compute vs memory lanes
+  - [x] 1.2 Lock target ordering and profitability bands for storage vs compute vs memory lanes
 - [ ] **Phase 2 — Rack capex and recurring-cost rebalance**
   - [ ] 2.1 Reprice storage racks so same-tier storage racks are cheaper than same-tier memory racks while preserving monotonic progression
   - [ ] 2.2 Re-tune recurring maintenance so storage remains cheapest per TB without becoming the runaway ROI lane

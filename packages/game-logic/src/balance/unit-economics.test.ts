@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
-import { createUnitEconomicsAudit } from "./unit-economics.js";
+import { UNIT_ECONOMICS_TARGET_BANDS, createUnitEconomicsAudit, evaluateUnitEconomicsTargets } from "./unit-economics.js";
 
 test("unit economics audit reports the current deterministic rack and contract baseline", () => {
 	const audit = createUnitEconomicsAudit();
@@ -49,4 +49,59 @@ test("unit economics audit reports the current deterministic rack and contract b
 	assert.equal(s1.facilityLoadedOpexPerUnit.storageTb, 4.684);
 	assert.equal(s1.grossMarginPerPrimaryUnit, 17.693);
 	assert.equal(s1.paybackMonths, 9.043);
+});
+
+test("unit economics targets capture the current storage and memory skew before the rebalance lands", () => {
+	const evaluation = evaluateUnitEconomicsTargets(createUnitEconomicsAudit());
+
+	assert.deepEqual(UNIT_ECONOMICS_TARGET_BANDS, {
+		minimumGrossMarginPerPrimaryUnit: {
+			compute: 15,
+			memory: 0.7,
+			storage: 12,
+		},
+		maximumPaybackMonths: {
+			compute: 24,
+			memory: 45,
+		},
+		minimumStoragePaybackMonths: 10,
+		minimumStorageToFastestNonStoragePaybackRatio: 0.7,
+	});
+	assert.equal(evaluation.allSatisfied, false);
+	assert.deepEqual(evaluation.sameTierStorageCapexBelowMemory, {
+		0: false,
+		1: false,
+		2: false,
+		3: false,
+	});
+	assert.deepEqual(evaluation.storageCheapestCapexPerTbByTier, {
+		0: true,
+		1: true,
+		2: true,
+		3: true,
+	});
+	assert.deepEqual(evaluation.storageCheapestRackOnlyOpexPerTbByTier, {
+		0: true,
+		1: true,
+		2: true,
+		3: true,
+	});
+	assert.deepEqual(evaluation.storageCheapestFacilityLoadedOpexPerTbByTier, {
+		0: true,
+		1: true,
+		2: true,
+		3: true,
+	});
+	assert.deepEqual(evaluation.minimumGrossMarginPerPrimaryUnitMet, {
+		compute: true,
+		memory: false,
+		storage: true,
+	});
+	assert.deepEqual(evaluation.maximumPaybackMonthsMet, {
+		compute: true,
+		memory: false,
+	});
+	assert.equal(evaluation.minimumStoragePaybackMonthsMet, false);
+	assert.equal(evaluation.storagePaybackVsFastestNonStorageRatio, 0.417);
+	assert.equal(evaluation.storagePaybackRatioMet, false);
 });
