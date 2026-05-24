@@ -12,9 +12,9 @@ owner: game-logic
 - [x] **Phase 1 — Audit and target bands**
   - [x] 1.1 Add a deterministic economics audit that reports rack capex/unit, minimum opex/unit, and generated contract payout/unit
   - [x] 1.2 Lock target ordering and profitability bands for storage vs compute vs memory lanes
-- [ ] **Phase 2 — Rack capex and recurring-cost rebalance**
+- [x] **Phase 2 — Rack capex and recurring-cost rebalance**
   - [x] 2.1 Reprice storage racks so same-tier storage racks are cheaper than same-tier memory racks while preserving monotonic progression
-  - [ ] 2.2 Re-tune recurring maintenance so storage remains cheapest per TB without becoming the runaway ROI lane
+  - [x] 2.2 Re-tune recurring maintenance so storage remains cheapest per TB without becoming the runaway ROI lane
 - [ ] **Phase 3 — Contract pricing rebalance**
   - [ ] 3.1 Reweight contract pricing toward vCPU and RAM, then choose the smallest payout uplift that fixes margins
   - [ ] 3.2 Bump `BALANCE_VERSION` and update balance-sensitive tests
@@ -152,6 +152,7 @@ interface UnitEconomicsSnapshot {
 
 - File: `packages/game-logic/src/catalog/racks.ts`
 - Revisit `monthlyMaintenance` for storage and, if necessary, memory/compute racks after capex changes.
+- If the first-pass storage capex cut proves too deep in the audit, allow a small second-pass storage capex nudge upward while preserving the Phase 2.1 ordering guarantees.
 - Ensure storage stays operationally efficient per TB, but does not become the dominant “always buy this first” lane after the capex cut.
 - Use the audit from Phase 1 rather than intuition-only tuning.
 - Acceptance:
@@ -234,3 +235,4 @@ interface UnitEconomicsSnapshot {
 ## Changelog
 
 - 2026-05-24 — Created from rack-cost research, current catalog audit, and contract unit-economics review.
+- 2026-05-24 — Step 2.2 widened to permit a small second-pass storage capex nudge if the first cut over-buffs storage payback.

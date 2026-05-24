@@ -138,8 +138,8 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		powerDrawKw: 1.6,
 		heatOutputBtuPerHr: 5_459,
 		bandwidthGbps: 3,
-		capexCost: 30_000,
-		monthlyMaintenance: 320,
+		capexCost: 31_000,
+		monthlyMaintenance: 1_200,
 	},
 	S1: {
 		id: rackSpecId("S1"),
@@ -153,8 +153,8 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		powerDrawKw: 3.2,
 		heatOutputBtuPerHr: 10_918,
 		bandwidthGbps: 6,
-		capexCost: 60_000,
-		monthlyMaintenance: 640,
+		capexCost: 62_000,
+		monthlyMaintenance: 3_000,
 	},
 	S2: {
 		id: rackSpecId("S2"),
@@ -168,8 +168,8 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		powerDrawKw: 5.8,
 		heatOutputBtuPerHr: 19_789,
 		bandwidthGbps: 10,
-		capexCost: 150_000,
-		monthlyMaintenance: 1_600,
+		capexCost: 155_000,
+		monthlyMaintenance: 9_000,
 	},
 	S3: {
 		id: rackSpecId("S3"),
@@ -183,8 +183,8 @@ export const RACK_CATALOG: Record<string, RackSpec> = {
 		powerDrawKw: 12.8,
 		heatOutputBtuPerHr: 43_675,
 		bandwidthGbps: 18,
-		capexCost: 360_000,
-		monthlyMaintenance: 3_600,
+		capexCost: 365_000,
+		monthlyMaintenance: 22_000,
 	},
 	G0: {
 		id: rackSpecId("G0"),
