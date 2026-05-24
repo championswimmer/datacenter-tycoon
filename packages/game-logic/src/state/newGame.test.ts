@@ -60,8 +60,12 @@ test("newGame uses difficulty-based starting cash by default", () => {
 	const easyState = newGame(1, { difficulty: "easy" });
 	const hardState = newGame(1, { difficulty: "hard" });
 
+	assert.equal(DIFFICULTY_CONFIG.easy.startingCash, 8_000_000);
+	assert.equal(DIFFICULTY_CONFIG.hard.startingCash, 4_000_000);
 	assert.equal(easyState.player.cash, DIFFICULTY_CONFIG.easy.startingCash);
 	assert.equal(hardState.player.cash, DIFFICULTY_CONFIG.hard.startingCash);
+	assert.ok(easyState.player.cash > hardState.player.cash);
+	assert.ok(hardState.player.cash > 2_500_000);
 });
 
 test("newGame rejects invalid starting cash", () => {
