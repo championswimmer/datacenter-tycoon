@@ -1,4 +1,4 @@
-import { DATACENTER_CATALOG, RACK_CATALOG } from "@datacenter-tycoon/game-logic";
+import { DATACENTER_CATALOG, RACK_CATALOG, REGION_CATALOG } from "@datacenter-tycoon/game-logic";
 
 const rackKindOrder = {
 	compute: 0,
@@ -17,6 +17,11 @@ export function renderCatalogTab(): string[] {
 
 	return [
 		"Catalog",
+		"",
+		"Regions:",
+		...Object.values(REGION_CATALOG).map(
+			(region) => `  ${region.code}  ${region.city.padEnd(10)} ${region.name.padEnd(12)} power=$${region.powerCostPerKwh.toFixed(3)}/kWh  labor=$${region.staffWage.toLocaleString()}/mo`,
+		),
 		"",
 		"Datacenters:",
 		...Object.values(DATACENTER_CATALOG).map(

@@ -31,6 +31,8 @@ function describeRegion(regionIdValue: string): {
 	city?: string;
 	name?: string;
 	label: string;
+	powerCostPerKwh?: number;
+	staffWagePerMonth?: number;
 } {
 	const region = REGION_CATALOG[regionIdValue] ?? Object.values(REGION_CATALOG).find((entry) => entry.id === regionIdValue);
 	if (!region) {
@@ -43,6 +45,8 @@ function describeRegion(regionIdValue: string): {
 		city: region.city,
 		name: region.name,
 		label: `${region.code} · ${region.city} · ${region.name}`,
+		powerCostPerKwh: region.powerCostPerKwh,
+		staffWagePerMonth: region.staffWage,
 	};
 }
 
@@ -62,7 +66,11 @@ export async function runBuildDatacenterCommand(
 		clientFactory,
 	);
 
-	writeCommandResult(parsed, `Built datacenter ${dcId} in ${regionDetails.label}`, {
+	const regionOpexSummary = regionDetails.powerCostPerKwh !== undefined && regionDetails.staffWagePerMonth !== undefined
+		? `Power $${regionDetails.powerCostPerKwh.toFixed(3)}/kWh, Labor $${regionDetails.staffWagePerMonth.toLocaleString()}/mo`
+		: undefined;
+
+	writeCommandResult(parsed, `Built datacenter ${dcId} in ${regionDetails.label}${regionOpexSummary ? ` (${regionOpexSummary})` : ""}`, {
 		dcId,
 		specId,
 		region: regionDetails.id,
@@ -70,6 +78,8 @@ export async function runBuildDatacenterCommand(
 		regionCity: regionDetails.city,
 		regionName: regionDetails.name,
 		regionLabel: regionDetails.label,
+		powerCostPerKwh: regionDetails.powerCostPerKwh,
+		staffWagePerMonth: regionDetails.staffWagePerMonth,
 	});
 }
 

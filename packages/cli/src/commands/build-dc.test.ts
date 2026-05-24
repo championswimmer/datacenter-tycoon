@@ -46,6 +46,8 @@ test("runBuildDatacenterCommand prints region label in text output", async () =>
 
 	assert.deepEqual(actions, [{ type: "BuildDatacenter", specId: "garage", dcId: "dc-custom", regionId: FIRST_REGION_ID }]);
 	assert.match(printed[0] ?? "", new RegExp(`Built datacenter dc-custom in ${FIRST_REGION.code} .* ${FIRST_REGION.name}`));
+	assert.match(printed[0] ?? "", new RegExp(`Power \\\$${FIRST_REGION.powerCostPerKwh.toFixed(3).replace(".", "\\.")}/kWh`));
+	assert.match(printed[0] ?? "", /Labor \$[\d,]+\/mo/);
 });
 
 test("runBuildDatacenterCommand prints json output when --json is set", async () => {
@@ -73,6 +75,8 @@ test("runBuildDatacenterCommand prints json output when --json is set", async ()
 			regionCity: FIRST_REGION.city,
 			regionName: FIRST_REGION.name,
 			regionLabel: `${FIRST_REGION.code} · ${FIRST_REGION.city} · ${FIRST_REGION.name}`,
+			powerCostPerKwh: FIRST_REGION.powerCostPerKwh,
+			staffWagePerMonth: FIRST_REGION.staffWage,
 		},
 	});
 });
