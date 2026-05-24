@@ -9,10 +9,10 @@ owner: game-logic
 
 ## Progress
 
-- [ ] **Phase 1 — Research-backed balance model**
+- [x] **Phase 1 — Research-backed balance model**
   - [x] 1.1 Add regional OpEx multiplier constants and references
   - [x] 1.2 Derive region catalog power and wage values from multipliers
-  - [ ] 1.3 Add unit tests for effective regional OpEx values
+  - [x] 1.3 Add unit tests for effective regional OpEx values
 - [ ] **Phase 2 — Starting cash runway**
   - [ ] 2.1 Increase Easy and Hard starting cash
   - [ ] 2.2 Update new-game and difficulty tests
