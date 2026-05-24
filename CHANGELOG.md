@@ -3,6 +3,9 @@
 ## Unreleased
 
 ### Changed
+- bumped `@datacenter-tycoon/game-logic` `BALANCE_VERSION` to `8` for the regional OpEx and starting-cash rebalance
+- increased default hard starting cash to `4,000,000` and easy starting cash to `8,000,000`
+- derived regional electricity and staff-wage baselines from research-backed power/labor multipliers so location choice has clearer ongoing OpEx tradeoffs
 - bumped `@datacenter-tycoon/game-logic` `BALANCE_VERSION` to `6` for the rack-repair and contract-market rebalance
 - changed rack repairs to use rack-kind-aware targets: compute `3` days, memory `4`, storage `5`, and GPU `9` on hard difficulty before staffing bonuses apply
 - kept maintenance staffing as a repair-speed multiplier so extra maintenance heads still shorten every repair class, including GPUs
