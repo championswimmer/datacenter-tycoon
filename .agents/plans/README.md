@@ -2,11 +2,11 @@
 
 Numbered, phased implementation plans for Datacenter Tycoon.
 
-See [`.agents/skills/planning/SKILL.md`](../.agents/skills/planning/SKILL.md) for the full format and workflow.
+See [`../skills/planning/SKILL.md`](../skills/planning/SKILL.md) for the full format and workflow.
 
 ## Index
 
-- None currently. See [`./archive`](./archive/README.md) for completed plans.
+- [`040-rack-capex-and-contract-unit-economics-rebalance.md`](./040-rack-capex-and-contract-unit-economics-rebalance.md) — research-backed plan to reprice storage vs memory racks and retune contract unit economics.
 
 ## Archive
 
