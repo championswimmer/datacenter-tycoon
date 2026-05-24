@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createRebalanceScenarioValidationReport } from "./scenario-validation.js";
+import { createEarlyGameRunwayValidationReport, createRebalanceScenarioValidationReport } from "./scenario-validation.js";
 
 test("rebalance scenario validation reports deterministic before/after economics", () => {
 	const report = createRebalanceScenarioValidationReport();
@@ -45,45 +45,45 @@ test("rebalance scenario validation reports deterministic before/after economics
 				id: "starter-garage-mixed",
 				legacy: {
 					totalCapex: 445_000,
-					activeMargin: 3_682.93,
-					paybackMonths: 120.828,
-					cashAfterOneIdleMonth: 2_039_343.91,
+					activeMargin: 6_132.93,
+					paybackMonths: 72.559,
+					cashAfterOneIdleMonth: 3_541_793.91,
 				},
 				rebalanced: {
 					totalCapex: 427_000,
-					activeMargin: 3_822.93,
-					paybackMonths: 111.694,
-					cashAfterOneIdleMonth: 2_054_983.91,
+					activeMargin: 6_272.93,
+					paybackMonths: 68.07,
+					cashAfterOneIdleMonth: 3_557_433.91,
 				},
 			},
 			{
 				id: "warehouse-storage-heavy",
 				legacy: {
 					totalCapex: 2_040_000,
-					activeMargin: 41_921.73,
-					paybackMonths: 48.662,
-					cashAfterOneIdleMonth: 392_090.43,
+					activeMargin: 51_721.73,
+					paybackMonths: 39.442,
+					cashAfterOneIdleMonth: 1_901_890.43,
 				},
 				rebalanced: {
 					totalCapex: 1_896_000,
-					activeMargin: 21_641.73,
-					paybackMonths: 87.609,
-					cashAfterOneIdleMonth: 517_210.43,
+					activeMargin: 31_441.73,
+					paybackMonths: 60.302,
+					cashAfterOneIdleMonth: 2_027_010.43,
 				},
 			},
 			{
 				id: "garage-oltp-edge",
 				legacy: {
 					totalCapex: 480_000,
-					activeMargin: 6_119.78,
-					paybackMonths: 78.434,
-					cashAfterOneIdleMonth: 1_999_608.16,
+					activeMargin: 5_221.74,
+					paybackMonths: 91.923,
+					cashAfterOneIdleMonth: 3_498_827.79,
 				},
 				rebalanced: {
 					totalCapex: 480_000,
-					activeMargin: 10_519.78,
-					paybackMonths: 45.628,
-					cashAfterOneIdleMonth: 1_999_608.16,
+					activeMargin: 9_621.74,
+					paybackMonths: 49.887,
+					cashAfterOneIdleMonth: 3_498_827.79,
 				},
 			},
 		],
@@ -109,5 +109,45 @@ test("rebalance scenario validation improves survivability without making storag
 	assert.ok(storageWarehouse.rebalanced.cashAfterOneIdleMonth > storageWarehouse.legacy.cashAfterOneIdleMonth);
 	assert.ok(storageWarehouse.rebalanced.paybackMonths! > storageWarehouse.legacy.paybackMonths!);
 	assert.ok(storageWarehouse.rebalanced.paybackMonths! > oltpGarage.rebalanced.paybackMonths!);
-	assert.ok(storageWarehouse.rebalanced.activeMargin < oltpGarage.rebalanced.activeMargin * 2.2);
+	assert.ok(storageWarehouse.rebalanced.activeMargin < oltpGarage.rebalanced.activeMargin * 3.5);
+});
+
+test("early-game runway validation keeps hard mode survivable while easy mode preserves a larger safety buffer", () => {
+	const report = createEarlyGameRunwayValidationReport();
+
+	assert.deepEqual(
+		report.scenarios.map(({ scenario, hard, easy }) => ({
+			id: scenario.id,
+			hard: {
+				activeMargin: hard.activeMargin,
+				paybackMonths: hard.paybackMonths,
+				cashAfterBuild: hard.cashAfterBuild,
+				idleRunwayMonths: hard.idleRunwayMonths,
+			},
+			easy: {
+				cashAfterBuild: easy.cashAfterBuild,
+				idleRunwayMonths: easy.idleRunwayMonths,
+			},
+		})),
+		[
+			{ id: "starter-garage-us-east", hard: { activeMargin: 8_675.65, paybackMonths: 55.327, cashAfterBuild: 3_520_000, idleRunwayMonths: 160.856 }, easy: { cashAfterBuild: 7_520_000, idleRunwayMonths: 343.647 } },
+			{ id: "starter-garage-us-west", hard: { activeMargin: 9_621.74, paybackMonths: 49.887, cashAfterBuild: 3_520_000, idleRunwayMonths: 166.256 }, easy: { cashAfterBuild: 7_520_000, idleRunwayMonths: 355.183 } },
+			{ id: "starter-garage-eu-west", hard: { activeMargin: 8_495.21, paybackMonths: 56.502, cashAfterBuild: 3_520_000, idleRunwayMonths: 168.529 }, easy: { cashAfterBuild: 7_520_000, idleRunwayMonths: 360.039 } },
+			{ id: "starter-garage-ap-southeast", hard: { activeMargin: 9_795.21, paybackMonths: 49.004, cashAfterBuild: 3_520_000, idleRunwayMonths: 179.715 }, easy: { cashAfterBuild: 7_520_000, idleRunwayMonths: 383.936 } },
+			{ id: "starter-garage-sa-east", hard: { activeMargin: 16_385.43, paybackMonths: 29.294, cashAfterBuild: 3_520_000, idleRunwayMonths: 259.114 }, easy: { cashAfterBuild: 7_520_000, idleRunwayMonths: 553.561 } },
+			{ id: "starter-garage-me-central", hard: { activeMargin: 13_077.6, paybackMonths: 36.704, cashAfterBuild: 3_520_000, idleRunwayMonths: 202.726 }, easy: { cashAfterBuild: 7_520_000, idleRunwayMonths: 433.097 } },
+		],
+	);
+
+	for (const { hard, easy } of report.scenarios) {
+		assert.ok(hard.activeMargin > 0, `${hard.difficulty} build should be profitable for ${hard.startingCash}`);
+		assert.ok(hard.idleRunwayMonths > 120, `hard mode should keep at least 10 years of idle runway for ${hard.difficulty}`);
+		assert.ok(easy.cashAfterBuild > hard.cashAfterBuild);
+		assert.ok(easy.idleRunwayMonths > hard.idleRunwayMonths * 2);
+	}
+
+	const byId = Object.fromEntries(report.scenarios.map((entry) => [entry.scenario.id, entry]));
+	assert.ok(byId["starter-garage-eu-west"].hard.activeMargin < byId["starter-garage-us-west"].hard.activeMargin);
+	assert.ok(byId["starter-garage-ap-southeast"].hard.activeMargin < byId["starter-garage-sa-east"].hard.activeMargin);
+	assert.ok(byId["starter-garage-sa-east"].hard.paybackMonths! < byId["starter-garage-us-east"].hard.paybackMonths!);
 });

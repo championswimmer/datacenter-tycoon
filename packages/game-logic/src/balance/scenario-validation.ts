@@ -1,7 +1,8 @@
+import { DIFFICULTY_CONFIG, type DifficultyConfig } from "../balance/difficulty.js";
+import { RACK_IDLE_BASELINE_POWER_KW } from "../balance/power.js";
 import { DATACENTER_CATALOG } from "../catalog/datacenters.js";
 import { RACK_CATALOG } from "../catalog/racks.js";
 import { REGION_CATALOG } from "../catalog/regions.js";
-import { RACK_IDLE_BASELINE_POWER_KW } from "../balance/power.js";
 import { allocateRackActivitySnapshot, rackDemandByKindFromRequirements } from "../economy/rack-activity.js";
 import {
 	BANDWIDTH_USD_PER_GBPS_MONTH,
@@ -14,6 +15,7 @@ import type {
 	ContractRequirements,
 	ContractUrgency,
 	DatacenterSpecId,
+	Difficulty,
 	Money,
 	RackKind,
 	RackPlacementId,
@@ -35,6 +37,7 @@ export interface ScenarioValidationDefinition {
 }
 
 export interface ScenarioValidationOutcome {
+	startingCash: Money;
 	totalCapex: Money;
 	rackCapex: Money;
 	activeOpex: Money;
@@ -47,6 +50,10 @@ export interface ScenarioValidationOutcome {
 	idleRunwayMonths: number;
 }
 
+export interface DifficultyRunwayValidationOutcome extends ScenarioValidationOutcome {
+	difficulty: Difficulty;
+}
+
 export interface ScenarioValidationComparison {
 	scenario: ScenarioValidationDefinition;
 	legacy: ScenarioValidationOutcome;
@@ -57,6 +64,17 @@ export interface ScenarioValidationReport {
 	legacyPricing: ContractPricingConfig;
 	rebalancedPricing: ContractPricingConfig;
 	scenarios: ScenarioValidationComparison[];
+}
+
+export interface EarlyGameRunwayValidationComparison {
+	scenario: ScenarioValidationDefinition;
+	hard: DifficultyRunwayValidationOutcome;
+	easy: DifficultyRunwayValidationOutcome;
+}
+
+export interface EarlyGameRunwayValidationReport {
+	pricing: ContractPricingConfig;
+	scenarios: EarlyGameRunwayValidationComparison[];
 }
 
 export const LEGACY_PRE_REBALANCE_PRICING: ContractPricingConfig = {
@@ -140,6 +158,89 @@ export const REBALANCE_VALIDATION_SCENARIOS: readonly ScenarioValidationDefiniti
 			storageTb: 60,
 			gpuFlops: 0,
 		},
+		difficulty: 0.65,
+		termMonths: 3,
+		urgency: "standard",
+	},
+] as const;
+
+const EARLY_GAME_RUNWAY_REQUIREMENTS: ContractRequirements = {
+	vCpu: 320,
+	ramGb: 4_800,
+	storageTb: 60,
+	gpuFlops: 0,
+};
+
+const EARLY_GAME_RUNWAY_RACK_SPEC_IDS: readonly RackSpecId[] = [
+	RACK_CATALOG.C1!.id,
+	RACK_CATALOG.C1!.id,
+	RACK_CATALOG.M1!.id,
+	RACK_CATALOG.M1!.id,
+];
+
+export const EARLY_GAME_RUNWAY_VALIDATION_SCENARIOS: readonly ScenarioValidationDefinition[] = [
+	{
+		id: "starter-garage-us-east",
+		label: "Starter garage runway in US East",
+		datacenterId: DATACENTER_CATALOG.garage!.id,
+		regionId: REGION_CATALOG.us_east!.id,
+		rackSpecIds: EARLY_GAME_RUNWAY_RACK_SPEC_IDS,
+		requirements: EARLY_GAME_RUNWAY_REQUIREMENTS,
+		difficulty: 0.65,
+		termMonths: 3,
+		urgency: "standard",
+	},
+	{
+		id: "starter-garage-us-west",
+		label: "Starter garage runway in US West",
+		datacenterId: DATACENTER_CATALOG.garage!.id,
+		regionId: REGION_CATALOG.us_west!.id,
+		rackSpecIds: EARLY_GAME_RUNWAY_RACK_SPEC_IDS,
+		requirements: EARLY_GAME_RUNWAY_REQUIREMENTS,
+		difficulty: 0.65,
+		termMonths: 3,
+		urgency: "standard",
+	},
+	{
+		id: "starter-garage-eu-west",
+		label: "Starter garage runway in EU West",
+		datacenterId: DATACENTER_CATALOG.garage!.id,
+		regionId: REGION_CATALOG.eu_west!.id,
+		rackSpecIds: EARLY_GAME_RUNWAY_RACK_SPEC_IDS,
+		requirements: EARLY_GAME_RUNWAY_REQUIREMENTS,
+		difficulty: 0.65,
+		termMonths: 3,
+		urgency: "standard",
+	},
+	{
+		id: "starter-garage-ap-southeast",
+		label: "Starter garage runway in AP Southeast",
+		datacenterId: DATACENTER_CATALOG.garage!.id,
+		regionId: REGION_CATALOG.ap_southeast!.id,
+		rackSpecIds: EARLY_GAME_RUNWAY_RACK_SPEC_IDS,
+		requirements: EARLY_GAME_RUNWAY_REQUIREMENTS,
+		difficulty: 0.65,
+		termMonths: 3,
+		urgency: "standard",
+	},
+	{
+		id: "starter-garage-sa-east",
+		label: "Starter garage runway in SA East",
+		datacenterId: DATACENTER_CATALOG.garage!.id,
+		regionId: REGION_CATALOG.sa_east!.id,
+		rackSpecIds: EARLY_GAME_RUNWAY_RACK_SPEC_IDS,
+		requirements: EARLY_GAME_RUNWAY_REQUIREMENTS,
+		difficulty: 0.65,
+		termMonths: 3,
+		urgency: "standard",
+	},
+	{
+		id: "starter-garage-me-central",
+		label: "Starter garage runway in ME Central",
+		datacenterId: DATACENTER_CATALOG.garage!.id,
+		regionId: REGION_CATALOG.me_central!.id,
+		rackSpecIds: EARLY_GAME_RUNWAY_RACK_SPEC_IDS,
+		requirements: EARLY_GAME_RUNWAY_REQUIREMENTS,
 		difficulty: 0.65,
 		termMonths: 3,
 		urgency: "standard",
@@ -241,6 +342,7 @@ function scenarioOutcome(
 	scenario: ScenarioValidationDefinition,
 	pricing: ContractPricingConfig,
 	useLegacyStorageEconomics: boolean,
+	startingCash: Money = STARTING_CASH,
 ): ScenarioValidationOutcome {
 	const datacenter = Object.values(DATACENTER_CATALOG).find((candidate) => candidate.id === scenario.datacenterId);
 	if (!datacenter) {
@@ -266,11 +368,12 @@ function scenarioOutcome(
 	);
 	const activeMargin = roundMoney(monthlyRevenue - activeOpex);
 	const paybackMonths = activeMargin > 0 ? roundRatio(totalCapex / activeMargin) : null;
-	const cashAfterBuild = roundMoney(STARTING_CASH - totalCapex);
+	const cashAfterBuild = roundMoney(startingCash - totalCapex);
 	const cashAfterOneIdleMonth = roundMoney(cashAfterBuild - idleOpex);
 	const idleRunwayMonths = idleOpex > 0 ? roundRatio(cashAfterBuild / idleOpex) : Number.POSITIVE_INFINITY;
 
 	return {
+		startingCash,
 		totalCapex,
 		rackCapex: totalRackCapex,
 		activeOpex,
@@ -292,6 +395,31 @@ export function createRebalanceScenarioValidationReport(): ScenarioValidationRep
 			scenario,
 			legacy: scenarioOutcome(scenario, LEGACY_PRE_REBALANCE_PRICING, true),
 			rebalanced: scenarioOutcome(scenario, REBALANCED_SCENARIO_PRICING, false),
+		})),
+	};
+}
+
+function difficultyOutcome(
+	scenario: ScenarioValidationDefinition,
+	pricing: ContractPricingConfig,
+	difficulty: Difficulty,
+	config: DifficultyConfig,
+): DifficultyRunwayValidationOutcome {
+	return {
+		difficulty,
+		...scenarioOutcome(scenario, pricing, false, config.startingCash),
+	};
+}
+
+export function createEarlyGameRunwayValidationReport(
+	pricing: ContractPricingConfig = REBALANCED_SCENARIO_PRICING,
+): EarlyGameRunwayValidationReport {
+	return {
+		pricing,
+		scenarios: EARLY_GAME_RUNWAY_VALIDATION_SCENARIOS.map((scenario) => ({
+			scenario,
+			hard: difficultyOutcome(scenario, pricing, "hard", DIFFICULTY_CONFIG.hard),
+			easy: difficultyOutcome(scenario, pricing, "easy", DIFFICULTY_CONFIG.easy),
 		})),
 	};
 }

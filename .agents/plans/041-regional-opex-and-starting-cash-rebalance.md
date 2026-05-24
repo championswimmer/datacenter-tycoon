@@ -19,7 +19,7 @@ owner: game-logic
   - [x] 2.3 Bump balance version and document the rebalance
 - [ ] **Phase 3 — OpEx impact validation**
   - [x] 3.1 Extend unit-economics audit coverage for regional OpEx
-  - [ ] 3.2 Add scenario validation for early-game cash runway
+  - [x] 3.2 Add scenario validation for early-game cash runway
   - [ ] 3.3 Tune target values if validation shows broken payback or runway
 - [ ] **Phase 4 — Player-facing surfacing**
   - [ ] 4.1 Surface regional power and wage differences in CLI region/map views
