@@ -44,14 +44,14 @@ test("unit economics audit reports the current deterministic rack and contract b
 	assert.equal(m1.grossMarginPerPrimaryUnit, 0.512);
 	assert.equal(m1.paybackMonths, 61.989);
 
-	assert.equal(s1.capexPerUnit.storageTb, 160);
+	assert.equal(s1.capexPerUnit.storageTb, 120);
 	assert.equal(s1.rackOnlyOpexPerUnit.storageTb, 1.584);
 	assert.equal(s1.facilityLoadedOpexPerUnit.storageTb, 4.684);
 	assert.equal(s1.grossMarginPerPrimaryUnit, 17.693);
-	assert.equal(s1.paybackMonths, 9.043);
+	assert.equal(s1.paybackMonths, 6.782);
 });
 
-test("unit economics targets capture the current storage and memory skew before the rebalance lands", () => {
+test("unit economics targets capture the remaining skew after storage capex repricing", () => {
 	const evaluation = evaluateUnitEconomicsTargets(createUnitEconomicsAudit());
 
 	assert.deepEqual(UNIT_ECONOMICS_TARGET_BANDS, {
@@ -69,10 +69,10 @@ test("unit economics targets capture the current storage and memory skew before 
 	});
 	assert.equal(evaluation.allSatisfied, false);
 	assert.deepEqual(evaluation.sameTierStorageCapexBelowMemory, {
-		0: false,
-		1: false,
-		2: false,
-		3: false,
+		0: true,
+		1: true,
+		2: true,
+		3: true,
 	});
 	assert.deepEqual(evaluation.storageCheapestCapexPerTbByTier, {
 		0: true,
@@ -102,6 +102,6 @@ test("unit economics targets capture the current storage and memory skew before 
 		memory: false,
 	});
 	assert.equal(evaluation.minimumStoragePaybackMonthsMet, false);
-	assert.equal(evaluation.storagePaybackVsFastestNonStorageRatio, 0.417);
+	assert.equal(evaluation.storagePaybackVsFastestNonStorageRatio, 0.333);
 	assert.equal(evaluation.storagePaybackRatioMet, false);
 });

@@ -107,6 +107,17 @@ test("tier progression increases heat, capex, opex, and primary output within ea
 	}
 });
 
+test("same-tier storage racks now sit below memory racks on sticker capex while compute stays cheapest", () => {
+	for (const tier of [0, 1, 2, 3] as const) {
+		const compute = RACK_CATALOG[`C${tier}`]!;
+		const memory = RACK_CATALOG[`M${tier}`]!;
+		const storage = RACK_CATALOG[`S${tier}`]!;
+
+		assert.ok(compute.capexCost < storage.capexCost);
+		assert.ok(storage.capexCost < memory.capexCost);
+	}
+});
+
 test("tier-3 racks exceed any air-cooled datacenter per-slot cooling budget", () => {
 	const airCooledPerSlotBudgets = Object.values(DATACENTER_CATALOG)
 		.filter((datacenter) => datacenter.coolingType === "air")
