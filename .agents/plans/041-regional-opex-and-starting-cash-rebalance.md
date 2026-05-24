@@ -17,10 +17,10 @@ owner: game-logic
   - [x] 2.1 Increase Easy and Hard starting cash
   - [x] 2.2 Update new-game and difficulty tests
   - [x] 2.3 Bump balance version and document the rebalance
-- [ ] **Phase 3 — OpEx impact validation**
+- [x] **Phase 3 — OpEx impact validation**
   - [x] 3.1 Extend unit-economics audit coverage for regional OpEx
   - [x] 3.2 Add scenario validation for early-game cash runway
-  - [ ] 3.3 Tune target values if validation shows broken payback or runway
+  - [x] 3.3 Tune target values if validation shows broken payback or runway
 - [ ] **Phase 4 — Player-facing surfacing**
   - [ ] 4.1 Surface regional power and wage differences in CLI region/map views
   - [ ] 4.2 Surface regional power and wage differences in web region/map views
@@ -229,3 +229,4 @@ Power values are intentionally close to the research table. Wage values are inte
 ## Changelog
 
 - 2026-05-24 — created plan with researched regional OpEx multipliers, proposed Easy/Hard starting-cash targets, validation work, and player-facing surfacing steps.
+- 2026-05-24 — Phase 3 validation passed without further multiplier or starting-cash retuning; early-game runway checks now use a profitable C1/C1/M1/M1 starter garage profile across target regions.

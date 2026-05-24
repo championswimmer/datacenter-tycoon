@@ -150,4 +150,9 @@ test("early-game runway validation keeps hard mode survivable while easy mode pr
 	assert.ok(byId["starter-garage-eu-west"].hard.activeMargin < byId["starter-garage-us-west"].hard.activeMargin);
 	assert.ok(byId["starter-garage-ap-southeast"].hard.activeMargin < byId["starter-garage-sa-east"].hard.activeMargin);
 	assert.ok(byId["starter-garage-sa-east"].hard.paybackMonths! < byId["starter-garage-us-east"].hard.paybackMonths!);
+
+	const hardMargins = report.scenarios.map(({ hard }) => hard.activeMargin);
+	const hardPaybacks = report.scenarios.map(({ hard }) => hard.paybackMonths ?? Number.POSITIVE_INFINITY);
+	assert.ok(Math.max(...hardMargins) / Math.min(...hardMargins) < 2, "no region should dominate purely on active margin");
+	assert.ok(Math.max(...hardPaybacks) < 60, "worst hard-mode payback should stay below five years");
 });
