@@ -208,11 +208,14 @@ export interface ContractPricingConfig {
 	weights: ContractPricingWeights;
 }
 
+// After the storage rack repricing pass, the smallest viable contract fix was to
+// lift compute and memory pricing while keeping storage roughly flat. That raises
+// mixed-fleet viability without turning storage-heavy builds into the dominant lane.
 export const PRICING_WEIGHTS: ContractPricingWeights = {
-	vCpu: 40,
-	ramGb: 1.8,
-	storageTb: 25,
-	gpuFlops: 35,
+	vCpu: 50,
+	ramGb: 2.1,
+	storageTb: 24,
+	gpuFlops: 39,
 };
 
 export const BASE_CONTRACT_MONTHLY_FEE = 5_000;

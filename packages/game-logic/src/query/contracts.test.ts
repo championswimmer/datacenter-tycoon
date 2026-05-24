@@ -272,5 +272,5 @@ test("contractDealScore stays in game-logic for consumer sorting and filtering",
 	const premium = { ...baseline, id: contractId("premium"), monthlyPayment: 3_840 };
 
 	assert.ok(contractDealScore(baseline) > 0);
-	assert.equal(contractDealScore(premium) / contractDealScore(baseline), 1.5);
+	assert.ok(Math.abs(contractDealScore(premium) / contractDealScore(baseline) - 1.5) < 1e-9);
 });

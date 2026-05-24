@@ -20,12 +20,12 @@ test("unit economics audit reports the current deterministic rack and contract b
 	assert.equal(audit.pricing.baseMonthlyFee, 5_000);
 	assert.equal(audit.pricing.averageMarginalMultiplier, 0.895);
 	assert.deepEqual(audit.pricing.averageMarginalPayoutPerUnit, {
-		vCpu: 35.803,
-		ramGb: 1.611,
-		storageTb: 22.377,
-		gpuFlops: 31.328,
+		vCpu: 44.754,
+		ramGb: 1.88,
+		storageTb: 21.482,
+		gpuFlops: 34.908,
 	});
-	assert.equal(audit.pricing.averageMonthlyPayment, 38_673.33);
+	assert.equal(audit.pricing.averageMonthlyPayment, 41_631.67);
 
 	assert.equal(audit.cheapestFacilitySlotBaseline.datacenterId, DATACENTER_CATALOG.warehouse.id);
 	assert.equal(audit.cheapestFacilitySlotBaseline.regionId, "sa_east");
@@ -35,23 +35,23 @@ test("unit economics audit reports the current deterministic rack and contract b
 	assert.equal(c1.capexPerUnit.vCpu, 390.625);
 	assert.equal(c1.rackOnlyOpexPerUnit.vCpu, 4.608);
 	assert.equal(c1.facilityLoadedOpexPerUnit.vCpu, 16.717);
-	assert.equal(c1.grossMarginPerPrimaryUnit, 19.086);
-	assert.equal(c1.paybackMonths, 20.467);
+	assert.equal(c1.grossMarginPerPrimaryUnit, 28.037);
+	assert.equal(c1.paybackMonths, 13.932);
 
 	assert.equal(m1.capexPerUnit.ramGb, 31.738);
 	assert.equal(m1.rackOnlyOpexPerUnit.ramGb, 0.342);
 	assert.equal(m1.facilityLoadedOpexPerUnit.ramGb, 1.099);
-	assert.equal(m1.grossMarginPerPrimaryUnit, 0.512);
-	assert.equal(m1.paybackMonths, 61.989);
+	assert.equal(m1.grossMarginPerPrimaryUnit, 0.781);
+	assert.equal(m1.paybackMonths, 40.638);
 
 	assert.equal(s1.capexPerUnit.storageTb, 124);
 	assert.equal(s1.rackOnlyOpexPerUnit.storageTb, 6.304);
 	assert.equal(s1.facilityLoadedOpexPerUnit.storageTb, 9.404);
-	assert.equal(s1.grossMarginPerPrimaryUnit, 12.973);
-	assert.equal(s1.paybackMonths, 9.558);
+	assert.equal(s1.grossMarginPerPrimaryUnit, 12.078);
+	assert.equal(s1.paybackMonths, 10.267);
 });
 
-test("unit economics targets capture the remaining skew after storage maintenance tuning", () => {
+test("contract pricing rebalance clears the target bands without over-buffing storage", () => {
 	const evaluation = evaluateUnitEconomicsTargets(createUnitEconomicsAudit());
 
 	assert.deepEqual(UNIT_ECONOMICS_TARGET_BANDS, {
@@ -67,7 +67,7 @@ test("unit economics targets capture the remaining skew after storage maintenanc
 		minimumStoragePaybackMonths: 10,
 		minimumStorageToFastestNonStoragePaybackRatio: 0.7,
 	});
-	assert.equal(evaluation.allSatisfied, false);
+	assert.equal(evaluation.allSatisfied, true);
 	assert.deepEqual(evaluation.sameTierStorageCapexBelowMemory, {
 		0: true,
 		1: true,
@@ -94,14 +94,51 @@ test("unit economics targets capture the remaining skew after storage maintenanc
 	});
 	assert.deepEqual(evaluation.minimumGrossMarginPerPrimaryUnitMet, {
 		compute: true,
-		memory: false,
+		memory: true,
 		storage: true,
 	});
 	assert.deepEqual(evaluation.maximumPaybackMonthsMet, {
 		compute: true,
-		memory: false,
+		memory: true,
 	});
-	assert.equal(evaluation.minimumStoragePaybackMonthsMet, false);
-	assert.equal(evaluation.storagePaybackVsFastestNonStorageRatio, 0.5);
-	assert.equal(evaluation.storagePaybackRatioMet, false);
+	assert.equal(evaluation.minimumStoragePaybackMonthsMet, true);
+	assert.equal(evaluation.storagePaybackVsFastestNonStorageRatio, 0.728);
+	assert.equal(evaluation.storagePaybackRatioMet, true);
+});
+
+test("candidate pricing directions show the chosen weights are the smallest viable uplift", () => {
+	const candidates = {
+		chosen: createUnitEconomicsAudit({
+			pricing: { baseMonthlyFee: 5_000, weights: { vCpu: 50, ramGb: 2.1, storageTb: 24, gpuFlops: 39 } },
+		}),
+		mild: createUnitEconomicsAudit({
+			pricing: { baseMonthlyFee: 5_000, weights: { vCpu: 54, ramGb: 2.4, storageTb: 24, gpuFlops: 41 } },
+		}),
+		medium: createUnitEconomicsAudit({
+			pricing: { baseMonthlyFee: 5_500, weights: { vCpu: 54, ramGb: 2.5, storageTb: 24, gpuFlops: 41 } },
+		}),
+		aggressive: createUnitEconomicsAudit({
+			pricing: { baseMonthlyFee: 6_000, weights: { vCpu: 56, ramGb: 2.6, storageTb: 25, gpuFlops: 43 } },
+		}),
+	};
+	const chosenEvaluation = evaluateUnitEconomicsTargets(candidates.chosen);
+	const mildEvaluation = evaluateUnitEconomicsTargets(candidates.mild);
+	const mediumEvaluation = evaluateUnitEconomicsTargets(candidates.medium);
+	const aggressiveEvaluation = evaluateUnitEconomicsTargets(candidates.aggressive);
+
+	assert.equal(candidates.chosen.pricing.averageMonthlyPayment, 41_631.67);
+	assert.equal(candidates.mild.pricing.averageMonthlyPayment, 43_511.67);
+	assert.equal(candidates.medium.pricing.averageMonthlyPayment, 44_199.17);
+	assert.equal(candidates.aggressive.pricing.averageMonthlyPayment, 46_368.33);
+	assert.ok(candidates.chosen.pricing.averageMonthlyPayment < candidates.mild.pricing.averageMonthlyPayment);
+	assert.ok(candidates.mild.pricing.averageMonthlyPayment < candidates.medium.pricing.averageMonthlyPayment);
+	assert.ok(candidates.medium.pricing.averageMonthlyPayment < candidates.aggressive.pricing.averageMonthlyPayment);
+	assert.equal(chosenEvaluation.allSatisfied, true);
+	assert.equal(mildEvaluation.allSatisfied, true);
+	assert.equal(mediumEvaluation.allSatisfied, true);
+	assert.equal(aggressiveEvaluation.allSatisfied, false);
+	assert.equal(aggressiveEvaluation.minimumStoragePaybackMonthsMet, false);
+	assert.ok(candidates.chosen.pricing.averageMarginalPayoutPerUnit.vCpu > candidates.aggressive.pricing.averageMarginalPayoutPerUnit.storageTb);
+	assert.ok(candidates.chosen.pricing.averageMarginalPayoutPerUnit.ramGb > 1.611);
+	assert.ok(candidates.chosen.pricing.averageMarginalPayoutPerUnit.storageTb < 22.377);
 });
