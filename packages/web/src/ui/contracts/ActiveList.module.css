@@ -261,6 +261,13 @@
   color: var(--neon-red);
 }
 
+.noPenalty {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--neon-cyan);
+}
+
 .termMeta {
   font-family: var(--font-mono);
   font-size: 0.6rem;
@@ -285,6 +292,7 @@
 
 .footerRevenue { color: var(--neon-lime); }
 .footerPenalty { color: var(--neon-red); }
+.footerExpired { color: var(--neon-cyan); }
 .footerDivider { color: var(--fg-3); }
 
 @media (pointer: coarse), (max-width: 767px) {

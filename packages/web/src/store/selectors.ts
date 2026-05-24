@@ -257,12 +257,15 @@ const selectMemoizedHistoricalContractSummary = memoizeByInputs(
     const views = selectHistoricalContractViews(state);
     let completedCount = 0;
     let cancelledCount = 0;
+    let marketExpiredCount = 0;
 
     for (const view of views) {
       if (view.contract.lifecycleState === "completed") {
         completedCount += 1;
       } else if (view.contract.lifecycleState === "cancelled") {
         cancelledCount += 1;
+      } else if (view.contract.lifecycleState === "market_expired") {
+        marketExpiredCount += 1;
       }
     }
 
@@ -270,6 +273,7 @@ const selectMemoizedHistoricalContractSummary = memoizeByInputs(
       views,
       completedCount,
       cancelledCount,
+      marketExpiredCount,
       totalCount: views.length,
     };
   },
@@ -822,6 +826,7 @@ export interface HistoricalContractSummary {
   views: AssignedContractView[];
   completedCount: number;
   cancelledCount: number;
+  marketExpiredCount: number;
   totalCount: number;
 }
 
