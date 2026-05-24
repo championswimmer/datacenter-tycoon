@@ -6,4 +6,5 @@ export * from "./easier.js";
 export * from "./maintenance.js";
 export * from "./power.js";
 export * from "./reliability.js";
+export * from "./scenario-validation.js";
 export * from "./unit-economics.js";
