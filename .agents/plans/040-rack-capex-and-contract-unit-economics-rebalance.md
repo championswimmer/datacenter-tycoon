@@ -15,9 +15,9 @@ owner: game-logic
 - [x] **Phase 2 — Rack capex and recurring-cost rebalance**
   - [x] 2.1 Reprice storage racks so same-tier storage racks are cheaper than same-tier memory racks while preserving monotonic progression
   - [x] 2.2 Re-tune recurring maintenance so storage remains cheapest per TB without becoming the runaway ROI lane
-- [ ] **Phase 3 — Contract pricing rebalance**
+- [x] **Phase 3 — Contract pricing rebalance**
   - [x] 3.1 Reweight contract pricing toward vCPU and RAM, then choose the smallest payout uplift that fixes margins
-  - [ ] 3.2 Bump `BALANCE_VERSION` and update balance-sensitive tests
+  - [x] 3.2 Bump `BALANCE_VERSION` and update balance-sensitive tests
 - [ ] **Phase 4 — Validation and follow-through**
   - [ ] 4.1 Verify starter, warehouse, and mixed-fleet economics with tests and scripted comparisons
   - [ ] 4.2 Record playtest outcomes and archive the plan after the rebalance ships
