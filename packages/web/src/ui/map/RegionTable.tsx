@@ -1,8 +1,9 @@
 import { Fragment, useMemo, useState } from "react";
+import { regionalOpexMultiplierLabel } from "@datacenter-tycoon/game-logic";
 import type { Datacenter, Region, RegionId } from "@datacenter-tycoon/game-logic";
 import styles from "./RegionTable.module.css";
 
-type SortKey = "code" | "city" | "name" | "powerCost" | "power" | "staff" | "tax";
+type SortKey = "code" | "city" | "name" | "powerCost" | "laborCost" | "opexProfile" | "power" | "staff" | "tax";
 type SortDirection = "asc" | "desc";
 
 interface RegionTableProps {
@@ -47,15 +48,28 @@ const COLUMNS: ColumnDefinition[] = [
     render: (region) => `$${region.powerCostPerKwh.toFixed(3)}`,
   },
   {
+    key: "laborCost",
+    label: "Labor / mo",
+    align: "right",
+    getValue: (region) => region.staffWage,
+    render: (region) => `$${region.staffWage.toLocaleString()}`,
+  },
+  {
+    key: "opexProfile",
+    label: "OpEx",
+    getValue: (region) => regionalOpexMultiplierLabel(region.id),
+    render: (region) => regionalOpexMultiplierLabel(region.id),
+  },
+  {
     key: "power",
-    label: "Power",
+    label: "Power Cap",
     align: "right",
     getValue: (region) => region.totalPowerAvailable,
     render: (region) => `${region.totalPowerAvailable.toLocaleString()} kW`,
   },
   {
     key: "staff",
-    label: "Staff",
+    label: "Staff Cap",
     align: "right",
     getValue: (region) => region.totalStaffAvailable,
     render: (region) => region.totalStaffAvailable.toLocaleString(),

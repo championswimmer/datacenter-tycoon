@@ -59,6 +59,8 @@ describe("RegionPanel", () => {
     expect(screen.getByText("REGIONAL FABRIC")).toBeTruthy();
     expect(screen.getByText("INACTIVE")).toBeTruthy();
     expect(screen.getByText("FIBER LOCKED")).toBeTruthy();
+    expect(screen.getByText(/Regional OpEx profile:/)).toBeTruthy();
+    expect(screen.getByText(/Power 1\.00x \/ Labor 1\.00x/)).toBeTruthy();
     expect(screen.getByText("Upgrade network to fiber to join the regional fabric.")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Create fabric with/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /Connect .* to regional fabric/i })).toBeNull();

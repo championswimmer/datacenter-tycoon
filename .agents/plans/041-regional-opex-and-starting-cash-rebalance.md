@@ -23,7 +23,7 @@ owner: game-logic
   - [x] 3.3 Tune target values if validation shows broken payback or runway
 - [ ] **Phase 4 — Player-facing surfacing**
   - [x] 4.1 Surface regional power and wage differences in CLI region/map views
-  - [ ] 4.2 Surface regional power and wage differences in web region/map views
+  - [x] 4.2 Surface regional power and wage differences in web region/map views
   - [ ] 4.3 Run package and boundary checks
 
 ## Overview / Motivation
