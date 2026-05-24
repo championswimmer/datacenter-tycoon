@@ -248,9 +248,20 @@ export function createUnitEconomicsAudit(options: UnitEconomicsAuditOptions = {}
 			const cheapestRackOnly = Object.values(REGION_CATALOG)
 				.map((region) => ({ regionId: region.id, monthlyOpex: rackOnlyMonthlyOpex(spec, region) }))
 				.sort((left, right) => left.monthlyOpex - right.monthlyOpex)[0]!;
-			const facilityLoadedMonthlyOpex = roundMoney(
-				cheapestRackOnly.monthlyOpex + cheapestFacilitySlotBaseline.monthlyOpexPerSlot,
-			);
+			// Minimize combined opex over the same (datacenter, region) pair to avoid
+			// mixing independent minima from different regions.
+			const cheapestFacilityLoaded = Object.values(DATACENTER_CATALOG)
+				.flatMap((datacenter) =>
+					Object.values(REGION_CATALOG).map((region) => {
+						const facilityBaseline = facilitySlotBaselineOpex(datacenter, region);
+						return {
+							facilityBaseline,
+							combined: roundMoney(rackOnlyMonthlyOpex(spec, region) + facilityBaseline.monthlyOpexPerSlot),
+						};
+					}),
+				)
+				.sort((left, right) => left.combined - right.combined)[0]!;
+			const facilityLoadedMonthlyOpex = cheapestFacilityLoaded.combined;
 			const primaryResource = PRIMARY_RESOURCE_BY_RACK_KIND[spec.kind];
 			const primaryUnitPayout = pricing.averageMarginalPayoutPerUnit[primaryResource];
 			const primaryUnitFacilityOpex = perUnit(facilityLoadedMonthlyOpex, primaryCapacity(spec)) ?? 0;
@@ -270,7 +281,7 @@ export function createUnitEconomicsAudit(options: UnitEconomicsAuditOptions = {}
 				cheapestRackOnlyRegionId: cheapestRackOnly.regionId,
 				rackOnlyMonthlyOpex: cheapestRackOnly.monthlyOpex,
 				rackOnlyOpexPerUnit: metricBreakdown(spec, cheapestRackOnly.monthlyOpex),
-				facilityBaseline: cheapestFacilitySlotBaseline,
+				facilityBaseline: cheapestFacilityLoaded.facilityBaseline,
 				facilityLoadedMonthlyOpex,
 				facilityLoadedOpexPerUnit: metricBreakdown(spec, facilityLoadedMonthlyOpex),
 				averageMarginalPayoutPerPrimaryUnit: primaryUnitPayout,
