@@ -6,11 +6,11 @@ See [`../skills/planning/SKILL.md`](../skills/planning/SKILL.md) for the full fo
 
 ## Index
 
-- [`040-rack-capex-and-contract-unit-economics-rebalance.md`](./040-rack-capex-and-contract-unit-economics-rebalance.md) — research-backed plan to reprice storage vs memory racks and retune contract unit economics.
+- No active plans right now.
 
 ## Archive
 
-Completed plans have been moved to [`./archive`](./archive/README.md) so the active index stays focused on in-progress work. The archived files are kept for historical reference.
+Completed plans have been moved to [`./archive`](./archive/README.md) so the active index stays focused on in-progress work. The archived files are kept for historical reference, including the completed rack/unit-economics rebalance plan (`040`).
 
 ## Related plan guidance
 
