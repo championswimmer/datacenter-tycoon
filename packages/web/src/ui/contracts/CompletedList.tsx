@@ -25,7 +25,7 @@ function statusLabel(contract: Pick<Contract, "lifecycleState" | "status">): str
 
 function historyFinancials(
   contract: Pick<Contract, "lifecycleState" | "monthlyPayment" | "penaltyPerMonth">,
-): { className: string; label: string } {
+): { className: string | undefined; label: string } {
   if (contract.lifecycleState === "completed") {
     return {
       className: styles.payment,
