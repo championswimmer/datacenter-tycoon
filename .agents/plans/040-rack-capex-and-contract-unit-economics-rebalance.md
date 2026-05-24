@@ -13,7 +13,7 @@ owner: game-logic
   - [x] 1.1 Add a deterministic economics audit that reports rack capex/unit, minimum opex/unit, and generated contract payout/unit
   - [x] 1.2 Lock target ordering and profitability bands for storage vs compute vs memory lanes
 - [ ] **Phase 2 — Rack capex and recurring-cost rebalance**
-  - [ ] 2.1 Reprice storage racks so same-tier storage racks are cheaper than same-tier memory racks while preserving monotonic progression
+  - [x] 2.1 Reprice storage racks so same-tier storage racks are cheaper than same-tier memory racks while preserving monotonic progression
   - [ ] 2.2 Re-tune recurring maintenance so storage remains cheapest per TB without becoming the runaway ROI lane
 - [ ] **Phase 3 — Contract pricing rebalance**
   - [ ] 3.1 Reweight contract pricing toward vCPU and RAM, then choose the smallest payout uplift that fixes margins
