@@ -13,10 +13,10 @@ owner: game-logic
   - [x] 1.1 Add regional OpEx multiplier constants and references
   - [x] 1.2 Derive region catalog power and wage values from multipliers
   - [x] 1.3 Add unit tests for effective regional OpEx values
-- [ ] **Phase 2 — Starting cash runway**
+- [x] **Phase 2 — Starting cash runway**
   - [x] 2.1 Increase Easy and Hard starting cash
   - [x] 2.2 Update new-game and difficulty tests
-  - [ ] 2.3 Bump balance version and document the rebalance
+  - [x] 2.3 Bump balance version and document the rebalance
 - [ ] **Phase 3 — OpEx impact validation**
   - [ ] 3.1 Extend unit-economics audit coverage for regional OpEx
   - [ ] 3.2 Add scenario validation for early-game cash runway
