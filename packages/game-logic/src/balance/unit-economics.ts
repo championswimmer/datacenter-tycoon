@@ -72,9 +72,20 @@ export interface RackUnitEconomicsSnapshot {
 	paybackMonths: number | null;
 }
 
+export interface RegionalOpexAuditSnapshot {
+	regionId: RegionId;
+	powerCostPerKwh: number;
+	staffWage: Money;
+	garageBaseline: FacilitySlotEconomicsSnapshot;
+	warehouseBaseline: FacilitySlotEconomicsSnapshot;
+	cheapestFacilityBaseline: FacilitySlotEconomicsSnapshot;
+}
+
 export interface UnitEconomicsAuditSnapshot {
 	pricing: ContractPricingAuditSnapshot;
 	cheapestFacilitySlotBaseline: FacilitySlotEconomicsSnapshot;
+	mostExpensiveFacilitySlotBaseline: FacilitySlotEconomicsSnapshot;
+	regionalOpex: RegionalOpexAuditSnapshot[];
 	racks: RackUnitEconomicsSnapshot[];
 }
 
@@ -240,6 +251,24 @@ export function createUnitEconomicsAudit(options: UnitEconomicsAuditOptions = {}
 		)
 		.sort((left, right) => left.monthlyOpexPerSlot - right.monthlyOpexPerSlot);
 	const cheapestFacilitySlotBaseline = facilityCandidates[0]!;
+	const mostExpensiveFacilitySlotBaseline = facilityCandidates[facilityCandidates.length - 1]!;
+	const regionalOpex = Object.values(REGION_CATALOG)
+		.map<RegionalOpexAuditSnapshot>((region) => {
+			const garageBaseline = facilitySlotBaselineOpex(DATACENTER_CATALOG.garage!, region);
+			const warehouseBaseline = facilitySlotBaselineOpex(DATACENTER_CATALOG.warehouse!, region);
+			const cheapestFacilityBaseline = [garageBaseline, warehouseBaseline].sort(
+				(left, right) => left.monthlyOpexPerSlot - right.monthlyOpexPerSlot,
+			)[0]!;
+			return {
+				regionId: region.id,
+				powerCostPerKwh: region.powerCostPerKwh,
+				staffWage: region.staffWage,
+				garageBaseline,
+				warehouseBaseline,
+				cheapestFacilityBaseline,
+			};
+		})
+		.sort((left, right) => left.cheapestFacilityBaseline.monthlyOpexPerSlot - right.cheapestFacilityBaseline.monthlyOpexPerSlot);
 
 	const racks = Object.values(RACK_CATALOG)
 		.slice()
@@ -294,6 +323,8 @@ export function createUnitEconomicsAudit(options: UnitEconomicsAuditOptions = {}
 	return {
 		pricing,
 		cheapestFacilitySlotBaseline,
+		mostExpensiveFacilitySlotBaseline,
+		regionalOpex,
 		racks,
 	};
 }

@@ -29,26 +29,49 @@ test("unit economics audit reports the current deterministic rack and contract b
 
 	assert.equal(audit.cheapestFacilitySlotBaseline.datacenterId, DATACENTER_CATALOG.warehouse.id);
 	assert.equal(audit.cheapestFacilitySlotBaseline.regionId, "sa_east");
-	assert.equal(audit.cheapestFacilitySlotBaseline.monthlyOpexPerSlot, 1_550);
+	assert.equal(audit.cheapestFacilitySlotBaseline.monthlyOpexPerSlot, 1_305);
+	assert.equal(audit.mostExpensiveFacilitySlotBaseline.datacenterId, DATACENTER_CATALOG.hyperscale.id);
+	assert.equal(audit.mostExpensiveFacilitySlotBaseline.regionId, "us_east");
+	assert.equal(audit.mostExpensiveFacilitySlotBaseline.monthlyOpexPerSlot, 3_587.5);
+	assert.deepEqual(
+		audit.regionalOpex.map((region) => ({
+			regionId: region.regionId,
+			power: region.powerCostPerKwh,
+			staff: region.staffWage,
+			garage: region.garageBaseline.monthlyOpexPerSlot,
+			warehouse: region.warehouseBaseline.monthlyOpexPerSlot,
+			cheapest: region.cheapestFacilityBaseline.monthlyOpexPerSlot,
+		})),
+		[
+			{ regionId: "sa_east", power: 0.13, staff: 2_275, garage: 1_418.75, warehouse: 1_305, cheapest: 1_305 },
+			{ regionId: "me_central", power: 0.09, staff: 4_225, garage: 1_906.25, warehouse: 1_695, cheapest: 1_695 },
+			{ regionId: "ap_northeast", power: 0.16, staff: 5_070, garage: 2_117.5, warehouse: 1_864, cheapest: 1_864 },
+			{ regionId: "ap_southeast", power: 0.18, staff: 5_200, garage: 2_150, warehouse: 1_890, cheapest: 1_890 },
+			{ regionId: "eu_west", power: 0.18, staff: 5_850, garage: 2_312.5, warehouse: 2_020, cheapest: 2_020 },
+			{ regionId: "eu_central", power: 0.17, staff: 5_980, garage: 2_345, warehouse: 2_046, cheapest: 2_046 },
+			{ regionId: "us_west", power: 0.06, staff: 6_175, garage: 2_393.75, warehouse: 2_085, cheapest: 2_085 },
+			{ regionId: "us_east", power: 0.08, staff: 6_500, garage: 2_475, warehouse: 2_150, cheapest: 2_150 },
+		],
+	);
 
 	assert.equal(c1.cheapestRackOnlyRegionId, "us_west");
 	assert.equal(c1.capexPerUnit.vCpu, 390.625);
-	assert.equal(c1.rackOnlyOpexPerUnit.vCpu, 4.608);
-	assert.equal(c1.facilityLoadedOpexPerUnit.vCpu, 16.717);
-	assert.equal(c1.grossMarginPerPrimaryUnit, 28.037);
-	assert.equal(c1.paybackMonths, 13.932);
+	assert.equal(c1.rackOnlyOpexPerUnit.vCpu, 4.904);
+	assert.equal(c1.facilityLoadedOpexPerUnit.vCpu, 17.176);
+	assert.equal(c1.grossMarginPerPrimaryUnit, 27.578);
+	assert.equal(c1.paybackMonths, 14.164);
 
 	assert.equal(m1.capexPerUnit.ramGb, 31.738);
-	assert.equal(m1.rackOnlyOpexPerUnit.ramGb, 0.342);
-	assert.equal(m1.facilityLoadedOpexPerUnit.ramGb, 1.099);
-	assert.equal(m1.grossMarginPerPrimaryUnit, 0.781);
-	assert.equal(m1.paybackMonths, 40.638);
+	assert.equal(m1.rackOnlyOpexPerUnit.ramGb, 0.36);
+	assert.equal(m1.facilityLoadedOpexPerUnit.ramGb, 1.12);
+	assert.equal(m1.grossMarginPerPrimaryUnit, 0.76);
+	assert.equal(m1.paybackMonths, 41.761);
 
 	assert.equal(s1.capexPerUnit.storageTb, 124);
-	assert.equal(s1.rackOnlyOpexPerUnit.storageTb, 6.304);
-	assert.equal(s1.facilityLoadedOpexPerUnit.storageTb, 9.404);
-	assert.equal(s1.grossMarginPerPrimaryUnit, 12.078);
-	assert.equal(s1.paybackMonths, 10.267);
+	assert.equal(s1.rackOnlyOpexPerUnit.storageTb, 6.364);
+	assert.equal(s1.facilityLoadedOpexPerUnit.storageTb, 9.4);
+	assert.equal(s1.grossMarginPerPrimaryUnit, 12.082);
+	assert.equal(s1.paybackMonths, 10.263);
 });
 
 test("contract pricing rebalance clears the target bands without over-buffing storage", () => {
@@ -102,7 +125,7 @@ test("contract pricing rebalance clears the target bands without over-buffing st
 		memory: true,
 	});
 	assert.equal(evaluation.minimumStoragePaybackMonthsMet, true);
-	assert.equal(evaluation.storagePaybackVsFastestNonStorageRatio, 0.728);
+	assert.equal(evaluation.storagePaybackVsFastestNonStorageRatio, 0.725);
 	assert.equal(evaluation.storagePaybackRatioMet, true);
 });
 
