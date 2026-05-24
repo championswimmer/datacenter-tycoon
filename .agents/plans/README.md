@@ -6,7 +6,7 @@ See [`../skills/planning/SKILL.md`](../skills/planning/SKILL.md) for the full fo
 
 ## Index
 
-- No active plans right now.
+- [041 — Regional OpEx and Starting Cash Rebalance](./041-regional-opex-and-starting-cash-rebalance.md) — status: created
 
 ## Archive
 
