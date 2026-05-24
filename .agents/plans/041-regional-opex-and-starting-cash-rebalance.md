@@ -1,7 +1,7 @@
 ---
 name: Regional OpEx and Starting Cash Rebalance
 description: Increase starting cash and derive regional power/wage OpEx from research-backed multipliers.
-status: started
+status: completed
 created: 2026-05-24
 updated: 2026-05-24
 owner: game-logic
@@ -21,10 +21,10 @@ owner: game-logic
   - [x] 3.1 Extend unit-economics audit coverage for regional OpEx
   - [x] 3.2 Add scenario validation for early-game cash runway
   - [x] 3.3 Tune target values if validation shows broken payback or runway
-- [ ] **Phase 4 — Player-facing surfacing**
+- [x] **Phase 4 — Player-facing surfacing**
   - [x] 4.1 Surface regional power and wage differences in CLI region/map views
   - [x] 4.2 Surface regional power and wage differences in web region/map views
-  - [ ] 4.3 Run package and boundary checks
+  - [x] 4.3 Run package and boundary checks
 
 ## Overview / Motivation
 
