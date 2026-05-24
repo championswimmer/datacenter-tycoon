@@ -78,6 +78,32 @@ export interface UnitEconomicsAuditSnapshot {
 	racks: RackUnitEconomicsSnapshot[];
 }
 
+export interface UnitEconomicsTargetBands {
+	minimumGrossMarginPerPrimaryUnit: Record<Exclude<RackKind, "gpu">, number>;
+	maximumPaybackMonths: {
+		compute: number;
+		memory: number;
+	};
+	minimumStoragePaybackMonths: number;
+	minimumStorageToFastestNonStoragePaybackRatio: number;
+}
+
+export interface UnitEconomicsTargetEvaluation {
+	allSatisfied: boolean;
+	sameTierStorageCapexBelowMemory: Record<RackTier, boolean>;
+	storageCheapestCapexPerTbByTier: Record<RackTier, boolean>;
+	storageCheapestRackOnlyOpexPerTbByTier: Record<RackTier, boolean>;
+	storageCheapestFacilityLoadedOpexPerTbByTier: Record<RackTier, boolean>;
+	minimumGrossMarginPerPrimaryUnitMet: Record<Exclude<RackKind, "gpu">, boolean>;
+	maximumPaybackMonthsMet: {
+		compute: boolean;
+		memory: boolean;
+	};
+	minimumStoragePaybackMonthsMet: boolean;
+	storagePaybackVsFastestNonStorageRatio: number;
+	storagePaybackRatioMet: boolean;
+}
+
 export interface UnitEconomicsAuditOptions {
 	pricing?: ContractPricingConfig;
 	sampleSeed?: number;
@@ -88,6 +114,19 @@ export interface UnitEconomicsAuditOptions {
 export const DEFAULT_UNIT_ECONOMICS_SAMPLE_SEED = 40_040;
 export const DEFAULT_UNIT_ECONOMICS_DIFFICULTIES = [0.2, 0.35, 0.5, 0.65, 0.8] as const;
 export const DEFAULT_UNIT_ECONOMICS_SAMPLES_PER_DIFFICULTY = 24;
+export const UNIT_ECONOMICS_TARGET_BANDS: UnitEconomicsTargetBands = {
+	minimumGrossMarginPerPrimaryUnit: {
+		compute: 15,
+		memory: 0.7,
+		storage: 12,
+	},
+	maximumPaybackMonths: {
+		compute: 24,
+		memory: 45,
+	},
+	minimumStoragePaybackMonths: 10,
+	minimumStorageToFastestNonStoragePaybackRatio: 0.7,
+};
 
 export const PRIMARY_RESOURCE_BY_RACK_KIND: Record<RackKind, UnitEconomicsResource> = {
 	compute: "vCpu",
@@ -245,6 +284,121 @@ export function createUnitEconomicsAudit(options: UnitEconomicsAuditOptions = {}
 		pricing,
 		cheapestFacilitySlotBaseline,
 		racks,
+	};
+}
+
+function rackForKindAndTier(
+	audit: UnitEconomicsAuditSnapshot,
+	kind: Exclude<RackKind, "gpu">,
+	tier: RackTier,
+): RackUnitEconomicsSnapshot {
+	const rack = audit.racks.find((candidate) => candidate.kind === kind && candidate.tier === tier);
+	if (!rack) {
+		throw new Error(`Missing ${kind} rack for tier ${tier} in economics audit`);
+	}
+
+	return rack;
+}
+
+export function evaluateUnitEconomicsTargets(
+	audit: UnitEconomicsAuditSnapshot,
+	targets: UnitEconomicsTargetBands = UNIT_ECONOMICS_TARGET_BANDS,
+): UnitEconomicsTargetEvaluation {
+	const tiers = [0, 1, 2, 3] as const;
+	const paybackTiers = [1, 2, 3] as const;
+
+	const sameTierStorageCapexBelowMemory = Object.fromEntries(
+		tiers.map((tier) => [tier, rackForKindAndTier(audit, "storage", tier).capexCost < rackForKindAndTier(audit, "memory", tier).capexCost]),
+	) as Record<RackTier, boolean>;
+	const storageCheapestCapexPerTbByTier = Object.fromEntries(
+		tiers.map((tier) => {
+			const storage = rackForKindAndTier(audit, "storage", tier);
+			const compute = rackForKindAndTier(audit, "compute", tier);
+			const memory = rackForKindAndTier(audit, "memory", tier);
+			return [
+				tier,
+				(storage.capexPerUnit.storageTb ?? Infinity) < (compute.capexPerUnit.storageTb ?? Infinity) &&
+					(storage.capexPerUnit.storageTb ?? Infinity) < (memory.capexPerUnit.storageTb ?? Infinity),
+			];
+		}),
+	) as Record<RackTier, boolean>;
+	const storageCheapestRackOnlyOpexPerTbByTier = Object.fromEntries(
+		tiers.map((tier) => {
+			const storage = rackForKindAndTier(audit, "storage", tier);
+			const compute = rackForKindAndTier(audit, "compute", tier);
+			const memory = rackForKindAndTier(audit, "memory", tier);
+			return [
+				tier,
+				(storage.rackOnlyOpexPerUnit.storageTb ?? Infinity) < (compute.rackOnlyOpexPerUnit.storageTb ?? Infinity) &&
+					(storage.rackOnlyOpexPerUnit.storageTb ?? Infinity) < (memory.rackOnlyOpexPerUnit.storageTb ?? Infinity),
+			];
+		}),
+	) as Record<RackTier, boolean>;
+	const storageCheapestFacilityLoadedOpexPerTbByTier = Object.fromEntries(
+		tiers.map((tier) => {
+			const storage = rackForKindAndTier(audit, "storage", tier);
+			const compute = rackForKindAndTier(audit, "compute", tier);
+			const memory = rackForKindAndTier(audit, "memory", tier);
+			return [
+				tier,
+				(storage.facilityLoadedOpexPerUnit.storageTb ?? Infinity) <
+					(compute.facilityLoadedOpexPerUnit.storageTb ?? Infinity) &&
+					(storage.facilityLoadedOpexPerUnit.storageTb ?? Infinity) <
+						(memory.facilityLoadedOpexPerUnit.storageTb ?? Infinity),
+			];
+		}),
+	) as Record<RackTier, boolean>;
+	const minimumGrossMarginPerPrimaryUnitMet = {
+		compute: paybackTiers.every(
+			(tier) => rackForKindAndTier(audit, "compute", tier).grossMarginPerPrimaryUnit >= targets.minimumGrossMarginPerPrimaryUnit.compute,
+		),
+		memory: paybackTiers.every(
+			(tier) => rackForKindAndTier(audit, "memory", tier).grossMarginPerPrimaryUnit >= targets.minimumGrossMarginPerPrimaryUnit.memory,
+		),
+		storage: paybackTiers.every(
+			(tier) => rackForKindAndTier(audit, "storage", tier).grossMarginPerPrimaryUnit >= targets.minimumGrossMarginPerPrimaryUnit.storage,
+		),
+	};
+	const maximumPaybackMonthsMet = {
+		compute: paybackTiers.every(
+			(tier) => (rackForKindAndTier(audit, "compute", tier).paybackMonths ?? Infinity) <= targets.maximumPaybackMonths.compute,
+		),
+		memory: paybackTiers.every(
+			(tier) => (rackForKindAndTier(audit, "memory", tier).paybackMonths ?? Infinity) <= targets.maximumPaybackMonths.memory,
+		),
+	};
+	const storagePaybacks = paybackTiers.map((tier) => rackForKindAndTier(audit, "storage", tier).paybackMonths ?? Infinity);
+	const nonStoragePaybacks = paybackTiers.flatMap((tier) => [
+		rackForKindAndTier(audit, "compute", tier).paybackMonths ?? Infinity,
+		rackForKindAndTier(audit, "memory", tier).paybackMonths ?? Infinity,
+	]);
+	const minimumStoragePaybackMonthsMet = storagePaybacks.every((payback) => payback >= targets.minimumStoragePaybackMonths);
+	const storagePaybackVsFastestNonStorageRatio = roundRatio(
+		Math.min(...storagePaybacks) / Math.min(...nonStoragePaybacks),
+	);
+	const storagePaybackRatioMet =
+		storagePaybackVsFastestNonStorageRatio >= targets.minimumStorageToFastestNonStoragePaybackRatio;
+	const allSatisfied =
+		Object.values(sameTierStorageCapexBelowMemory).every(Boolean) &&
+		Object.values(storageCheapestCapexPerTbByTier).every(Boolean) &&
+		Object.values(storageCheapestRackOnlyOpexPerTbByTier).every(Boolean) &&
+		Object.values(storageCheapestFacilityLoadedOpexPerTbByTier).every(Boolean) &&
+		Object.values(minimumGrossMarginPerPrimaryUnitMet).every(Boolean) &&
+		Object.values(maximumPaybackMonthsMet).every(Boolean) &&
+		minimumStoragePaybackMonthsMet &&
+		storagePaybackRatioMet;
+
+	return {
+		allSatisfied,
+		sameTierStorageCapexBelowMemory,
+		storageCheapestCapexPerTbByTier,
+		storageCheapestRackOnlyOpexPerTbByTier,
+		storageCheapestFacilityLoadedOpexPerTbByTier,
+		minimumGrossMarginPerPrimaryUnitMet,
+		maximumPaybackMonthsMet,
+		minimumStoragePaybackMonthsMet,
+		storagePaybackVsFastestNonStorageRatio,
+		storagePaybackRatioMet,
 	};
 }
 
