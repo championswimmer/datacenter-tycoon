@@ -1,4 +1,4 @@
-import type { ContractStatus } from "@datacenter-tycoon/game-logic";
+import type { Contract, ContractStatus } from "@datacenter-tycoon/game-logic";
 import { useSelector } from "../../store/storeContext.js";
 import { selectHistoricalContractSummary } from "../../store/selectors.js";
 import styles from "./ActiveList.module.css";
@@ -17,6 +17,35 @@ const STATUS_LABEL: Record<ContractStatus, string> = {
   offered: "OFFERED",
 };
 
+function statusLabel(contract: Pick<Contract, "lifecycleState" | "status">): string {
+  if (contract.lifecycleState === "market_expired") return "OFFER EXPIRED";
+  if (contract.lifecycleState === "completed") return "COMPLETED";
+  return STATUS_LABEL[contract.status];
+}
+
+function historyFinancials(
+  contract: Pick<Contract, "lifecycleState" | "monthlyPayment" | "penaltyPerMonth">,
+): { className: string; label: string } {
+  if (contract.lifecycleState === "completed") {
+    return {
+      className: styles.payment,
+      label: `${fmt(contract.monthlyPayment)}/mo revenue`,
+    };
+  }
+
+  if (contract.lifecycleState === "market_expired") {
+    return {
+      className: styles.noPenalty,
+      label: "No penalty",
+    };
+  }
+
+  return {
+    className: styles.penaltyTotal,
+    label: `−${fmt(contract.penaltyPerMonth)}/mo penalty`,
+  };
+}
+
 export function CompletedList() {
   const historySummary = useSelector(selectHistoricalContractSummary);
 
@@ -28,15 +57,16 @@ export function CompletedList() {
     <div className={styles.list}>
       {historySummary.views.map((view) => {
         const contract = view.contract;
+        const financials = historyFinancials(contract);
         return (
           <div key={contract.id} className={[styles.card, styles[`status-${contract.status}`]].join(" ")}>
             <div className={styles.cardTop}>
               <div className={styles.cardLeft}>
                 <span className={[styles.statusPill, styles[`pill-${contract.status}`]].join(" ")}>
-                  {STATUS_LABEL[contract.status]}
+                  {statusLabel(contract)}
                 </span>
                 <div className={styles.name}>{contract.name}</div>
-                <div className={styles.dcLabel}>→ {view.assignedDcName ?? "—"}</div>
+                <div className={styles.dcLabel}>→ {view.assignedDcName ?? (contract.lifecycleState === "market_expired" ? "Not accepted" : "—")}</div>
                 <div className={styles.affinityRow}>
                   <span className={[
                     styles.affinityBadge,
@@ -48,11 +78,7 @@ export function CompletedList() {
                 </div>
               </div>
               <div className={styles.financials}>
-                <div className={contract.lifecycleState === "completed" ? styles.payment : styles.penaltyTotal}>
-                  {contract.lifecycleState === "completed"
-                    ? `${fmt(contract.monthlyPayment)}/mo revenue`
-                    : `−${fmt(contract.penaltyPerMonth)}/mo penalty`}
-                </div>
+                <div className={financials.className}>{financials.label}</div>
                 <div className={styles.termMeta}>{contract.termMonths} mo term</div>
               </div>
             </div>
@@ -64,6 +90,8 @@ export function CompletedList() {
         <span>Completed: <strong className={styles.footerRevenue}>{historySummary.completedCount}</strong></span>
         <span className={styles.footerDivider}>|</span>
         <span>Cancelled: <strong className={styles.footerPenalty}>{historySummary.cancelledCount}</strong></span>
+        <span className={styles.footerDivider}>|</span>
+        <span>Expired offers: <strong className={styles.footerExpired}>{historySummary.marketExpiredCount}</strong></span>
         <span className={styles.footerDivider}>|</span>
         <span>History: <strong>{historySummary.totalCount}</strong></span>
       </div>
