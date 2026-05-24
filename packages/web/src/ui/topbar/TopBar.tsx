@@ -83,133 +83,137 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
         : null;
 
   return (
-    <header className={styles.bar}>
-      <div className={styles.left}>
-        <span className={styles.logo}>DCT</span>
-        <span className={styles.company}>{playerName}</span>
-        <span className={styles.difficultyBadge}>{difficulty.toUpperCase()}</span>
-        {isDesktop && <span className={styles.desktopBadge}>DESKTOP</span>}
-      </div>
-
-      <div className={styles.center}>
-        <div className={styles.hudBlock}>
-          <span className={styles.hudLabel}>CASH</span>
-          <span className={[styles.hudValue, cashLow ? styles.cashLow : styles.cashOk].join(" ")}>
-            {formatMoney(cash)}
-          </span>
+    <div className={styles.container}>
+      <header className={styles.bar}>
+        <div className={styles.left}>
+          <span className={styles.logo}>DCT</span>
+          <span className={styles.company}>{playerName}</span>
+          <span className={styles.difficultyBadge}>{difficulty.toUpperCase()}</span>
+          {isDesktop && <span className={styles.desktopBadge}>DESKTOP</span>}
         </div>
 
-        <div className={styles.divider} />
+        <div className={styles.center}>
+          <div className={styles.hudBlock}>
+            <span className={styles.hudLabel}>CASH</span>
+            <span className={[styles.hudValue, cashLow ? styles.cashLow : styles.cashOk].join(" ")}>
+              {formatMoney(cash)}
+            </span>
+          </div>
 
-        <div className={styles.hudBlock}>
-          <span className={styles.hudLabel}>REV/mo</span>
-          <span className={[styles.hudValue, styles.revenue].join(" ")}>
-            {formatMoney(pnl.revenue, true)}
-          </span>
+          <div className={styles.divider} />
+
+          <div className={styles.hudBlock}>
+            <span className={styles.hudLabel}>REV/mo</span>
+            <span className={[styles.hudValue, styles.revenue].join(" ")}>
+              {formatMoney(pnl.revenue, true)}
+            </span>
+          </div>
+
+          <div className={styles.hudBlock}>
+            <span className={styles.hudLabel}>OPEX/mo</span>
+            <span className={[styles.hudValue, styles.opex].join(" ")}>
+              -{formatMoney(pnl.opex)}
+            </span>
+          </div>
+
+          <div className={styles.hudBlock}>
+            <span className={styles.hudLabel}>NET/mo</span>
+            <span className={[
+              styles.hudValue,
+              pnl.net >= 0 ? styles.netPositive : styles.netNegative,
+            ].join(" ")}>
+              {formatMoney(pnl.net, true)}
+            </span>
+          </div>
+
+          <div className={styles.divider} />
+
+          <div className={styles.hudBlock} title={reliabilityFx.summary}>
+            <span className={styles.hudLabel}>RELIABILITY</span>
+            <span className={[
+              styles.hudValue,
+              (reliability.band === "platinum" || reliability.band === "diamond")
+                ? styles.reliabilityTrusted
+                : (reliability.band === "silver" || reliability.band === "bronze")
+                  ? styles.reliabilityAtRisk
+                  : styles.reliabilityBaseline,
+            ].join(" ")}>{reliability.score} · {reliabilityBandLabel}</span>
+            <span className={styles.hudMeta}>{reliabilityTrendLabel} · {reliabilityFx.offerCount} offers</span>
+          </div>
+
+          <div className={styles.divider} />
+
+          <div className={styles.hudBlock}>
+            <span className={styles.hudLabel}>DATE</span>
+            <span className={styles.hudValue}>{formatGameDate(gameDate)}</span>
+          </div>
         </div>
 
-        <div className={styles.hudBlock}>
-          <span className={styles.hudLabel}>OPEX/mo</span>
-          <span className={[styles.hudValue, styles.opex].join(" ")}>
-            -{formatMoney(pnl.opex)}
-          </span>
-        </div>
-
-        <div className={styles.hudBlock}>
-          <span className={styles.hudLabel}>NET/mo</span>
-          <span className={[
-            styles.hudValue,
-            pnl.net >= 0 ? styles.netPositive : styles.netNegative,
-          ].join(" ")}>
-            {formatMoney(pnl.net, true)}
-          </span>
-        </div>
-
-        <div className={styles.divider} />
-
-        <div className={styles.hudBlock} title={reliabilityFx.summary}>
-          <span className={styles.hudLabel}>RELIABILITY</span>
-          <span className={[
-            styles.hudValue,
-            (reliability.band === "platinum" || reliability.band === "diamond")
-              ? styles.reliabilityTrusted
-              : (reliability.band === "silver" || reliability.band === "bronze")
-                ? styles.reliabilityAtRisk
-                : styles.reliabilityBaseline,
-          ].join(" ")}>{reliability.score} · {reliabilityBandLabel}</span>
-          <span className={styles.hudMeta}>{reliabilityTrendLabel} · {reliabilityFx.offerCount} offers</span>
-        </div>
-
-        <div className={styles.divider} />
-
-        <div className={styles.hudBlock}>
-          <span className={styles.hudLabel}>DATE</span>
-          <span className={styles.hudValue}>{formatGameDate(gameDate)}</span>
-        </div>
-      </div>
-
-      <div className={styles.right}>
-        {banner && (
-          <button
-            className={[
-              styles.alertBadge,
-              banner.tone === "danger" ? styles.alertDanger : banner.tone === "warn" ? styles.alertWarn : styles.alertInfo,
-            ].join(" ")}
-            title="Open contracts"
-            onClick={openContracts}
-          >
-            {banner.label}
-          </button>
-        )}
-
-        <button
-          className={styles.helpBtn}
-          onClick={() => setShowAudioModal(true)}
-          title="Audio Settings"
-          aria-label="Audio Settings"
-        >
-          {audioSettings.master ? "🔊" : "🔇"}
-        </button>
-
-        <button
-          className={styles.helpBtn}
-          onClick={() => setShowResetModal(true)}
-          title="Reset Game"
-          aria-label="Reset Game"
-        >
-          ⟲
-        </button>
-
-        {onOpenTutorial && (
+        <div className={styles.right}>
           <button
             className={styles.helpBtn}
-            onClick={onOpenTutorial}
-            title="How to Play"
-            aria-label="How to Play"
+            onClick={() => setShowAudioModal(true)}
+            title="Audio Settings"
+            aria-label="Audio Settings"
           >
-            ?
+            {audioSettings.master ? "🔊" : "🔇"}
           </button>
-        )}
 
-        <LedSegment color={speed === 0 ? "amber" : "lime"} blink={speed > 0} size={8} />
+          <button
+            className={styles.helpBtn}
+            onClick={() => setShowResetModal(true)}
+            title="Reset Game"
+            aria-label="Reset Game"
+          >
+            ⟲
+          </button>
 
-        <div className={styles.speeds}>
-          {([0, 1, 2, 3] as Speed[]).map((entry) => (
+          {onOpenTutorial && (
             <button
-              key={entry}
-              className={[styles.speedBtn, speed === entry ? styles.speedActive : ""].join(" ")}
-              onClick={() => onSpeedChange(entry)}
-              title={entry === 0 ? "Pause" : `${entry}× speed`}
-              aria-pressed={speed === entry}
+              className={styles.helpBtn}
+              onClick={onOpenTutorial}
+              title="How to Play"
+              aria-label="How to Play"
             >
-              {SPEED_LABELS[entry]}
+              ?
             </button>
-          ))}
+          )}
+
+          <LedSegment color={speed === 0 ? "amber" : "lime"} blink={speed > 0} size={8} />
+
+          <div className={styles.speeds}>
+            {([0, 1, 2, 3] as Speed[]).map((entry) => (
+              <button
+                key={entry}
+                className={[styles.speedBtn, speed === entry ? styles.speedActive : ""].join(" ")}
+                onClick={() => onSpeedChange(entry)}
+                title={entry === 0 ? "Pause" : `${entry}× speed`}
+                aria-pressed={speed === entry}
+              >
+                {SPEED_LABELS[entry]}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      </header>
+
+      {banner && (
+        <button
+          key={`${banner.tone}:${banner.label}`}
+          type="button"
+          className={[
+            styles.alertBadge,
+            banner.tone === "danger" ? styles.alertDanger : banner.tone === "warn" ? styles.alertWarn : styles.alertInfo,
+          ].join(" ")}
+          title="Open contracts"
+          onClick={openContracts}
+        >
+          {banner.label}
+        </button>
+      )}
 
       {showResetModal && <ResetGameModal onClose={() => setShowResetModal(false)} />}
       {showAudioModal && <AudioSettingsModal onClose={() => setShowAudioModal(false)} />}
-    </header>
+    </div>
   );
 }
