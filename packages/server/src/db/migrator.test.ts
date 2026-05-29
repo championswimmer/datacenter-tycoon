@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test } from "node:test";
+import { test } from "bun:test";
 import { loadMigrations } from "./migrator.js";
 
 test("loadMigrations sorts SQL files lexicographically and ignores non-SQL files", async () => {

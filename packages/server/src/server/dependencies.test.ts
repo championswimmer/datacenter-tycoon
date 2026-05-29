@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "bun:test";
 import { loadServerConfig } from "../config.js";
 import { InMemoryLeaderboardRepository } from "../leaderboard/repository.js";
 import { InMemoryPlayersRepository } from "../players/repository.js";

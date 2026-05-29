@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "bun:test";
 import { apiRequest, createTestApp } from "../test-utils/app.js";
 import type { PlayersRepository, RegisterPlayerInput } from "../players/repository.js";
 import { UsernameUnavailableError } from "../players/repository.js";

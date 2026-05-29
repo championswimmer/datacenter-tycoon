@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { newGame, summarizeLeaderboardFromState } from "@datacenter-tycoon/game-logic";
-import { test } from "node:test";
+import { test } from "bun:test";
 import type { RegisterPlayerInput } from "../players/repository.js";
 import { InMemoryPlayersRepository, type PlayersRepository } from "../players/repository.js";
 import type { RateLimiter, RateLimitRule } from "../rate-limit/fixed-window.js";

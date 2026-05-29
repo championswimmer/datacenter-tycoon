@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "bun:test";
 import { ConfigError, loadServerConfig } from "./config.js";
 import type { PlayersRepository } from "./players/repository.js";
 import { createTestApp } from "./test-utils/app.js";
