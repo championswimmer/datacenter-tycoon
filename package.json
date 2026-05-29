@@ -18,7 +18,9 @@
     "build:server": "npm run build -w @datacenter-tycoon/server",
     "build:cli": "npm run build -w @datacenter-tycoon/cli",
     "check:migrations:server": "npm run check:migrations -w @datacenter-tycoon/server",
-    "ci:server": "npm run build -w @datacenter-tycoon/server && npm run typecheck -w @datacenter-tycoon/server && npm run check:migrations -w @datacenter-tycoon/server && npm run test:ci -w @datacenter-tycoon/server",
+    "typecheck:server": "npm run typecheck -w @datacenter-tycoon/server",
+    "test:server:ci": "npm run test:ci -w @datacenter-tycoon/server",
+    "ci:server": "npm run build:server && npm run typecheck:server && npm run check:migrations:server && npm run test:server:ci",
 
     "dev": "npm run dev --workspaces --if-present",
     "dev:logic": "npm run dev -w @datacenter-tycoon/game-logic",
