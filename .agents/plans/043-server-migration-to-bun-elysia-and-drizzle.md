@@ -14,7 +14,7 @@ owner: server
   - [x] 1.2 Choose the Bun/Drizzle driver strategy for production Postgres and development PGlite
   - [x] 1.3 Define the cutover boundaries so transport and persistence can migrate independently
 - [ ] **Phase 2 — Bun runtime foundation**
-  - [ ] 2.1 Convert server package scripts, entrypoints, and CI commands to Bun-compatible execution
+  - [x] 2.1 Convert server package scripts, entrypoints, and CI commands to Bun-compatible execution
   - [ ] 2.2 Migrate the server test harness from `node:test` to `bun:test` while preserving request-level coverage
   - [ ] 2.3 Keep monorepo root workflows working while the server package runs on Bun internally
 - [ ] **Phase 3 — Elysia transport migration**
@@ -201,6 +201,7 @@ export const createServerApp = (deps: AppDependencies) =>
 - Replace `tsx watch src/index.ts`, `node --test --import tsx`, and `node dist/index.js` assumptions with Bun-native equivalents.
 - Decide whether the server package still emits `dist/` via `tsc`, uses `bun run` directly in production, or supports both for deployment flexibility.
 - Update root scripts so `npm run dev:server`, `npm run test:server`, and `npm run build:server` still work from the monorepo root, even if the server workspace internally invokes Bun.
+- Implementation note: runtime scripts now execute through Bun inside `packages/server` (`bun run --watch src/index.ts`, `bun run src/db/*.ts`, `bun run dist/index.js`), while the root monorepo entrypoints remain `npm run ... -w @datacenter-tycoon/server`.
 - Acceptance: a developer can run the server package locally through Bun, and the existing monorepo commands still work as documented.
 
 ### Step 2.2 — Migrate the server test harness from `node:test` to `bun:test` while preserving request-level coverage
@@ -394,3 +395,4 @@ export const createServerApp = (deps: AppDependencies) =>
 - 2026-05-29 — Completed step 1.1 by freezing the current HTTP contract in request-level tests and documenting which transport details must remain stable during the migration.
 - 2026-05-29 — Completed step 1.2 by locking the Drizzle driver split to Bun SQL for production/staging and PGlite for development/tests, with deployment/runtime rationale recorded in the plan.
 - 2026-05-29 — Completed step 1.3 by extracting a transport/persistence dependency seam so the future Elysia and Drizzle migrations can be tested and landed independently.
+- 2026-05-29 — Completed step 2.1 by switching server runtime scripts to Bun while preserving root npm workspace orchestration and documenting the Bun requirement.
