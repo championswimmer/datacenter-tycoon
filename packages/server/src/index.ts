@@ -3,18 +3,18 @@ import { ConfigError, loadServerConfig } from "./config.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerLeaderboardRoutes } from "./routes/leaderboard.js";
 import { registerPlayerRoutes } from "./routes/players.js";
+import type { ServerElysiaApp } from "./server/elysia-app.js";
 import { createElysiaServerApp } from "./server/elysia-app.js";
 import {
   createDefaultServerServices,
   resolveAppDependencies,
 } from "./server/dependencies.js";
-import { createNodeHttpServer } from "./server/node-http.js";
 import type { AppDependencies, ServerServicesFactory } from "./types.js";
 
 export function createApp(
   dependencies: AppDependencies,
   createServices: ServerServicesFactory = createDefaultServerServices,
-) {
+): ServerElysiaApp {
   const context = resolveAppDependencies(dependencies, createServices);
 
   return createElysiaServerApp({
@@ -29,21 +29,26 @@ export function createApp(
 
 export function startServer(
   env: Record<string, string | undefined> = process.env,
-): ReturnType<typeof createNodeHttpServer> {
+): ServerElysiaApp {
   const config = loadServerConfig(env);
   const app = createApp({
     config,
     services: {},
   });
-  const server = createNodeHttpServer(app);
 
-  server.listen(config.port, config.host, () => {
-    console.log(
-      `Datacenter Tycoon server listening on ${config.host}:${config.port} (game-logic v${config.gameLogicVersion})`,
-    );
-  });
+  app.listen(
+    {
+      hostname: config.host,
+      port: config.port,
+    },
+    (server) => {
+      console.log(
+        `Datacenter Tycoon server listening on ${config.host}:${server.port} (game-logic v${config.gameLogicVersion})`,
+      );
+    },
+  );
 
-  return server;
+  return app;
 }
 
 if (isDirectExecution(import.meta.url)) {
@@ -62,4 +67,3 @@ function isDirectExecution(moduleUrl: string): boolean {
 
   return entrypoint !== undefined && fileURLToPath(moduleUrl) === entrypoint;
 }
-

@@ -2,77 +2,13 @@ import {
   getClientRateLimitKey,
   type RateLimitRule,
 } from "../rate-limit/fixed-window.js";
-import type { ServerRoute } from "../server/app.js";
-import { HttpError, jsonResponse } from "../server/app.js";
+import { HttpError } from "../server/errors.js";
 import type { ServerElysiaApp } from "../server/elysia-app.js";
 import type { AppDependencies } from "../types.js";
 import {
   checkUsernameAvailability,
   registerPlayerUsername,
 } from "../players/service.js";
-
-interface AvailabilityResponse {
-  username: string;
-  available: boolean;
-}
-
-interface RegistrationResponse {
-  playerId: string;
-  username: string;
-}
-
-export function createPlayerRoutes(): readonly ServerRoute[] {
-  return [
-    {
-      method: "GET",
-      pathname: "/players/availability",
-      handler: async (request, { services }) => {
-        const repository = services.players;
-
-        if (!repository) {
-          throw new HttpError(503, "PLAYERS_UNAVAILABLE", "Player registration is not configured.");
-        }
-
-        const url = new URL(request.url);
-        const username = url.searchParams.get("username");
-
-        if (username === null) {
-          throw new HttpError(400, "INVALID_USERNAME", "username query parameter is required.");
-        }
-
-        const availability = await checkUsernameAvailability(repository, username);
-        return jsonResponse(availability);
-      },
-    },
-    {
-      method: "POST",
-      pathname: "/players",
-      handler: async (request, { services, config }) => {
-        const repository = services.players;
-
-        if (!repository) {
-          throw new HttpError(503, "PLAYERS_UNAVAILABLE", "Player registration is not configured.");
-        }
-
-        const rateLimiter = services.rateLimiter;
-
-        if (rateLimiter) {
-          enforceRateLimit(
-            request,
-            rateLimiter,
-            config.rateLimits.playerRegistration,
-            "player registrations",
-          );
-        }
-
-        const body = await parseRegistrationRequest(request);
-        const registration = await registerPlayerUsername(repository, body.username);
-
-        return jsonResponse(registration, { status: 201 });
-      },
-    },
-  ];
-}
 
 export function registerPlayerRoutes(
   app: ServerElysiaApp,

@@ -1,6 +1,5 @@
 import { loadServerConfig, type ServerConfig } from "../config.js";
 import { createApp } from "../index.js";
-import type { ServerApp } from "../server/app.js";
 import type { ServerElysiaApp } from "../server/elysia-app.js";
 import type { AppDependencies, ServerServices } from "../types.js";
 
@@ -45,13 +44,13 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
 }
 
 export async function apiRequest<TBody = unknown>(
-  app: ServerApp | ServerElysiaApp,
+  app: ServerElysiaApp,
   path: string,
   init: RequestInit = {},
 ): Promise<ApiResponse<TBody>> {
   const url = new URL(path, "http://localhost");
   const request = new Request(url, init);
-  const response = "handle" in app ? await app.handle(request) : await app.fetch(request);
+  const response = await app.fetch(request);
   const bodyText = await response.text();
   const json = bodyText === "" ? null : (JSON.parse(bodyText) as TBody);
 

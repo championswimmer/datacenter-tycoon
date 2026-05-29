@@ -1,4 +1,4 @@
-import { HttpError } from "../server/app.js";
+import { HttpError } from "../server/errors.js";
 import {
   parseUsernameRegistration,
   UsernameValidationError,

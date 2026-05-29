@@ -5,86 +5,9 @@ import {
   getClientRateLimitKey,
   type RateLimitRule,
 } from "../rate-limit/fixed-window.js";
-import type { ServerRoute } from "../server/app.js";
-import { HttpError, jsonResponse } from "../server/app.js";
+import { HttpError } from "../server/errors.js";
 import type { ServerElysiaApp } from "../server/elysia-app.js";
 import type { AppDependencies } from "../types.js";
-
-export function createLeaderboardRoutes(): readonly ServerRoute[] {
-  return [
-    {
-      method: "GET",
-      pathname: "/leaderboard",
-      handler: async (request, { services }) => {
-        const playersRepository = services.players;
-        const leaderboardRepository = services.leaderboard;
-
-        if (!playersRepository || !leaderboardRepository) {
-          throw new HttpError(
-            503,
-            "LEADERBOARD_UNAVAILABLE",
-            "Online leaderboard submission is not configured.",
-          );
-        }
-
-        const { query, entries } = await queryLeaderboardEntries(
-          playersRepository,
-          leaderboardRepository,
-          new URL(request.url).searchParams,
-        );
-
-        return jsonResponse({
-          metric: query.metric,
-          period: query.period,
-          limit: query.limit,
-          entries: entries.map((entry) => serializeLeaderboardEntry(entry)),
-        });
-      },
-    },
-    {
-      method: "POST",
-      pathname: "/leaderboard/runs",
-      handler: async (request, { services, config }) => {
-        const playersRepository = services.players;
-        const leaderboardRepository = services.leaderboard;
-
-        if (!playersRepository || !leaderboardRepository) {
-          throw new HttpError(
-            503,
-            "LEADERBOARD_UNAVAILABLE",
-            "Online leaderboard submission is not configured.",
-          );
-        }
-
-        const rateLimiter = services.rateLimiter;
-
-        if (rateLimiter) {
-          enforceRateLimit(
-            request,
-            rateLimiter,
-            config.rateLimits.leaderboardSubmission,
-            "leaderboard submissions",
-          );
-        }
-
-        const payload = await parseJsonBody(request);
-        const result = await submitLeaderboardRun(
-          playersRepository,
-          leaderboardRepository,
-          payload,
-        );
-
-        return jsonResponse(
-          {
-            created: result.created,
-            run: serializeLeaderboardRun(result.run),
-          },
-          { status: result.created ? 201 : 200 },
-        );
-      },
-    },
-  ];
-}
 
 export function registerLeaderboardRoutes(
   app: ServerElysiaApp,
