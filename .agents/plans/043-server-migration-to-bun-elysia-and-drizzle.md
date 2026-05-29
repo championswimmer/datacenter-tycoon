@@ -9,10 +9,10 @@ owner: server
 
 ## Progress
 
-- [ ] **Phase 1 — Compatibility baseline and migration decisions**
+- [x] **Phase 1 — Compatibility baseline and migration decisions**
   - [x] 1.1 Inventory the current server contract and freeze compatibility expectations
   - [x] 1.2 Choose the Bun/Drizzle driver strategy for production Postgres and development PGlite
-  - [ ] 1.3 Define the cutover boundaries so transport and persistence can migrate independently
+  - [x] 1.3 Define the cutover boundaries so transport and persistence can migrate independently
 - [ ] **Phase 2 — Bun runtime foundation**
   - [ ] 2.1 Convert server package scripts, entrypoints, and CI commands to Bun-compatible execution
   - [ ] 2.2 Migrate the server test harness from `node:test` to `bun:test` while preserving request-level coverage
@@ -188,6 +188,7 @@ export const createServerApp = (deps: AppDependencies) =>
   - route handlers can switch from the custom router to Elysia while services stay unchanged;
   - repositories can switch from `pg` to Drizzle while service signatures stay unchanged.
 - Formalize the dependency graph so transport/runtime changes do not force an immediate persistence rewrite in the same commit.
+- Implementation note: this seam now lives in `packages/server/src/server/dependencies.ts`, where `resolveAppDependencies(...)` keeps route/app factories transport-focused and `createDefaultServerServices(...)` isolates repository construction for later Drizzle migration.
 - Acceptance: a short architecture note or dependency helper makes it obvious how to test Elysia handlers with injected fake services and Drizzle repositories independently.
 
 ## Phase 2 — Bun runtime foundation
@@ -392,3 +393,4 @@ export const createServerApp = (deps: AppDependencies) =>
 - 2026-05-29 — Created plan for migrating the server from the custom Node router + raw `pg` stack to Bun, Elysia, and Drizzle.
 - 2026-05-29 — Completed step 1.1 by freezing the current HTTP contract in request-level tests and documenting which transport details must remain stable during the migration.
 - 2026-05-29 — Completed step 1.2 by locking the Drizzle driver split to Bun SQL for production/staging and PGlite for development/tests, with deployment/runtime rationale recorded in the plan.
+- 2026-05-29 — Completed step 1.3 by extracting a transport/persistence dependency seam so the future Elysia and Drizzle migrations can be tested and landed independently.

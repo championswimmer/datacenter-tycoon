@@ -13,3 +13,5 @@ export interface AppDependencies {
   config: ServerConfig;
   services: ServerServices;
 }
+
+export type ServerServicesFactory = (config: ServerConfig) => ServerServices;
