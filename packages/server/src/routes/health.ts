@@ -9,6 +9,15 @@ export function registerHealthRoutes(
     .get("/healthz", () => ({
       status: "ok",
       environment: config.environment,
+      runtime: "bun",
+      framework: "elysia",
+      databaseMode: config.database.mode,
+      databaseProvider:
+        config.database.mode === "postgres"
+          ? "bun-sql"
+          : config.database.pgliteDataDir
+            ? "pglite-file"
+            : "pglite-memory",
       databaseConfigured:
         config.database.mode === "postgres"
           ? config.database.connectionString !== undefined

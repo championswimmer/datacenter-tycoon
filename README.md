@@ -45,6 +45,6 @@ npm run check:migrations:server
 npm run ci:server
 ```
 
-The monorepo still uses **Node + npm** at the root, but the `packages/server` workspace now expects **Bun >= 1.3.14** for server-specific runtime, migration, and test commands. If Bun is missing, the root `*:server` wrappers will fail when they delegate into the server workspace.
+The monorepo still uses **Node + npm** at the root, but the `packages/server` workspace now expects **Bun >= 1.3.14** for server-specific runtime, migration, and test commands. If Bun is missing, the root `*:server` wrappers will fail when they delegate into the server workspace. In local development, the server now defaults to **file-backed PGlite** under `packages/server/.data/pglite` unless you explicitly set `DATABASE_URL` to point at a real Postgres instance.
 
 Deployment notes, environment variables, Railway setup, and the release checklist are documented in [`packages/server/README.md`](./packages/server/README.md).

@@ -18,6 +18,10 @@ test("GET /healthz returns liveness information", async () => {
   const { response, json } = await apiRequest<{
     status: string;
     environment: string;
+    runtime: string;
+    framework: string;
+    databaseMode: string;
+    databaseProvider: string;
     databaseConfigured: boolean;
   }>(app, "/healthz");
 
@@ -25,6 +29,10 @@ test("GET /healthz returns liveness information", async () => {
   assert.deepEqual(json, {
     status: "ok",
     environment: "test",
+    runtime: "bun",
+    framework: "elysia",
+    databaseMode: "pglite",
+    databaseProvider: "pglite-memory",
     databaseConfigured: false,
   });
 });

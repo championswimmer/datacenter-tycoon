@@ -44,8 +44,14 @@ export async function startServer(
       port: config.port,
     },
     (server) => {
+      const databaseProvider =
+        config.database.mode === "postgres"
+          ? "bun-sql"
+          : config.database.pgliteDataDir
+            ? "pglite-file"
+            : "pglite-memory";
       console.log(
-        `Datacenter Tycoon server listening on ${config.host}:${server.port} (game-logic v${config.gameLogicVersion}, db=${config.database.mode})`,
+        `Datacenter Tycoon server listening on ${config.host}:${server.port} (runtime=bun, framework=elysia, db=${config.database.mode}/${databaseProvider}, game-logic v${config.gameLogicVersion})`,
       );
     },
   );

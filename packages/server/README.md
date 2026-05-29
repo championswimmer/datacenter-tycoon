@@ -19,8 +19,7 @@ Backend service for Datacenter Tycoon leaderboards and lightweight player regist
 npm install
 bun --version
 cp packages/server/.env.example packages/server/.env.local
-createdb datacenter_tycoon
-DATABASE_URL=postgres://localhost:5432/datacenter_tycoon npm run migrate -w @datacenter-tycoon/server
+npm run migrate -w @datacenter-tycoon/server
 npm run dev:server
 ```
 
@@ -43,7 +42,8 @@ Copy `packages/server/.env.example` into your own local env file or export the v
 | `PORT` | yes in production | Listening port. Railway injects this automatically. |
 | `CORS_ALLOWED_ORIGINS` | yes in production | Comma-separated list of allowed web origins. |
 | `SERVER_VERSION` | optional | Overrides the version returned by `GET /version`. |
-| `DATABASE_URL` | required for persistent players and leaderboard runs | Postgres connection string for local dev or Railway Postgres. |
+| `DATABASE_URL` | required in production, optional in local dev | Postgres connection string. When omitted outside production, the server falls back to PGlite. |
+| `PGLITE_DATA_DIR` | optional outside production | File-backed PGlite data directory. Defaults to `.data/pglite` in development. |
 | `PLAYER_REGISTRATION_RATE_LIMIT_WINDOW_MS` | optional | Window size for registration throttling. |
 | `PLAYER_REGISTRATION_RATE_LIMIT_MAX_REQUESTS` | optional | Max registration attempts per client within the window. |
 | `LEADERBOARD_SUBMISSION_RATE_LIMIT_WINDOW_MS` | optional | Window size for leaderboard submission throttling. |
@@ -51,14 +51,26 @@ Copy `packages/server/.env.example` into your own local env file or export the v
 
 ## Postgres provisioning
 
-### Local Postgres
+### Local PGlite default
 
-A minimal local setup can use any Postgres 15+ instance. For example:
+Local development now defaults to **file-backed PGlite** and does not require a separate Postgres daemon:
+
+```bash
+cp packages/server/.env.example packages/server/.env.local
+npm run migrate -w @datacenter-tycoon/server
+npm run dev:server
+```
+
+The database files live under `packages/server/.data/pglite` by default and persist across restarts.
+
+### Local Postgres override
+
+If you want production-like local behavior, point `DATABASE_URL` at any Postgres 15+ instance:
 
 ```bash
 createdb datacenter_tycoon
 DATABASE_URL=postgres://localhost:5432/datacenter_tycoon npm run migrate -w @datacenter-tycoon/server
-npm run dev:server
+DATABASE_URL=postgres://localhost:5432/datacenter_tycoon npm run dev:server
 ```
 
 ### Railway deployment
