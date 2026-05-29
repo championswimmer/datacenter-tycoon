@@ -79,6 +79,10 @@ test("GET /healthz preserves its status code, body shape, content type, and curr
   const { response, json } = await apiRequest<{
     status: string;
     environment: string;
+    runtime: string;
+    framework: string;
+    databaseMode: string;
+    databaseProvider: string;
     databaseConfigured: boolean;
   }>(app, frozenEndpointContracts.healthz.path);
 
@@ -88,6 +92,10 @@ test("GET /healthz preserves its status code, body shape, content type, and curr
   assert.deepEqual(json, {
     status: "ok",
     environment: "test",
+    runtime: "bun",
+    framework: "elysia",
+    databaseMode: "pglite",
+    databaseProvider: "pglite-memory",
     databaseConfigured: false,
   });
 });

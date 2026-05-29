@@ -27,10 +27,10 @@ owner: server
   - [x] 4.2 Add a Drizzle database factory for Bun Postgres and PGlite
   - [x] 4.3 Rewrite player and leaderboard repositories to use Drizzle instead of raw `pg` SQL
   - [x] 4.4 Adopt a Drizzle-led migration workflow without losing compatibility with existing databases
-- [ ] **Phase 5 — Development and production database modes**
+- [x] **Phase 5 — Development and production database modes**
   - [x] 5.1 Reintroduce the dev/prod database-mode rules on top of Drizzle
-  - [ ] 5.2 Make health/startup output expose runtime, framework, and active database provider
-  - [ ] 5.3 Support persistent file-backed PGlite in development and external Postgres in production
+  - [x] 5.2 Make health/startup output expose runtime, framework, and active database provider
+  - [x] 5.3 Support persistent file-backed PGlite in development and external Postgres in production
 - [ ] **Phase 6 — Client compatibility, rollout, and documentation**
   - [ ] 6.1 Verify that web and planned CLI integrations continue to work against the migrated API
   - [ ] 6.2 Add integration coverage for Bun + Elysia + Drizzle across dev and production-like modes
@@ -341,6 +341,7 @@ export const createServerApp = (deps: AppDependencies) =>
   - framework = Elysia;
   - database mode/provider = PGlite or Postgres.
 - Add these fields in a backwards-compatible way or update compatibility tests intentionally if the health payload contract changes.
+- Implementation note: `/healthz` now returns `runtime`, `framework`, `databaseMode`, and `databaseProvider`, while startup logs emit the same runtime/framework/provider tuple so a single curl or boot log shows whether the server is using `bun-sql`, `pglite-file`, or `pglite-memory`.
 - Acceptance: smoke tests and docs make it trivial to verify that the intended runtime stack is active.
 
 ### Step 5.3 — Support persistent file-backed PGlite in development and external Postgres in production
@@ -349,6 +350,7 @@ export const createServerApp = (deps: AppDependencies) =>
 - Choose and document a default local data directory for PGlite.
 - Ensure local data persists across server restarts.
 - Ensure production startup rejects accidental PGlite usage and requires the correct Postgres configuration.
+- Implementation note: development now defaults to `packages/server/.data/pglite`, the Bun startup path eagerly creates that directory before opening PGlite, `.gitignore` excludes the local data folder, docs and `.env.example` explain the PGlite default plus Postgres override, and `pglite-persistence.test.ts` proves that data survives a close/reopen cycle.
 - Acceptance: local dev can start with no separate Postgres daemon, while production-like configuration connects cleanly to a real Postgres instance.
 
 ## Phase 6 — Client compatibility, rollout, and documentation
@@ -419,3 +421,5 @@ export const createServerApp = (deps: AppDependencies) =>
 - 2026-05-29 — Completed step 4.3 by replacing raw `pg` repositories with Drizzle implementations and proving the new persistence path through both repository tests and a PGlite-backed request-level integration test.
 - 2026-05-29 — Completed step 4.4 by adding a provider-aware migration workflow that preserves the historical SQL baseline while introducing Drizzle’s migration journal and migrator entrypoints.
 - 2026-05-29 — Completed step 5.1 by restoring explicit dev/prod database-mode rules on top of Drizzle and proving that a Bun-started development server now boots against default file-backed PGlite.
+- 2026-05-29 — Completed step 5.2 by exposing runtime/framework/database-provider metadata in both `/healthz` and startup logs.
+- 2026-05-29 — Completed step 5.3 by documenting the persistent PGlite default, ignoring its data directory, and adding a regression test that proves file-backed data survives restarts.
