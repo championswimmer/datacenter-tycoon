@@ -17,11 +17,14 @@ Backend service for Datacenter Tycoon leaderboards and lightweight player regist
 
 ```bash
 npm install
+bun --version
 cp packages/server/.env.example packages/server/.env.local
 createdb datacenter_tycoon
 DATABASE_URL=postgres://localhost:5432/datacenter_tycoon npm run migrate -w @datacenter-tycoon/server
 npm run dev:server
 ```
+
+The monorepo entrypoint remains `npm`, but the server workspace now executes its runtime scripts with **Bun** internally (`npm run dev:server` → `packages/server` → `bun run --watch src/index.ts`). Build and typecheck still use TypeScript directly during this migration phase.
 
 The server can also be verified locally with:
 
@@ -36,7 +39,7 @@ Copy `packages/server/.env.example` into your own local env file or export the v
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `HOST` | local only | Bind host for the Node HTTP server. Defaults to `0.0.0.0`. |
+| `HOST` | local only | Bind host for the Bun-started server process. Defaults to `0.0.0.0`. |
 | `PORT` | yes in production | Listening port. Railway injects this automatically. |
 | `CORS_ALLOWED_ORIGINS` | yes in production | Comma-separated list of allowed web origins. |
 | `SERVER_VERSION` | optional | Overrides the version returned by `GET /version`. |

@@ -4,13 +4,17 @@
   "description": "Backend for scoring, leaderboards, and multiplayer.",
   "type": "module",
   "private": true,
+  "engines": {
+    "bun": ">=1.3.14",
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsc -b",
     "build:deploy": "npm run build -w @datacenter-tycoon/game-logic && npm run build",
-    "check:migrations": "tsx src/db/check-migrations.ts",
-    "dev": "tsx watch src/index.ts",
-    "migrate": "tsx src/db/migrate.ts",
-    "start": "node dist/index.js",
+    "check:migrations": "bun run src/db/check-migrations.ts",
+    "dev": "bun run --watch src/index.ts",
+    "migrate": "bun run src/db/migrate.ts",
+    "start": "bun run dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "node --test --import tsx $(find src -type f -name '*.test.ts' | sort)",
     "test:ci": "mkdir -p coverage && c8 --report-dir=coverage --reporter=lcov --reporter=text-summary --all --include=src/**/*.ts --exclude='src/**/*.test.ts' node --test --import tsx --test-reporter=junit --test-reporter-destination=coverage/junit.xml $(find src -type f -name '*.test.ts' | sort)",
