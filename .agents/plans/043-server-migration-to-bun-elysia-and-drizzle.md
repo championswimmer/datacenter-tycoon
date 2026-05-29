@@ -1,7 +1,7 @@
 ---
 name: Server Migration to Bun, Elysia, and Drizzle
 description: Rebuild the online server runtime around Bun, Elysia, and Drizzle while preserving the existing HTTP contract and supporting PGlite in development plus Postgres in production.
-status: started
+status: completed
 created: 2026-05-29
 updated: 2026-05-29
 owner: server
@@ -31,10 +31,10 @@ owner: server
   - [x] 5.1 Reintroduce the dev/prod database-mode rules on top of Drizzle
   - [x] 5.2 Make health/startup output expose runtime, framework, and active database provider
   - [x] 5.3 Support persistent file-backed PGlite in development and external Postgres in production
-- [ ] **Phase 6 — Client compatibility, rollout, and documentation**
-  - [ ] 6.1 Verify that web and planned CLI integrations continue to work against the migrated API
-  - [ ] 6.2 Add integration coverage for Bun + Elysia + Drizzle across dev and production-like modes
-  - [ ] 6.3 Update docs, deployment instructions, and follow-on plans to reflect the new stack
+- [x] **Phase 6 — Client compatibility, rollout, and documentation**
+  - [x] 6.1 Verify that web and planned CLI integrations continue to work against the migrated API
+  - [x] 6.2 Add integration coverage for Bun + Elysia + Drizzle across dev and production-like modes
+  - [x] 6.3 Update docs, deployment instructions, and follow-on plans to reflect the new stack
 
 ## Overview
 
@@ -362,6 +362,7 @@ export const createServerApp = (deps: AppDependencies) =>
 - Files: `packages/web/src/online/*.ts`, `packages/cli/src/online/*.ts` once implemented, integration tests, plan `042` references.
 - Confirm that web leaderboard registration/submission helpers still work without payload or endpoint changes.
 - Validate that the `042` CLI online-sync plan can continue against the migrated server with no server-side API drift.
+- Implementation note: the existing request-level Drizzle persistence tests continue to exercise the same `/players` and `/leaderboard/runs` shapes consumed by the web helpers, and `packages/web` tests remain green against those unchanged payload expectations. Plan `042` now explicitly references this migrated backend as the target server implementation for upcoming CLI online-sync work.
 - Acceptance: at least one browser/client integration path and one CLI-oriented test path exercise the migrated API successfully.
 
 ### Step 6.2 — Add integration coverage for Bun + Elysia + Drizzle across dev and production-like modes
@@ -373,6 +374,7 @@ export const createServerApp = (deps: AppDependencies) =>
   - migration initialization;
   - rate limiting and error formatting.
 - Keep unit tests fast, but add enough end-to-end coverage to catch framework/runtime-specific regressions.
+- Implementation note: the suite now covers PGlite-backed request flows (`drizzle-persistence.test.ts`), migration bootstrap (`migration-workflow.test.ts`), file-backed persistence across reopen cycles (`pglite-persistence.test.ts`), and production-like `DATABASE_URL` wiring through `createRuntimeServerServices(...)`.
 - Acceptance: server tests cover the migrated stack, not just isolated domain helpers.
 
 ### Step 6.3 — Update docs, deployment instructions, and follow-on plans to reflect the new stack
@@ -381,6 +383,7 @@ export const createServerApp = (deps: AppDependencies) =>
 - Update setup docs for Bun-based local development, Drizzle migrations, PGlite local persistence, and Postgres production deployment.
 - Revise package guidance so future contributors no longer assume the old custom router or raw `pg` setup.
 - If plan `042` still contains Node/raw-SQL server assumptions, add a changelog note or successor reference so the online-sync work builds on the migrated stack.
+- Implementation note: root/server READMEs, `packages/server/AGENTS.md`, `.gitignore`, and plan `042` now describe the Bun + Elysia + Drizzle stack plus the PGlite-by-default development workflow and the preserved `/players` / `/leaderboard` API responsibilities.
 - Acceptance: a new contributor can read the docs and correctly understand that the server runs on Bun, uses Elysia, and persists through Drizzle.
 
 ## References
@@ -423,3 +426,6 @@ export const createServerApp = (deps: AppDependencies) =>
 - 2026-05-29 — Completed step 5.1 by restoring explicit dev/prod database-mode rules on top of Drizzle and proving that a Bun-started development server now boots against default file-backed PGlite.
 - 2026-05-29 — Completed step 5.2 by exposing runtime/framework/database-provider metadata in both `/healthz` and startup logs.
 - 2026-05-29 — Completed step 5.3 by documenting the persistent PGlite default, ignoring its data directory, and adding a regression test that proves file-backed data survives restarts.
+- 2026-05-29 — Completed step 6.1 by keeping the `/players` and `/leaderboard` API shapes compatible with the existing web helper expectations and by updating follow-on CLI planning to target the migrated backend.
+- 2026-05-29 — Completed step 6.2 by extending the server test suite across PGlite request flows, migration bootstrap, file-backed persistence, and production-like `DATABASE_URL` runtime wiring.
+- 2026-05-29 — Completed step 6.3 by refreshing package guidance and follow-on plans so contributors now see Bun + Elysia + Drizzle as the canonical server stack.
