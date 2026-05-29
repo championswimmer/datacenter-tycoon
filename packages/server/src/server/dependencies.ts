@@ -3,6 +3,7 @@ import {
   createPgliteDatabaseConnection,
   createPostgresDatabaseConnection,
 } from "../db/database.js";
+import { migrateConfiguredDatabase } from "../db/migration-workflow.js";
 import { DrizzleLeaderboardRepository } from "../leaderboard/repository.js";
 import { DrizzlePlayersRepository } from "../players/drizzle-repository.js";
 import { InMemoryPlayersRepository } from "../players/repository.js";
@@ -39,6 +40,9 @@ export function createDefaultServerServices(config: ServerConfig): ServerService
       players: new DrizzlePlayersRepository(database),
       leaderboard: new DrizzleLeaderboardRepository(database),
       rateLimiter: new InMemoryFixedWindowRateLimiter(),
+      close: async () => {
+        await database.close();
+      },
     };
   }
 
@@ -56,16 +60,26 @@ export async function createRuntimeServerServices(config: ServerConfig): Promise
       players: new DrizzlePlayersRepository(database),
       leaderboard: new DrizzleLeaderboardRepository(database),
       rateLimiter: new InMemoryFixedWindowRateLimiter(),
+      close: async () => {
+        await database.close();
+      },
     };
   }
 
   if (config.database.mode === "pglite" && config.database.pgliteDataDir) {
+    await migrateConfiguredDatabase({
+      PGLITE_DATA_DIR: config.database.pgliteDataDir,
+    });
+
     const database = await createPgliteDatabaseConnection(config.database.pgliteDataDir);
 
     return {
       players: new DrizzlePlayersRepository(database),
       leaderboard: new DrizzleLeaderboardRepository(database),
       rateLimiter: new InMemoryFixedWindowRateLimiter(),
+      close: async () => {
+        await database.close();
+      },
     };
   }
 

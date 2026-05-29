@@ -80,27 +80,47 @@ test("createRuntimeServerServices uses Bun SQL-backed Drizzle repositories when 
     }),
   );
 
-  assert.ok(services.players instanceof DrizzlePlayersRepository);
-  assert.ok(services.leaderboard instanceof DrizzleLeaderboardRepository);
+  try {
+    assert.ok(services.players instanceof DrizzlePlayersRepository);
+    assert.ok(services.leaderboard instanceof DrizzleLeaderboardRepository);
+    assert.equal(typeof services.close, "function");
+  } finally {
+    await services.close?.();
+  }
 });
 
-test("createRuntimeServerServices defaults development to PGlite-backed Drizzle repositories", async () => {
+test("createRuntimeServerServices defaults development to file-backed PGlite and persists across reopen cycles", async () => {
   const dataDir = await mkdtemp(join(tmpdir(), "dct-runtime-pglite-"));
 
   try {
-    const services = await createRuntimeServerServices(
-      loadServerConfig({
-        NODE_ENV: "development",
-        PORT: "4010",
-        HOST: "127.0.0.1",
-        CORS_ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:4173",
-        SERVER_VERSION: "9.9.9-test",
-        PGLITE_DATA_DIR: dataDir,
-      }),
-    );
+    const config = loadServerConfig({
+      NODE_ENV: "development",
+      PORT: "4010",
+      HOST: "127.0.0.1",
+      CORS_ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:4173",
+      SERVER_VERSION: "9.9.9-test",
+      PGLITE_DATA_DIR: dataDir,
+    });
+    const firstServices = await createRuntimeServerServices(config);
 
-    assert.ok(services.players instanceof DrizzlePlayersRepository);
-    assert.ok(services.leaderboard instanceof DrizzleLeaderboardRepository);
+    assert.ok(firstServices.players instanceof DrizzlePlayersRepository);
+    assert.ok(firstServices.leaderboard instanceof DrizzleLeaderboardRepository);
+    assert.equal(typeof firstServices.close, "function");
+
+    const created = await firstServices.players?.createPlayer({ username: "Runtime Cloud" });
+    assert.ok(created);
+
+    await firstServices.close?.();
+
+    const reopenedServices = await createRuntimeServerServices(config);
+
+    try {
+      assert.equal(reopenedServices.players instanceof DrizzlePlayersRepository, true);
+      const persisted = await reopenedServices.players?.findByPlayerId(created?.playerId ?? "missing");
+      assert.equal(persisted?.username, "Runtime Cloud");
+    } finally {
+      await reopenedServices.close?.();
+    }
   } finally {
     await rm(dataDir, { recursive: true, force: true });
   }
