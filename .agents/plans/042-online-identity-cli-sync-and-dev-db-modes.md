@@ -1,7 +1,7 @@
 ---
 name: Online Identity, CLI Leaderboard Sync, and Development DB Modes
 description: Extend CLI and web online integration, add explicit server URL configuration, and run the backend against PGlite in development and Postgres in production.
-status: created
+status: started
 created: 2026-05-29
 updated: 2026-05-29
 owner: server
@@ -10,7 +10,7 @@ owner: server
 ## Progress
 
 - [ ] **Phase 1 — Configuration and integration boundaries**
-  - [ ] 1.1 Define server database-mode configuration and startup rules
+  - [x] 1.1 Define server database-mode configuration and startup rules
   - [ ] 1.2 Define CLI online profile storage and `--server` precedence
   - [ ] 1.3 Centralize web API base-URL resolution for dev and production
 - [ ] **Phase 2 — Server database abstraction and PGlite development mode**
@@ -304,3 +304,4 @@ Resolution rules to implement:
 
 - 2026-05-29 — Created plan for CLI online identity, localhost dev wiring, and PGlite/Postgres runtime modes.
 - 2026-05-29 — Note: server-stack assumptions in this plan have been superseded by `043-server-migration-to-bun-elysia-and-drizzle.md`. Future CLI/web integration work should target the Bun + Elysia + Drizzle backend that now exists, while preserving the same broad `/players` and `/leaderboard` API responsibilities.
+- 2026-05-29 — Marked step 1.1 complete because the Bun + Elysia + Drizzle migration in plan `043` already delivered typed dev/prod database-mode config, PGlite development defaults, and coverage for production/postgres requirements.
