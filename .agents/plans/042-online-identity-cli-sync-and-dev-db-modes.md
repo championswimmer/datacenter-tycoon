@@ -19,7 +19,7 @@ owner: server
   - [x] 2.3 Make migration and health-check flows provider-aware
 - [ ] **Phase 3 — CLI online identity and leaderboard submission**
   - [x] 3.1 Add CLI online profile persistence and HTTP client helpers
-  - [ ] 3.2 Add CLI commands for registering, inspecting, and clearing online identity
+  - [x] 3.2 Add CLI commands for registering, inspecting, and clearing online identity
   - [ ] 3.3 Submit leaderboard summaries from CLI commands and the interactive TUI
 - [ ] **Phase 4 — Web development and production API targeting**
   - [ ] 4.1 Add environment-aware web API configuration for localhost dev and real-server production
@@ -311,3 +311,4 @@ Resolution rules to implement:
 - 2026-05-29 — Completed step 2.2 by adding closable runtime service lifecycles, auto-bootstrapping file-backed PGlite on development startup, and proving persistence across runtime reopen cycles in server dependency tests.
 - 2026-05-29 — Completed step 2.3 by making migration target resolution reuse server config rules, surfacing consistent provider metadata through health/startup paths, expanding provider-specific health/migration tests, and clarifying migrate/check-migrations docs for Postgres vs file-backed PGlite.
 - 2026-05-29 — Completed step 3.1 by adding CLI online-profile read/write/clear helpers, Node-side player registration and leaderboard submission clients, shared game-logic leaderboard payload construction, and unit coverage for profile round-trips, request shaping, and disabled/offline error mapping.
+- 2026-05-29 — Completed step 3.2 by wiring a noun-first `dct online` command router for login/status/logout, persisting identities through the dedicated profile path, and covering successful registration, profile reuse, logout, invalid-username, and unreachable-server flows in CLI command tests.
