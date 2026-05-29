@@ -23,7 +23,7 @@ owner: server
   - [x] 3.3 Port player and leaderboard endpoints with request validation and rate limiting
   - [x] 3.4 Remove the custom Node HTTP adapter once Elysia reaches parity
 - [ ] **Phase 4 — Drizzle schema and repository migration**
-  - [ ] 4.1 Model the existing Postgres schema in Drizzle tables and relations
+  - [x] 4.1 Model the existing Postgres schema in Drizzle tables and relations
   - [ ] 4.2 Add a Drizzle database factory for Bun Postgres and PGlite
   - [ ] 4.3 Rewrite player and leaderboard repositories to use Drizzle instead of raw `pg` SQL
   - [ ] 4.4 Adopt a Drizzle-led migration workflow without losing compatibility with existing databases
@@ -278,6 +278,7 @@ export const createServerApp = (deps: AppDependencies) =>
   - indexed leaderboard ranking fields;
   - timestamp columns.
 - Decide how historical SQL migration `001_leaderboard_foundation.sql` maps to Drizzle’s migration source of truth.
+- Implementation note: the server now has `src/db/schema.ts` and `src/db/relations.ts` mirroring the existing SQL baseline, a `drizzle.config.ts` that keeps future Drizzle-generated migrations under `./drizzle` instead of overwriting the legacy `migrations/001_leaderboard_foundation.sql`, and a small `schema.test.ts` regression test covering the exported table/column layout.
 - Acceptance: a Drizzle schema exists that faithfully represents the current database layout and can generate equivalent future migrations.
 
 ### Step 4.2 — Add a Drizzle database factory for Bun Postgres and PGlite
@@ -409,3 +410,4 @@ export const createServerApp = (deps: AppDependencies) =>
 - 2026-05-29 — Completed step 3.2 by porting health/version endpoints into an Elysia route registrar and running the existing health tests against the Elysia app harness.
 - 2026-05-29 — Completed step 3.3 by switching `createApp(...)` to Elysia and porting player/leaderboard routes, while relaxing the old transport snapshot tests to accept Bun/Elysia header formatting differences.
 - 2026-05-29 — Completed step 3.4 by deleting the bespoke fetch-router and `node:http` adapter, simplifying the server to a direct Elysia/Bun startup path.
+- 2026-05-29 — Completed step 4.1 by adding Drizzle schema/relations/config files that mirror the existing leaderboard SQL baseline without yet changing runtime persistence.
