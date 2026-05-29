@@ -7,6 +7,8 @@ import {
 } from "../rate-limit/fixed-window.js";
 import type { ServerRoute } from "../server/app.js";
 import { HttpError, jsonResponse } from "../server/app.js";
+import type { ServerElysiaApp } from "../server/elysia-app.js";
+import type { AppDependencies } from "../types.js";
 
 export function createLeaderboardRoutes(): readonly ServerRoute[] {
   return [
@@ -82,6 +84,72 @@ export function createLeaderboardRoutes(): readonly ServerRoute[] {
       },
     },
   ];
+}
+
+export function registerLeaderboardRoutes(
+  app: ServerElysiaApp,
+  { services, config }: AppDependencies,
+): ServerElysiaApp {
+  return app
+    .get("/leaderboard", async ({ request }) => {
+      const playersRepository = services.players;
+      const leaderboardRepository = services.leaderboard;
+
+      if (!playersRepository || !leaderboardRepository) {
+        throw new HttpError(
+          503,
+          "LEADERBOARD_UNAVAILABLE",
+          "Online leaderboard submission is not configured.",
+        );
+      }
+
+      const { query, entries } = await queryLeaderboardEntries(
+        playersRepository,
+        leaderboardRepository,
+        new URL(request.url).searchParams,
+      );
+
+      return {
+        metric: query.metric,
+        period: query.period,
+        limit: query.limit,
+        entries: entries.map((entry) => serializeLeaderboardEntry(entry)),
+      };
+    })
+    .post("/leaderboard/runs", async ({ request, set }) => {
+      const playersRepository = services.players;
+      const leaderboardRepository = services.leaderboard;
+
+      if (!playersRepository || !leaderboardRepository) {
+        throw new HttpError(
+          503,
+          "LEADERBOARD_UNAVAILABLE",
+          "Online leaderboard submission is not configured.",
+        );
+      }
+
+      if (services.rateLimiter) {
+        enforceRateLimit(
+          request,
+          services.rateLimiter,
+          config.rateLimits.leaderboardSubmission,
+          "leaderboard submissions",
+        );
+      }
+
+      const payload = await parseJsonBody(request);
+      const result = await submitLeaderboardRun(
+        playersRepository,
+        leaderboardRepository,
+        payload,
+      );
+
+      set.status = result.created ? 201 : 200;
+      return {
+        created: result.created,
+        run: serializeLeaderboardRun(result.run),
+      };
+    });
 }
 
 async function parseJsonBody(request: Request): Promise<unknown> {

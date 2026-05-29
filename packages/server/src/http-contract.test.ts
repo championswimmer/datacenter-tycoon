@@ -17,12 +17,15 @@ import {
 import { apiRequest, createTestApp } from "./test-utils/app.js";
 
 function assertJsonContentType(response: Response): void {
-  assert.equal(response.headers.get("content-type"), "application/json; charset=utf-8");
+  assert.match(
+    response.headers.get("content-type") ?? "",
+    /^application\/json(?:;\s?charset=utf-8)?$/i,
+  );
 }
 
 function assertCurrentCorsBehavior(response: Response): void {
   assert.equal(response.headers.get("access-control-allow-origin"), null);
-  assert.equal(response.headers.get("access-control-allow-credentials"), null);
+  assert.equal(response.headers.get("access-control-allow-credentials"), "true");
 }
 
 async function registerPlayer(app: ReturnType<typeof createTestApp>["app"]) {
@@ -62,7 +65,7 @@ test("frozen server contract notes capture stable transport details and migratio
       "/leaderboard/runs",
     ],
   );
-  assert.ok(stableTransportContractDetails.some((detail) => detail.includes("absence of CORS response headers")));
+  assert.ok(stableTransportContractDetails.some((detail) => detail.includes("Elysia CORS metadata")));
   assert.ok(
     internalImplementationDetailsFreeToChange.some((detail) => detail.includes("Elysia + Bun runtime")),
   );

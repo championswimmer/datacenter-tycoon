@@ -1,12 +1,13 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { Readable } from "node:stream";
 import type { ServerApp } from "./app.js";
+import type { ServerElysiaApp } from "./elysia-app.js";
 
-export function createNodeHttpServer(app: ServerApp): Server {
+export function createNodeHttpServer(app: ServerApp | ServerElysiaApp): Server {
   return createServer(async (incoming, outgoing) => {
     try {
       const request = await toRequest(incoming);
-      const response = await app.fetch(request);
+      const response = "handle" in app ? await app.handle(request) : await app.fetch(request);
       await writeResponse(outgoing, response);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown startup error";
