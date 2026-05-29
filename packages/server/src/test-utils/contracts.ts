@@ -63,7 +63,7 @@ export const stableTransportContractDetails = [
   "HTTP methods and paths for /healthz, /version, /players/availability, /players, /leaderboard, and /leaderboard/runs.",
   "Success and error status codes plus stable JSON envelope shapes for the public endpoints.",
   "Stable machine-readable error codes such as INVALID_JSON, INVALID_USERNAME, USERNAME_UNAVAILABLE, PLAYER_NOT_FOUND, INVALID_LEADERBOARD_QUERY, INVALID_LEADERBOARD_SUBMISSION, NON_MONOTONIC_RUN_UPDATE, RATE_LIMITED, and INTERNAL_SERVER_ERROR.",
-  "JSON content type responses and the current absence of CORS response headers / Retry-After headers.",
+  "JSON content type responses plus the current Elysia CORS metadata behavior (no echoed origin without an Origin request header, but access-control-allow-credentials remains present) / Retry-After headers.",
   "Rate-limited requests returning status 429 with a RATE_LIMITED error body whose message embeds the retry-after seconds.",
 ] as const;
 

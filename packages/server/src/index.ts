@@ -1,9 +1,9 @@
 import { fileURLToPath } from "node:url";
 import { ConfigError, loadServerConfig } from "./config.js";
-import { createHealthRoutes } from "./routes/health.js";
-import { createLeaderboardRoutes } from "./routes/leaderboard.js";
-import { createPlayerRoutes } from "./routes/players.js";
-import { createServerApp } from "./server/app.js";
+import { registerHealthRoutes } from "./routes/health.js";
+import { registerLeaderboardRoutes } from "./routes/leaderboard.js";
+import { registerPlayerRoutes } from "./routes/players.js";
+import { createElysiaServerApp } from "./server/elysia-app.js";
 import {
   createDefaultServerServices,
   resolveAppDependencies,
@@ -15,13 +15,15 @@ export function createApp(
   dependencies: AppDependencies,
   createServices: ServerServicesFactory = createDefaultServerServices,
 ) {
-  return createServerApp({
-    context: resolveAppDependencies(dependencies, createServices),
-    routes: [
-      ...createHealthRoutes(),
-      ...createPlayerRoutes(),
-      ...createLeaderboardRoutes(),
-    ],
+  const context = resolveAppDependencies(dependencies, createServices);
+
+  return createElysiaServerApp({
+    context,
+    register: (app, registeredContext) =>
+      registerLeaderboardRoutes(
+        registerPlayerRoutes(registerHealthRoutes(app, registeredContext), registeredContext),
+        registeredContext,
+      ),
   });
 }
 

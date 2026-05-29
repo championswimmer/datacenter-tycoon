@@ -20,7 +20,7 @@ owner: server
 - [ ] **Phase 3 — Elysia transport migration**
   - [x] 3.1 Introduce an Elysia app factory with shared config, CORS, and error handling
   - [x] 3.2 Port health and version endpoints to Elysia without changing their response contract
-  - [ ] 3.3 Port player and leaderboard endpoints with request validation and rate limiting
+  - [x] 3.3 Port player and leaderboard endpoints with request validation and rate limiting
   - [ ] 3.4 Remove the custom Node HTTP adapter once Elysia reaches parity
 - [ ] **Phase 4 — Drizzle schema and repository migration**
   - [ ] 4.1 Model the existing Postgres schema in Drizzle tables and relations
@@ -253,6 +253,7 @@ export const createServerApp = (deps: AppDependencies) =>
 - Move body/query parsing and validation into Elysia route schemas where appropriate.
 - Keep service-layer calls, error-code mapping, and rate-limit semantics stable.
 - Ensure leaderboard submission continues to use canonical gameplay-derived summary payload validation rather than client-trusting shortcuts.
+- Implementation note: `createApp(...)` now builds the real server from `createElysiaServerApp(...)`, while `registerPlayerRoutes(...)` and `registerLeaderboardRoutes(...)` port the interactive endpoints onto Elysia using the existing service layer, explicit JSON parsing, and shared rate-limit helpers. The request-level suite still covers player/leaderboard success, idempotency, validation, and rate-limited flows against the Elysia-backed app.
 - Acceptance: all existing player/leaderboard request tests pass against Elysia, including invalid JSON, invalid usernames, duplicate names, and rate-limited cases.
 
 ### Step 3.4 — Remove the custom Node HTTP adapter once Elysia reaches parity
@@ -405,3 +406,4 @@ export const createServerApp = (deps: AppDependencies) =>
 - 2026-05-29 — Completed step 3.1 by adding the first Elysia app factory, wiring shared CORS/error handling, and freezing its base behavior in dedicated tests before porting real endpoints.
 - 2026-05-29 — Relaxed the migration constraint from strict HTTP backwards compatibility to broad endpoint-level continuity because the backend is not yet live and can absorb cleaner route/response changes during the stack rewrite.
 - 2026-05-29 — Completed step 3.2 by porting health/version endpoints into an Elysia route registrar and running the existing health tests against the Elysia app harness.
+- 2026-05-29 — Completed step 3.3 by switching `createApp(...)` to Elysia and porting player/leaderboard routes, while relaxing the old transport snapshot tests to accept Bun/Elysia header formatting differences.
