@@ -17,11 +17,11 @@ owner: server
   - [x] 2.1 Convert server package scripts, entrypoints, and CI commands to Bun-compatible execution
   - [x] 2.2 Migrate the server test harness from `node:test` to `bun:test` while preserving request-level coverage
   - [x] 2.3 Keep monorepo root workflows working while the server package runs on Bun internally
-- [ ] **Phase 3 — Elysia transport migration**
+- [x] **Phase 3 — Elysia transport migration**
   - [x] 3.1 Introduce an Elysia app factory with shared config, CORS, and error handling
   - [x] 3.2 Port health and version endpoints to Elysia without changing their response contract
   - [x] 3.3 Port player and leaderboard endpoints with request validation and rate limiting
-  - [ ] 3.4 Remove the custom Node HTTP adapter once Elysia reaches parity
+  - [x] 3.4 Remove the custom Node HTTP adapter once Elysia reaches parity
 - [ ] **Phase 4 — Drizzle schema and repository migration**
   - [ ] 4.1 Model the existing Postgres schema in Drizzle tables and relations
   - [ ] 4.2 Add a Drizzle database factory for Bun Postgres and PGlite
@@ -261,6 +261,7 @@ export const createServerApp = (deps: AppDependencies) =>
 - Files: `packages/server/src/server/node-http.ts`, old routing types/helpers, imports across tests and startup.
 - Delete obsolete transport scaffolding only after Elysia has full route parity and the test suite no longer depends on the old app shape.
 - Keep any reusable JSON/error helper logic only if it still provides value around Elysia.
+- Implementation note: the legacy fetch-router (`server/app.ts`) and Node adapter (`server/node-http.ts`) have now been removed, `startServer(...)` listens through Elysia directly, route files only export Elysia registrars, and shared HTTP errors live in `server/errors.ts` for reuse outside the old transport layer.
 - Acceptance: the server package no longer depends on `node:http` startup glue or the bespoke route-matching layer.
 
 ## Phase 4 — Drizzle schema and repository migration
@@ -407,3 +408,4 @@ export const createServerApp = (deps: AppDependencies) =>
 - 2026-05-29 — Relaxed the migration constraint from strict HTTP backwards compatibility to broad endpoint-level continuity because the backend is not yet live and can absorb cleaner route/response changes during the stack rewrite.
 - 2026-05-29 — Completed step 3.2 by porting health/version endpoints into an Elysia route registrar and running the existing health tests against the Elysia app harness.
 - 2026-05-29 — Completed step 3.3 by switching `createApp(...)` to Elysia and porting player/leaderboard routes, while relaxing the old transport snapshot tests to accept Bun/Elysia header formatting differences.
+- 2026-05-29 — Completed step 3.4 by deleting the bespoke fetch-router and `node:http` adapter, simplifying the server to a direct Elysia/Bun startup path.
