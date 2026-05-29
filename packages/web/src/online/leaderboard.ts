@@ -3,7 +3,7 @@ import {
   type GameState,
   type LeaderboardMetrics,
 } from "@datacenter-tycoon/game-logic";
-import { getLeaderboardApiBaseUrl } from "./players.js";
+import { resolveOnlineApiBaseUrl } from "./config.js";
 
 export interface LeaderboardRunSubmission {
   playerId: string;
@@ -55,7 +55,7 @@ export async function submitLeaderboardRun(
   submission: LeaderboardRunSubmission,
   fetchImpl: typeof fetch = fetch,
 ): Promise<LeaderboardSubmissionResult> {
-  const baseUrl = getLeaderboardApiBaseUrl();
+  const baseUrl = resolveOnlineApiBaseUrl();
 
   if (!baseUrl) {
     throw new LeaderboardSubmissionError(

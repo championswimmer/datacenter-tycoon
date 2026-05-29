@@ -1,4 +1,5 @@
 import type { StoredPlayerIdentity } from "../store/playerIdentity.js";
+import { resolveOnlineApiBaseUrl } from "./config.js";
 
 export class PlayerRegistrationError extends Error {
   readonly code: string;
@@ -12,21 +13,11 @@ export class PlayerRegistrationError extends Error {
   }
 }
 
-export function getLeaderboardApiBaseUrl(): string | null {
-  const configured = import.meta.env.VITE_API_BASE_URL?.trim();
-
-  if (!configured) {
-    return null;
-  }
-
-  return configured.replace(/\/+$/, "");
-}
-
 export async function registerPlayer(
   username: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<StoredPlayerIdentity> {
-  const baseUrl = getLeaderboardApiBaseUrl();
+  const baseUrl = resolveOnlineApiBaseUrl();
 
   if (!baseUrl) {
     throw new PlayerRegistrationError(

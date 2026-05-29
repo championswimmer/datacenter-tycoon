@@ -9,10 +9,10 @@ owner: server
 
 ## Progress
 
-- [ ] **Phase 1 — Configuration and integration boundaries**
+- [x] **Phase 1 — Configuration and integration boundaries**
   - [x] 1.1 Define server database-mode configuration and startup rules
   - [x] 1.2 Define CLI online profile storage and `--server` precedence
-  - [ ] 1.3 Centralize web API base-URL resolution for dev and production
+  - [x] 1.3 Centralize web API base-URL resolution for dev and production
 - [ ] **Phase 2 — Server database abstraction and PGlite development mode**
   - [ ] 2.1 Introduce a database adapter boundary shared by repositories and migrations
   - [ ] 2.2 Add direct PGlite support for file-backed development storage
@@ -306,3 +306,4 @@ Resolution rules to implement:
 - 2026-05-29 — Note: server-stack assumptions in this plan have been superseded by `043-server-migration-to-bun-elysia-and-drizzle.md`. Future CLI/web integration work should target the Bun + Elysia + Drizzle backend that now exists, while preserving the same broad `/players` and `/leaderboard` API responsibilities.
 - 2026-05-29 — Marked step 1.1 complete because the Bun + Elysia + Drizzle migration in plan `043` already delivered typed dev/prod database-mode config, PGlite development defaults, and coverage for production/postgres requirements.
 - 2026-05-29 — Completed step 1.2 by adding `--server` as a documented global CLI flag, reserving the noun-first `online` command surface, defining durable online-profile path resolution, and codifying `--server` > profile > `DCT_SERVER_URL` > disabled precedence in CLI tests.
+- 2026-05-29 — Completed step 1.3 by extracting a shared web online-config helper that trims explicit API URLs, defaults development to `http://localhost:3000`, and preserves the existing production offline fallback when no API URL is configured.
