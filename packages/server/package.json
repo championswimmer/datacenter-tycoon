@@ -22,6 +22,8 @@
   },
   "dependencies": {
     "@datacenter-tycoon/game-logic": "*",
+    "@elysiajs/cors": "^1.4.2",
+    "elysia": "^1.4.28",
     "pg": "^8.21.0"
   },
   "devDependencies": {

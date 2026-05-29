@@ -18,7 +18,7 @@ owner: server
   - [x] 2.2 Migrate the server test harness from `node:test` to `bun:test` while preserving request-level coverage
   - [x] 2.3 Keep monorepo root workflows working while the server package runs on Bun internally
 - [ ] **Phase 3 — Elysia transport migration**
-  - [ ] 3.1 Introduce an Elysia app factory with shared config, CORS, and error handling
+  - [x] 3.1 Introduce an Elysia app factory with shared config, CORS, and error handling
   - [ ] 3.2 Port health and version endpoints to Elysia without changing their response contract
   - [ ] 3.3 Port player and leaderboard endpoints with request validation and rate limiting
   - [ ] 3.4 Remove the custom Node HTTP adapter once Elysia reaches parity
@@ -236,6 +236,7 @@ export const createServerApp = (deps: AppDependencies) =>
   - request validation hooks;
   - runtime metadata exposure.
 - Map current custom `HttpError` behavior onto Elysia’s error handling so existing error payloads stay stable.
+- Implementation note: the foundation now lives in `packages/server/src/server/elysia-app.ts`, with shared `HttpError` helpers in `packages/server/src/server/errors.ts` and a dedicated test suite covering CORS plus 404/validation/internal-error normalization.
 - Acceptance: the Elysia app can be instantiated in tests and handles 404/validation/internal errors in a way compatible with current client expectations.
 
 ### Step 3.2 — Port health and version endpoints to Elysia without changing their response contract
@@ -400,3 +401,4 @@ export const createServerApp = (deps: AppDependencies) =>
 - 2026-05-29 — Completed step 2.1 by switching server runtime scripts to Bun while preserving root npm workspace orchestration and documenting the Bun requirement.
 - 2026-05-29 — Completed step 2.2 by moving the server test suite to `bun:test` and Bun-native CI coverage/reporter flags without losing request-level contract coverage.
 - 2026-05-29 — Completed step 2.3 by codifying root npm wrappers around the Bun-run server workspace and documenting exactly where Bun is required in the monorepo.
+- 2026-05-29 — Completed step 3.1 by adding the first Elysia app factory, wiring shared CORS/error handling, and freezing its base behavior in dedicated tests before porting real endpoints.
