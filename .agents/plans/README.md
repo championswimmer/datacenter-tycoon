@@ -8,7 +8,7 @@ See [`../skills/planning/SKILL.md`](../skills/planning/SKILL.md) for the full fo
 
 - [041 — Regional OpEx and Starting Cash Rebalance](./041-regional-opex-and-starting-cash-rebalance.md) — status: created
 - [042 — Online Identity, CLI Leaderboard Sync, and Development DB Modes](./042-online-identity-cli-sync-and-dev-db-modes.md) — status: created
-- [043 — Server Migration to Bun, Elysia, and Drizzle](./043-server-migration-to-bun-elysia-and-drizzle.md) — status: created
+- [043 — Server Migration to Bun, Elysia, and Drizzle](./043-server-migration-to-bun-elysia-and-drizzle.md) — status: completed
 
 ## Archive
 

@@ -303,3 +303,4 @@ Resolution rules to implement:
 ## Changelog
 
 - 2026-05-29 — Created plan for CLI online identity, localhost dev wiring, and PGlite/Postgres runtime modes.
+- 2026-05-29 — Note: server-stack assumptions in this plan have been superseded by `043-server-migration-to-bun-elysia-and-drizzle.md`. Future CLI/web integration work should target the Bun + Elysia + Drizzle backend that now exists, while preserving the same broad `/players` and `/leaderboard` API responsibilities.

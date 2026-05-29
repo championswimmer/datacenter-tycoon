@@ -7,8 +7,9 @@ Today this package contains the first deployable backend slice:
 - health/version endpoints;
 - lightweight player username registration;
 - leaderboard submission and read APIs;
-- Postgres migrations and repositories;
-- Railway-oriented deployment docs and config.
+- Bun + Elysia runtime wiring;
+- Drizzle schema, repositories, and migration workflow;
+- PGlite-backed local development plus Postgres production support.
 
 It does **not** yet host multiplayer sessions, password auth, cross-device account recovery, or full replay verification.
 
@@ -18,7 +19,7 @@ It does **not** yet host multiplayer sessions, password auth, cross-device accou
 - Keep transport (HTTP) thin. Route files should parse requests, call services, and serialize responses; business rules belong in `src/players/`, `src/leaderboard/`, or `game-logic`.
 - Treat all client input as untrusted. Validate usernames, query params, payload shapes, and leaderboard metrics before touching persistence.
 - Prefer adding or extending repository/service interfaces over embedding SQL or storage branching directly in route handlers.
-- Keep the package framework-light unless there is a strong reason not to. The current server uses a small fetch-style app layer plus Node's HTTP server.
+- Keep transport (Elysia routes/hooks) thin. Business rules stay in services/repositories, not in route callbacks.
 - Keep state JSON-serializable at the API boundary.
 - Do **not** hand-edit generated output under `packages/server/dist/` or test artifacts under `packages/server/coverage/`.
 
@@ -28,29 +29,29 @@ It does **not** yet host multiplayer sessions, password auth, cross-device accou
 
 - `src/index.ts`
   - Main entrypoint.
-  - Loads config, wires default services, creates the app, and starts the Node HTTP server when executed directly.
+  - Loads config, wires runtime services, creates the Elysia app, and starts the Bun server when executed directly.
 - `src/config.ts`
   - Parses environment variables.
   - Enforces production-only requirements like `CORS_ALLOWED_ORIGINS`.
   - Exposes server version, game-logic version, and rate-limit config.
 - `src/server/`
-  - Minimal HTTP app and Node adapter.
-  - `app.ts` contains the fetch-style router, JSON response helper, and shared `HttpError` handling.
-  - `node-http.ts` adapts the app to Node's HTTP server.
+  - Elysia app foundation and shared error handling.
+  - `elysia-app.ts` configures CORS plus shared JSON error mapping.
+  - `errors.ts` contains shared `HttpError` handling.
 - `src/routes/`
   - Route registration only.
   - `health.ts` exposes `GET /healthz` and `GET /version`.
   - `players.ts` exposes username availability and registration endpoints.
   - `leaderboard.ts` exposes leaderboard reads and run submissions.
 - `src/players/`
-  - Username rules, identity helpers, player repository interfaces, in-memory fallback implementation, Postgres repository, and service-layer request normalization.
+  - Username rules, identity helpers, player repository interfaces, in-memory fallback implementation, Drizzle repository, and service-layer request normalization.
 - `src/leaderboard/`
   - Submission/query types, validation, ranking queries, service orchestration, and repository implementations.
   - Includes idempotent run upserts and monotonic-update checks for repeated submissions.
 - `src/rate-limit/`
   - In-memory fixed-window rate limiter used to throttle player registration and leaderboard submissions.
 - `src/db/`
-  - Migration loader/runner and migration verification scripts.
+  - Drizzle schema/client/database factories, migration loader/workflow, and migration verification scripts.
 - `src/test-utils/`
   - Helpers for constructing the app in tests without binding a real network port.
 - `migrations/`
@@ -80,16 +81,16 @@ It does **not** yet host multiplayer sessions, password auth, cross-device accou
 
 ### Current persistence behavior
 
-- With `DATABASE_URL` configured:
-  - player registration uses Postgres;
-  - leaderboard reads/writes use Postgres;
+- In `production`:
+  - `DATABASE_URL` is required;
+  - Bun SQL + Drizzle talk to external Postgres;
   - migrations are expected to have been applied.
-- Without `DATABASE_URL` configured:
-  - player registration falls back to an in-memory repository;
-  - leaderboard routes are unavailable and should return `503`;
-  - rate limiting still works in-memory.
-
-That fallback is useful for tests and local API wiring, but it is **not** a substitute for a real backend deployment.
+- In `development` without `DATABASE_URL`:
+  - the server defaults to file-backed PGlite under `.data/pglite`;
+  - player registration and leaderboard routes work against that local database;
+  - rate limiting remains in-memory.
+- In `test` without an explicit database target:
+  - most helpers still prefer injected/in-memory services unless a test opts into PGlite-backed persistence.
 
 ## How the package is organized conceptually
 
@@ -141,12 +142,21 @@ Important variables:
 - `HOST` — defaults to `0.0.0.0`
 - `PORT` — defaults to `3000`
 - `CORS_ALLOWED_ORIGINS` — required in production, optional in local dev
-- `DATABASE_URL` — required for persistent players + leaderboard storage
+- `DATABASE_URL` — required in production, optional in local dev
+- `PGLITE_DATA_DIR` — optional local data path, defaults to `.data/pglite` in development
 - `SERVER_VERSION` — optional version override
 - `PLAYER_REGISTRATION_RATE_LIMIT_*` — optional registration throttling
 - `LEADERBOARD_SUBMISSION_RATE_LIMIT_*` — optional submission throttling
 
-### 2. Create and migrate Postgres
+### 2. Migrate the local database
+
+By default local development uses file-backed PGlite:
+
+```bash
+npm run migrate -w @datacenter-tycoon/server
+```
+
+If you want a production-like local Postgres run instead:
 
 ```bash
 createdb datacenter_tycoon
@@ -156,7 +166,7 @@ DATABASE_URL=postgres://localhost:5432/datacenter_tycoon npm run migrate -w @dat
 ### 3. Start the dev server
 
 ```bash
-DATABASE_URL=postgres://localhost:5432/datacenter_tycoon npm run dev:server
+npm run dev:server
 ```
 
 ### 4. Smoke test it
@@ -222,10 +232,10 @@ curl "http://localhost:3000/leaderboard?metric=money&period=all-time&limit=10"
 
 ### Changing schema or persistence
 
-- Add a new SQL migration under `migrations/`; never rewrite an applied migration.
-- Update `src/db/migrator.ts` consumers only if the migration workflow itself changes.
-- Keep Postgres as the source of truth.
-- Maintain parity between in-memory and Postgres repository behavior where tests rely on both.
+- Keep `src/db/schema.ts`, `src/db/relations.ts`, and `drizzle.config.ts` aligned with any schema changes.
+- Preserve `migrations/001_leaderboard_foundation.sql` as the historical bootstrap baseline; do not rewrite applied migrations.
+- Add future Drizzle-generated migrations under `packages/server/drizzle/` and keep the `_journal.json` ledger valid.
+- Maintain parity between in-memory, PGlite, and Postgres-backed repository behavior where tests rely on multiple providers.
 
 ## Testing expectations
 
@@ -258,7 +268,7 @@ npm run check:migrations -w @datacenter-tycoon/server
 - No password login or secure account recovery.
 - No deterministic replay verification yet.
 - No multiplayer/session-hosting implementation yet.
-- No durable cache layer beyond Postgres.
-- No heavy web framework conventions beyond the current minimal app/router.
+- No durable cache layer beyond Postgres/PGlite.
+- No extra web-framework abstractions beyond the current Elysia-based stack.
 
 If you need any of the above, document the change clearly and prefer a new implementation plan when the work becomes multi-step or architectural.

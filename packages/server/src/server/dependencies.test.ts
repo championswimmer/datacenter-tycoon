@@ -68,6 +68,22 @@ test("createDefaultServerServices wires DATABASE_URL configs to Drizzle reposito
   assert.ok(services.leaderboard instanceof DrizzleLeaderboardRepository);
 });
 
+test("createRuntimeServerServices uses Bun SQL-backed Drizzle repositories when DATABASE_URL is provided", async () => {
+  const services = await createRuntimeServerServices(
+    loadServerConfig({
+      NODE_ENV: "production",
+      PORT: "4010",
+      HOST: "127.0.0.1",
+      CORS_ALLOWED_ORIGINS: "https://datacenter-tycoon.example",
+      SERVER_VERSION: "9.9.9-test",
+      DATABASE_URL: "postgres://127.0.0.1:1/postgres",
+    }),
+  );
+
+  assert.ok(services.players instanceof DrizzlePlayersRepository);
+  assert.ok(services.leaderboard instanceof DrizzleLeaderboardRepository);
+});
+
 test("createRuntimeServerServices defaults development to PGlite-backed Drizzle repositories", async () => {
   const dataDir = await mkdtemp(join(tmpdir(), "dct-runtime-pglite-"));
 
