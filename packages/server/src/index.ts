@@ -1,28 +1,22 @@
 import { fileURLToPath } from "node:url";
-import { Pool } from "pg";
-import { ConfigError, type ServerConfig, loadServerConfig } from "./config.js";
-import { PostgresLeaderboardRepository } from "./leaderboard/repository.js";
-import { PostgresPlayersRepository } from "./players/postgres-repository.js";
-import { InMemoryPlayersRepository } from "./players/repository.js";
-import { InMemoryFixedWindowRateLimiter } from "./rate-limit/fixed-window.js";
+import { ConfigError, loadServerConfig } from "./config.js";
 import { createHealthRoutes } from "./routes/health.js";
 import { createLeaderboardRoutes } from "./routes/leaderboard.js";
 import { createPlayerRoutes } from "./routes/players.js";
 import { createServerApp } from "./server/app.js";
+import {
+  createDefaultServerServices,
+  resolveAppDependencies,
+} from "./server/dependencies.js";
 import { createNodeHttpServer } from "./server/node-http.js";
-import type { AppDependencies, ServerServices } from "./types.js";
+import type { AppDependencies, ServerServicesFactory } from "./types.js";
 
-export function createApp(dependencies: AppDependencies) {
-  const defaultServices = createDefaultServices(dependencies.config);
-
+export function createApp(
+  dependencies: AppDependencies,
+  createServices: ServerServicesFactory = createDefaultServerServices,
+) {
   return createServerApp({
-    context: {
-      ...dependencies,
-      services: {
-        ...defaultServices,
-        ...dependencies.services,
-      },
-    },
+    context: resolveAppDependencies(dependencies, createServices),
     routes: [
       ...createHealthRoutes(),
       ...createPlayerRoutes(),
@@ -67,21 +61,3 @@ function isDirectExecution(moduleUrl: string): boolean {
   return entrypoint !== undefined && fileURLToPath(moduleUrl) === entrypoint;
 }
 
-function createDefaultServices(config: ServerConfig): ServerServices {
-  if (!config.databaseUrl) {
-    return {
-      players: new InMemoryPlayersRepository(),
-      rateLimiter: new InMemoryFixedWindowRateLimiter(),
-    };
-  }
-
-  const pool = new Pool({
-    connectionString: config.databaseUrl,
-  });
-
-  return {
-    players: new PostgresPlayersRepository(pool),
-    leaderboard: new PostgresLeaderboardRepository(pool),
-    rateLimiter: new InMemoryFixedWindowRateLimiter(),
-  };
-}
