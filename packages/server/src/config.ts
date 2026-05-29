@@ -2,10 +2,17 @@ import { VERSION as gameLogicVersion } from "@datacenter-tycoon/game-logic";
 import type { RateLimitRule } from "./rate-limit/fixed-window.js";
 
 export type ServerEnvironment = "development" | "test" | "production";
+export type ServerDatabaseMode = "postgres" | "pglite";
 
 export interface ServerRateLimitConfig {
   playerRegistration: RateLimitRule;
   leaderboardSubmission: RateLimitRule;
+}
+
+export interface ServerDatabaseConfig {
+  mode: ServerDatabaseMode;
+  connectionString?: string;
+  pgliteDataDir?: string;
 }
 
 export interface ServerConfig {
@@ -13,6 +20,7 @@ export interface ServerConfig {
   host: string;
   port: number;
   corsAllowedOrigins: readonly string[];
+  database: ServerDatabaseConfig;
   databaseUrl?: string;
   rateLimits: ServerRateLimitConfig;
   serverVersion: string;
@@ -35,7 +43,7 @@ export function loadServerConfig(
   const port = parsePort(env.PORT);
   const host = env.HOST?.trim() || "0.0.0.0";
   const corsAllowedOrigins = parseCorsAllowedOrigins(environment, env.CORS_ALLOWED_ORIGINS);
-  const databaseUrl = env.DATABASE_URL?.trim() || undefined;
+  const database = parseDatabaseConfig(environment, env);
   const rateLimits = {
     playerRegistration: {
       windowMs: parsePositiveInteger(
@@ -69,7 +77,8 @@ export function loadServerConfig(
     host,
     port,
     corsAllowedOrigins,
-    databaseUrl,
+    database,
+    databaseUrl: database.mode === "postgres" ? database.connectionString : undefined,
     rateLimits,
     serverVersion,
     gameLogicVersion,
@@ -123,6 +132,38 @@ function parseCorsAllowedOrigins(
   }
 
   return ["http://localhost:5173"];
+}
+
+function parseDatabaseConfig(
+  environment: ServerEnvironment,
+  env: Record<string, string | undefined>,
+): ServerDatabaseConfig {
+  const databaseUrl = env.DATABASE_URL?.trim();
+
+  if (databaseUrl) {
+    return {
+      mode: "postgres",
+      connectionString: databaseUrl,
+    };
+  }
+
+  if (environment === "production") {
+    throw new ConfigError("DATABASE_URL is required in production.");
+  }
+
+  const pgliteDataDir = env.PGLITE_DATA_DIR?.trim();
+
+  if (environment === "development") {
+    return {
+      mode: "pglite",
+      pgliteDataDir: pgliteDataDir || ".data/pglite",
+    };
+  }
+
+  return {
+    mode: "pglite",
+    pgliteDataDir: pgliteDataDir || undefined,
+  };
 }
 
 function parsePositiveInteger(

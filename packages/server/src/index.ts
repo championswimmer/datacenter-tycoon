@@ -7,6 +7,7 @@ import type { ServerElysiaApp } from "./server/elysia-app.js";
 import { createElysiaServerApp } from "./server/elysia-app.js";
 import {
   createDefaultServerServices,
+  createRuntimeServerServices,
   resolveAppDependencies,
 } from "./server/dependencies.js";
 import type { AppDependencies, ServerServicesFactory } from "./types.js";
@@ -27,13 +28,14 @@ export function createApp(
   });
 }
 
-export function startServer(
+export async function startServer(
   env: Record<string, string | undefined> = process.env,
-): ServerElysiaApp {
+): Promise<ServerElysiaApp> {
   const config = loadServerConfig(env);
+  const services = await createRuntimeServerServices(config);
   const app = createApp({
     config,
-    services: {},
+    services,
   });
 
   app.listen(
@@ -43,7 +45,7 @@ export function startServer(
     },
     (server) => {
       console.log(
-        `Datacenter Tycoon server listening on ${config.host}:${server.port} (game-logic v${config.gameLogicVersion})`,
+        `Datacenter Tycoon server listening on ${config.host}:${server.port} (game-logic v${config.gameLogicVersion}, db=${config.database.mode})`,
       );
     },
   );
@@ -52,14 +54,12 @@ export function startServer(
 }
 
 if (isDirectExecution(import.meta.url)) {
-  try {
-    startServer();
-  } catch (error) {
+  void startServer().catch((error) => {
     const message = error instanceof Error ? error.message : "Unknown startup error";
     const prefix = error instanceof ConfigError ? "Invalid server configuration" : "Server failed to start";
     console.error(`${prefix}: ${message}`);
     process.exitCode = 1;
-  }
+  });
 }
 
 function isDirectExecution(moduleUrl: string): boolean {

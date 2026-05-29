@@ -35,6 +35,47 @@ test("loadServerConfig rejects missing production CORS origins", () => {
   );
 });
 
+test("loadServerConfig rejects missing production DATABASE_URL", () => {
+  assert.throws(
+    () =>
+      loadServerConfig({
+        NODE_ENV: "production",
+        PORT: "3000",
+        CORS_ALLOWED_ORIGINS: "https://datacenter-tycoon.example",
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof ConfigError);
+      assert.match(error.message, /DATABASE_URL/);
+      return true;
+    },
+  );
+});
+
+test("loadServerConfig defaults development to file-backed PGlite when DATABASE_URL is absent", () => {
+  const config = loadServerConfig({
+    NODE_ENV: "development",
+    PORT: "3000",
+    CORS_ALLOWED_ORIGINS: "http://localhost:5173",
+  });
+
+  assert.equal(config.database.mode, "pglite");
+  assert.equal(config.database.pgliteDataDir, ".data/pglite");
+  assert.equal(config.databaseUrl, undefined);
+});
+
+test("loadServerConfig prefers Postgres when DATABASE_URL is present", () => {
+  const config = loadServerConfig({
+    NODE_ENV: "development",
+    PORT: "3000",
+    CORS_ALLOWED_ORIGINS: "http://localhost:5173",
+    DATABASE_URL: "postgres://127.0.0.1:5432/datacenter_tycoon",
+  });
+
+  assert.equal(config.database.mode, "postgres");
+  assert.equal(config.database.connectionString, "postgres://127.0.0.1:5432/datacenter_tycoon");
+  assert.equal(config.databaseUrl, "postgres://127.0.0.1:5432/datacenter_tycoon");
+});
+
 test("loadServerConfig rejects invalid rate-limit configuration", () => {
   assert.throws(
     () =>

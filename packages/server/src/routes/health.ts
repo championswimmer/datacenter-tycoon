@@ -9,7 +9,10 @@ export function registerHealthRoutes(
     .get("/healthz", () => ({
       status: "ok",
       environment: config.environment,
-      databaseConfigured: config.databaseUrl !== undefined,
+      databaseConfigured:
+        config.database.mode === "postgres"
+          ? config.database.connectionString !== undefined
+          : config.database.pgliteDataDir !== undefined,
     }))
     .get("/version", () => ({
       serverVersion: config.serverVersion,

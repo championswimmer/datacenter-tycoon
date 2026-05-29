@@ -28,7 +28,7 @@ owner: server
   - [x] 4.3 Rewrite player and leaderboard repositories to use Drizzle instead of raw `pg` SQL
   - [x] 4.4 Adopt a Drizzle-led migration workflow without losing compatibility with existing databases
 - [ ] **Phase 5 — Development and production database modes**
-  - [ ] 5.1 Reintroduce the dev/prod database-mode rules on top of Drizzle
+  - [x] 5.1 Reintroduce the dev/prod database-mode rules on top of Drizzle
   - [ ] 5.2 Make health/startup output expose runtime, framework, and active database provider
   - [ ] 5.3 Support persistent file-backed PGlite in development and external Postgres in production
 - [ ] **Phase 6 — Client compatibility, rollout, and documentation**
@@ -330,6 +330,7 @@ export const createServerApp = (deps: AppDependencies) =>
   - `development` defaults to file-backed PGlite when no Postgres URL is provided;
   - `test` uses temporary or injected DBs unless a test explicitly needs persistence.
 - Ensure the configuration surface is simple and typed.
+- Implementation note: `loadServerConfig(...)` now resolves a typed `config.database` object, production rejects missing `DATABASE_URL`, development defaults to `.data/pglite`, and runtime startup goes through `createRuntimeServerServices(...)` so the Bun server actually boots against persistent PGlite by default while test-only `createApp(...)` callers can still stay in-memory unless they opt into persistence.
 - Acceptance: config tests cover production-without-Postgres failure, development PGlite defaulting, and explicit Postgres override.
 
 ### Step 5.2 — Make health/startup output expose runtime, framework, and active database provider
@@ -417,3 +418,4 @@ export const createServerApp = (deps: AppDependencies) =>
 - 2026-05-29 — Completed step 4.2 by introducing shared Bun SQL / PGlite Drizzle client factories and a unified database connection abstraction with closeable lifecycle helpers.
 - 2026-05-29 — Completed step 4.3 by replacing raw `pg` repositories with Drizzle implementations and proving the new persistence path through both repository tests and a PGlite-backed request-level integration test.
 - 2026-05-29 — Completed step 4.4 by adding a provider-aware migration workflow that preserves the historical SQL baseline while introducing Drizzle’s migration journal and migrator entrypoints.
+- 2026-05-29 — Completed step 5.1 by restoring explicit dev/prod database-mode rules on top of Drizzle and proving that a Bun-started development server now boots against default file-backed PGlite.
