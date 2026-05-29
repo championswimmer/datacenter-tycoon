@@ -1,7 +1,7 @@
 ---
 name: Online Identity, CLI Leaderboard Sync, and Development DB Modes
 description: Extend CLI and web online integration, add explicit server URL configuration, and run the backend against PGlite in development and Postgres in production.
-status: started
+status: completed
 created: 2026-05-29
 updated: 2026-05-29
 owner: server
@@ -24,10 +24,10 @@ owner: server
 - [x] **Phase 4 — Web development and production API targeting**
   - [x] 4.1 Add environment-aware web API configuration for localhost dev and real-server production
   - [x] 4.2 Keep startup and leaderboard-sync UX resilient under online/offline conditions
-- [ ] **Phase 5 — Local dev workflow, testing, and docs**
-  - [ ] 5.1 Add combined local-dev scripts for server + web
-  - [ ] 5.2 Add automated coverage for PGlite dev mode, CLI `--server`, and web localhost wiring
-  - [ ] 5.3 Update server, web, and CLI documentation for dev/prod online flows
+- [x] **Phase 5 — Local dev workflow, testing, and docs**
+  - [x] 5.1 Add combined local-dev scripts for server + web
+  - [x] 5.2 Add automated coverage for PGlite dev mode, CLI `--server`, and web localhost wiring
+  - [x] 5.3 Update server, web, and CLI documentation for dev/prod online flows
 
 ## Overview
 
@@ -314,3 +314,4 @@ Resolution rules to implement:
 - 2026-05-29 — Completed step 3.2 by wiring a noun-first `dct online` command router for login/status/logout, persisting identities through the dedicated profile path, and covering successful registration, profile reuse, logout, invalid-username, and unreachable-server flows in CLI command tests.
 - 2026-05-29 — Completed step 3.3 by adding a shared CLI leaderboard-sync helper with persisted duplicate-signature debouncing, wiring automatic post-mutation submissions and manual `dct online submit`, propagating selected game/server overrides into the TUI command palette, and covering successful/duplicate/offline sync behavior in CLI command, sync, tick, and TUI tests.
 - 2026-05-29 — Completed phase 4 by tightening web API mode resolution around explicit dev-vs-production signals, adding a web `.env.example` for real-server configuration, and expanding App/config tests to cover localhost dev targeting, production overrides, offline fallback, and intentionally disabled online registration builds.
+- 2026-05-29 — Completed phase 5 by adding a root `npm run dev:online` helper, validating the online stack through the server/cli/web test suites, and documenting the local-vs-production online workflow across the root, server, web, and CLI READMEs.

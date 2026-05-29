@@ -59,6 +59,7 @@ Local development now defaults to **file-backed PGlite** and does not require a 
 cp packages/server/.env.example packages/server/.env.local
 npm run migrate -w @datacenter-tycoon/server
 npm run dev:server
+# or: npm run dev:online    # launch the server and Vite web app together from the repo root
 ```
 
 The database files live under `packages/server/.data/pglite` by default and persist across restarts. `GET /healthz` reports the resolved `databaseMode`, `databaseProvider`, and whether the runtime has a configured on-disk/external database target so local-vs-production behavior is visible without reading startup logs.
