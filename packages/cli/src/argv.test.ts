@@ -4,12 +4,22 @@ import test from "node:test";
 import { formatHelp, hasHelpFlag, parseArgv } from "./argv.js";
 
 test("parseArgv parses commands, positionals, and mixed flag styles", () => {
-	const parsed = parseArgv(["status", "primary", "--json", "--socket=/tmp/d.sock", "--save", "/tmp/save.json"]);
+	const parsed = parseArgv([
+		"status",
+		"primary",
+		"--json",
+		"--server",
+		"http://localhost:3000/",
+		"--socket=/tmp/d.sock",
+		"--save",
+		"/tmp/save.json",
+	]);
 
 	assert.equal(parsed.command, "status");
 	assert.deepEqual(parsed.positionals, ["primary"]);
 	assert.deepEqual(parsed.flags, {
 		"--json": true,
+		"--server": "http://localhost:3000/",
 		"--socket": "/tmp/d.sock",
 		"--save": "/tmp/save.json",
 	});
@@ -31,4 +41,5 @@ test("formatHelp prints command summaries", () => {
 	assert.match(help, /status\s+Print game status/);
 	assert.match(help, /quit\s+Stop the daemon/);
 	assert.match(help, /--json/);
+	assert.match(help, /--server/);
 });

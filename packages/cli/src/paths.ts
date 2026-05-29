@@ -17,6 +17,8 @@ interface ResolvePathsPlatformOptions extends ResolvePathsOptions {
 export interface ResolvedPaths {
   savePath: string;
   dataDir: string;
+  configDir: string;
+  onlineProfilePath: string;
   socketPath: string;
   pidPath: string;
   logPath: string;
@@ -38,6 +40,20 @@ function resolveDataDir(platform: NodeJS.Platform, env: NodeJS.ProcessEnv, homeD
   }
 
   return env.XDG_DATA_HOME ?? pathApi.join(homeDir, ".local", "share");
+}
+
+function resolveConfigDir(platform: NodeJS.Platform, env: NodeJS.ProcessEnv, homeDir: string): string {
+  const pathApi = getPathApi(platform);
+
+  if (platform === "win32") {
+    return env.APPDATA ?? pathApi.join(homeDir, "AppData", "Roaming");
+  }
+
+  if (platform === "darwin") {
+    return pathApi.join(homeDir, "Library", "Application Support");
+  }
+
+  return env.XDG_CONFIG_HOME ?? pathApi.join(homeDir, ".config");
 }
 
 function resolveRuntimeDir(
@@ -82,8 +98,10 @@ export function resolvePathsForPlatform(options: ResolvePathsPlatformOptions): R
   const pathApi = getPathApi(platform);
 
   const dataDir = pathApi.join(resolveDataDir(platform, env, homeDir), "dct");
+  const configDir = pathApi.join(resolveConfigDir(platform, env, homeDir), "dct");
   const saveFileName = gameId ? `${gameId}.json` : "save.json";
   const savePath = saveOverride ?? pathApi.join(dataDir, saveFileName);
+  const onlineProfilePath = pathApi.join(configDir, "online-profile.json");
 
   const socketPath =
     socketOverride ??
@@ -97,6 +115,8 @@ export function resolvePathsForPlatform(options: ResolvePathsPlatformOptions): R
   return {
     savePath,
     dataDir,
+    configDir,
+    onlineProfilePath,
     socketPath,
     pidPath,
     logPath,

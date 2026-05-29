@@ -16,6 +16,7 @@ import { GameRuntime } from "./daemon/runtime.js";
 import { GameDaemonServer } from "./daemon/server.js";
 import { DaemonLifecycle, waitForExit } from "./daemon/lifecycle.js";
 import { DaemonTransport } from "./daemon/transport.js";
+import { ONLINE_COMMAND_SUMMARY } from "./online/profile.js";
 import { resolvePaths } from "./paths.js";
 
 interface CommandContext {
@@ -140,6 +141,7 @@ const COMMANDS: CommandHandler[] = [
 	{ name: "pause", summary: "Pause the daemon tick loop", run: async ({ parsed }) => runPauseCommand(parsed) },
 	{ name: "resume", summary: "Resume the daemon tick loop", run: async ({ parsed }) => runResumeCommand(parsed) },
 	{ name: "speed", summary: "Set daemon tick speed", run: async ({ parsed }) => runSpeedCommand(parsed) },
+	createNotImplementedHandler("online", ONLINE_COMMAND_SUMMARY),
 ];
 
 const COMMAND_MAP = new Map(COMMANDS.map((command) => [command.name, command]));

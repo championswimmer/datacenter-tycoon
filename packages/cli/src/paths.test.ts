@@ -18,6 +18,8 @@ test("resolvePathsForPlatform uses XDG paths on Linux", () => {
   assert.deepEqual(resolved, {
     savePath: "/xdg/data/dct/save.json",
     dataDir: "/xdg/data/dct",
+    configDir: "/home/alice/.config/dct",
+    onlineProfilePath: "/home/alice/.config/dct/online-profile.json",
     socketPath: "/xdg/runtime/dct/dct.sock",
     pidPath: "/xdg/runtime/dct/dct.sock.pid",
     logPath: "/xdg/state/dct/daemon.log",
@@ -35,6 +37,8 @@ test("resolvePathsForPlatform uses macOS conventions", () => {
   assert.deepEqual(resolved, {
     savePath: "/Users/alice/Library/Application Support/dct/save.json",
     dataDir: "/Users/alice/Library/Application Support/dct",
+    configDir: "/Users/alice/Library/Application Support/dct",
+    onlineProfilePath: "/Users/alice/Library/Application Support/dct/online-profile.json",
     socketPath: "/var/folders/temp/dct/dct.sock",
     pidPath: "/var/folders/temp/dct/dct.sock.pid",
     logPath: "/Users/alice/Library/Logs/dct/daemon.log",
@@ -55,6 +59,8 @@ test("resolvePathsForPlatform uses Windows conventions", () => {
   assert.deepEqual(resolved, {
     savePath: "C:\\Users\\alice\\AppData\\Roaming\\dct\\save.json",
     dataDir: "C:\\Users\\alice\\AppData\\Roaming\\dct",
+    configDir: "C:\\Users\\alice\\AppData\\Roaming\\dct",
+    onlineProfilePath: "C:\\Users\\alice\\AppData\\Roaming\\dct\\online-profile.json",
     socketPath: "\\\\.\\pipe\\dct",
     pidPath: "\\\\.\\pipe\\dct.pid",
     logPath: "C:\\Users\\alice\\AppData\\Local\\dct\\Logs\\daemon.log",
@@ -72,6 +78,8 @@ test("resolvePathsForPlatform honors explicit overrides", () => {
   });
 
   assert.equal(resolved.savePath, "/custom/save.json");
+  assert.equal(resolved.configDir, "/home/alice/.config/dct");
+  assert.equal(resolved.onlineProfilePath, "/home/alice/.config/dct/online-profile.json");
   assert.equal(resolved.socketPath, "/custom/socket.sock");
   assert.equal(resolved.pidPath, "/custom/socket.sock.pid");
   assert.equal(resolved.logPath, "/home/alice/.local/state/dct/daemon.log");
