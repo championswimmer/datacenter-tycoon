@@ -49,7 +49,7 @@ export async function apiRequest<TBody = unknown>(
   init: RequestInit = {},
 ): Promise<ApiResponse<TBody>> {
   const url = new URL(path, "http://localhost");
-  const request = new Request(url, init);
+  const request = new Request(url.toString(), init);
   const response = await app.fetch(request);
   const bodyText = await response.text();
   const json = bodyText === "" ? null : (JSON.parse(bodyText) as TBody);

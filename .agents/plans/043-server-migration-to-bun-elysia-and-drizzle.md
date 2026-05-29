@@ -24,7 +24,7 @@ owner: server
   - [x] 3.4 Remove the custom Node HTTP adapter once Elysia reaches parity
 - [ ] **Phase 4 — Drizzle schema and repository migration**
   - [x] 4.1 Model the existing Postgres schema in Drizzle tables and relations
-  - [ ] 4.2 Add a Drizzle database factory for Bun Postgres and PGlite
+  - [x] 4.2 Add a Drizzle database factory for Bun Postgres and PGlite
   - [ ] 4.3 Rewrite player and leaderboard repositories to use Drizzle instead of raw `pg` SQL
   - [ ] 4.4 Adopt a Drizzle-led migration workflow without losing compatibility with existing databases
 - [ ] **Phase 5 — Development and production database modes**
@@ -289,6 +289,7 @@ export const createServerApp = (deps: AppDependencies) =>
   - a development Drizzle client connected to file-backed PGlite;
   - test-friendly variants that can use temporary PGlite data or injected fakes.
 - Centralize lifecycle management (open/close) so startup, tests, and migrations all use the same configuration rules.
+- Implementation note: `src/db/client.ts` now exposes Bun SQL and PGlite Drizzle initializers bound to the shared schema, while `src/db/database.ts` wraps them in a single `createServerDatabase(...)` abstraction with a common `close()` lifecycle. A new `database.test.ts` covers both the in-memory PGlite path and a Bun SQL wrapper instantiation path.
 - Acceptance: startup code can ask for one database abstraction and does not need to know whether it is talking to Postgres or PGlite.
 
 ### Step 4.3 — Rewrite player and leaderboard repositories to use Drizzle instead of raw `pg` SQL
@@ -411,3 +412,4 @@ export const createServerApp = (deps: AppDependencies) =>
 - 2026-05-29 — Completed step 3.3 by switching `createApp(...)` to Elysia and porting player/leaderboard routes, while relaxing the old transport snapshot tests to accept Bun/Elysia header formatting differences.
 - 2026-05-29 — Completed step 3.4 by deleting the bespoke fetch-router and `node:http` adapter, simplifying the server to a direct Elysia/Bun startup path.
 - 2026-05-29 — Completed step 4.1 by adding Drizzle schema/relations/config files that mirror the existing leaderboard SQL baseline without yet changing runtime persistence.
+- 2026-05-29 — Completed step 4.2 by introducing shared Bun SQL / PGlite Drizzle client factories and a unified database connection abstraction with closeable lifecycle helpers.
