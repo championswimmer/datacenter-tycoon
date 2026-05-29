@@ -157,7 +157,7 @@ export async function runCli(args: string[]): Promise<void> {
 
 	if (!parsed.command) {
 		const { runTui } = await import("./tui/app.js");
-		await runTui();
+		await runTui(parsed);
 		return;
 	}
 

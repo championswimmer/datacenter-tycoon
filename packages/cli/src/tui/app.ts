@@ -1,6 +1,7 @@
 import type { GameState } from "@datacenter-tycoon/game-logic";
 import readline from "node:readline";
 
+import type { ParsedArgv } from "../argv.js";
 import { DctClient } from "../client/client.js";
 import { resolvePaths } from "../paths.js";
 import type { StatusView } from "../protocol/messages.js";
@@ -55,8 +56,51 @@ function renderFrame(
 	});
 }
 
-async function executePaletteCommand(input: string): Promise<string> {
+function getStringFlag(parsed: ParsedArgv | undefined, flag: string): string | undefined {
+	const value = parsed?.flags[flag];
+	return typeof value === "string" ? value : undefined;
+}
+
+function hasArgValue(args: string[], flag: string): boolean {
+	return args.some((arg) => arg === flag || arg.startsWith(`${flag}=`));
+}
+
+export function buildPaletteCommandArgs(
+	input: string,
+	options: {
+		parsed?: ParsedArgv;
+		selectedGameId?: string;
+	} = {},
+): string[] {
 	const args = splitCommandLine(input);
+	if (args.length === 0) {
+		return [];
+	}
+
+	const inheritedArgs: string[] = [];
+	const gameId = options.selectedGameId ?? getStringFlag(options.parsed, "--game-id") ?? getStringFlag(options.parsed, "--id");
+	if (gameId && !hasArgValue(args, "--game-id") && !hasArgValue(args, "--id")) {
+		inheritedArgs.push("--game-id", gameId);
+	}
+
+	for (const flag of ["--server", "--socket", "--save"] as const) {
+		const value = getStringFlag(options.parsed, flag);
+		if (value && !hasArgValue(args, flag)) {
+			inheritedArgs.push(flag, value);
+		}
+	}
+
+	return [...args, ...inheritedArgs];
+}
+
+export async function executePaletteCommand(
+	input: string,
+	options: {
+		parsed?: ParsedArgv;
+		selectedGameId?: string;
+	} = {},
+): Promise<string> {
+	const args = buildPaletteCommandArgs(input, options);
 	if (args.length === 0) {
 		return "Command palette cancelled";
 	}
@@ -78,7 +122,7 @@ async function executePaletteCommand(input: string): Promise<string> {
 	}
 }
 
-export async function runTui(): Promise<void> {
+export async function runTui(parsed?: ParsedArgv): Promise<void> {
 	const selectedGameId = await selectSaveTui();
 
 	const stdin = process.stdin;
@@ -182,7 +226,7 @@ export async function runTui(): Promise<void> {
 						paletteHistory = [...paletteHistory, command];
 						paletteHistoryIndex = paletteHistory.length;
 					}
-					statusLine = await executePaletteCommand(command);
+					statusLine = await executePaletteCommand(command, { parsed, selectedGameId });
 					paletteInput = "";
 					render();
 					return;

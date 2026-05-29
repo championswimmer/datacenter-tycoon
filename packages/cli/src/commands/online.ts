@@ -1,3 +1,4 @@
+import { DctClient } from "../client/client.js";
 import type { ParsedArgv } from "../argv.js";
 import {
   clearOnlineProfile,
@@ -11,9 +12,16 @@ import {
   type RegisterPlayerOptions,
 } from "../online/players.js";
 import {
+  formatOnlineSyncNote,
+  syncLeaderboardFromCommand,
+  type CliOnlineSyncDependencies,
+} from "../online/sync.js";
+import {
   getStringFlag,
   resolveCommandPaths,
+  withClient,
   writeCommandResult,
+  type CommandClientFactory,
   type CommandPaths,
 } from "./common.js";
 
@@ -27,6 +35,9 @@ export interface OnlineCommandDependencies {
     options: RegisterPlayerOptions,
     fetchImpl?: typeof fetch,
   ) => Promise<CliOnlineProfile>;
+  clientFactory?: CommandClientFactory;
+  syncLeaderboard?: typeof syncLeaderboardFromCommand;
+  syncDependencies?: CliOnlineSyncDependencies;
   fetchImpl?: typeof fetch;
 }
 
@@ -45,6 +56,9 @@ function resolveOnlineDependencies(dependencies: OnlineCommandDependencies = {})
     writeProfile: dependencies.writeProfile ?? writeOnlineProfile,
     clearProfile: dependencies.clearProfile ?? clearOnlineProfile,
     registerPlayer: dependencies.registerPlayer ?? registerPlayer,
+    clientFactory: dependencies.clientFactory ?? ((options) => new DctClient(options)),
+    syncLeaderboard: dependencies.syncLeaderboard ?? syncLeaderboardFromCommand,
+    syncDependencies: dependencies.syncDependencies ?? {},
     fetchImpl: dependencies.fetchImpl ?? fetch,
   };
 }
@@ -139,6 +153,27 @@ export async function runOnlineLogoutCommand(
   );
 }
 
+export async function runOnlineSubmitCommand(
+  parsed: ParsedArgv,
+  dependencies: OnlineCommandDependencies = {},
+): Promise<void> {
+  const resolved = resolveOnlineDependencies(dependencies);
+  const sync = await withClient(
+    parsed,
+    async (client, paths) =>
+      resolved.syncLeaderboard(parsed, client, paths, resolved.syncDependencies),
+    resolved.clientFactory,
+  );
+
+  writeCommandResult(
+    parsed,
+    formatOnlineSyncNote(sync, { includeSkipped: true }) ?? sync.message,
+    {
+      onlineSync: sync,
+    },
+  );
+}
+
 export async function runOnlineCommand(
   parsed: ParsedArgv,
   dependencies: OnlineCommandDependencies = {},
@@ -162,7 +197,8 @@ export async function runOnlineCommand(
   }
 
   if (subcommand === "submit") {
-    throw new Error("Usage: dct online submit\n\nLeaderboard submission wiring is not implemented yet.");
+    await runOnlineSubmitCommand(nestedParsed, dependencies);
+    return;
   }
 
   throw new Error(
@@ -171,6 +207,6 @@ export async function runOnlineCommand(
       + "  login --username <name> [--server <url>]   Register/login against the online leaderboard service\n"
       + "  status [--server <url>]                     Show the stored online identity and active server target\n"
       + "  logout                                      Clear the stored online identity\n"
-      + "  submit                                      Not implemented yet",
+      + "  submit                                      Submit the current run summary to the online leaderboard",
   );
 }

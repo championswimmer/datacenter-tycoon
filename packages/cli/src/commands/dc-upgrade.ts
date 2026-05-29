@@ -1,6 +1,10 @@
 import type { DatacenterId, DatacenterUpgradeTrackId } from "@datacenter-tycoon/game-logic";
 import { DctClient } from "../client/client.js";
 import type { ParsedArgv } from "../argv.js";
+import {
+	appendOnlineSyncToCommandResult,
+	syncLeaderboardFromCommand,
+} from "../online/sync.js";
 import type { DatacenterListItem, ListResult } from "../protocol/messages.js";
 import {
 	hasBooleanFlag,
@@ -87,7 +91,7 @@ async function applyUpgrade(
 ): Promise<void> {
 	await withClient(
 		parsed,
-		async (client) => {
+		async (client, paths) => {
 			await client.dispatch({
 				type: "UpgradeDatacenter",
 				dcId: datacenterId(dcIdValue),
@@ -96,11 +100,13 @@ async function applyUpgrade(
 			});
 			const item = await fetchDatacenterItem(client, dcIdValue);
 			const track = item.upgrades.tracks.find((candidate) => candidate.trackId === upgradeTrackId);
-			writeCommandResult(
-				parsed,
+			const onlineSync = await syncLeaderboardFromCommand(parsed, client, paths);
+			const output = appendOnlineSyncToCommandResult(
 				`Applied upgrade ${upgradeTrackId} → ${targetNodeId} on ${dcIdValue}\n\n${renderUpgradeView(item)}`,
 				{ dcId: dcIdValue, trackId: upgradeTrackId, targetNodeId, upgrades: item.upgrades, infrastructure: item.infrastructure, appliedTrack: track },
+				onlineSync,
 			);
+			writeCommandResult(parsed, output.text, output.data);
 		},
 		clientFactory,
 	);

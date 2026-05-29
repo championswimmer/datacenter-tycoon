@@ -12,6 +12,7 @@ export const TUI_COMMANDS = [
 	"pause",
 	"resume",
 	"speed",
+	"online",
 ] as const;
 
 export function splitCommandLine(input: string): string[] {

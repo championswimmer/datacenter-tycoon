@@ -6,6 +6,7 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { parseArgv } from "../argv.js";
+import type { CommandClient } from "./common.js";
 import { readOnlineProfile, writeOnlineProfile } from "../online/profile.js";
 import { PlayerRegistrationError } from "../online/players.js";
 import { runOnlineCommand, type OnlineCommandDependencies } from "./online.js";
@@ -269,4 +270,45 @@ test("runOnlineCommand login preserves unreachable-server errors", async () => {
   } finally {
     await rm(profileDir, { recursive: true, force: true });
   }
+});
+
+test("runOnlineCommand submit reports the sync result through the noun-first router", async () => {
+  const fakeClient: CommandClient = {
+    connect: async () => undefined,
+    dispatch: async () => ({ tick: 0 }),
+    query: async () => ({ tick: 0 }),
+    control: async () => ({ ok: true }),
+    close: async () => undefined,
+  };
+
+  const printed = await captureConsole(() =>
+    runOnlineCommand(
+      parseArgv(["online", "submit", "--json"]),
+      {
+        clientFactory: () => fakeClient,
+        syncLeaderboard: async () => ({
+          status: "submitted",
+          message: "Submitted leaderboard run run_123.",
+          profile: null,
+          target: {
+            serverUrl: "https://api.dctycoon.test",
+            source: "profile",
+          },
+          profilePath: "/tmp/online-profile.json",
+          syncStatePath: "/tmp/online-sync.json",
+        }),
+      },
+    ),
+  );
+  const output = JSON.parse(printed[0] ?? "{}") as {
+    data?: {
+      onlineSync?: {
+        status: string;
+        message: string;
+      };
+    };
+  };
+
+  assert.equal(output.data?.onlineSync?.status, "submitted");
+  assert.equal(output.data?.onlineSync?.message, "Submitted leaderboard run run_123.");
 });
