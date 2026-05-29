@@ -21,9 +21,9 @@ owner: server
   - [x] 3.1 Add CLI online profile persistence and HTTP client helpers
   - [x] 3.2 Add CLI commands for registering, inspecting, and clearing online identity
   - [x] 3.3 Submit leaderboard summaries from CLI commands and the interactive TUI
-- [ ] **Phase 4 — Web development and production API targeting**
-  - [ ] 4.1 Add environment-aware web API configuration for localhost dev and real-server production
-  - [ ] 4.2 Keep startup and leaderboard-sync UX resilient under online/offline conditions
+- [x] **Phase 4 — Web development and production API targeting**
+  - [x] 4.1 Add environment-aware web API configuration for localhost dev and real-server production
+  - [x] 4.2 Keep startup and leaderboard-sync UX resilient under online/offline conditions
 - [ ] **Phase 5 — Local dev workflow, testing, and docs**
   - [ ] 5.1 Add combined local-dev scripts for server + web
   - [ ] 5.2 Add automated coverage for PGlite dev mode, CLI `--server`, and web localhost wiring
@@ -313,3 +313,4 @@ Resolution rules to implement:
 - 2026-05-29 — Completed step 3.1 by adding CLI online-profile read/write/clear helpers, Node-side player registration and leaderboard submission clients, shared game-logic leaderboard payload construction, and unit coverage for profile round-trips, request shaping, and disabled/offline error mapping.
 - 2026-05-29 — Completed step 3.2 by wiring a noun-first `dct online` command router for login/status/logout, persisting identities through the dedicated profile path, and covering successful registration, profile reuse, logout, invalid-username, and unreachable-server flows in CLI command tests.
 - 2026-05-29 — Completed step 3.3 by adding a shared CLI leaderboard-sync helper with persisted duplicate-signature debouncing, wiring automatic post-mutation submissions and manual `dct online submit`, propagating selected game/server overrides into the TUI command palette, and covering successful/duplicate/offline sync behavior in CLI command, sync, tick, and TUI tests.
+- 2026-05-29 — Completed phase 4 by tightening web API mode resolution around explicit dev-vs-production signals, adding a web `.env.example` for real-server configuration, and expanding App/config tests to cover localhost dev targeting, production overrides, offline fallback, and intentionally disabled online registration builds.
