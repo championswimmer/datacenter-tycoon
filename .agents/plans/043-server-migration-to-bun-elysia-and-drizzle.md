@@ -38,7 +38,7 @@ owner: server
 
 ## Overview
 
-Today the server package uses a custom fetch-style router layered over Node’s HTTP server and talks to Postgres via hand-written SQL through `pg`; it does **not** currently use a third-party HTTP framework or an ORM. This plan migrates the server package to run on **Bun**, use **Elysia** as the web framework, and use **Drizzle ORM** for schema definition, typed queries, and migrations. The migration must preserve the existing public API contract for `/healthz`, `/version`, `/players`, and `/leaderboard` so the web app — and the planned CLI online sync work in plan `042` — continue to function without coordinated client rewrites.
+Today the server package uses a custom fetch-style router layered over Node’s HTTP server and talks to Postgres via hand-written SQL through `pg`; it does **not** currently use a third-party HTTP framework or an ORM. This plan migrates the server package to run on **Bun**, use **Elysia** as the web framework, and use **Drizzle ORM** for schema definition, typed queries, and migrations. Because the backend is not yet live, exact HTTP backwards compatibility is now a **soft** constraint: we should preserve the broad product intent of `/healthz`, `/version`, `/players`, and `/leaderboard`, but we can simplify or reshape route payloads/error formatting when that materially improves the new stack.
 
 The migration is intentionally staged so we do not mix transport, runtime, and persistence rewrites in one opaque change. The end state is a Bun-run backend with Elysia route modules, Drizzle schema/migrations, file-backed **PGlite** in local development, and real **Postgres** in production.
 
@@ -99,7 +99,7 @@ sequenceDiagram
 
 Key decisions:
 
-- **Keep the API contract stable during the migration.** Paths, JSON shapes, status codes, and stable error codes should remain compatible with the current web client and the planned CLI sync work.
+- **Prefer pragmatic cleanup over strict wire compatibility.** Keep the same broad endpoint responsibilities unless there is a good reason to rename or consolidate them, but do not let legacy JSON shapes/status codes block a cleaner Elysia/Drizzle design while the backend is still pre-launch.
 - **Preserve service-layer business rules.** Username rules, leaderboard monotonicity checks, summary derivation, and rate-limit semantics should not be reimplemented inside Elysia handlers.
 - **Use Bun as the server runtime, not necessarily as the monorepo package manager.** The repo can keep npm workspaces while the `server` workspace itself uses `bun run` / `bun test` internally.
 - **Use Elysia for transport concerns only.** Route grouping, schema validation, CORS, request parsing, and error formatting belong there; core player/leaderboard behavior remains in `src/players/` and `src/leaderboard/`.
@@ -161,9 +161,9 @@ export const createServerApp = (deps: AppDependencies) =>
   - `POST /players`
   - `GET /leaderboard`
   - `POST /leaderboard/runs`
-- Capture stable error-code expectations, CORS behavior, rate-limit behavior, and response status codes in focused request-level tests.
+- Capture the current API behavior, CORS behavior, rate-limit behavior, and response status codes in focused request-level tests.
 - Explicitly mark which details are transport contracts versus internal implementation details that are free to change.
-- Acceptance: request-level contract tests fail if the Bun/Elysia migration changes response shapes, status codes, or error codes unintentionally.
+- Acceptance: request-level tests give us a before/after reference point while migrating, but future steps may intentionally rewrite or replace them as the new Elysia routes settle.
 
 ### Step 1.2 — Choose the Bun/Drizzle driver strategy for production Postgres and development PGlite
 
@@ -402,3 +402,4 @@ export const createServerApp = (deps: AppDependencies) =>
 - 2026-05-29 — Completed step 2.2 by moving the server test suite to `bun:test` and Bun-native CI coverage/reporter flags without losing request-level contract coverage.
 - 2026-05-29 — Completed step 2.3 by codifying root npm wrappers around the Bun-run server workspace and documenting exactly where Bun is required in the monorepo.
 - 2026-05-29 — Completed step 3.1 by adding the first Elysia app factory, wiring shared CORS/error handling, and freezing its base behavior in dedicated tests before porting real endpoints.
+- 2026-05-29 — Relaxed the migration constraint from strict HTTP backwards compatibility to broad endpoint-level continuity because the backend is not yet live and can absorb cleaner route/response changes during the stack rewrite.
