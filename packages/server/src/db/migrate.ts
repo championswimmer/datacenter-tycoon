@@ -1,27 +1,18 @@
-import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { loadServerConfig } from "../config.js";
-import { runMigrations } from "./migrator.js";
+import { migrateConfiguredDatabase } from "./migration-workflow.js";
 
 async function main(): Promise<void> {
-  const config = loadServerConfig(process.env);
+  const result = await migrateConfiguredDatabase(process.env);
 
-  if (!config.databaseUrl) {
-    throw new Error("DATABASE_URL is required to run migrations.");
-  }
-
-  const migrationsDir = resolve(fileURLToPath(new URL("../../migrations", import.meta.url)));
-  const result = await runMigrations({
-    databaseUrl: config.databaseUrl,
-    migrationsDir,
-  });
-
-  if (result.appliedMigrations.length === 0) {
-    console.log("No pending migrations.");
+  if (result.appliedBaselineMigrations.length === 0) {
+    console.log(
+      `No pending baseline SQL migrations for ${result.mode}. Drizzle migrations folder: ${result.drizzleMigrationsDir}`,
+    );
     return;
   }
 
-  console.log(`Applied migrations: ${result.appliedMigrations.join(", ")}`);
+  console.log(
+    `Applied baseline SQL migrations for ${result.mode}: ${result.appliedBaselineMigrations.join(", ")}`,
+  );
 }
 
 main().catch((error) => {

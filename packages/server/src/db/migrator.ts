@@ -1,5 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { PGlite } from "@electric-sql/pglite";
 import { Client } from "pg";
 
 export const MIGRATIONS_TABLE = "schema_migrations";
@@ -88,7 +89,61 @@ export async function runMigrations(
   }
 }
 
+export async function runPgliteMigrations(options: {
+  client: PGlite;
+  migrationsDir: string;
+}): Promise<MigrationRunResult> {
+  const migrations = await loadMigrations(options.migrationsDir);
+
+  await options.client.exec(`
+    CREATE TABLE IF NOT EXISTS ${MIGRATIONS_TABLE} (
+      name TEXT PRIMARY KEY,
+      applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  const appliedNames = await getAppliedMigrationNamesFromPglite(options.client);
+  const pendingMigrations = migrations
+    .map((migration) => migration.name)
+    .filter((name) => !appliedNames.has(name));
+  const appliedMigrations: string[] = [];
+
+  for (const migration of migrations) {
+    if (appliedNames.has(migration.name)) {
+      continue;
+    }
+
+    await options.client.exec("BEGIN");
+
+    try {
+      await options.client.exec(migration.sql);
+      await options.client.query(
+        `INSERT INTO ${MIGRATIONS_TABLE} (name) VALUES ($1)`,
+        [migration.name],
+      );
+      await options.client.exec("COMMIT");
+      appliedMigrations.push(migration.name);
+    } catch (error) {
+      await options.client.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
+  return {
+    appliedMigrations,
+    pendingMigrations,
+  };
+}
+
 async function getAppliedMigrationNames(client: Client): Promise<Set<string>> {
+  const result = await client.query<{ name: string }>(
+    `SELECT name FROM ${MIGRATIONS_TABLE} ORDER BY name ASC`,
+  );
+
+  return new Set(result.rows.map((row) => row.name));
+}
+
+async function getAppliedMigrationNamesFromPglite(client: PGlite): Promise<Set<string>> {
   const result = await client.query<{ name: string }>(
     `SELECT name FROM ${MIGRATIONS_TABLE} ORDER BY name ASC`,
   );
