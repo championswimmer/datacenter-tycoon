@@ -26,6 +26,8 @@ export type CommandClientFactory = (options: DctClientOptions) => CommandClient;
 export interface CommandPaths {
 	savePath: string;
 	dataDir: string;
+	configDir: string;
+	onlineProfilePath: string;
 	socketPath: string;
 	pidPath: string;
 	logPath: string;
