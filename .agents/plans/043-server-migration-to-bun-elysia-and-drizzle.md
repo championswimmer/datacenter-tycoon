@@ -11,7 +11,7 @@ owner: server
 
 - [ ] **Phase 1 — Compatibility baseline and migration decisions**
   - [x] 1.1 Inventory the current server contract and freeze compatibility expectations
-  - [ ] 1.2 Choose the Bun/Drizzle driver strategy for production Postgres and development PGlite
+  - [x] 1.2 Choose the Bun/Drizzle driver strategy for production Postgres and development PGlite
   - [ ] 1.3 Define the cutover boundaries so transport and persistence can migrate independently
 - [ ] **Phase 2 — Bun runtime foundation**
   - [ ] 2.1 Convert server package scripts, entrypoints, and CI commands to Bun-compatible execution
@@ -104,6 +104,7 @@ Key decisions:
 - **Use Bun as the server runtime, not necessarily as the monorepo package manager.** The repo can keep npm workspaces while the `server` workspace itself uses `bun run` / `bun test` internally.
 - **Use Elysia for transport concerns only.** Route grouping, schema validation, CORS, request parsing, and error formatting belong there; core player/leaderboard behavior remains in `src/players/` and `src/leaderboard/`.
 - **Use Drizzle as the persistence boundary.** Schema definitions become typed code, repositories move from raw SQL strings toward typed Drizzle queries, and future migrations should be driven by Drizzle’s migration workflow.
+- **Lock the Drizzle driver split early.** Production/staging will use `drizzle-orm/bun-sql` on top of Bun’s native `SQL` Postgres client, while development and DB-backed integration tests will use `drizzle-orm/pglite` on top of file-backed `PGlite` data directories.
 - **Keep development and production database providers split by environment.** Development should default to file-backed PGlite; production should require real Postgres.
 - **Prefer incremental parity over a big-bang rewrite.** Each phase should leave the server in a runnable, testable state.
 
@@ -167,11 +168,17 @@ export const createServerApp = (deps: AppDependencies) =>
 ### Step 1.2 — Choose the Bun/Drizzle driver strategy for production Postgres and development PGlite
 
 - Files: plan notes in this file, `packages/server/package.json`, future `packages/server/drizzle.config.ts`.
-- Confirm the exact Drizzle driver split:
-  - **production/staging**: Bun-run server talking to Postgres through either `drizzle-orm/bun-sql` or another Bun-compatible Postgres driver if operational constraints require it;
-  - **development**: `drizzle-orm/pglite` with file-backed PGlite.
-- Evaluate deployment constraints (Railway connection strings, SSL, transactions, prepared statements, migration tooling, and local testing ergonomics) before locking the production driver.
-- Keep the decision explicit so later steps do not need to branch across multiple competing DB clients.
+- **Decision (locked in for implementation):**
+  - **production/staging**: `drizzle-orm/bun-sql` with Bun’s native `SQL` PostgreSQL client.
+  - **development**: `drizzle-orm/pglite` with file-backed `new PGlite("./path")` storage.
+  - **DB-backed tests**: default to temporary `drizzle-orm/pglite` databases unless a later production-parity check explicitly needs a real Postgres target.
+- **Rationale:**
+  - `bun-sql` is the most direct fit for the requested Bun-native server runtime and avoids carrying a Node-compatibility database layer purely for production.
+  - Bun SQL accepts standard Postgres connection strings, supports pooling plus TLS/SSL options, and is a good match for Railway-style `DATABASE_URL` deployment.
+  - Bun SQL supports parameterized queries / prepared-statement style execution and transactions, which preserves the server’s current consistency requirements while moving to typed Drizzle queries.
+  - `drizzle-orm/pglite` is a first-class Drizzle path for local PostgreSQL-compatible development, supports file-backed folders for persistence, and keeps the local-dev story aligned with the earlier plan `042` requirement to avoid requiring a separately managed Postgres daemon.
+  - Locking these choices now keeps later steps from branching across `node-postgres`, `postgres.js`, and Bun-native alternatives simultaneously.
+- **Migration-tooling note:** use a single Drizzle schema source of truth, then make runtime/apply flows provider-aware in later phases (production Postgres via Bun SQL, development/tests via PGlite).
 - Acceptance: the plan records one production driver choice and one dev driver choice, with rationale and no unresolved ambiguity before implementation begins.
 
 ### Step 1.3 — Define the cutover boundaries so transport and persistence can migrate independently
@@ -384,3 +391,4 @@ export const createServerApp = (deps: AppDependencies) =>
 
 - 2026-05-29 — Created plan for migrating the server from the custom Node router + raw `pg` stack to Bun, Elysia, and Drizzle.
 - 2026-05-29 — Completed step 1.1 by freezing the current HTTP contract in request-level tests and documenting which transport details must remain stable during the migration.
+- 2026-05-29 — Completed step 1.2 by locking the Drizzle driver split to Bun SQL for production/staging and PGlite for development/tests, with deployment/runtime rationale recorded in the plan.
