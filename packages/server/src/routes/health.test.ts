@@ -1,9 +1,20 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
-import { apiRequest, createTestApp } from "../test-utils/app.js";
+import { registerHealthRoutes } from "./health.js";
+import { createElysiaServerApp } from "../server/elysia-app.js";
+import { apiRequest, createTestDependencies } from "../test-utils/app.js";
+
+function createHealthApp() {
+  const dependencies = createTestDependencies();
+
+  return createElysiaServerApp({
+    context: dependencies,
+    register: registerHealthRoutes,
+  });
+}
 
 test("GET /healthz returns liveness information", async () => {
-  const { app } = createTestApp();
+  const app = createHealthApp();
   const { response, json } = await apiRequest<{
     status: string;
     environment: string;
@@ -19,7 +30,7 @@ test("GET /healthz returns liveness information", async () => {
 });
 
 test("GET /version returns server and game-logic versions", async () => {
-  const { app } = createTestApp();
+  const app = createHealthApp();
   const { response, json } = await apiRequest<{
     serverVersion: string;
     gameLogicVersion: string;

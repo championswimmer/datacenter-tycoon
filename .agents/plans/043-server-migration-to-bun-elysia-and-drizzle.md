@@ -19,7 +19,7 @@ owner: server
   - [x] 2.3 Keep monorepo root workflows working while the server package runs on Bun internally
 - [ ] **Phase 3 — Elysia transport migration**
   - [x] 3.1 Introduce an Elysia app factory with shared config, CORS, and error handling
-  - [ ] 3.2 Port health and version endpoints to Elysia without changing their response contract
+  - [x] 3.2 Port health and version endpoints to Elysia without changing their response contract
   - [ ] 3.3 Port player and leaderboard endpoints with request validation and rate limiting
   - [ ] 3.4 Remove the custom Node HTTP adapter once Elysia reaches parity
 - [ ] **Phase 4 — Drizzle schema and repository migration**
@@ -244,6 +244,7 @@ export const createServerApp = (deps: AppDependencies) =>
 - Files: `packages/server/src/routes/health.ts`, `packages/server/src/routes/health.test.ts`, `packages/server/src/index.ts`.
 - Re-express `GET /healthz` and `GET /version` as Elysia routes or grouped plugins.
 - Keep the current JSON payloads, then extend them carefully later with runtime/framework/database fields once compatibility tests are updated intentionally.
+- Implementation note: `packages/server/src/routes/health.ts` now exports `registerHealthRoutes(...)` for the Elysia app, and the health test suite now exercises those endpoints through `createElysiaServerApp(...)` while `apiRequest(...)` supports both legacy and Elysia app instances during the transition.
 - Acceptance: health/version route tests pass unchanged against the Elysia app.
 
 ### Step 3.3 — Port player and leaderboard endpoints with request validation and rate limiting
@@ -403,3 +404,4 @@ export const createServerApp = (deps: AppDependencies) =>
 - 2026-05-29 — Completed step 2.3 by codifying root npm wrappers around the Bun-run server workspace and documenting exactly where Bun is required in the monorepo.
 - 2026-05-29 — Completed step 3.1 by adding the first Elysia app factory, wiring shared CORS/error handling, and freezing its base behavior in dedicated tests before porting real endpoints.
 - 2026-05-29 — Relaxed the migration constraint from strict HTTP backwards compatibility to broad endpoint-level continuity because the backend is not yet live and can absorb cleaner route/response changes during the stack rewrite.
+- 2026-05-29 — Completed step 3.2 by porting health/version endpoints into an Elysia route registrar and running the existing health tests against the Elysia app harness.
