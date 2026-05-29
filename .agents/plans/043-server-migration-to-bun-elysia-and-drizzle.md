@@ -13,10 +13,10 @@ owner: server
   - [x] 1.1 Inventory the current server contract and freeze compatibility expectations
   - [x] 1.2 Choose the Bun/Drizzle driver strategy for production Postgres and development PGlite
   - [x] 1.3 Define the cutover boundaries so transport and persistence can migrate independently
-- [ ] **Phase 2 — Bun runtime foundation**
+- [x] **Phase 2 — Bun runtime foundation**
   - [x] 2.1 Convert server package scripts, entrypoints, and CI commands to Bun-compatible execution
   - [x] 2.2 Migrate the server test harness from `node:test` to `bun:test` while preserving request-level coverage
-  - [ ] 2.3 Keep monorepo root workflows working while the server package runs on Bun internally
+  - [x] 2.3 Keep monorepo root workflows working while the server package runs on Bun internally
 - [ ] **Phase 3 — Elysia transport migration**
   - [ ] 3.1 Introduce an Elysia app factory with shared config, CORS, and error handling
   - [ ] 3.2 Port health and version endpoints to Elysia without changing their response contract
@@ -219,6 +219,7 @@ export const createServerApp = (deps: AppDependencies) =>
 - Preserve the current developer ergonomics where other packages can continue using npm workspaces from the root.
 - Add any necessary runtime detection or wrapper scripts so server-specific Bun requirements are obvious and fail fast when Bun is missing.
 - Decide whether CI installs Bun only for the server workspace or standardizes it at the repo level.
+- Implementation note: the root now exposes explicit `typecheck:server` and `test:server:ci` wrappers, `ci:server` delegates through those npm entrypoints, and the root README now documents that Bun is only required once execution enters the server workspace.
 - Acceptance: root-level development commands continue to work, and the repo documents exactly when Bun is required.
 
 ## Phase 3 — Elysia transport migration
@@ -398,3 +399,4 @@ export const createServerApp = (deps: AppDependencies) =>
 - 2026-05-29 — Completed step 1.3 by extracting a transport/persistence dependency seam so the future Elysia and Drizzle migrations can be tested and landed independently.
 - 2026-05-29 — Completed step 2.1 by switching server runtime scripts to Bun while preserving root npm workspace orchestration and documenting the Bun requirement.
 - 2026-05-29 — Completed step 2.2 by moving the server test suite to `bun:test` and Bun-native CI coverage/reporter flags without losing request-level contract coverage.
+- 2026-05-29 — Completed step 2.3 by codifying root npm wrappers around the Bun-run server workspace and documenting exactly where Bun is required in the monorepo.
