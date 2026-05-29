@@ -3,6 +3,7 @@ import type { RateLimitRule } from "./rate-limit/fixed-window.js";
 
 export type ServerEnvironment = "development" | "test" | "production";
 export type ServerDatabaseMode = "postgres" | "pglite";
+export type ServerDatabaseProvider = "bun-sql" | "pglite-file" | "pglite-memory";
 
 export interface ServerRateLimitConfig {
   playerRegistration: RateLimitRule;
@@ -25,6 +26,12 @@ export interface ServerConfig {
   rateLimits: ServerRateLimitConfig;
   serverVersion: string;
   gameLogicVersion: string;
+}
+
+export interface ServerDatabaseRuntimeInfo {
+  mode: ServerDatabaseMode;
+  provider: ServerDatabaseProvider;
+  configured: boolean;
 }
 
 export class ConfigError extends Error {
@@ -82,6 +89,24 @@ export function loadServerConfig(
     rateLimits,
     serverVersion,
     gameLogicVersion,
+  };
+}
+
+export function getServerDatabaseRuntimeInfo(
+  config: Pick<ServerConfig, "database">,
+): ServerDatabaseRuntimeInfo {
+  if (config.database.mode === "postgres") {
+    return {
+      mode: "postgres",
+      provider: "bun-sql",
+      configured: config.database.connectionString !== undefined,
+    };
+  }
+
+  return {
+    mode: "pglite",
+    provider: config.database.pgliteDataDir ? "pglite-file" : "pglite-memory",
+    configured: config.database.pgliteDataDir !== undefined,
   };
 }
 

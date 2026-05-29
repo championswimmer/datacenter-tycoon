@@ -53,7 +53,7 @@ Copy `packages/server/.env.example` into your own local env file or export the v
 
 ### Local PGlite default
 
-Local development now defaults to **file-backed PGlite** and does not require a separate Postgres daemon:
+Local development now defaults to **file-backed PGlite** and does not require a separate Postgres daemon. The same provider resolution now drives both `npm run migrate -w @datacenter-tycoon/server` and `npm run dev:server`:
 
 ```bash
 cp packages/server/.env.example packages/server/.env.local
@@ -61,7 +61,7 @@ npm run migrate -w @datacenter-tycoon/server
 npm run dev:server
 ```
 
-The database files live under `packages/server/.data/pglite` by default and persist across restarts.
+The database files live under `packages/server/.data/pglite` by default and persist across restarts. `GET /healthz` reports the resolved `databaseMode`, `databaseProvider`, and whether the runtime has a configured on-disk/external database target so local-vs-production behavior is visible without reading startup logs.
 
 ### Local Postgres override
 

@@ -45,7 +45,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `Validated ${migrations.length} legacy SQL migration file(s) and Drizzle journal at ${journalPath}.`,
+    `Validated ${migrations.length} legacy SQL migration file(s) and the shared Postgres/PGlite Drizzle journal at ${journalPath}.`,
   );
 }
 

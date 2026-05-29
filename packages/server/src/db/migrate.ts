@@ -5,13 +5,13 @@ async function main(): Promise<void> {
 
   if (result.appliedBaselineMigrations.length === 0) {
     console.log(
-      `No pending baseline SQL migrations for ${result.mode}. Drizzle migrations folder: ${result.drizzleMigrationsDir}`,
+      `No pending baseline SQL migrations for ${result.mode}/${result.provider}. Drizzle migrations folder: ${result.drizzleMigrationsDir}`,
     );
     return;
   }
 
   console.log(
-    `Applied baseline SQL migrations for ${result.mode}: ${result.appliedBaselineMigrations.join(", ")}`,
+    `Applied baseline SQL migrations for ${result.mode}/${result.provider}: ${result.appliedBaselineMigrations.join(", ")}`,
   );
 }
 
