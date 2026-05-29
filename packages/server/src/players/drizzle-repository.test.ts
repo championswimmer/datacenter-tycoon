@@ -6,7 +6,7 @@ import { UsernameUnavailableError } from "./repository.js";
 
 test("DrizzlePlayersRepository can create, load, and touch players", async () => {
   const database = await createMigratedPgliteDatabase();
-  const repository = new DrizzlePlayersRepository(database.db);
+  const repository = new DrizzlePlayersRepository(database);
 
   const created = await repository.createPlayer({ username: "  Acme Cloud  " });
   assert.equal(created.username, "Acme Cloud");

@@ -24,7 +24,7 @@ test("file-backed PGlite persists player data across reopen cycles", async () =>
       throw new Error("Expected PGlite database instance.");
     }
 
-    const firstPlayers = new DrizzlePlayersRepository(firstDatabase.db);
+    const firstPlayers = new DrizzlePlayersRepository(firstDatabase);
     const created = await firstPlayers.createPlayer({ username: "Persistent Cloud" });
     await firstDatabase.close();
 
@@ -37,7 +37,7 @@ test("file-backed PGlite persists player data across reopen cycles", async () =>
       throw new Error("Expected PGlite database instance.");
     }
 
-    const reopenedPlayers = new DrizzlePlayersRepository(reopenedDatabase.db);
+    const reopenedPlayers = new DrizzlePlayersRepository(reopenedDatabase);
     const persisted = await reopenedPlayers.findByPlayerId(created.playerId);
 
     assert.equal(persisted?.username, "Persistent Cloud");

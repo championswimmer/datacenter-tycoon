@@ -6,8 +6,8 @@ import { DrizzleLeaderboardRepository } from "./repository.js";
 
 test("DrizzleLeaderboardRepository upserts idempotently and orders runs by metric", async () => {
   const database = await createMigratedPgliteDatabase();
-  const players = new DrizzlePlayersRepository(database.db);
-  const leaderboard = new DrizzleLeaderboardRepository(database.db);
+  const players = new DrizzlePlayersRepository(database);
+  const leaderboard = new DrizzleLeaderboardRepository(database);
   const alpha = await players.createPlayer({ username: "Alpha Cloud" });
   const beta = await players.createPlayer({ username: "Beta Cloud" });
 

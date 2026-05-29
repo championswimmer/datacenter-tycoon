@@ -1,5 +1,8 @@
 import type { ServerConfig } from "../config.js";
-import { createFilePgliteDrizzleClient, createPostgresDrizzleClient } from "../db/client.js";
+import {
+  createPgliteDatabaseConnection,
+  createPostgresDatabaseConnection,
+} from "../db/database.js";
 import { DrizzleLeaderboardRepository } from "../leaderboard/repository.js";
 import { DrizzlePlayersRepository } from "../players/drizzle-repository.js";
 import { InMemoryPlayersRepository } from "../players/repository.js";
@@ -30,11 +33,11 @@ export function resolveAppDependencies(
  */
 export function createDefaultServerServices(config: ServerConfig): ServerServices {
   if (config.database.mode === "postgres" && config.database.connectionString) {
-    const { db } = createPostgresDrizzleClient(config.database.connectionString);
+    const database = createPostgresDatabaseConnection(config.database.connectionString);
 
     return {
-      players: new DrizzlePlayersRepository(db),
-      leaderboard: new DrizzleLeaderboardRepository(db),
+      players: new DrizzlePlayersRepository(database),
+      leaderboard: new DrizzleLeaderboardRepository(database),
       rateLimiter: new InMemoryFixedWindowRateLimiter(),
     };
   }
@@ -47,22 +50,21 @@ export function createDefaultServerServices(config: ServerConfig): ServerService
 
 export async function createRuntimeServerServices(config: ServerConfig): Promise<ServerServices> {
   if (config.database.mode === "postgres" && config.database.connectionString) {
-    const { db } = createPostgresDrizzleClient(config.database.connectionString);
+    const database = createPostgresDatabaseConnection(config.database.connectionString);
 
     return {
-      players: new DrizzlePlayersRepository(db),
-      leaderboard: new DrizzleLeaderboardRepository(db),
+      players: new DrizzlePlayersRepository(database),
+      leaderboard: new DrizzleLeaderboardRepository(database),
       rateLimiter: new InMemoryFixedWindowRateLimiter(),
     };
   }
 
   if (config.database.mode === "pglite" && config.database.pgliteDataDir) {
-    const { client, db } = createFilePgliteDrizzleClient(config.database.pgliteDataDir);
-    await client.waitReady;
+    const database = await createPgliteDatabaseConnection(config.database.pgliteDataDir);
 
     return {
-      players: new DrizzlePlayersRepository(db),
-      leaderboard: new DrizzleLeaderboardRepository(db),
+      players: new DrizzlePlayersRepository(database),
+      leaderboard: new DrizzleLeaderboardRepository(database),
       rateLimiter: new InMemoryFixedWindowRateLimiter(),
     };
   }

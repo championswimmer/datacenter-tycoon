@@ -2,8 +2,11 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { migrate as migrateBunSql } from "drizzle-orm/bun-sql/migrator";
 import { migrate as migratePglite } from "drizzle-orm/pglite/migrator";
-import { createPgliteDrizzleClient, createPostgresDrizzleClient } from "./client.js";
-import { runMigrations, runPgliteMigrations } from "./migrator.js";
+import {
+  createPgliteDatabaseConnection,
+  createPostgresDatabaseConnection,
+} from "./database.js";
+import { runDatabaseMigrations } from "./migrator.js";
 
 export type MigrationTarget =
   | { mode: "postgres"; connectionString: string }
@@ -48,37 +51,38 @@ export async function migrateConfiguredDatabase(
   const drizzleMigrationsDir = getDrizzleMigrationsDir();
 
   if (target.mode === "postgres") {
-    const baseline = await runMigrations({
-      databaseUrl: target.connectionString,
-      migrationsDir: legacyMigrationsDir,
-    });
-    const { client, db } = createPostgresDrizzleClient(target.connectionString);
+    const database = createPostgresDatabaseConnection(target.connectionString);
 
     try {
-      await migrateBunSql(db, {
+      const baseline = await runDatabaseMigrations({
+        database,
+        migrationsDir: legacyMigrationsDir,
+      });
+
+      await migrateBunSql(database.db, {
         migrationsFolder: drizzleMigrationsDir,
       });
-    } finally {
-      await client.close();
-    }
 
-    return {
-      mode: "postgres",
-      appliedBaselineMigrations: baseline.appliedMigrations,
-      pendingBaselineMigrations: baseline.pendingMigrations,
-      drizzleMigrationsDir,
-    };
+      return {
+        mode: "postgres",
+        appliedBaselineMigrations: baseline.appliedMigrations,
+        pendingBaselineMigrations: baseline.pendingMigrations,
+        drizzleMigrationsDir,
+      };
+    } finally {
+      await database.close();
+    }
   }
 
-  const { client, db } = await createPgliteDrizzleClient(target.dataDir);
+  const database = await createPgliteDatabaseConnection(target.dataDir);
 
   try {
-    const baseline = await runPgliteMigrations({
-      client,
+    const baseline = await runDatabaseMigrations({
+      database,
       migrationsDir: legacyMigrationsDir,
     });
 
-    await migratePglite(db, {
+    await migratePglite(database.db, {
       migrationsFolder: drizzleMigrationsDir,
     });
 
@@ -89,7 +93,7 @@ export async function migrateConfiguredDatabase(
       drizzleMigrationsDir,
     };
   } finally {
-    await client.close();
+    await database.close();
   }
 }
 
