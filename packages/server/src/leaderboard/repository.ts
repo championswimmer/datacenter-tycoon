@@ -1,4 +1,6 @@
-import type { Pool } from "pg";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
+import type { ServerDrizzleDatabase } from "../db/client.js";
+import { leaderboardRuns } from "../db/schema.js";
 import {
   getMetricValue,
   type LeaderboardQuery,
@@ -80,30 +82,10 @@ export class InMemoryLeaderboardRepository implements LeaderboardRepository {
   }
 }
 
-interface LeaderboardRunRow {
-  id: string;
-  player_id: string;
-  client_run_id: string;
-  money: string | number;
-  cumulative_revenue: string | number;
-  total_servers: number;
-  compute_capacity: string | number;
-  memory_capacity: string | number;
-  storage_capacity: string | number;
-  gpu_capacity: string | number;
-  game_month: number;
-  submitted_at: Date;
-  updated_at: Date;
-}
+export class DrizzleLeaderboardRepository implements LeaderboardRepository {
+  readonly #database: ServerDrizzleDatabase;
 
-interface Queryable {
-  query: Pool["query"];
-}
-
-export class PostgresLeaderboardRepository implements LeaderboardRepository {
-  readonly #database: Queryable;
-
-  constructor(database: Queryable) {
+  constructor(database: ServerDrizzleDatabase) {
     this.#database = database;
   }
 
@@ -114,100 +96,45 @@ export class PostgresLeaderboardRepository implements LeaderboardRepository {
       return this.handleExistingRun(existingRun, submission);
     }
 
-    const runId = generateLeaderboardRunId();
+    const inserted = await this.#database
+      .insert(leaderboardRuns)
+      .values(buildRunInsert(submission))
+      .onConflictDoNothing({
+        target: [leaderboardRuns.playerId, leaderboardRuns.clientRunId],
+      })
+      .returning();
 
-    try {
-      const result = await this.#database.query<LeaderboardRunRow>(
-        `
-          INSERT INTO leaderboard_runs (
-            id,
-            player_id,
-            client_run_id,
-            money,
-            cumulative_revenue,
-            total_servers,
-            compute_capacity,
-            memory_capacity,
-            storage_capacity,
-            gpu_capacity,
-            game_month
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-          RETURNING
-            id,
-            player_id,
-            client_run_id,
-            money,
-            cumulative_revenue,
-            total_servers,
-            compute_capacity,
-            memory_capacity,
-            storage_capacity,
-            gpu_capacity,
-            game_month,
-            submitted_at,
-            updated_at
-        `,
-        [
-          runId,
-          submission.playerId,
-          submission.clientRunId,
-          submission.metrics.money,
-          submission.metrics.cumulativeRevenue,
-          submission.metrics.totalServers,
-          submission.metrics.computeCapacity,
-          submission.metrics.memoryCapacity,
-          submission.metrics.storageCapacity,
-          submission.metrics.gpuCapacity,
-          submission.gameMonth,
-        ],
-      );
-
+    if (inserted[0]) {
       return {
         created: true,
-        run: mapLeaderboardRunRow(result.rows[0]),
+        run: mapLeaderboardRunRow(inserted[0]),
       };
-    } catch (error) {
-      if (!isUniqueViolation(error)) {
-        throw error;
-      }
-
-      const conflictedRun = await this.findRun(submission.playerId, submission.clientRunId);
-
-      if (!conflictedRun) {
-        throw error;
-      }
-
-      return this.handleExistingRun(conflictedRun, submission);
     }
+
+    const conflictedRun = await this.findRun(submission.playerId, submission.clientRunId);
+
+    if (!conflictedRun) {
+      throw new Error("Expected conflicting leaderboard run to exist after upsert.");
+    }
+
+    return this.handleExistingRun(conflictedRun, submission);
   }
 
   async listRuns(query: LeaderboardQuery): Promise<LeaderboardRunRecord[]> {
-    const metricExpression = resolveMetricExpression(query.metric);
-    const result = await this.#database.query<LeaderboardRunRow>(
-      `
-        SELECT
-          id,
-          player_id,
-          client_run_id,
-          money,
-          cumulative_revenue,
-          total_servers,
-          compute_capacity,
-          memory_capacity,
-          storage_capacity,
-          gpu_capacity,
-          game_month,
-          submitted_at,
-          updated_at
-        FROM leaderboard_runs
-        ORDER BY ${metricExpression} DESC, submitted_at ASC, client_run_id ASC, id ASC
-        LIMIT $1
-      `,
-      [query.limit],
-    );
+    const totalCapacityExpression = sql<number>`
+      ${leaderboardRuns.computeCapacity}
+      + ${leaderboardRuns.memoryCapacity}
+      + ${leaderboardRuns.storageCapacity}
+      + ${leaderboardRuns.gpuCapacity}
+    `;
 
-    return result.rows.map((row) => mapLeaderboardRunRow(row));
+    const rows = await this.#database
+      .select()
+      .from(leaderboardRuns)
+      .orderBy(...resolveOrderExpressions(query.metric, totalCapacityExpression))
+      .limit(query.limit);
+
+    return rows.map((row) => mapLeaderboardRunRow(row));
   }
 
   private async handleExistingRun(
@@ -222,51 +149,25 @@ export class PostgresLeaderboardRepository implements LeaderboardRepository {
     }
 
     assertMonotonicRunUpdate(existingRun, submission);
-    const result = await this.#database.query<LeaderboardRunRow>(
-      `
-        UPDATE leaderboard_runs
-        SET
-          money = $2,
-          cumulative_revenue = $3,
-          total_servers = $4,
-          compute_capacity = $5,
-          memory_capacity = $6,
-          storage_capacity = $7,
-          gpu_capacity = $8,
-          game_month = $9,
-          updated_at = NOW()
-        WHERE id = $1
-        RETURNING
-          id,
-          player_id,
-          client_run_id,
-          money,
-          cumulative_revenue,
-          total_servers,
-          compute_capacity,
-          memory_capacity,
-          storage_capacity,
-          gpu_capacity,
-          game_month,
-          submitted_at,
-          updated_at
-      `,
-      [
-        existingRun.runId,
-        submission.metrics.money,
-        submission.metrics.cumulativeRevenue,
-        submission.metrics.totalServers,
-        submission.metrics.computeCapacity,
-        submission.metrics.memoryCapacity,
-        submission.metrics.storageCapacity,
-        submission.metrics.gpuCapacity,
-        submission.gameMonth,
-      ],
-    );
+    const [updated] = await this.#database
+      .update(leaderboardRuns)
+      .set({
+        money: submission.metrics.money,
+        cumulativeRevenue: submission.metrics.cumulativeRevenue,
+        totalServers: submission.metrics.totalServers,
+        computeCapacity: submission.metrics.computeCapacity,
+        memoryCapacity: submission.metrics.memoryCapacity,
+        storageCapacity: submission.metrics.storageCapacity,
+        gpuCapacity: submission.metrics.gpuCapacity,
+        gameMonth: submission.gameMonth,
+        updatedAt: new Date(),
+      })
+      .where(eq(leaderboardRuns.id, existingRun.runId))
+      .returning();
 
     return {
       created: false,
-      run: mapLeaderboardRunRow(result.rows[0]),
+      run: mapLeaderboardRunRow(updated),
     };
   }
 
@@ -274,34 +175,34 @@ export class PostgresLeaderboardRepository implements LeaderboardRepository {
     playerId: string,
     clientRunId: string,
   ): Promise<LeaderboardRunRecord | null> {
-    const result = await this.#database.query<LeaderboardRunRow>(
-      `
-        SELECT
-          id,
-          player_id,
-          client_run_id,
-          money,
-          cumulative_revenue,
-          total_servers,
-          compute_capacity,
-          memory_capacity,
-          storage_capacity,
-          gpu_capacity,
-          game_month,
-          submitted_at,
-          updated_at
-        FROM leaderboard_runs
-        WHERE player_id = $1 AND client_run_id = $2
-      `,
-      [playerId, clientRunId],
-    );
+    const [row] = await this.#database
+      .select()
+      .from(leaderboardRuns)
+      .where(and(eq(leaderboardRuns.playerId, playerId), eq(leaderboardRuns.clientRunId, clientRunId)))
+      .limit(1);
 
-    return result.rows[0] ? mapLeaderboardRunRow(result.rows[0]) : null;
+    return row ? mapLeaderboardRunRow(row) : null;
   }
 }
 
 function buildRunKey(playerId: string, clientRunId: string): string {
   return `${playerId}:${clientRunId}`;
+}
+
+function buildRunInsert(submission: LeaderboardRunSubmission): typeof leaderboardRuns.$inferInsert {
+  return {
+    id: generateLeaderboardRunId(),
+    playerId: submission.playerId,
+    clientRunId: submission.clientRunId,
+    money: submission.metrics.money,
+    cumulativeRevenue: submission.metrics.cumulativeRevenue,
+    totalServers: submission.metrics.totalServers,
+    computeCapacity: submission.metrics.computeCapacity,
+    memoryCapacity: submission.metrics.memoryCapacity,
+    storageCapacity: submission.metrics.storageCapacity,
+    gpuCapacity: submission.metrics.gpuCapacity,
+    gameMonth: submission.gameMonth,
+  };
 }
 
 function compareLeaderboardRuns(
@@ -330,54 +231,92 @@ function compareLeaderboardRuns(
   return left.runId.localeCompare(right.runId);
 }
 
-function resolveMetricExpression(metric: LeaderboardQueryMetric): string {
+function resolveOrderExpressions(
+  metric: LeaderboardQueryMetric,
+  totalCapacityExpression: ReturnType<typeof sql<number>>,
+) {
   switch (metric) {
     case "money":
-      return "money";
+      return [
+        desc(leaderboardRuns.money),
+        asc(leaderboardRuns.submittedAt),
+        asc(leaderboardRuns.clientRunId),
+        asc(leaderboardRuns.id),
+      ] as const;
     case "cumulativeRevenue":
-      return "cumulative_revenue";
+      return [
+        desc(leaderboardRuns.cumulativeRevenue),
+        asc(leaderboardRuns.submittedAt),
+        asc(leaderboardRuns.clientRunId),
+        asc(leaderboardRuns.id),
+      ] as const;
     case "totalServers":
-      return "total_servers";
+      return [
+        desc(leaderboardRuns.totalServers),
+        asc(leaderboardRuns.submittedAt),
+        asc(leaderboardRuns.clientRunId),
+        asc(leaderboardRuns.id),
+      ] as const;
     case "computeCapacity":
-      return "compute_capacity";
+      return [
+        desc(leaderboardRuns.computeCapacity),
+        asc(leaderboardRuns.submittedAt),
+        asc(leaderboardRuns.clientRunId),
+        asc(leaderboardRuns.id),
+      ] as const;
     case "memoryCapacity":
-      return "memory_capacity";
+      return [
+        desc(leaderboardRuns.memoryCapacity),
+        asc(leaderboardRuns.submittedAt),
+        asc(leaderboardRuns.clientRunId),
+        asc(leaderboardRuns.id),
+      ] as const;
     case "storageCapacity":
-      return "storage_capacity";
+      return [
+        desc(leaderboardRuns.storageCapacity),
+        asc(leaderboardRuns.submittedAt),
+        asc(leaderboardRuns.clientRunId),
+        asc(leaderboardRuns.id),
+      ] as const;
     case "gpuCapacity":
-      return "gpu_capacity";
+      return [
+        desc(leaderboardRuns.gpuCapacity),
+        asc(leaderboardRuns.submittedAt),
+        asc(leaderboardRuns.clientRunId),
+        asc(leaderboardRuns.id),
+      ] as const;
     case "totalCapacity":
-      return "(compute_capacity + memory_capacity + storage_capacity + gpu_capacity)";
+      return [
+        desc(totalCapacityExpression),
+        asc(leaderboardRuns.submittedAt),
+        asc(leaderboardRuns.clientRunId),
+        asc(leaderboardRuns.id),
+      ] as const;
   }
 }
 
-function mapLeaderboardRunRow(row: LeaderboardRunRow | undefined): LeaderboardRunRecord {
+function mapLeaderboardRunRow(
+  row: typeof leaderboardRuns.$inferSelect | undefined,
+): LeaderboardRunRecord {
   if (!row) {
     throw new Error("Expected leaderboard run row to be present.");
   }
 
   return {
     runId: row.id,
-    playerId: row.player_id,
-    clientRunId: row.client_run_id,
+    playerId: row.playerId,
+    clientRunId: row.clientRunId,
     metrics: {
       money: Number(row.money),
-      cumulativeRevenue: Number(row.cumulative_revenue),
-      totalServers: Number(row.total_servers),
-      computeCapacity: Number(row.compute_capacity),
-      memoryCapacity: Number(row.memory_capacity),
-      storageCapacity: Number(row.storage_capacity),
-      gpuCapacity: Number(row.gpu_capacity),
+      cumulativeRevenue: Number(row.cumulativeRevenue),
+      totalServers: Number(row.totalServers),
+      computeCapacity: Number(row.computeCapacity),
+      memoryCapacity: Number(row.memoryCapacity),
+      storageCapacity: Number(row.storageCapacity),
+      gpuCapacity: Number(row.gpuCapacity),
     },
-    gameMonth: Number(row.game_month),
-    submittedAt: new Date(row.submitted_at),
-    updatedAt: new Date(row.updated_at),
+    gameMonth: Number(row.gameMonth),
+    submittedAt: new Date(row.submittedAt),
+    updatedAt: new Date(row.updatedAt),
   };
-}
-
-function isUniqueViolation(error: unknown): error is { code: string } {
-  return error !== null
-    && typeof error === "object"
-    && "code" in error
-    && (error as { code?: unknown }).code === "23505";
 }

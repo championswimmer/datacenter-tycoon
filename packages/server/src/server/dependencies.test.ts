@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
 import { loadServerConfig } from "../config.js";
-import { InMemoryLeaderboardRepository } from "../leaderboard/repository.js";
+import { InMemoryLeaderboardRepository, DrizzleLeaderboardRepository } from "../leaderboard/repository.js";
+import { DrizzlePlayersRepository } from "../players/drizzle-repository.js";
 import { InMemoryPlayersRepository } from "../players/repository.js";
 import { InMemoryFixedWindowRateLimiter } from "../rate-limit/fixed-window.js";
 import { createApp } from "../index.js";
 import type { ServerServicesFactory } from "../types.js";
-import { resolveAppDependencies } from "./dependencies.js";
+import { createDefaultServerServices, resolveAppDependencies } from "./dependencies.js";
 import { apiRequest } from "../test-utils/app.js";
 
 function createConfig() {
@@ -42,6 +43,22 @@ test("resolveAppDependencies keeps transport wiring independent from persistence
   assert.equal(resolved.services.players, factoryPlayers);
   assert.equal(resolved.services.leaderboard, factoryLeaderboard);
   assert.equal(resolved.services.rateLimiter, overrideRateLimiter);
+});
+
+test("createDefaultServerServices wires DATABASE_URL configs to Drizzle repositories", () => {
+  const services = createDefaultServerServices(
+    loadServerConfig({
+      NODE_ENV: "test",
+      PORT: "4010",
+      HOST: "127.0.0.1",
+      CORS_ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:4173",
+      SERVER_VERSION: "9.9.9-test",
+      DATABASE_URL: "postgres://127.0.0.1:1/postgres",
+    }),
+  );
+
+  assert.ok(services.players instanceof DrizzlePlayersRepository);
+  assert.ok(services.leaderboard instanceof DrizzleLeaderboardRepository);
 });
 
 test("createApp can swap persistence factories without changing transport tests", async () => {

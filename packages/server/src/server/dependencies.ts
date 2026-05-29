@@ -1,7 +1,7 @@
-import { Pool } from "pg";
 import type { ServerConfig } from "../config.js";
-import { PostgresLeaderboardRepository } from "../leaderboard/repository.js";
-import { PostgresPlayersRepository } from "../players/postgres-repository.js";
+import { createPostgresDrizzleClient } from "../db/client.js";
+import { DrizzleLeaderboardRepository } from "../leaderboard/repository.js";
+import { DrizzlePlayersRepository } from "../players/drizzle-repository.js";
 import { InMemoryPlayersRepository } from "../players/repository.js";
 import { InMemoryFixedWindowRateLimiter } from "../rate-limit/fixed-window.js";
 import type { AppDependencies, ServerServices, ServerServicesFactory } from "../types.js";
@@ -35,13 +35,11 @@ export function createDefaultServerServices(config: ServerConfig): ServerService
     };
   }
 
-  const pool = new Pool({
-    connectionString: config.databaseUrl,
-  });
+  const { db } = createPostgresDrizzleClient(config.databaseUrl);
 
   return {
-    players: new PostgresPlayersRepository(pool),
-    leaderboard: new PostgresLeaderboardRepository(pool),
+    players: new DrizzlePlayersRepository(db),
+    leaderboard: new DrizzleLeaderboardRepository(db),
     rateLimiter: new InMemoryFixedWindowRateLimiter(),
   };
 }

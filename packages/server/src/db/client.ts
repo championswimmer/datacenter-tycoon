@@ -11,6 +11,7 @@ export type ServerPostgresDatabase = BunSQLDatabase<ServerDatabaseSchema> & {
 export type ServerPgliteDatabase = PgliteDatabase<ServerDatabaseSchema> & {
   $client: PGlite;
 };
+export type ServerDrizzleDatabase = ServerPostgresDatabase | ServerPgliteDatabase;
 
 export function createPostgresDrizzleClient(connectionString: string): {
   client: SQL;
