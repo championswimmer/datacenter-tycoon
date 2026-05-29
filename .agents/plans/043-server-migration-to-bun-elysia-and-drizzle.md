@@ -22,11 +22,11 @@ owner: server
   - [x] 3.2 Port health and version endpoints to Elysia without changing their response contract
   - [x] 3.3 Port player and leaderboard endpoints with request validation and rate limiting
   - [x] 3.4 Remove the custom Node HTTP adapter once Elysia reaches parity
-- [ ] **Phase 4 — Drizzle schema and repository migration**
+- [x] **Phase 4 — Drizzle schema and repository migration**
   - [x] 4.1 Model the existing Postgres schema in Drizzle tables and relations
   - [x] 4.2 Add a Drizzle database factory for Bun Postgres and PGlite
   - [x] 4.3 Rewrite player and leaderboard repositories to use Drizzle instead of raw `pg` SQL
-  - [ ] 4.4 Adopt a Drizzle-led migration workflow without losing compatibility with existing databases
+  - [x] 4.4 Adopt a Drizzle-led migration workflow without losing compatibility with existing databases
 - [ ] **Phase 5 — Development and production database modes**
   - [ ] 5.1 Reintroduce the dev/prod database-mode rules on top of Drizzle
   - [ ] 5.2 Make health/startup output expose runtime, framework, and active database provider
@@ -315,6 +315,7 @@ export const createServerApp = (deps: AppDependencies) =>
 - Ensure migrations work for both:
   - file-backed PGlite in local development;
   - external Postgres in production/staging.
+- Implementation note: the repo now carries an explicit Drizzle journal at `packages/server/drizzle/meta/_journal.json`, `migrate.ts` delegates to a provider-aware workflow that applies the historical SQL baseline first and then runs Drizzle migrations for either Bun SQL or PGlite, and `check-migrations.ts` validates both the legacy SQL folder and the Drizzle journal. `migration-workflow.test.ts` verifies that an empty PGlite database can be bootstrapped end-to-end without destructive re-initialization.
 - Acceptance: a clean database can be initialized through the new migration workflow, and an existing database can be adopted without destructive re-bootstrap.
 
 ## Phase 5 — Development and production database modes
@@ -415,3 +416,4 @@ export const createServerApp = (deps: AppDependencies) =>
 - 2026-05-29 — Completed step 4.1 by adding Drizzle schema/relations/config files that mirror the existing leaderboard SQL baseline without yet changing runtime persistence.
 - 2026-05-29 — Completed step 4.2 by introducing shared Bun SQL / PGlite Drizzle client factories and a unified database connection abstraction with closeable lifecycle helpers.
 - 2026-05-29 — Completed step 4.3 by replacing raw `pg` repositories with Drizzle implementations and proving the new persistence path through both repository tests and a PGlite-backed request-level integration test.
+- 2026-05-29 — Completed step 4.4 by adding a provider-aware migration workflow that preserves the historical SQL baseline while introducing Drizzle’s migration journal and migrator entrypoints.
