@@ -3,6 +3,7 @@ import {
 	reliabilityMarketPolicyForScore,
 	type ReliabilityMarketPolicy,
 } from "../balance/reliability.js";
+import { CONTRACT_PAYOUT_MULTIPLIER } from "../balance/contracts.js";
 import { regionIdsForContractAffinity, REGION_CATALOG } from "../catalog/regions.js";
 import {
 	CONTRACT_TERM_DISCOUNT_BASELINE_MONTHS,
@@ -378,7 +379,8 @@ export function monthlyPaymentForRequirements(
 	return roundMoneyToNearest(
 		(pricing.baseMonthlyFee + contractValue(requirements, pricing.weights) * contractDifficultyPriceMultiplier(difficulty)) *
 			paymentMultiplierForUrgency(urgency) *
-			monthlyRateMultiplierForTerm(termMonths),
+			monthlyRateMultiplierForTerm(termMonths) *
+			CONTRACT_PAYOUT_MULTIPLIER,
 		100,
 	);
 }

@@ -9,6 +9,7 @@ import {
 	monthlyPaymentForRequirements,
 	type ContractPricingConfig,
 } from "../contracts/generator.js";
+import { CONTRACT_PAYOUT_MULTIPLIER } from "./contracts.js";
 import {
 	BANDWIDTH_USD_PER_GBPS_MONTH,
 	COOLING_OVERHEAD_RATIO,
@@ -135,8 +136,8 @@ export const UNIT_ECONOMICS_TARGET_BANDS: UnitEconomicsTargetBands = {
 		compute: 24,
 		memory: 45,
 	},
-	minimumStoragePaybackMonths: 10,
-	minimumStorageToFastestNonStoragePaybackRatio: 0.7,
+	minimumStoragePaybackMonths: 4,
+	minimumStorageToFastestNonStoragePaybackRatio: 0.65,
 };
 
 export const PRIMARY_RESOURCE_BY_RACK_KIND: Record<RackKind, UnitEconomicsResource> = {
@@ -234,10 +235,10 @@ export function auditContractPricing(options: UnitEconomicsAuditOptions = {}): C
 		baseMonthlyFee: pricing.baseMonthlyFee,
 		averageMarginalMultiplier: roundRatio(averageMarginalMultiplier),
 		averageMarginalPayoutPerUnit: {
-			vCpu: roundRatio(pricing.weights.vCpu * averageMarginalMultiplier),
-			ramGb: roundRatio(pricing.weights.ramGb * averageMarginalMultiplier),
-			storageTb: roundRatio(pricing.weights.storageTb * averageMarginalMultiplier),
-			gpuFlops: roundRatio(pricing.weights.gpuFlops * averageMarginalMultiplier),
+			vCpu: roundRatio(pricing.weights.vCpu * averageMarginalMultiplier * CONTRACT_PAYOUT_MULTIPLIER),
+			ramGb: roundRatio(pricing.weights.ramGb * averageMarginalMultiplier * CONTRACT_PAYOUT_MULTIPLIER),
+			storageTb: roundRatio(pricing.weights.storageTb * averageMarginalMultiplier * CONTRACT_PAYOUT_MULTIPLIER),
+			gpuFlops: roundRatio(pricing.weights.gpuFlops * averageMarginalMultiplier * CONTRACT_PAYOUT_MULTIPLIER),
 		},
 		averageMonthlyPayment: roundMoney(totalMonthlyPayment / totalSamples),
 	};

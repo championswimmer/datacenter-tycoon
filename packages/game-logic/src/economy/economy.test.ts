@@ -162,12 +162,12 @@ test("tickOpex charges staff and reserved bandwidth even for an empty datacenter
 	const datacenter = makeDatacenter("garage-1", DATACENTER_CATALOG.garage);
 
 	assert.deepEqual(tickOpex(datacenter, TEST_REGION), {
-		total: 18_800,
+		total: 12_800,
 		breakdown: {
 			power: 0,
 			cooling: 0,
 			bandwidth: 6_800,
-			staff: 12_000,
+			staff: 6_000,
 			maintenance: 0,
 			upgrades: 0,
 			tax: 0,
@@ -182,12 +182,12 @@ test("tickOpex includes power, cooling, staff, bandwidth, and rack maintenance",
 	]);
 
 	assert.deepEqual(tickOpex(datacenter, TEST_REGION), {
-		total: 84709.9,
+		total: 60709.9,
 		breakdown: {
 			power: 946.08,
 			cooling: 283.82,
 			bandwidth: 34_000,
-			staff: 48_000,
+			staff: 24_000,
 			maintenance: 1_480,
 			upgrades: 0,
 			tax: 0,
@@ -202,12 +202,12 @@ test("tickOpex charges idle-baseline power when no active workload is assigned",
 	]);
 
 	assert.deepEqual(tickOpex(datacenter, TEST_REGION, []), {
-		total: 83662.21,
+		total: 59662.21,
 		breakdown: {
 			power: 140.16,
 			cooling: 42.05,
 			bandwidth: 34_000,
-			staff: 48_000,
+			staff: 24_000,
 			maintenance: 1_480,
 			upgrades: 0,
 			tax: 0,
@@ -231,12 +231,12 @@ test("tickOpex charges full draw only for racks needed by assigned contract dema
 	});
 
 	assert.deepEqual(tickOpex(datacenter, TEST_REGION, [computeOnlyContract]), {
-		total: 84368.26,
+		total: 60049.4,
 		breakdown: {
-			power: 683.28,
-			cooling: 204.98,
+			power: 438,
+			cooling: 131.4,
 			bandwidth: 34_000,
-			staff: 48_000,
+			staff: 24_000,
 			maintenance: 1_480,
 			upgrades: 0,
 			tax: 0,
@@ -311,12 +311,12 @@ test("tickOpex charges additional wages for maintenance staffing", () => {
 	};
 
 	assert.deepEqual(tickOpex(datacenter, TEST_REGION), {
-		total: 33_200,
+		total: 27_200,
 		breakdown: {
 			power: 0,
 			cooling: 0,
 			bandwidth: 6_800,
-			staff: 26_400,
+			staff: 20_400,
 			maintenance: 0,
 			upgrades: 0,
 			tax: 0,
@@ -337,12 +337,12 @@ test("tickOpex charges fixed upgrade upkeep and upgraded bandwidth from the effe
 	};
 
 	assert.deepEqual(tickOpex(datacenter, TEST_REGION), {
-		total: 42_950,
+		total: 36_950,
 		breakdown: {
 			power: 0,
 			cooling: 0,
 			bandwidth: 27_200,
-			staff: 12_000,
+			staff: 6_000,
 			maintenance: 0,
 			upgrades: 3_750,
 			tax: 0,

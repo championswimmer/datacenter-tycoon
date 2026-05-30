@@ -14,7 +14,7 @@ export const DATACENTER_CATALOG: Record<string, DatacenterSpec> = {
 		networkType: "cat6",
 		bandwidthGbps: 80,
 		capexCost: 250_000,
-		staffCount: 2,
+		staffCount: 1,
 	},
 	warehouse: {
 		id: datacenterSpecId("warehouse"),
@@ -27,7 +27,7 @@ export const DATACENTER_CATALOG: Record<string, DatacenterSpec> = {
 		networkType: "cat8",
 		bandwidthGbps: 400,
 		capexCost: 1_400_000,
-		staffCount: 8,
+		staffCount: 4,
 	},
 	hyperscale: {
 		id: datacenterSpecId("hyperscale"),

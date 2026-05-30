@@ -1,4 +1,4 @@
-import { RACK_IDLE_BASELINE_POWER_KW } from "../balance/power.js";
+import { RACK_IDLE_BASELINE_POWER_KW, ACTIVE_RACK_POWER_MULTIPLIER } from "../balance/power.js";
 import type {
 	ContractRequirements,
 	RackActivityView,
@@ -91,7 +91,7 @@ export function allocateRackActivity(
 			remainingDemandByKind[rack.kind] = Math.max(0, remainingDemandByKind[rack.kind] - availableUnits);
 		}
 
-		const billedPowerKw = status === "active" ? reservedPowerKw : RACK_IDLE_BASELINE_POWER_KW;
+		const billedPowerKw = status === "active" ? reservedPowerKw * ACTIVE_RACK_POWER_MULTIPLIER : RACK_IDLE_BASELINE_POWER_KW;
 		activities.push({
 			placementId: rack.placementId,
 			specId: rack.specId,

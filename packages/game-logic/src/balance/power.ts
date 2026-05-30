@@ -4,6 +4,10 @@ import { HOURS_PER_MONTH } from "../economy/constants.js";
 // This stays flat across rack types by design so balancing usage-based billing has one global knob.
 export const RACK_IDLE_BASELINE_POWER_KW = 0.8;
 
+// Active-rack opex power draw multiplier (0.6 means 40% reduction in billed power draw)
+export const ACTIVE_RACK_POWER_MULTIPLIER = 0.6;
+
+
 // Active-rack draw still comes from each rack spec's `powerDrawKw`; this helper constant only
 // captures the conversion between instantaneous kW and monthly energy billing.
 export const KWH_PER_KW_PER_MONTH = HOURS_PER_MONTH;

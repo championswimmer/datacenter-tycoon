@@ -1,3 +1,5 @@
+export const CONTRACT_PAYOUT_MULTIPLIER = 1.75;
+
 export const UNRESTRICTED_MARKET_OFFER_SHARE_FLOOR = 0.34;
 export const NON_GPU_MARKET_OFFER_SHARE_FLOOR = 0.34;
 
@@ -12,3 +14,4 @@ export function minimumUnrestrictedMarketOffers(offerTarget: number): number {
 export function minimumNonGpuMarketOffers(offerTarget: number): number {
 	return minimumOffersForShare(offerTarget, NON_GPU_MARKET_OFFER_SHARE_FLOOR);
 }
+

@@ -187,9 +187,9 @@ test("regional opex reflects location economics", () => {
 	// US West total should be much lower than US East
 	assert.ok(usWestOpex.total < usEastOpex.total);
 
-	// Verify staff cost matches region wage * garage staffCount (2)
-	assert.equal(usEastOpex.breakdown.staff, usEastRegion.staffWage * 2);
-	assert.equal(usWestOpex.breakdown.staff, usWestRegion.staffWage * 2);
+	// Verify staff cost matches region wage * garage staffCount (1)
+	assert.equal(usEastOpex.breakdown.staff, usEastRegion.staffWage * 1);
+	assert.equal(usWestOpex.breakdown.staff, usWestRegion.staffWage * 1);
 
 	// Run a tick and verify ledger reflects combined costs
 	state = reduce(state, { type: "Tick" });
@@ -334,7 +334,7 @@ test("tax is applied on profitable datacenters and varies by region", () => {
 
 	const region = state.map.regions.find((r) => r.id === usEastId)!;
 	const dc = state.datacenters.find((d) => d.id === dcId)!;
-	const opexBeforeTick = tickOpex(dc, region);
+	const opexBeforeTick = tickOpex(dc, region, state.contracts);
 
 	state = reduce(state, { type: "Tick" });
 

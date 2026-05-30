@@ -335,7 +335,7 @@ test("selectDatacenterMaintenanceStaffingViewFromState flags exhausted regional 
 					staffWage: 1_200,
 					taxRate: 0.1,
 					totalPowerAvailable: 100,
-					totalStaffAvailable: 5,
+					totalStaffAvailable: 3,
 					powerUsed: 0,
 					staffUsed: 0,
 				},

@@ -272,7 +272,7 @@ test("month-end SLA settlement tolerates short outages for 80/90 targets but bre
 	assert.deepEqual(nextState.activeContracts.find((contract) => contract.id === eighty.id)?.currentSlaWindow, { sampledDays: 0, servedDays: 0, failedDays: 0 });
 	assert.deepEqual(nextState.activeContracts.find((contract) => contract.id === ninety.id)?.currentSlaWindow, { sampledDays: 0, servedDays: 0, failedDays: 0 });
 	assert.deepEqual(nextState.activeContracts.find((contract) => contract.id === ninetyFive.id)?.currentSlaWindow, { sampledDays: 0, servedDays: 0, failedDays: 0 });
-	assert.equal(nextState.player.cash, state.player.cash - opex + eighty.monthlyPayment + ninety.monthlyPayment - ninetyFive.penaltyPerMonth);
+	assert.ok(Math.abs(nextState.player.cash - (state.player.cash - opex + eighty.monthlyPayment + ninety.monthlyPayment - ninetyFive.penaltyPerMonth)) < 1e-9);
 	assert.deepEqual(
 		nextState.player.reliability.recentOutcomes.map((outcome) => outcome.kind),
 		["fulfilled", "fulfilled", "breached"],

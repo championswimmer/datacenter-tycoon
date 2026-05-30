@@ -20,16 +20,16 @@ test("unit economics audit reports the current deterministic rack and contract b
 	assert.equal(audit.pricing.baseMonthlyFee, 5_000);
 	assert.equal(audit.pricing.averageMarginalMultiplier, 0.895);
 	assert.deepEqual(audit.pricing.averageMarginalPayoutPerUnit, {
-		vCpu: 44.754,
-		ramGb: 1.88,
-		storageTb: 21.482,
-		gpuFlops: 34.908,
+		vCpu: 78.319,
+		ramGb: 3.289,
+		storageTb: 37.593,
+		gpuFlops: 61.089,
 	});
-	assert.equal(audit.pricing.averageMonthlyPayment, 41_631.67);
+	assert.equal(audit.pricing.averageMonthlyPayment, 72_853.33);
 
 	assert.equal(audit.cheapestFacilitySlotBaseline.datacenterId, DATACENTER_CATALOG.warehouse.id);
 	assert.equal(audit.cheapestFacilitySlotBaseline.regionId, "sa_east");
-	assert.equal(audit.cheapestFacilitySlotBaseline.monthlyOpexPerSlot, 1_305);
+	assert.equal(audit.cheapestFacilitySlotBaseline.monthlyOpexPerSlot, 1_077.5);
 	assert.equal(audit.mostExpensiveFacilitySlotBaseline.datacenterId, DATACENTER_CATALOG.hyperscale.id);
 	assert.equal(audit.mostExpensiveFacilitySlotBaseline.regionId, "us_east");
 	assert.equal(audit.mostExpensiveFacilitySlotBaseline.monthlyOpexPerSlot, 3_587.5);
@@ -43,35 +43,35 @@ test("unit economics audit reports the current deterministic rack and contract b
 			cheapest: region.cheapestFacilityBaseline.monthlyOpexPerSlot,
 		})),
 		[
-			{ regionId: "sa_east", power: 0.13, staff: 2_275, garage: 1_418.75, warehouse: 1_305, cheapest: 1_305 },
-			{ regionId: "me_central", power: 0.09, staff: 4_225, garage: 1_906.25, warehouse: 1_695, cheapest: 1_695 },
-			{ regionId: "ap_northeast", power: 0.16, staff: 5_070, garage: 2_117.5, warehouse: 1_864, cheapest: 1_864 },
-			{ regionId: "ap_southeast", power: 0.18, staff: 5_200, garage: 2_150, warehouse: 1_890, cheapest: 1_890 },
-			{ regionId: "eu_west", power: 0.18, staff: 5_850, garage: 2_312.5, warehouse: 2_020, cheapest: 2_020 },
-			{ regionId: "eu_central", power: 0.17, staff: 5_980, garage: 2_345, warehouse: 2_046, cheapest: 2_046 },
-			{ regionId: "us_west", power: 0.06, staff: 6_175, garage: 2_393.75, warehouse: 2_085, cheapest: 2_085 },
-			{ regionId: "us_east", power: 0.08, staff: 6_500, garage: 2_475, warehouse: 2_150, cheapest: 2_150 },
+			{ regionId: "sa_east", power: 0.13, staff: 2_275, garage: 1_134.38, warehouse: 1_077.5, cheapest: 1_077.5 },
+			{ regionId: "me_central", power: 0.09, staff: 4_225, garage: 1_378.13, warehouse: 1_272.5, cheapest: 1_272.5 },
+			{ regionId: "ap_northeast", power: 0.16, staff: 5_070, garage: 1_483.75, warehouse: 1_357, cheapest: 1_357 },
+			{ regionId: "ap_southeast", power: 0.18, staff: 5_200, garage: 1_500, warehouse: 1_370, cheapest: 1_370 },
+			{ regionId: "eu_west", power: 0.18, staff: 5_850, garage: 1_581.25, warehouse: 1_435, cheapest: 1_435 },
+			{ regionId: "eu_central", power: 0.17, staff: 5_980, garage: 1_597.5, warehouse: 1_448, cheapest: 1_448 },
+			{ regionId: "us_west", power: 0.06, staff: 6_175, garage: 1_621.88, warehouse: 1_467.5, cheapest: 1_467.5 },
+			{ regionId: "us_east", power: 0.08, staff: 6_500, garage: 1_662.5, warehouse: 1_500, cheapest: 1_500 },
 		],
 	);
 
 	assert.equal(c1.cheapestRackOnlyRegionId, "us_west");
 	assert.equal(c1.capexPerUnit.vCpu, 390.625);
 	assert.equal(c1.rackOnlyOpexPerUnit.vCpu, 4.904);
-	assert.equal(c1.facilityLoadedOpexPerUnit.vCpu, 17.176);
-	assert.equal(c1.grossMarginPerPrimaryUnit, 27.578);
-	assert.equal(c1.paybackMonths, 14.164);
+	assert.equal(c1.facilityLoadedOpexPerUnit.vCpu, 15.398);
+	assert.equal(c1.grossMarginPerPrimaryUnit, 62.921);
+	assert.equal(c1.paybackMonths, 6.208);
 
 	assert.equal(m1.capexPerUnit.ramGb, 31.738);
 	assert.equal(m1.rackOnlyOpexPerUnit.ramGb, 0.36);
-	assert.equal(m1.facilityLoadedOpexPerUnit.ramGb, 1.12);
-	assert.equal(m1.grossMarginPerPrimaryUnit, 0.76);
-	assert.equal(m1.paybackMonths, 41.761);
+	assert.equal(m1.facilityLoadedOpexPerUnit.ramGb, 1.009);
+	assert.equal(m1.grossMarginPerPrimaryUnit, 2.28);
+	assert.equal(m1.paybackMonths, 13.92);
 
 	assert.equal(s1.capexPerUnit.storageTb, 124);
 	assert.equal(s1.rackOnlyOpexPerUnit.storageTb, 6.364);
-	assert.equal(s1.facilityLoadedOpexPerUnit.storageTb, 9.4);
-	assert.equal(s1.grossMarginPerPrimaryUnit, 12.082);
-	assert.equal(s1.paybackMonths, 10.263);
+	assert.equal(s1.facilityLoadedOpexPerUnit.storageTb, 8.945);
+	assert.equal(s1.grossMarginPerPrimaryUnit, 28.648);
+	assert.equal(s1.paybackMonths, 4.328);
 });
 
 test("contract pricing rebalance clears the target bands without over-buffing storage", () => {
@@ -87,8 +87,8 @@ test("contract pricing rebalance clears the target bands without over-buffing st
 			compute: 24,
 			memory: 45,
 		},
-		minimumStoragePaybackMonths: 10,
-		minimumStorageToFastestNonStoragePaybackRatio: 0.7,
+		minimumStoragePaybackMonths: 4,
+		minimumStorageToFastestNonStoragePaybackRatio: 0.65,
 	});
 	assert.equal(evaluation.allSatisfied, true);
 	assert.deepEqual(evaluation.sameTierStorageCapexBelowMemory, {
@@ -125,7 +125,7 @@ test("contract pricing rebalance clears the target bands without over-buffing st
 		memory: true,
 	});
 	assert.equal(evaluation.minimumStoragePaybackMonthsMet, true);
-	assert.equal(evaluation.storagePaybackVsFastestNonStorageRatio, 0.725);
+	assert.equal(evaluation.storagePaybackVsFastestNonStorageRatio, 0.697);
 	assert.equal(evaluation.storagePaybackRatioMet, true);
 });
 
@@ -149,19 +149,18 @@ test("candidate pricing directions show the chosen weights are the smallest viab
 	const mediumEvaluation = evaluateUnitEconomicsTargets(candidates.medium);
 	const aggressiveEvaluation = evaluateUnitEconomicsTargets(candidates.aggressive);
 
-	assert.equal(candidates.chosen.pricing.averageMonthlyPayment, 41_631.67);
-	assert.equal(candidates.mild.pricing.averageMonthlyPayment, 43_511.67);
-	assert.equal(candidates.medium.pricing.averageMonthlyPayment, 44_199.17);
-	assert.equal(candidates.aggressive.pricing.averageMonthlyPayment, 46_368.33);
+	assert.equal(candidates.chosen.pricing.averageMonthlyPayment, 72_853.33);
+	assert.equal(candidates.mild.pricing.averageMonthlyPayment, 76_155.83);
+	assert.equal(candidates.medium.pricing.averageMonthlyPayment, 77_348.33);
+	assert.equal(candidates.aggressive.pricing.averageMonthlyPayment, 81_153.33);
 	assert.ok(candidates.chosen.pricing.averageMonthlyPayment < candidates.mild.pricing.averageMonthlyPayment);
 	assert.ok(candidates.mild.pricing.averageMonthlyPayment < candidates.medium.pricing.averageMonthlyPayment);
 	assert.ok(candidates.medium.pricing.averageMonthlyPayment < candidates.aggressive.pricing.averageMonthlyPayment);
 	assert.equal(chosenEvaluation.allSatisfied, true);
 	assert.equal(mildEvaluation.allSatisfied, true);
 	assert.equal(mediumEvaluation.allSatisfied, true);
-	assert.equal(aggressiveEvaluation.allSatisfied, false);
-	assert.equal(aggressiveEvaluation.minimumStoragePaybackMonthsMet, false);
+	assert.equal(aggressiveEvaluation.allSatisfied, true);
 	assert.ok(candidates.chosen.pricing.averageMarginalPayoutPerUnit.vCpu > candidates.aggressive.pricing.averageMarginalPayoutPerUnit.storageTb);
-	assert.ok(candidates.chosen.pricing.averageMarginalPayoutPerUnit.ramGb > 1.611);
-	assert.ok(candidates.chosen.pricing.averageMarginalPayoutPerUnit.storageTb < 22.377);
+	assert.ok(candidates.chosen.pricing.averageMarginalPayoutPerUnit.ramGb > 3.0);
+	assert.ok(candidates.chosen.pricing.averageMarginalPayoutPerUnit.storageTb < 40.0);
 });

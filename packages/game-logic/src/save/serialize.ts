@@ -3,7 +3,7 @@ import { withContractSlaDefaults } from "../contracts/sla.js";
 import { createEmptyRegionFabric } from "../entities/fabric.js";
 import type { GameState, PersistedGameState, Subtick } from "../types.js";
 
-export const SAVE_VERSION = 12;
+export const SAVE_VERSION = 13;
 
 export interface SaveEnvelope<TState = PersistedGameState> {
 	saveVersion: number;
