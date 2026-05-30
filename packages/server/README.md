@@ -130,7 +130,7 @@ Current production Railway details:
 - Runtime: Dockerfile final image `oven/bun:1.3.14`; Railway pre-deploy/start commands run `bun` against compiled server files.
 - Database URL: `DATABASE_URL` is set from the private Railway Postgres URL (`postgres.railway.internal`), not a public proxy URL.
 
-GitHub autodeploy is implemented with `.github/workflows/deploy-dctycoon-api.yml` instead of Railway-native GitHub autodeploy because the current Railway account does not have GitHub integration access to this repository. The workflow uses the GitHub repository secret `RAILWAY_TOKEN` (a Railway project token) and runs `railway up --service 00549536-b2e0-49f8-888b-3ffc66275920 --environment production` on pushes to `main` and `arnav/server-on-railway` when server-relevant paths change. Those path filters include `packages/server/**`, `packages/game-logic/**`, root dependency/config files, `Dockerfile`, `.dockerignore`, `railway.toml`, and the workflow file; unrelated package-only changes should not redeploy the API.
+Autodeploy should be configured manually in Railway by connecting the `dctycoon-api` service to the GitHub repository. Keep the Railway build context/root at the repository root so the Dockerfile can access workspace manifests, `packages/server`, and `packages/game-logic`. Configure Railway watch paths so unrelated package-only changes do not redeploy the API; include at least `packages/server/**`, `packages/game-logic/**`, `package.json`, `package-lock.json`, `tsconfig.json`, `Dockerfile`, `.dockerignore`, and `railway.toml`.
 
 ### Rollback considerations
 
