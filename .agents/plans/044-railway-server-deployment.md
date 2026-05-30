@@ -13,7 +13,7 @@ owner: server
   - [x] 1.1 Verify Railway auth/project state and server deployment requirements
   - [x] 1.2 Document Railway deployment commands and required variables in server docs
 - [ ] **Phase 2 — Railway project and services**
-  - [ ] 2.1 Create or link the Railway project/environment
+  - [x] 2.1 Create or link the Railway project/environment
   - [ ] 2.2 Create the `dctycoon-api` service and Postgres database service
 - [ ] **Phase 3 — Private database wiring and deploy**
   - [ ] 3.1 Set `DATABASE_URL` on `dctycoon-api` from the Postgres private service variable
@@ -144,6 +144,7 @@ railway service logs --service dctycoon-api
 
 ## Changelog
 
+- 2026-05-30 — completed Step 2.1: created and linked Railway project `datacenter-tycoon` (`02342aec-7d94-4cb7-9090-5bf53d101eaf`) with a `production` environment (`77ff1d78-bf23-4e3b-b5a4-66616c4fe080`).
 - 2026-05-30 — completed Step 1.2: expanded the server README with Railway project/service/database commands, private Postgres `DATABASE_URL` wiring, deploy, logs, domain, and healthcheck guidance.
 - 2026-05-30 — completed Step 1.1: Railway CLI is authenticated as the expected user, the repo is not yet linked to a Railway project, and the existing root `railway.toml` matches the server workspace build/migrate/start/healthcheck scripts.
 - 2026-05-30 — created.
