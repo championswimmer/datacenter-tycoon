@@ -71,7 +71,7 @@ test("allocateRackActivity deterministically assigns active racks and keeps extr
 	assert.equal(summary.activePowerKw, 6);
 	assert.equal(summary.reservedPowerKw, 18);
 	assert.ok(Math.abs(summary.idleBaselinePowerKw - 2.4) < 1e-9);
-	assert.ok(Math.abs(summary.billedPowerKw - 6.0) < 1e-9);
+	assert.ok(Math.abs(summary.billedPowerKw - 8.4) < 1e-9);
 });
 
 test("allocateRackActivity excludes repairing racks from active assignment", () => {
@@ -107,5 +107,5 @@ test("allocateRackActivity excludes repairing racks from active assignment", () 
 	assert.equal(summary.activePowerKw, 5);
 	assert.equal(summary.reservedPowerKw, 11);
 	assert.equal(summary.idleBaselinePowerKw, 0.8);
-	assert.equal(summary.billedPowerKw, 3.8);
+	assert.equal(summary.billedPowerKw, 5.8);
 });

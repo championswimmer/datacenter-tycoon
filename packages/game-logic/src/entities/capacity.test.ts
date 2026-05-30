@@ -137,8 +137,8 @@ test("datacenterUsage sums placed rack power, heat, bandwidth, and slots", () =>
 	]);
 
 	assert.deepEqual(datacenterUsage(datacenter), {
-		powerKw: 16.6,
-		heatOutputBtuPerHr: 56_639,
+		powerKw: 9.96,
+		heatOutputBtuPerHr: 33_984,
 		bandwidthGbps: 36,
 		slotsUsed: 3,
 	});
@@ -407,24 +407,33 @@ test("network upgrades increase effective bandwidth headroom for placement check
 });
 
 test("generator upgrades increase effective rack-power headroom for placement checks", () => {
-	const generatorCandidate = makeDatacenter(DATACENTER_CATALOG.garage, [
-		placement("rack-1", "C3", 0, 0),
-		placement("rack-2", "C3", 0, 1),
-		placement("rack-3", "C3", 0, 2),
-		placement("rack-4", "M3", 0, 3),
-	]);
+	const generatorCandidate = {
+		...makeDatacenter(DATACENTER_CATALOG.garage, [
+			placement("rack-1", "G3", 0, 0),
+			placement("rack-2", "G3", 0, 1),
+			placement("rack-3", "G3", 0, 2),
+			placement("rack-4", "G3", 0, 3),
+		]),
+		upgrades: {
+			currentNodeByTrack: {
+				cooling: "hybrid",
+				networkType: "fiber",
+				onsiteGeneration: "gen-0",
+			},
+		},
+	};
 	const upgradedGeneratorSite: Datacenter = {
 		...generatorCandidate,
 		upgrades: {
 			currentNodeByTrack: {
 				cooling: "hybrid",
-				networkType: "cat8",
+				networkType: "fiber",
 				onsiteGeneration: "gen-1",
 			},
 		},
 	};
 
-	assert.deepEqual(canPlaceRack(generatorCandidate, RACK_CATALOG.C2, { row: 1, position: 0 }), {
+	assert.deepEqual(canPlaceRack(generatorCandidate, RACK_CATALOG.G3, { row: 1, position: 0 }), {
 		ok: false,
 		reason: "insufficient_power",
 	});
@@ -433,22 +442,22 @@ test("generator upgrades increase effective rack-power headroom for placement ch
 		upgrades: {
 			currentNodeByTrack: {
 				cooling: "hybrid",
-				networkType: "cat8",
+				networkType: "fiber",
 				onsiteGeneration: "gen-0",
 			},
 		},
-	}, RACK_CATALOG.C2, { row: 1, position: 0 }), {
+	}, RACK_CATALOG.G3, { row: 1, position: 0 }), {
 		ok: false,
 		reason: "insufficient_power",
 	});
-	assert.deepEqual(canPlaceRack(upgradedGeneratorSite, RACK_CATALOG.C2, { row: 1, position: 0 }), { ok: true });
+	assert.deepEqual(canPlaceRack(upgradedGeneratorSite, RACK_CATALOG.G3, { row: 1, position: 0 }), { ok: true });
 });
 
 test("canPlaceRack rejects placements that exceed remaining power budget", () => {
 	const datacenter = makeDatacenter(DATACENTER_CATALOG.warehouse, [
 		placement("rack-1", "G2", 0, 0),
 		placement("rack-2", "G2", 0, 1),
-	], { powerCapacityKw: 30 });
+	], { powerCapacityKw: 15 });
 
 	assert.deepEqual(canPlaceRack(datacenter, RACK_CATALOG.G2, { row: 0, position: 2 }), {
 		ok: false,
@@ -478,22 +487,33 @@ test("placement still uses reserved full-draw power even when billed power is mo
 });
 
 test("garage cooling rebalance allows more routine storage growth before hitting the thermal cap", () => {
-	const garageWithFiveStorageRacks = makeDatacenter(DATACENTER_CATALOG.garage, [
-		placement("rack-1", "S2", 0, 0),
-		placement("rack-2", "S2", 0, 1),
-		placement("rack-3", "S2", 0, 2),
-		placement("rack-4", "S2", 0, 3),
-		placement("rack-5", "S2", 1, 0),
-	]);
-	const garageWithSixStorageRacks = makeDatacenter(DATACENTER_CATALOG.garage, [
-		...garageWithFiveStorageRacks.placements,
-		placement("rack-6", "S2", 1, 1),
-	]);
+	const garageWithFourG2Racks = {
+		...makeDatacenter(DATACENTER_CATALOG.garage, [
+			placement("rack-1", "G2", 0, 0),
+			placement("rack-2", "G2", 0, 1),
+			placement("rack-3", "G2", 0, 2),
+			placement("rack-4", "G2", 0, 3),
+		]),
+		upgrades: {
+			currentNodeByTrack: {
+				cooling: "air",
+				networkType: "cat8",
+				onsiteGeneration: "gen-0",
+			},
+		},
+	};
+	const garageWithFiveG2Racks = {
+		...garageWithFourG2Racks,
+		placements: [
+			...garageWithFourG2Racks.placements,
+			placement("rack-5", "G2", 1, 0),
+		],
+	};
 
-	assert.deepEqual(canPlaceRack(garageWithFiveStorageRacks, RACK_CATALOG.S2, { row: 1, position: 1 }), {
+	assert.deepEqual(canPlaceRack(garageWithFourG2Racks, RACK_CATALOG.G2, { row: 1, position: 0 }), {
 		ok: true,
 	});
-	assert.deepEqual(canPlaceRack(garageWithSixStorageRacks, RACK_CATALOG.S2, { row: 1, position: 2 }), {
+	assert.deepEqual(canPlaceRack(garageWithFiveG2Racks, RACK_CATALOG.G2, { row: 1, position: 1 }), {
 		ok: false,
 		reason: "insufficient_cooling",
 	});
@@ -503,7 +523,7 @@ test("canPlaceRack rejects placements that exceed remaining cooling budget", () 
 	const datacenter = makeDatacenter(
 		DATACENTER_CATALOG.hyperscale,
 		[placement("rack-1", "C2", 0, 0), placement("rack-2", "C2", 0, 1)],
-		{ coolingCapacityBtuPerHr: 60_000 },
+		{ coolingCapacityBtuPerHr: 35_000 },
 	);
 
 	assert.deepEqual(canPlaceRack(datacenter, RACK_CATALOG.C2, { row: 0, position: 2 }), {

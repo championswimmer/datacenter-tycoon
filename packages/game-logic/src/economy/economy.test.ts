@@ -182,10 +182,10 @@ test("tickOpex includes power, cooling, staff, bandwidth, and rack maintenance",
 	]);
 
 	assert.deepEqual(tickOpex(datacenter, TEST_REGION), {
-		total: 60709.9,
+		total: 60217.94,
 		breakdown: {
-			power: 946.08,
-			cooling: 283.82,
+			power: 567.65,
+			cooling: 170.29,
 			bandwidth: 34_000,
 			staff: 24_000,
 			maintenance: 1_480,

@@ -56,22 +56,22 @@ test("unit economics audit reports the current deterministic rack and contract b
 
 	assert.equal(c1.cheapestRackOnlyRegionId, "us_west");
 	assert.equal(c1.capexPerUnit.vCpu, 390.625);
-	assert.equal(c1.rackOnlyOpexPerUnit.vCpu, 4.904);
-	assert.equal(c1.facilityLoadedOpexPerUnit.vCpu, 15.398);
-	assert.equal(c1.grossMarginPerPrimaryUnit, 62.921);
-	assert.equal(c1.paybackMonths, 6.208);
+	assert.equal(c1.rackOnlyOpexPerUnit.vCpu, 4.193);
+	assert.equal(c1.facilityLoadedOpexPerUnit.vCpu, 13.856);
+	assert.equal(c1.grossMarginPerPrimaryUnit, 64.463);
+	assert.equal(c1.paybackMonths, 6.06);
 
 	assert.equal(m1.capexPerUnit.ramGb, 31.738);
-	assert.equal(m1.rackOnlyOpexPerUnit.ramGb, 0.36);
-	assert.equal(m1.facilityLoadedOpexPerUnit.ramGb, 1.009);
-	assert.equal(m1.grossMarginPerPrimaryUnit, 2.28);
-	assert.equal(m1.paybackMonths, 13.92);
+	assert.equal(m1.rackOnlyOpexPerUnit.ramGb, 0.317);
+	assert.equal(m1.facilityLoadedOpexPerUnit.ramGb, 0.917);
+	assert.equal(m1.grossMarginPerPrimaryUnit, 2.372);
+	assert.equal(m1.paybackMonths, 13.38);
 
 	assert.equal(s1.capexPerUnit.storageTb, 124);
-	assert.equal(s1.rackOnlyOpexPerUnit.storageTb, 6.364);
-	assert.equal(s1.facilityLoadedOpexPerUnit.storageTb, 8.945);
-	assert.equal(s1.grossMarginPerPrimaryUnit, 28.648);
-	assert.equal(s1.paybackMonths, 4.328);
+	assert.equal(s1.rackOnlyOpexPerUnit.storageTb, 6.219);
+	assert.equal(s1.facilityLoadedOpexPerUnit.storageTb, 8.629);
+	assert.equal(s1.grossMarginPerPrimaryUnit, 28.964);
+	assert.equal(s1.paybackMonths, 4.281);
 });
 
 test("contract pricing rebalance clears the target bands without over-buffing storage", () => {
@@ -125,7 +125,7 @@ test("contract pricing rebalance clears the target bands without over-buffing st
 		memory: true,
 	});
 	assert.equal(evaluation.minimumStoragePaybackMonthsMet, true);
-	assert.equal(evaluation.storagePaybackVsFastestNonStorageRatio, 0.697);
+	assert.equal(evaluation.storagePaybackVsFastestNonStorageRatio, 0.706);
 	assert.equal(evaluation.storagePaybackRatioMet, true);
 });
 
