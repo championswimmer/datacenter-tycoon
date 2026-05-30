@@ -21,7 +21,7 @@ owner: server
   - [x] 3.3 Set production runtime variables and deploy `dctycoon-api`
 - [ ] **Phase 4 — Verification, GitHub autodeploy, and handoff**
   - [x] 4.1 Verify health, migrations, and deployment logs
-  - [ ] 4.2 Connect GitHub source and configure server-scoped autodeploys
+  - [ ] 4.2 Configure GitHub Actions server-scoped autodeploys
   - [ ] 4.3 Record final Railway service details and operational notes
 
 ## Overview
@@ -134,13 +134,13 @@ railway service logs --service dctycoon-api
 - Generate or identify the public API domain if needed, then verify `GET /healthz`.
 - Acceptance: `/healthz` returns successfully and logs show the server using `db=postgres/bun-sql`.
 
-### Step 4.2 — Connect GitHub source and configure server-scoped autodeploys
+### Step 4.2 — Configure GitHub Actions server-scoped autodeploys
 
-- Files: Railway service settings only.
-- Connect `dctycoon-api` to the GitHub repository `championswimmer/datacenter-tycoon` on the intended branch.
-- Keep repository root as the build context so Docker can access workspace package manifests and `packages/game-logic`, but scope deploy triggers with watch paths such as `/packages/server/**`, `/packages/game-logic/**`, `/package.json`, `/package-lock.json`, `/Dockerfile`, and `/railway.toml`.
+- Files: `.github/workflows/deploy-dctycoon-api.yml`, GitHub repository secret `RAILWAY_TOKEN`.
+- Prefer Railway-native GitHub autodeploys if the Railway account has GitHub integration access to `championswimmer/datacenter-tycoon`; otherwise use a GitHub Actions workflow with a Railway project token.
+- Keep repository root as the upload/build context so Docker can access workspace package manifests and `packages/game-logic`, but scope deploy triggers with path filters such as `packages/server/**`, `packages/game-logic/**`, `package.json`, `package-lock.json`, `Dockerfile`, and `railway.toml`.
 - Verify pushes to unrelated packages will not trigger the API service while server/game-logic/root dependency changes will.
-- Acceptance: Railway service source is the GitHub repo/branch, autodeploy is enabled, and watch paths are server-scoped.
+- Acceptance: GitHub pushes to the configured branch and paths run a workflow that calls `railway up --service dctycoon-api`, while unrelated package changes are ignored.
 
 ### Step 4.3 — Record final Railway service details and operational notes
 
@@ -162,6 +162,7 @@ railway service logs --service dctycoon-api
 
 ## Changelog
 
+- 2026-05-30 — revised Step 4.2 to use GitHub Actions with a Railway project token because Railway's API reports no GitHub integration access to `championswimmer/datacenter-tycoon` from the current Railway account; this still redeploys the same Railway service on GitHub pushes with server-scoped path filters.
 - 2026-05-30 — completed Step 4.1: verified `GET /healthz` returns 200 with `runtime=bun`, `databaseMode=postgres`, `databaseProvider=bun-sql`; `/version` returns server/game-logic `0.1.0`; Railway logs show migrations and Bun/Elysia startup on Postgres.
 - 2026-05-30 — completed Step 3.3: confirmed `NODE_ENV=production`, temporary `CORS_ALLOWED_ORIGINS=https://dctycoon-api-production.up.railway.app`, and private `DATABASE_URL` are set; deployed `dctycoon-api` successfully as deployment `51bf170b-feb8-4b2d-8921-97bd2bd7d25d`.
 - 2026-05-30 — completed Step 3.2: switched Railway to `builder = "DOCKERFILE"` with a root Dockerfile that builds the server workspace and runs the final image on `oven/bun:1.3.14`; deployment metadata confirms pre-deploy/start commands use `bun`, Railway build succeeded, and `npm run ci:server` passed locally.
