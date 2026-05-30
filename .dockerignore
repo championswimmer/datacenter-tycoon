@@ -1,0 +1,14 @@
+.git
+.gitignore
+.DS_Store
+node_modules
+packages/*/node_modules
+packages/*/dist
+packages/*/*.tsbuildinfo
+packages/*/coverage
+coverage
+.data
+.env
+.env.*
+!.env.example
+.railway

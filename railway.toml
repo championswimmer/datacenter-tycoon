@@ -1,10 +1,10 @@
 [build]
-builder = "NIXPACKS"
-buildCommand = "npm ci && npm run build:deploy -w @datacenter-tycoon/server"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-preDeployCommand = ["npm run migrate -w @datacenter-tycoon/server"]
-startCommand = "npm run start -w @datacenter-tycoon/server"
+preDeployCommand = ["bun run packages/server/dist/db/migrate.js"]
+startCommand = "bun run packages/server/dist/index.js"
 healthcheckPath = "/healthz"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"

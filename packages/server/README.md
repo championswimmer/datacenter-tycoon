@@ -76,7 +76,9 @@ DATABASE_URL=postgres://localhost:5432/datacenter_tycoon npm run dev:server
 
 ### Railway deployment
 
-This repository includes a checked-in root [`railway.toml`](../../railway.toml) for deploying the backend from the monorepo. It uses Nixpacks, builds `@datacenter-tycoon/game-logic` and `@datacenter-tycoon/server`, runs migrations as a pre-deploy command, starts the Bun/Elysia server, and healthchecks `GET /healthz`.
+This repository includes a checked-in root [`railway.toml`](../../railway.toml) and [`Dockerfile`](../../Dockerfile) for deploying the backend from the monorepo. Railway uses the Dockerfile builder, builds only the workspaces needed by the API (`@datacenter-tycoon/game-logic` and `@datacenter-tycoon/server`), runs migrations with `bun` as a pre-deploy command, starts the compiled Bun/Elysia server with `bun`, and healthchecks `GET /healthz`.
+
+The Docker build context intentionally remains the repository root because the server depends on the workspace package `@datacenter-tycoon/game-logic` and the root lockfile. The final container target is still only the server: `railway.toml` starts `packages/server/dist/index.js` via Bun.
 
 Create or link the Railway project and services from the repository root:
 
@@ -108,7 +110,9 @@ Deploy and verify:
 
 ```bash
 railway up --service dctycoon-api
-railway service logs --service dctycoon-api
+railway deployment list --service dctycoon-api --json
+railway logs --service dctycoon-api --build --latest --lines 200
+railway logs --service dctycoon-api --deployment --latest --lines 200
 railway domain --service dctycoon-api
 curl https://<generated-api-domain>/healthz
 ```

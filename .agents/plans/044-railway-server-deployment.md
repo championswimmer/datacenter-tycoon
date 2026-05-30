@@ -15,12 +15,14 @@ owner: server
 - [x] **Phase 2 — Railway project and services**
   - [x] 2.1 Create or link the Railway project/environment
   - [x] 2.2 Create the `dctycoon-api` service and Postgres database service
-- [ ] **Phase 3 — Private database wiring and deploy**
+- [x] **Phase 3 — Private database wiring and deploy**
   - [x] 3.1 Set `DATABASE_URL` on `dctycoon-api` from the Postgres private service variable
-  - [ ] 3.2 Set production runtime variables and deploy `dctycoon-api`
-- [ ] **Phase 4 — Verification and handoff**
+  - [x] 3.2 Switch Railway deployment to a Dockerfile-backed Bun runtime
+  - [x] 3.3 Set production runtime variables and deploy `dctycoon-api`
+- [ ] **Phase 4 — Verification, GitHub autodeploy, and handoff**
   - [ ] 4.1 Verify health, migrations, and deployment logs
-  - [ ] 4.2 Record final Railway service details and operational notes
+  - [ ] 4.2 Connect GitHub source and configure server-scoped autodeploys
+  - [ ] 4.3 Record final Railway service details and operational notes
 
 ## Overview
 
@@ -105,7 +107,15 @@ railway service logs --service dctycoon-api
 - Verify the variable exists without exposing secret values.
 - Acceptance: `dctycoon-api` has a `DATABASE_URL` variable that references the Postgres service's private URL.
 
-### Step 3.2 — Set production runtime variables and deploy `dctycoon-api`
+### Step 3.2 — Switch Railway deployment to a Dockerfile-backed Bun runtime
+
+- Files: `Dockerfile`, `.dockerignore`, `railway.toml`, `packages/server/README.md`
+- Add a root Dockerfile that builds only the server workspace and runs the final image on `oven/bun`.
+- Update Railway config so pre-deploy migrations and the start command execute compiled server files with `bun`.
+- Document why the service uses the repository root as Docker build context while targeting only `packages/server`.
+- Acceptance: Railway deployment metadata shows `builder = DOCKERFILE`, pre-deploy/start commands use `bun`, and local server CI still passes.
+
+### Step 3.3 — Set production runtime variables and deploy `dctycoon-api`
 
 - Files: Railway service variables/deployments only.
 - Set `NODE_ENV=production`.
@@ -113,9 +123,9 @@ railway service logs --service dctycoon-api
 - Deploy with `railway up --service dctycoon-api`.
 - Acceptance: Railway accepts the deploy and starts a deployment using the root `railway.toml` commands.
 
-## Phase 4 — Verification and handoff
+## Phase 4 — Verification, GitHub autodeploy, and handoff
 
-**Goal**: prove the deployment is healthy and leave durable operational notes.
+**Goal**: prove the deployment is healthy, wire future deployments to GitHub pushes, and leave durable operational notes.
 
 ### Step 4.1 — Verify health, migrations, and deployment logs
 
@@ -124,10 +134,18 @@ railway service logs --service dctycoon-api
 - Generate or identify the public API domain if needed, then verify `GET /healthz`.
 - Acceptance: `/healthz` returns successfully and logs show the server using `db=postgres/bun-sql`.
 
-### Step 4.2 — Record final Railway service details and operational notes
+### Step 4.2 — Connect GitHub source and configure server-scoped autodeploys
+
+- Files: Railway service settings only.
+- Connect `dctycoon-api` to the GitHub repository `championswimmer/datacenter-tycoon` on the intended branch.
+- Keep repository root as the build context so Docker can access workspace package manifests and `packages/game-logic`, but scope deploy triggers with watch paths such as `/packages/server/**`, `/packages/game-logic/**`, `/package.json`, `/package-lock.json`, `/Dockerfile`, and `/railway.toml`.
+- Verify pushes to unrelated packages will not trigger the API service while server/game-logic/root dependency changes will.
+- Acceptance: Railway service source is the GitHub repo/branch, autodeploy is enabled, and watch paths are server-scoped.
+
+### Step 4.3 — Record final Railway service details and operational notes
 
 - File: `packages/server/README.md`
-- Record the Railway project name, API service name, database service name, healthcheck path, and key follow-up notes.
+- Record the Railway project name, API service name, database service name, public domain, healthcheck path, GitHub source/autodeploy settings, and key follow-up notes.
 - Do not commit secret values.
 - Acceptance: README contains non-secret production deployment details sufficient for future maintainers.
 
@@ -144,6 +162,9 @@ railway service logs --service dctycoon-api
 
 ## Changelog
 
+- 2026-05-30 — completed Step 3.3: confirmed `NODE_ENV=production`, temporary `CORS_ALLOWED_ORIGINS=https://dctycoon-api-production.up.railway.app`, and private `DATABASE_URL` are set; deployed `dctycoon-api` successfully as deployment `51bf170b-feb8-4b2d-8921-97bd2bd7d25d`.
+- 2026-05-30 — completed Step 3.2: switched Railway to `builder = "DOCKERFILE"` with a root Dockerfile that builds the server workspace and runs the final image on `oven/bun:1.3.14`; deployment metadata confirms pre-deploy/start commands use `bun`, Railway build succeeded, and `npm run ci:server` passed locally.
+- 2026-05-30 — expanded Phase 3/4 after the first deploy attempt: Railway's Nixpacks plan installed Node/npm but not Bun, so deployment now needs an explicit Dockerfile-backed Bun runtime before final verification and GitHub autodeploy setup.
 - 2026-05-30 — completed Step 3.1: set `DATABASE_URL` on `dctycoon-api`; verification confirms Railway renders it as a Postgres URL with private hostname `postgres.railway.internal`.
 - 2026-05-30 — completed Step 2.2: created Railway service `dctycoon-api` (`00549536-b2e0-49f8-888b-3ffc66275920`) and Postgres service `Postgres` (`4659293a-0f78-4a4d-af42-addb4c0ab33d`); Postgres deployment `d74e5e80-98b6-4fcb-bf51-e4ca492d51a8` is successful with a ready volume.
 - 2026-05-30 — completed Step 2.1: created and linked Railway project `datacenter-tycoon` (`02342aec-7d94-4cb7-9090-5bf53d101eaf`) with a `production` environment (`77ff1d78-bf23-4e3b-b5a4-66616c4fe080`).
