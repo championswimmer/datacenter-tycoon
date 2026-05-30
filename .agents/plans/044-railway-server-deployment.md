@@ -20,7 +20,7 @@ owner: server
   - [x] 3.2 Switch Railway deployment to a Dockerfile-backed Bun runtime
   - [x] 3.3 Set production runtime variables and deploy `dctycoon-api`
 - [ ] **Phase 4 — Verification, GitHub autodeploy, and handoff**
-  - [ ] 4.1 Verify health, migrations, and deployment logs
+  - [x] 4.1 Verify health, migrations, and deployment logs
   - [ ] 4.2 Connect GitHub source and configure server-scoped autodeploys
   - [ ] 4.3 Record final Railway service details and operational notes
 
@@ -162,6 +162,7 @@ railway service logs --service dctycoon-api
 
 ## Changelog
 
+- 2026-05-30 — completed Step 4.1: verified `GET /healthz` returns 200 with `runtime=bun`, `databaseMode=postgres`, `databaseProvider=bun-sql`; `/version` returns server/game-logic `0.1.0`; Railway logs show migrations and Bun/Elysia startup on Postgres.
 - 2026-05-30 — completed Step 3.3: confirmed `NODE_ENV=production`, temporary `CORS_ALLOWED_ORIGINS=https://dctycoon-api-production.up.railway.app`, and private `DATABASE_URL` are set; deployed `dctycoon-api` successfully as deployment `51bf170b-feb8-4b2d-8921-97bd2bd7d25d`.
 - 2026-05-30 — completed Step 3.2: switched Railway to `builder = "DOCKERFILE"` with a root Dockerfile that builds the server workspace and runs the final image on `oven/bun:1.3.14`; deployment metadata confirms pre-deploy/start commands use `bun`, Railway build succeeded, and `npm run ci:server` passed locally.
 - 2026-05-30 — expanded Phase 3/4 after the first deploy attempt: Railway's Nixpacks plan installed Node/npm but not Bun, so deployment now needs an explicit Dockerfile-backed Bun runtime before final verification and GitHub autodeploy setup.
