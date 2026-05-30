@@ -21,7 +21,7 @@ owner: server
   - [x] 3.3 Set production runtime variables and deploy `dctycoon-api`
 - [ ] **Phase 4 — Verification, GitHub autodeploy, and handoff**
   - [x] 4.1 Verify health, migrations, and deployment logs
-  - [ ] 4.2 Configure GitHub Actions server-scoped autodeploys
+  - [x] 4.2 Configure GitHub Actions server-scoped autodeploys
   - [ ] 4.3 Record final Railway service details and operational notes
 
 ## Overview
@@ -162,6 +162,7 @@ railway service logs --service dctycoon-api
 
 ## Changelog
 
+- 2026-05-30 — completed Step 4.2: added `.github/workflows/deploy-dctycoon-api.yml`, created a Railway project token stored as GitHub secret `RAILWAY_TOKEN`, pushed branch `arnav/server-on-railway`, and verified GitHub Actions run `26669991414` successfully deployed Railway deployment `eed0a216-9ebb-4515-b5fb-2c1569593b23`. The workflow uses server-scoped path filters and the Dockerfile now runs `npm ci` only for the API/game-logic workspaces to avoid unrelated workspace installs.
 - 2026-05-30 — revised Step 4.2 to use GitHub Actions with a Railway project token because Railway's API reports no GitHub integration access to `championswimmer/datacenter-tycoon` from the current Railway account; this still redeploys the same Railway service on GitHub pushes with server-scoped path filters.
 - 2026-05-30 — completed Step 4.1: verified `GET /healthz` returns 200 with `runtime=bun`, `databaseMode=postgres`, `databaseProvider=bun-sql`; `/version` returns server/game-logic `0.1.0`; Railway logs show migrations and Bun/Elysia startup on Postgres.
 - 2026-05-30 — completed Step 3.3: confirmed `NODE_ENV=production`, temporary `CORS_ALLOWED_ORIGINS=https://dctycoon-api-production.up.railway.app`, and private `DATABASE_URL` are set; deployed `dctycoon-api` successfully as deployment `51bf170b-feb8-4b2d-8921-97bd2bd7d25d`.
