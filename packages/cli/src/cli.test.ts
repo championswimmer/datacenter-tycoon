@@ -34,9 +34,11 @@ test("dct --help prints the command list", async () => {
 	assert.match(stdout, /contract\s+Contract subcommands \(accept, cancel, details\)/);
 	assert.match(stdout, /dc\s+Datacenter subcommands \(build, decom\)/);
 	assert.match(stdout, /racks\s+Rack subcommands \(add, decom, move\)/);
+	assert.match(stdout, /online\s+Online subcommands \(login, status, logout, submit\)/);
 	assert.doesNotMatch(stdout, /build-dc/);
 	assert.doesNotMatch(stdout, /accept-contract/);
 	assert.match(stdout, /--json/);
+	assert.match(stdout, /--server/);
 });
 
 test("removed flat and pluralized commands fail fast", async () => {

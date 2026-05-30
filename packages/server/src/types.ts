@@ -7,6 +7,7 @@ export interface ServerServices {
   players?: PlayersRepository;
   leaderboard?: LeaderboardRepository;
   rateLimiter?: RateLimiter;
+  close?: () => Promise<void>;
 }
 
 export interface AppDependencies {

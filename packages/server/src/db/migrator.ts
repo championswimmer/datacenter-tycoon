@@ -1,7 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { PGlite } from "@electric-sql/pglite";
-import { Client } from "pg";
+import { createPostgresDatabaseConnection, type ServerDatabaseAdapter } from "./database.js";
 
 export const MIGRATIONS_TABLE = "schema_migrations";
 
@@ -12,6 +11,11 @@ export interface LoadedMigration {
 
 export interface RunMigrationsOptions {
   databaseUrl: string;
+  migrationsDir: string;
+}
+
+export interface RunDatabaseMigrationsOptions {
+  database: Pick<ServerDatabaseAdapter, "query" | "exec" | "transaction">;
   migrationsDir: string;
 }
 
@@ -35,74 +39,14 @@ export async function loadMigrations(migrationsDir: string): Promise<LoadedMigra
   );
 }
 
-export async function runMigrations(
-  options: RunMigrationsOptions,
+export async function runDatabaseMigrations(
+  options: RunDatabaseMigrationsOptions,
 ): Promise<MigrationRunResult> {
   const migrations = await loadMigrations(options.migrationsDir);
-  const client = new Client({
-    connectionString: options.databaseUrl,
-  });
 
-  await client.connect();
+  await ensureMigrationsTable(options.database);
 
-  try {
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS ${MIGRATIONS_TABLE} (
-        name TEXT PRIMARY KEY,
-        applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `);
-
-    const appliedNames = await getAppliedMigrationNames(client);
-    const pendingMigrations = migrations
-      .map((migration) => migration.name)
-      .filter((name) => !appliedNames.has(name));
-    const appliedMigrations: string[] = [];
-
-    for (const migration of migrations) {
-      if (appliedNames.has(migration.name)) {
-        continue;
-      }
-
-      await client.query("BEGIN");
-
-      try {
-        await client.query(migration.sql);
-        await client.query(
-          `INSERT INTO ${MIGRATIONS_TABLE} (name) VALUES ($1)`,
-          [migration.name],
-        );
-        await client.query("COMMIT");
-        appliedMigrations.push(migration.name);
-      } catch (error) {
-        await client.query("ROLLBACK");
-        throw error;
-      }
-    }
-
-    return {
-      appliedMigrations,
-      pendingMigrations,
-    };
-  } finally {
-    await client.end();
-  }
-}
-
-export async function runPgliteMigrations(options: {
-  client: PGlite;
-  migrationsDir: string;
-}): Promise<MigrationRunResult> {
-  const migrations = await loadMigrations(options.migrationsDir);
-
-  await options.client.exec(`
-    CREATE TABLE IF NOT EXISTS ${MIGRATIONS_TABLE} (
-      name TEXT PRIMARY KEY,
-      applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `);
-
-  const appliedNames = await getAppliedMigrationNamesFromPglite(options.client);
+  const appliedNames = await getAppliedMigrationNames(options.database);
   const pendingMigrations = migrations
     .map((migration) => migration.name)
     .filter((name) => !appliedNames.has(name));
@@ -113,20 +57,11 @@ export async function runPgliteMigrations(options: {
       continue;
     }
 
-    await options.client.exec("BEGIN");
-
-    try {
-      await options.client.exec(migration.sql);
-      await options.client.query(
-        `INSERT INTO ${MIGRATIONS_TABLE} (name) VALUES ($1)`,
-        [migration.name],
-      );
-      await options.client.exec("COMMIT");
-      appliedMigrations.push(migration.name);
-    } catch (error) {
-      await options.client.exec("ROLLBACK");
-      throw error;
-    }
+    await options.database.transaction(async (database) => {
+      await database.exec(migration.sql);
+      await database.query(`INSERT INTO ${MIGRATIONS_TABLE} (name) VALUES ($1)`, [migration.name]);
+    });
+    appliedMigrations.push(migration.name);
   }
 
   return {
@@ -135,16 +70,36 @@ export async function runPgliteMigrations(options: {
   };
 }
 
-async function getAppliedMigrationNames(client: Client): Promise<Set<string>> {
-  const result = await client.query<{ name: string }>(
-    `SELECT name FROM ${MIGRATIONS_TABLE} ORDER BY name ASC`,
-  );
+export async function runMigrations(
+  options: RunMigrationsOptions,
+): Promise<MigrationRunResult> {
+  const database = createPostgresDatabaseConnection(options.databaseUrl);
 
-  return new Set(result.rows.map((row) => row.name));
+  try {
+    return await runDatabaseMigrations({
+      database,
+      migrationsDir: options.migrationsDir,
+    });
+  } finally {
+    await database.close();
+  }
 }
 
-async function getAppliedMigrationNamesFromPglite(client: PGlite): Promise<Set<string>> {
-  const result = await client.query<{ name: string }>(
+async function ensureMigrationsTable(
+  database: Pick<ServerDatabaseAdapter, "exec">,
+): Promise<void> {
+  await database.exec(`
+    CREATE TABLE IF NOT EXISTS ${MIGRATIONS_TABLE} (
+      name TEXT PRIMARY KEY,
+      applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+}
+
+async function getAppliedMigrationNames(
+  database: Pick<ServerDatabaseAdapter, "query">,
+): Promise<Set<string>> {
+  const result = await database.query<{ name: string }>(
     `SELECT name FROM ${MIGRATIONS_TABLE} ORDER BY name ASC`,
   );
 

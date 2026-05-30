@@ -34,6 +34,7 @@ const ThemePlayground = lazy(
 type StartChoice = "load" | "new";
 
 const OFFLINE_LEADERBOARD_NOTICE = "Online leaderboard registration is unavailable right now. New runs from this device will stay local until the backend is reachable again.";
+const DISABLED_LEADERBOARD_NOTICE = "Online leaderboard registration is disabled for this build. New runs from this device will stay local.";
 const LEADERBOARD_SYNC_UNAVAILABLE_NOTICE = "Online leaderboard sync is unavailable right now. This run will keep progressing locally until the backend is reachable again.";
 const TRANSIENT_STATUS_MESSAGE_DURATION_MS = 3_000;
 
@@ -131,6 +132,12 @@ function useAppSession(): AppSessionController {
       setStatusMessage(null);
       replaceSession("new", identity.username);
     } catch (error) {
+      if (error instanceof PlayerRegistrationError && error.code === "ONLINE_LEADERBOARD_DISABLED") {
+        setStatusMessage(DISABLED_LEADERBOARD_NOTICE);
+        replaceSession("new", requestedUsername);
+        return;
+      }
+
       if (isRegistrationUnavailableError(error)) {
         setStatusMessage(OFFLINE_LEADERBOARD_NOTICE);
         replaceSession("new", requestedUsername);
@@ -150,13 +157,18 @@ function useAppSession(): AppSessionController {
   }, [playerIdentity, replaceSession, usernameDraft]);
 
   useEffect(() => {
-    if (statusMessage !== OFFLINE_LEADERBOARD_NOTICE) {
+    if (
+      statusMessage !== OFFLINE_LEADERBOARD_NOTICE
+      && statusMessage !== DISABLED_LEADERBOARD_NOTICE
+    ) {
       return undefined;
     }
 
     const timeout = setTimeout(() => {
       setStatusMessage((current) =>
-        current === OFFLINE_LEADERBOARD_NOTICE ? null : current
+        current === OFFLINE_LEADERBOARD_NOTICE || current === DISABLED_LEADERBOARD_NOTICE
+          ? null
+          : current
       );
     }, TRANSIENT_STATUS_MESSAGE_DURATION_MS);
 
@@ -202,6 +214,9 @@ function useAppSession(): AppSessionController {
 
         if (error instanceof LeaderboardSubmissionError) {
           if (error.code === "ONLINE_LEADERBOARD_DISABLED") {
+            setStatusMessage((current) =>
+              current === LEADERBOARD_SYNC_UNAVAILABLE_NOTICE ? null : current
+            );
             return;
           }
 

@@ -1,5 +1,9 @@
-import type { StoredPlayerIdentity } from "../store/playerIdentity.js";
-import { resolveOnlineApiBaseUrl } from "./config.js";
+import { normalizeServerUrl, type CliOnlineProfile } from "./profile.js";
+
+export interface RegisterPlayerOptions {
+  serverUrl: string | null;
+  username: string;
+}
 
 export class PlayerRegistrationError extends Error {
   readonly code: string;
@@ -14,18 +18,15 @@ export class PlayerRegistrationError extends Error {
 }
 
 export async function registerPlayer(
-  username: string,
+  options: RegisterPlayerOptions,
   fetchImpl: typeof fetch = fetch,
-): Promise<StoredPlayerIdentity> {
-  const baseUrl = resolveOnlineApiBaseUrl();
+): Promise<CliOnlineProfile> {
+  const baseUrl = normalizeOptionalServerUrl(options.serverUrl);
 
   if (!baseUrl) {
-    throw new PlayerRegistrationError(
-      "Online leaderboard registration is not configured for this build.",
-      {
-        code: "ONLINE_LEADERBOARD_DISABLED",
-      },
-    );
+    throw new PlayerRegistrationError("Online sync is disabled because no server URL is configured.", {
+      code: "ONLINE_SYNC_DISABLED",
+    });
   }
 
   let response: Response;
@@ -36,13 +37,11 @@ export async function registerPlayer(
       headers: {
         "content-type": "application/json",
       },
-      body: JSON.stringify({ username }),
+      body: JSON.stringify({ username: options.username }),
     });
   } catch (error) {
     throw new PlayerRegistrationError(
-      error instanceof Error
-        ? error.message
-        : "Could not reach the online leaderboard service.",
+      error instanceof Error ? error.message : "Could not reach the online leaderboard service.",
       {
         code: "NETWORK_ERROR",
       },
@@ -53,10 +52,8 @@ export async function registerPlayer(
 
   if (!response.ok) {
     const apiError = isApiErrorPayload(payload) ? payload.error : null;
-
     throw new PlayerRegistrationError(
-      apiError?.message
-        ?? `Player registration failed with status ${response.status}.`,
+      apiError?.message ?? `Player registration failed with status ${response.status}.`,
       {
         code: apiError?.code ?? "REGISTRATION_FAILED",
         status: response.status,
@@ -71,7 +68,11 @@ export async function registerPlayer(
     });
   }
 
-  return payload;
+  return {
+    serverUrl: baseUrl,
+    playerId: payload.playerId,
+    username: payload.username,
+  };
 }
 
 export function isRegistrationUnavailableError(error: unknown): boolean {
@@ -90,11 +91,22 @@ export function isRegistrationUnavailableError(error: unknown): boolean {
   return error.status === null || error.status >= 500;
 }
 
-function isPlayerRegistrationPayload(payload: unknown): payload is StoredPlayerIdentity {
+function normalizeOptionalServerUrl(serverUrl: string | null | undefined): string | null {
+  if (!serverUrl) {
+    return null;
+  }
+
+  const normalized = normalizeServerUrl(serverUrl);
+  return normalized.length > 0 ? normalized : null;
+}
+
+function isPlayerRegistrationPayload(
+  payload: unknown,
+): payload is Pick<CliOnlineProfile, "playerId" | "username"> {
   return Boolean(payload)
     && typeof payload === "object"
-    && typeof (payload as StoredPlayerIdentity).playerId === "string"
-    && typeof (payload as StoredPlayerIdentity).username === "string";
+    && typeof (payload as { playerId?: unknown }).playerId === "string"
+    && typeof (payload as { username?: unknown }).username === "string";
 }
 
 function isApiErrorPayload(payload: unknown): payload is { error: { code: string; message: string } } {

@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
-import { registerHealthRoutes } from "./health.js";
+import type { ServerConfig } from "../config.js";
 import { createElysiaServerApp } from "../server/elysia-app.js";
 import { apiRequest, createTestDependencies } from "../test-utils/app.js";
+import { registerHealthRoutes } from "./health.js";
 
-function createHealthApp() {
-  const dependencies = createTestDependencies();
+function createHealthApp(config?: Partial<ServerConfig>) {
+  const dependencies = createTestDependencies({ config });
 
   return createElysiaServerApp({
     context: dependencies,
@@ -35,6 +36,46 @@ test("GET /healthz returns liveness information", async () => {
     databaseProvider: "pglite-memory",
     databaseConfigured: false,
   });
+});
+
+test("GET /healthz reports file-backed PGlite metadata for development configs", async () => {
+  const app = createHealthApp({
+    environment: "development",
+    database: {
+      mode: "pglite",
+      pgliteDataDir: "/tmp/dct-healthz-pglite",
+    },
+  });
+  const { response, json } = await apiRequest<{
+    databaseMode: string;
+    databaseProvider: string;
+    databaseConfigured: boolean;
+  }>(app, "/healthz");
+
+  assert.equal(response.status, 200);
+  assert.equal(json?.databaseMode, "pglite");
+  assert.equal(json?.databaseProvider, "pglite-file");
+  assert.equal(json?.databaseConfigured, true);
+});
+
+test("GET /healthz reports Bun SQL metadata for production Postgres configs", async () => {
+  const app = createHealthApp({
+    environment: "production",
+    database: {
+      mode: "postgres",
+      connectionString: "postgres://127.0.0.1:5432/datacenter_tycoon",
+    },
+  });
+  const { response, json } = await apiRequest<{
+    databaseMode: string;
+    databaseProvider: string;
+    databaseConfigured: boolean;
+  }>(app, "/healthz");
+
+  assert.equal(response.status, 200);
+  assert.equal(json?.databaseMode, "postgres");
+  assert.equal(json?.databaseProvider, "bun-sql");
+  assert.equal(json?.databaseConfigured, true);
 });
 
 test("GET /version returns server and game-logic versions", async () => {

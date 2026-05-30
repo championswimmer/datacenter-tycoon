@@ -45,6 +45,11 @@ dct tick 10
 dct pause
 dct resume
 dct speed 4
+
+dct online login --username "Acme Cloud" --server http://localhost:3000
+dct online status
+dct online submit
+dct online logout
 ```
 
 ## Contract and layout UX notes
@@ -68,6 +73,7 @@ dct speed 4
 ## Global flags
 
 - `--json` — print `{ ok, data }` / `{ ok, error }` envelopes for every one-shot command
+- `--server <url>` — override the online leaderboard API target for this process (`dct online ...`, auto-sync after mutations, and TUI palette commands)
 - `--save <path>` — override savefile path
 - `--socket <path>` — override local socket path
 - `--no-daemon` — fail instead of auto-spawning the daemon
@@ -78,10 +84,13 @@ dct speed 4
 Defaults:
 
 - Linux save: `$XDG_DATA_HOME/dct/save.json`
+- Linux online profile: `$XDG_CONFIG_HOME/dct/online-profile.json` (or `~/.config/dct/online-profile.json`)
 - Linux socket: `$XDG_RUNTIME_DIR/dct/dct.sock`
 - macOS save: `~/Library/Application Support/dct/save.json`
+- macOS online profile: `~/Library/Application Support/dct/online-profile.json`
 - macOS socket: `$TMPDIR/dct/dct.sock`
 - Windows save: `%APPDATA%/dct/save.json`
+- Windows online profile: `%APPDATA%/dct/online-profile.json`
 - Windows socket: `\\.\pipe\dct`
 
 ## TUI keymap
@@ -109,6 +118,8 @@ Datacenters tab shortcuts:
 
 Helpful palette commands:
 - `ls contracts`
+- `online status`
+- `online submit`
 - `dc build garage --region us_west`
 - `dc maint <dcId>` — inspect maintenance staffing
 - `dc maint inc <dcId>` — hire a maintenance engineer
@@ -125,6 +136,10 @@ Helpful palette commands:
 npm run dev:cli
 npm run test:cli
 npm run typecheck -w @datacenter-tycoon/cli
+
+dct online login --username "Acme Cloud" --server http://localhost:3000
+# ...play locally via dct commands or the TUI...
+dct online status
 ```
 
 ## Troubleshooting

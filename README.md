@@ -47,4 +47,21 @@ npm run ci:server
 
 The monorepo still uses **Node + npm** at the root, but the `packages/server` workspace now expects **Bun >= 1.3.14** for server-specific runtime, migration, and test commands. If Bun is missing, the root `*:server` wrappers will fail when they delegate into the server workspace. In local development, the server now defaults to **file-backed PGlite** under `packages/server/.data/pglite` unless you explicitly set `DATABASE_URL` to point at a real Postgres instance.
 
+## Local online dev loop
+
+Use these commands when working on leaderboard registration or leaderboard sync across the web client and backend:
+
+```bash
+cp packages/server/.env.example packages/server/.env.local
+cp packages/web/.env.example packages/web/.env.local   # optional production/staging override example
+npm run dev:online                                     # starts the local server and Vite web app together
+```
+
+What each package expects:
+
+- `npm run dev:server` starts the Bun + Elysia backend and defaults to file-backed PGlite.
+- `npm run dev:web` targets `http://localhost:3000` automatically in development when `VITE_API_BASE_URL` is omitted.
+- `VITE_API_BASE_URL` should be set explicitly for staging/production web deployments so the built frontend points at the real API.
+- `dct online login --username <name> --server http://localhost:3000` registers a CLI identity against the same local backend, and subsequent mutating CLI commands can auto-sync leaderboard summaries.
+
 Deployment notes, environment variables, Railway setup, and the release checklist are documented in [`packages/server/README.md`](./packages/server/README.md).

@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { ServerDrizzleDatabase } from "../db/client.js";
+import type { ServerDatabaseConnection } from "../db/database.js";
 import { players } from "../db/schema.js";
 import {
   createRegisteredPlayer,
@@ -16,8 +17,8 @@ import {
 export class DrizzlePlayersRepository implements PlayersRepository {
   readonly #database: ServerDrizzleDatabase;
 
-  constructor(database: ServerDrizzleDatabase) {
-    this.#database = database;
+  constructor(database: ServerDrizzleDatabase | ServerDatabaseConnection) {
+    this.#database = "db" in database ? database.db : database;
   }
 
   async findByNormalizedUsername(normalizedUsername: string): Promise<RegisteredPlayer | null> {

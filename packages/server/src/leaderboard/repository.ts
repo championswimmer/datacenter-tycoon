@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import type { ServerDrizzleDatabase } from "../db/client.js";
+import type { ServerDatabaseConnection } from "../db/database.js";
 import { leaderboardRuns } from "../db/schema.js";
 import {
   getMetricValue,
@@ -85,8 +86,8 @@ export class InMemoryLeaderboardRepository implements LeaderboardRepository {
 export class DrizzleLeaderboardRepository implements LeaderboardRepository {
   readonly #database: ServerDrizzleDatabase;
 
-  constructor(database: ServerDrizzleDatabase) {
-    this.#database = database;
+  constructor(database: ServerDrizzleDatabase | ServerDatabaseConnection) {
+    this.#database = "db" in database ? database.db : database;
   }
 
   async upsertRun(submission: LeaderboardRunSubmission): Promise<LeaderboardUpsertResult> {

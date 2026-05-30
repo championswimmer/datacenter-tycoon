@@ -1,28 +1,41 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { spawn } from "node:child_process";
 
-function delay(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
+import { parseArgv } from "../argv.js";
+import { buildPaletteCommandArgs } from "./app.js";
 
-test("dct with no args lazy-loads the TUI and exits on q", async () => {
-	const child = spawn(process.execPath, ["--import", "tsx", "src/cli.ts"], {
-		cwd: process.cwd(),
-		stdio: ["pipe", "pipe", "pipe"],
+test("buildPaletteCommandArgs inherits the selected game and global server override into palette commands", () => {
+	const args = buildPaletteCommandArgs("tick 1", {
+		parsed: parseArgv(["--server", "http://127.0.0.1:3000", "--save", "/tmp/dct/save.json"]),
+		selectedGameId: "game-123",
 	});
 
-	let stdout = "";
-	child.stdout?.on("data", (chunk) => {
-		stdout += chunk.toString();
+	assert.deepEqual(args, [
+		"tick",
+		"1",
+		"--game-id",
+		"game-123",
+		"--server",
+		"http://127.0.0.1:3000",
+		"--save",
+		"/tmp/dct/save.json",
+	]);
+});
+
+test("buildPaletteCommandArgs does not duplicate explicit palette flags", () => {
+	const args = buildPaletteCommandArgs("tick 1 --game-id override --server http://override.test", {
+		parsed: parseArgv(["--server", "http://127.0.0.1:3000", "--save", "/tmp/dct/save.json"]),
+		selectedGameId: "game-123",
 	});
 
-	const exitCode = await new Promise<number>((resolve, reject) => {
-		child.once("error", reject);
-		child.once("close", (code) => resolve(code ?? 1));
-	});
-
-	assert.equal(exitCode, 0);
-	assert.match(stdout, /Datacenter Tycoon/);
-	assert.match(stdout, /Press q to quit/);
+	assert.deepEqual(args, [
+		"tick",
+		"1",
+		"--game-id",
+		"override",
+		"--server",
+		"http://override.test",
+		"--save",
+		"/tmp/dct/save.json",
+	]);
 });

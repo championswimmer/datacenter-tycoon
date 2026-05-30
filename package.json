@@ -26,6 +26,7 @@
     "dev:logic": "npm run dev -w @datacenter-tycoon/game-logic",
     "dev:web": "npm run dev -w @datacenter-tycoon/web",
     "dev:server": "npm run dev -w @datacenter-tycoon/server",
+    "dev:online": "node ./scripts/dev-online.mjs",
     "dev:desktop": "npm run dev -w @datacenter-tycoon/desktop",
     "dev:cli": "npm run dev -w @datacenter-tycoon/cli",
     "package:desktop": "npm run package -w @datacenter-tycoon/desktop",

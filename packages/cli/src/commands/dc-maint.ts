@@ -18,6 +18,10 @@ import {
 import { getFlagValue } from "../argv.js";
 import type { ParsedArgv } from "../argv.js";
 import { DctClient } from "../client/client.js";
+import {
+	appendOnlineSyncToCommandResult,
+	syncLeaderboardFromCommand,
+} from "../online/sync.js";
 import type { QueryResult } from "../protocol/messages.js";
 import { hasBooleanFlag, withClient, writeCommandResult, type CommandClient, type CommandClientFactory } from "./common.js";
 
@@ -127,7 +131,7 @@ async function mutateMaintenance(
 
 	await withClient(
 		parsed,
-		async (client) => {
+		async (client, paths) => {
 			// fetch current view so we can compute the target count
 			const beforeSnapshot = await fetchSnapshot(client);
 			const { maintenance: before } = findMaintenanceDetail(beforeSnapshot, dcId);
@@ -183,16 +187,18 @@ async function mutateMaintenance(
 			// Fetch updated view
 			const afterSnapshot = await fetchSnapshot(client);
 			const { maintenance: after, rackViews } = findMaintenanceDetail(afterSnapshot, dcId);
+			const onlineSync = await syncLeaderboardFromCommand(parsed, client, paths);
 
 			if (isJson) {
-				writeCommandResult(parsed, "", {
+				const output = appendOnlineSyncToCommandResult("", {
 					ok: true,
 					changed: true,
 					dcId,
 					before: { currentStaff: before.currentStaff },
 					maintenance: after,
 					rackViews,
-				});
+				}, onlineSync);
+				writeCommandResult(parsed, output.text, output.data);
 				return;
 			}
 
@@ -200,14 +206,15 @@ async function mutateMaintenance(
 				`Maintenance staff updated: ${before.currentStaff} → ${after.currentStaff}`,
 				...renderMaintenanceView(dcId, after, rackViews),
 			];
-			writeCommandResult(parsed, lines.join("\n"), {
+			const output = appendOnlineSyncToCommandResult(lines.join("\n"), {
 				ok: true,
 				changed: true,
 				dcId,
 				before: { currentStaff: before.currentStaff },
 				maintenance: after,
 				rackViews,
-			});
+			}, onlineSync);
+			writeCommandResult(parsed, output.text, output.data);
 		},
 		clientFactory,
 	);

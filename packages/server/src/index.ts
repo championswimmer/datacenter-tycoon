@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url";
-import { ConfigError, loadServerConfig } from "./config.js";
+import { ConfigError, getServerDatabaseRuntimeInfo, loadServerConfig } from "./config.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerLeaderboardRoutes } from "./routes/leaderboard.js";
 import { registerPlayerRoutes } from "./routes/players.js";
@@ -44,14 +44,9 @@ export async function startServer(
       port: config.port,
     },
     (server) => {
-      const databaseProvider =
-        config.database.mode === "postgres"
-          ? "bun-sql"
-          : config.database.pgliteDataDir
-            ? "pglite-file"
-            : "pglite-memory";
+      const database = getServerDatabaseRuntimeInfo(config);
       console.log(
-        `Datacenter Tycoon server listening on ${config.host}:${server.port} (runtime=bun, framework=elysia, db=${config.database.mode}/${databaseProvider}, game-logic v${config.gameLogicVersion})`,
+        `Datacenter Tycoon server listening on ${config.host}:${server.port} (runtime=bun, framework=elysia, db=${database.mode}/${database.provider}, game-logic v${config.gameLogicVersion})`,
       );
     },
   );

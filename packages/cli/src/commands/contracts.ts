@@ -2,6 +2,10 @@ import { summarizeContractSlaProgress, type ContractId, type DatacenterId, type 
 
 import { DctClient } from "../client/client.js";
 import type { ParsedArgv } from "../argv.js";
+import {
+	appendOnlineSyncToCommandResult,
+	syncLeaderboardFromCommand,
+} from "../online/sync.js";
 import { requirePositional, withClient, writeCommandResult, type CommandClientFactory } from "./common.js";
 import { formatContractRegionAffinity, formatContractRequirements, presentContractById } from "./contracts-view.js";
 
@@ -22,19 +26,26 @@ export async function runAcceptContractCommand(
 	const offeredContractId = requirePositional(parsed, 0, "dct contract accept <contractId> <dcId>");
 	const dcId = requirePositional(parsed, 1, "dct contract accept <contractId> <dcId>");
 
-	await withClient(
+	const onlineSync = await withClient(
 		parsed,
-		async (client) => {
+		async (client, paths) => {
 			await client.dispatch({
 				type: "AcceptContract",
 				contractId: contractId(offeredContractId),
 				dcId: datacenterId(dcId),
 			});
+			return await syncLeaderboardFromCommand(parsed, client, paths);
 		},
 		clientFactory,
 	);
 
-	writeCommandResult(parsed, `Accepted contract ${offeredContractId}`, { contractId: offeredContractId, dcId });
+	const output = appendOnlineSyncToCommandResult(
+		`Accepted contract ${offeredContractId}`,
+		{ contractId: offeredContractId, dcId },
+		onlineSync,
+	);
+
+	writeCommandResult(parsed, output.text, output.data);
 }
 
 export async function runCancelContractCommand(
@@ -43,15 +54,22 @@ export async function runCancelContractCommand(
 ): Promise<void> {
 	const activeContractId = requirePositional(parsed, 0, "dct contract cancel <contractId>");
 
-	await withClient(
+	const onlineSync = await withClient(
 		parsed,
-		async (client) => {
+		async (client, paths) => {
 			await client.dispatch({ type: "CancelContract", contractId: contractId(activeContractId) });
+			return await syncLeaderboardFromCommand(parsed, client, paths);
 		},
 		clientFactory,
 	);
 
-	writeCommandResult(parsed, `Cancelled contract ${activeContractId}`, { contractId: activeContractId });
+	const output = appendOnlineSyncToCommandResult(
+		`Cancelled contract ${activeContractId}`,
+		{ contractId: activeContractId },
+		onlineSync,
+	);
+
+	writeCommandResult(parsed, output.text, output.data);
 }
 
 export async function runContractDetailsCommand(

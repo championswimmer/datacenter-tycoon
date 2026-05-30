@@ -14,17 +14,25 @@ export type ServerPgliteDatabase = PgliteDatabase<ServerDatabaseSchema> & {
 };
 export type ServerDrizzleDatabase = ServerPostgresDatabase | ServerPgliteDatabase;
 
+export function createPostgresDrizzleDatabase(client: SQL): ServerPostgresDatabase {
+  return drizzleBunSql({ client, schema });
+}
+
 export function createPostgresDrizzleClient(connectionString: string): {
   client: SQL;
   db: ServerPostgresDatabase;
 } {
   const client = new SQL(connectionString);
-  const db = drizzleBunSql({ client, schema });
+  const db = createPostgresDrizzleDatabase(client);
 
   return {
     client,
     db,
   };
+}
+
+export function createPgliteDrizzleDatabase(client: PGlite): ServerPgliteDatabase {
+  return drizzlePglite({ client, schema });
 }
 
 export function createFilePgliteDrizzleClient(dataDir: string): {
@@ -34,7 +42,7 @@ export function createFilePgliteDrizzleClient(dataDir: string): {
   mkdirSync(dataDir, { recursive: true });
 
   const client = new PGlite(dataDir);
-  const db = drizzlePglite({ client, schema });
+  const db = createPgliteDrizzleDatabase(client);
 
   return {
     client,
@@ -51,7 +59,7 @@ export async function createPgliteDrizzleClient(dataDir = "memory://"): Promise<
   }
 
   const client = await PGlite.create(dataDir);
-  const db = drizzlePglite({ client, schema });
+  const db = createPgliteDrizzleDatabase(client);
 
   return {
     client,

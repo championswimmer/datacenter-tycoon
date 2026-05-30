@@ -10,7 +10,16 @@ export interface CommandDefinition {
 	summary: string;
 }
 
-const GLOBAL_FLAGS = ["--json", "--socket", "--save", "--no-daemon", "--quiet", "-h", "--help"];
+const GLOBAL_FLAGS = [
+	"--json",
+	"--server",
+	"--socket",
+	"--save",
+	"--no-daemon",
+	"--quiet",
+	"-h",
+	"--help",
+];
 
 export function parseArgv(args: string[]): ParsedArgv {
 	const flags: Record<string, string | boolean> = {};

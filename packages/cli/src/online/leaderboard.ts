@@ -3,7 +3,7 @@ import {
   type GameState,
   type LeaderboardMetrics,
 } from "@datacenter-tycoon/game-logic";
-import { resolveOnlineApiBaseUrl } from "./config.js";
+import { normalizeServerUrl } from "./profile.js";
 
 export interface LeaderboardRunSubmission {
   playerId: string;
@@ -23,6 +23,11 @@ export interface LeaderboardSubmissionResult {
     submittedAt: string;
     updatedAt: string;
   };
+}
+
+export interface SubmitLeaderboardRunOptions {
+  serverUrl: string | null;
+  submission: LeaderboardRunSubmission;
 }
 
 export class LeaderboardSubmissionError extends Error {
@@ -52,15 +57,15 @@ export function buildLeaderboardRunSubmission(
 }
 
 export async function submitLeaderboardRun(
-  submission: LeaderboardRunSubmission,
+  options: SubmitLeaderboardRunOptions,
   fetchImpl: typeof fetch = fetch,
 ): Promise<LeaderboardSubmissionResult> {
-  const baseUrl = resolveOnlineApiBaseUrl();
+  const baseUrl = normalizeOptionalServerUrl(options.serverUrl);
 
   if (!baseUrl) {
     throw new LeaderboardSubmissionError(
-      "Online leaderboard submission is not configured for this build.",
-      { code: "ONLINE_LEADERBOARD_DISABLED" },
+      "Online sync is disabled because no server URL is configured.",
+      { code: "ONLINE_SYNC_DISABLED" },
     );
   }
 
@@ -72,13 +77,11 @@ export async function submitLeaderboardRun(
       headers: {
         "content-type": "application/json",
       },
-      body: JSON.stringify(submission),
+      body: JSON.stringify(options.submission),
     });
   } catch (error) {
     throw new LeaderboardSubmissionError(
-      error instanceof Error
-        ? error.message
-        : "Could not reach the online leaderboard service.",
+      error instanceof Error ? error.message : "Could not reach the online leaderboard service.",
       { code: "NETWORK_ERROR" },
     );
   }
@@ -89,8 +92,7 @@ export async function submitLeaderboardRun(
     const apiError = isApiErrorPayload(payload) ? payload.error : null;
 
     throw new LeaderboardSubmissionError(
-      apiError?.message
-        ?? `Leaderboard submission failed with status ${response.status}.`,
+      apiError?.message ?? `Leaderboard submission failed with status ${response.status}.`,
       {
         code: apiError?.code ?? "SUBMISSION_FAILED",
         status: response.status,
@@ -109,6 +111,31 @@ export async function submitLeaderboardRun(
   }
 
   return payload;
+}
+
+export function isSubmissionUnavailableError(error: unknown): boolean {
+  if (!(error instanceof LeaderboardSubmissionError)) {
+    return false;
+  }
+
+  if (
+    error.code === "INVALID_LEADERBOARD_SUBMISSION"
+    || error.code === "UNKNOWN_PLAYER"
+    || error.code === "INVALID_JSON"
+  ) {
+    return false;
+  }
+
+  return error.status === null || error.status >= 500;
+}
+
+function normalizeOptionalServerUrl(serverUrl: string | null | undefined): string | null {
+  if (!serverUrl) {
+    return null;
+  }
+
+  const normalized = normalizeServerUrl(serverUrl);
+  return normalized.length > 0 ? normalized : null;
 }
 
 function isLeaderboardSubmissionResult(payload: unknown): payload is LeaderboardSubmissionResult {

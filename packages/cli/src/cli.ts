@@ -11,11 +11,13 @@ import { runQueryCommand } from "./commands/query.js";
 import { formatJsonError, formatTextError } from "./commands/common.js";
 import { runPauseCommand, runResumeCommand, runSpeedCommand } from "./commands/control.js";
 import { runTickCommand } from "./commands/tick.js";
+import { runOnlineCommand } from "./commands/online.js";
 import { GamePersistence, loadOrInit } from "./daemon/persist.js";
 import { GameRuntime } from "./daemon/runtime.js";
 import { GameDaemonServer } from "./daemon/server.js";
 import { DaemonLifecycle, waitForExit } from "./daemon/lifecycle.js";
 import { DaemonTransport } from "./daemon/transport.js";
+import { ONLINE_COMMAND_SUMMARY } from "./online/profile.js";
 import { resolvePaths } from "./paths.js";
 
 interface CommandContext {
@@ -140,6 +142,7 @@ const COMMANDS: CommandHandler[] = [
 	{ name: "pause", summary: "Pause the daemon tick loop", run: async ({ parsed }) => runPauseCommand(parsed) },
 	{ name: "resume", summary: "Resume the daemon tick loop", run: async ({ parsed }) => runResumeCommand(parsed) },
 	{ name: "speed", summary: "Set daemon tick speed", run: async ({ parsed }) => runSpeedCommand(parsed) },
+	{ name: "online", summary: ONLINE_COMMAND_SUMMARY, run: async ({ parsed }) => runOnlineCommand(parsed) },
 ];
 
 const COMMAND_MAP = new Map(COMMANDS.map((command) => [command.name, command]));
@@ -154,7 +157,7 @@ export async function runCli(args: string[]): Promise<void> {
 
 	if (!parsed.command) {
 		const { runTui } = await import("./tui/app.js");
-		await runTui();
+		await runTui(parsed);
 		return;
 	}
 

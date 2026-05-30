@@ -138,6 +138,30 @@ describe("App start flow", () => {
     expect(screen.getByTestId("shell").getAttribute("data-auto-open")).toBe("true");
   });
 
+  it("targets localhost automatically during development when no explicit API URL is configured", async () => {
+    vi.stubEnv("MODE", "development");
+    vi.stubEnv("VITE_API_BASE_URL", "");
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ playerId: "player_local", username: "Local Ops" }), {
+        status: 201,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    render(<App />);
+    fireEvent.change(screen.getByLabelText("Leaderboard name"), {
+      target: { value: "Local Ops" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "http://localhost:3000/players",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+  });
+
   it("reuses an already-registered local identity without hitting the backend", async () => {
     localStorage.setItem(
       PLAYER_IDENTITY_KEY,
@@ -186,6 +210,36 @@ describe("App start flow", () => {
     });
 
     expect(screen.queryByText(/stay local until the backend is reachable again/i)).toBeNull();
+  });
+
+  it("falls back to local play when online registration is intentionally disabled in production", async () => {
+    vi.useFakeTimers();
+    vi.stubEnv("MODE", "production");
+    vi.stubEnv("VITE_API_BASE_URL", "");
+
+    render(<App />);
+    fireEvent.change(screen.getByLabelText("Leaderboard name"), {
+      target: { value: "Offline Build" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(persistMocks.createFreshSession).toHaveBeenCalledWith({
+      difficulty: "hard",
+      playerName: "Offline Build",
+    });
+    expect(screen.getByText(/registration is disabled for this build/i)).toBeTruthy();
+
+    act(() => {
+      vi.advanceTimersByTime(3_000);
+    });
+
+    expect(screen.queryByText(/registration is disabled for this build/i)).toBeNull();
   });
 
   it("uses the selected difficulty for a fresh game", async () => {
@@ -264,6 +318,55 @@ describe("App start flow", () => {
       metrics: {
         money: 1_725_000,
       },
+    });
+  });
+
+  it("uses the explicit production API override for leaderboard sync", async () => {
+    vi.stubEnv("MODE", "production");
+    vi.stubEnv("VITE_API_BASE_URL", "https://prod.api.dctycoon.test");
+    localStorage.setItem(
+      PLAYER_IDENTITY_KEY,
+      JSON.stringify({ playerId: "player_abc", username: "Cloud Atlas" }),
+    );
+    persistMocks.latestSave = savedGameInfo;
+    persistMocks.createLoadedSession.mockImplementation(() => makeSession("loaded", (state) => ({
+      ...state,
+      tick: 2,
+    })));
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({
+        created: true,
+        run: {
+          runId: "run_prod",
+          playerId: "player_abc",
+          clientRunId: "game-123",
+          metrics: {
+            money: 1_250_000,
+            cumulativeRevenue: 0,
+            totalServers: 0,
+            computeCapacity: 0,
+            memoryCapacity: 0,
+            storageCapacity: 0,
+            gpuCapacity: 0,
+          },
+          gameMonth: 2,
+          submittedAt: "2026-05-18T12:00:00.000Z",
+          updatedAt: "2026-05-18T12:00:00.000Z",
+        },
+      }), {
+        status: 201,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Load Game" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://prod.api.dctycoon.test/leaderboard/runs",
+        expect.objectContaining({ method: "POST" }),
+      );
     });
   });
 });

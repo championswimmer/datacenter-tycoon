@@ -3,6 +3,10 @@ import { REGION_CATALOG } from "@datacenter-tycoon/game-logic";
 import { DctClient } from "../client/client.js";
 import type { ParsedArgv } from "../argv.js";
 import {
+	appendOnlineSyncToCommandResult,
+	syncLeaderboardFromCommand,
+} from "../online/sync.js";
+import {
 	createShortId,
 	parseInteger,
 	requirePositional,
@@ -58,10 +62,11 @@ export async function runBuildDatacenterCommand(
 	const dcId = getOptionalStringFlag(parsed, "--id") ?? createShortId("dc");
 	const region = getOptionalStringFlag(parsed, "--region") ?? FIRST_REGION_ID;
 	const regionDetails = describeRegion(region);
-	await withClient(
+	const onlineSync = await withClient(
 		parsed,
-		async (client) => {
+		async (client, paths) => {
 			await client.dispatch({ type: "BuildDatacenter", specId: datacenterSpecId(specId), dcId: datacenterId(dcId), regionId: regionId(regionDetails.id) });
+			return await syncLeaderboardFromCommand(parsed, client, paths);
 		},
 		clientFactory,
 	);
@@ -70,17 +75,23 @@ export async function runBuildDatacenterCommand(
 		? `Power $${regionDetails.powerCostPerKwh.toFixed(3)}/kWh, Labor $${regionDetails.staffWagePerMonth.toLocaleString()}/mo`
 		: undefined;
 
-	writeCommandResult(parsed, `Built datacenter ${dcId} in ${regionDetails.label}${regionOpexSummary ? ` (${regionOpexSummary})` : ""}`, {
-		dcId,
-		specId,
-		region: regionDetails.id,
-		regionCode: regionDetails.code,
-		regionCity: regionDetails.city,
-		regionName: regionDetails.name,
-		regionLabel: regionDetails.label,
-		powerCostPerKwh: regionDetails.powerCostPerKwh,
-		staffWagePerMonth: regionDetails.staffWagePerMonth,
-	});
+	const output = appendOnlineSyncToCommandResult(
+		`Built datacenter ${dcId} in ${regionDetails.label}${regionOpexSummary ? ` (${regionOpexSummary})` : ""}`,
+		{
+			dcId,
+			specId,
+			region: regionDetails.id,
+			regionCode: regionDetails.code,
+			regionCity: regionDetails.city,
+			regionName: regionDetails.name,
+			regionLabel: regionDetails.label,
+			powerCostPerKwh: regionDetails.powerCostPerKwh,
+			staffWagePerMonth: regionDetails.staffWagePerMonth,
+		},
+		onlineSync,
+	);
+
+	writeCommandResult(parsed, output.text, output.data);
 }
 
 export async function runAddRackCommand(
@@ -93,9 +104,9 @@ export async function runAddRackCommand(
 	const specId = requirePositional(parsed, 3, "dct racks add <dcId> <row> <position> <rackSpecId>");
 	const placementId = getOptionalStringFlag(parsed, "--id") ?? createShortId("rp");
 
-	await withClient(
+	const onlineSync = await withClient(
 		parsed,
-		async (client) => {
+		async (client, paths) => {
 			await client.dispatch({
 				type: "PlaceRack",
 				dcId: datacenterId(dcId),
@@ -104,11 +115,18 @@ export async function runAddRackCommand(
 				position,
 				placementId: rackPlacementId(placementId),
 			});
+			return await syncLeaderboardFromCommand(parsed, client, paths);
 		},
 		clientFactory,
 	);
 
-	writeCommandResult(parsed, `Added rack ${placementId}`, { placementId, dcId, specId, row, position });
+	const output = appendOnlineSyncToCommandResult(
+		`Added rack ${placementId}`,
+		{ placementId, dcId, specId, row, position },
+		onlineSync,
+	);
+
+	writeCommandResult(parsed, output.text, output.data);
 }
 
 export async function runRemoveRackCommand(
@@ -118,19 +136,26 @@ export async function runRemoveRackCommand(
 	const dcId = requirePositional(parsed, 0, "dct racks decom <dcId> <placementId>");
 	const placementId = requirePositional(parsed, 1, "dct racks decom <dcId> <placementId>");
 
-	await withClient(
+	const onlineSync = await withClient(
 		parsed,
-		async (client) => {
+		async (client, paths) => {
 			await client.dispatch({
 				type: "RemoveRack",
 				dcId: datacenterId(dcId),
 				placementId: rackPlacementId(placementId),
 			});
+			return await syncLeaderboardFromCommand(parsed, client, paths);
 		},
 		clientFactory,
 	);
 
-	writeCommandResult(parsed, `Removed rack ${placementId}`, { dcId, placementId });
+	const output = appendOnlineSyncToCommandResult(
+		`Removed rack ${placementId}`,
+		{ dcId, placementId },
+		onlineSync,
+	);
+
+	writeCommandResult(parsed, output.text, output.data);
 }
 
 export async function runMoveRackCommand(
@@ -143,9 +168,9 @@ export async function runMoveRackCommand(
 	const row = parseInteger(requirePositional(parsed, 3, "dct racks move <dcId> <placementId> <targetDcId> <row> <position>"), "row");
 	const position = parseInteger(requirePositional(parsed, 4, "dct racks move <dcId> <placementId> <targetDcId> <row> <position>"), "position");
 
-	await withClient(
+	const onlineSync = await withClient(
 		parsed,
-		async (client) => {
+		async (client, paths) => {
 			await client.dispatch({
 				type: "MoveRack",
 				dcId: datacenterId(dcId),
@@ -154,15 +179,22 @@ export async function runMoveRackCommand(
 				row,
 				position,
 			});
+			return await syncLeaderboardFromCommand(parsed, client, paths);
 		},
 		clientFactory,
 	);
 
-	writeCommandResult(parsed, `Moved rack ${placementId} to ${targetDcId} at row ${row}, position ${position}`, {
-		dcId,
-		placementId,
-		targetDcId,
-		row,
-		position,
-	});
+	const output = appendOnlineSyncToCommandResult(
+		`Moved rack ${placementId} to ${targetDcId} at row ${row}, position ${position}`,
+		{
+			dcId,
+			placementId,
+			targetDcId,
+			row,
+			position,
+		},
+		onlineSync,
+	);
+
+	writeCommandResult(parsed, output.text, output.data);
 }

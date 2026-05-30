@@ -19,8 +19,8 @@ test("request-level flows work with Drizzle repositories backed by PGlite", asyn
       SERVER_VERSION: "9.9.9-test",
     }),
     services: {
-      players: new DrizzlePlayersRepository(database.db),
-      leaderboard: new DrizzleLeaderboardRepository(database.db),
+      players: new DrizzlePlayersRepository(database),
+      leaderboard: new DrizzleLeaderboardRepository(database),
       rateLimiter: new InMemoryFixedWindowRateLimiter(),
     },
   });

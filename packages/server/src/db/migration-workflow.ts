@@ -1,9 +1,13 @@
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadServerConfig, type ServerConfig, type ServerDatabaseProvider } from "../config.js";
 import { migrate as migrateBunSql } from "drizzle-orm/bun-sql/migrator";
 import { migrate as migratePglite } from "drizzle-orm/pglite/migrator";
-import { createPgliteDrizzleClient, createPostgresDrizzleClient } from "./client.js";
-import { runMigrations, runPgliteMigrations } from "./migrator.js";
+import {
+  createPgliteDatabaseConnection,
+  createPostgresDatabaseConnection,
+} from "./database.js";
+import { runDatabaseMigrations } from "./migrator.js";
 
 export type MigrationTarget =
   | { mode: "postgres"; connectionString: string }
@@ -11,33 +15,36 @@ export type MigrationTarget =
 
 export interface MigrationWorkflowResult {
   mode: MigrationTarget["mode"];
+  provider: Exclude<ServerDatabaseProvider, "pglite-memory">;
   appliedBaselineMigrations: string[];
   pendingBaselineMigrations: string[];
   drizzleMigrationsDir: string;
 }
 
+export function resolveMigrationTargetFromConfig(
+  config: Pick<ServerConfig, "database">,
+): MigrationTarget {
+  if (config.database.mode === "postgres" && config.database.connectionString) {
+    return {
+      mode: "postgres",
+      connectionString: config.database.connectionString,
+    };
+  }
+
+  if (config.database.mode === "pglite" && config.database.pgliteDataDir) {
+    return {
+      mode: "pglite",
+      dataDir: config.database.pgliteDataDir,
+    };
+  }
+
+  throw new Error("Resolved server config did not expose a migratable database target.");
+}
+
 export function resolveMigrationTarget(
   env: Record<string, string | undefined> = process.env,
 ): MigrationTarget {
-  const databaseUrl = env.DATABASE_URL?.trim();
-
-  if (databaseUrl) {
-    return {
-      mode: "postgres",
-      connectionString: databaseUrl,
-    };
-  }
-
-  const pgliteDataDir = env.PGLITE_DATA_DIR?.trim();
-
-  if (pgliteDataDir) {
-    return {
-      mode: "pglite",
-      dataDir: pgliteDataDir,
-    };
-  }
-
-  throw new Error("Set DATABASE_URL or PGLITE_DATA_DIR before running migrations.");
+  return resolveMigrationTargetFromConfig(loadServerConfig(env));
 }
 
 export async function migrateConfiguredDatabase(
@@ -48,48 +55,51 @@ export async function migrateConfiguredDatabase(
   const drizzleMigrationsDir = getDrizzleMigrationsDir();
 
   if (target.mode === "postgres") {
-    const baseline = await runMigrations({
-      databaseUrl: target.connectionString,
-      migrationsDir: legacyMigrationsDir,
-    });
-    const { client, db } = createPostgresDrizzleClient(target.connectionString);
+    const database = createPostgresDatabaseConnection(target.connectionString);
 
     try {
-      await migrateBunSql(db, {
+      const baseline = await runDatabaseMigrations({
+        database,
+        migrationsDir: legacyMigrationsDir,
+      });
+
+      await migrateBunSql(database.db, {
         migrationsFolder: drizzleMigrationsDir,
       });
-    } finally {
-      await client.close();
-    }
 
-    return {
-      mode: "postgres",
-      appliedBaselineMigrations: baseline.appliedMigrations,
-      pendingBaselineMigrations: baseline.pendingMigrations,
-      drizzleMigrationsDir,
-    };
+      return {
+        mode: "postgres",
+        provider: "bun-sql",
+        appliedBaselineMigrations: baseline.appliedMigrations,
+        pendingBaselineMigrations: baseline.pendingMigrations,
+        drizzleMigrationsDir,
+      };
+    } finally {
+      await database.close();
+    }
   }
 
-  const { client, db } = await createPgliteDrizzleClient(target.dataDir);
+  const database = await createPgliteDatabaseConnection(target.dataDir);
 
   try {
-    const baseline = await runPgliteMigrations({
-      client,
+    const baseline = await runDatabaseMigrations({
+      database,
       migrationsDir: legacyMigrationsDir,
     });
 
-    await migratePglite(db, {
+    await migratePglite(database.db, {
       migrationsFolder: drizzleMigrationsDir,
     });
 
     return {
       mode: "pglite",
+      provider: "pglite-file",
       appliedBaselineMigrations: baseline.appliedMigrations,
       pendingBaselineMigrations: baseline.pendingMigrations,
       drizzleMigrationsDir,
     };
   } finally {
-    await client.close();
+    await database.close();
   }
 }
 

@@ -1,7 +1,7 @@
 ---
 name: Online Identity, CLI Leaderboard Sync, and Development DB Modes
 description: Extend CLI and web online integration, add explicit server URL configuration, and run the backend against PGlite in development and Postgres in production.
-status: created
+status: completed
 created: 2026-05-29
 updated: 2026-05-29
 owner: server
@@ -9,25 +9,25 @@ owner: server
 
 ## Progress
 
-- [ ] **Phase 1 — Configuration and integration boundaries**
-  - [ ] 1.1 Define server database-mode configuration and startup rules
-  - [ ] 1.2 Define CLI online profile storage and `--server` precedence
-  - [ ] 1.3 Centralize web API base-URL resolution for dev and production
-- [ ] **Phase 2 — Server database abstraction and PGlite development mode**
-  - [ ] 2.1 Introduce a database adapter boundary shared by repositories and migrations
-  - [ ] 2.2 Add direct PGlite support for file-backed development storage
-  - [ ] 2.3 Make migration and health-check flows provider-aware
-- [ ] **Phase 3 — CLI online identity and leaderboard submission**
-  - [ ] 3.1 Add CLI online profile persistence and HTTP client helpers
-  - [ ] 3.2 Add CLI commands for registering, inspecting, and clearing online identity
-  - [ ] 3.3 Submit leaderboard summaries from CLI commands and the interactive TUI
-- [ ] **Phase 4 — Web development and production API targeting**
-  - [ ] 4.1 Add environment-aware web API configuration for localhost dev and real-server production
-  - [ ] 4.2 Keep startup and leaderboard-sync UX resilient under online/offline conditions
-- [ ] **Phase 5 — Local dev workflow, testing, and docs**
-  - [ ] 5.1 Add combined local-dev scripts for server + web
-  - [ ] 5.2 Add automated coverage for PGlite dev mode, CLI `--server`, and web localhost wiring
-  - [ ] 5.3 Update server, web, and CLI documentation for dev/prod online flows
+- [x] **Phase 1 — Configuration and integration boundaries**
+  - [x] 1.1 Define server database-mode configuration and startup rules
+  - [x] 1.2 Define CLI online profile storage and `--server` precedence
+  - [x] 1.3 Centralize web API base-URL resolution for dev and production
+- [x] **Phase 2 — Server database abstraction and PGlite development mode**
+  - [x] 2.1 Introduce a database adapter boundary shared by repositories and migrations
+  - [x] 2.2 Add direct PGlite support for file-backed development storage
+  - [x] 2.3 Make migration and health-check flows provider-aware
+- [x] **Phase 3 — CLI online identity and leaderboard submission**
+  - [x] 3.1 Add CLI online profile persistence and HTTP client helpers
+  - [x] 3.2 Add CLI commands for registering, inspecting, and clearing online identity
+  - [x] 3.3 Submit leaderboard summaries from CLI commands and the interactive TUI
+- [x] **Phase 4 — Web development and production API targeting**
+  - [x] 4.1 Add environment-aware web API configuration for localhost dev and real-server production
+  - [x] 4.2 Keep startup and leaderboard-sync UX resilient under online/offline conditions
+- [x] **Phase 5 — Local dev workflow, testing, and docs**
+  - [x] 5.1 Add combined local-dev scripts for server + web
+  - [x] 5.2 Add automated coverage for PGlite dev mode, CLI `--server`, and web localhost wiring
+  - [x] 5.3 Update server, web, and CLI documentation for dev/prod online flows
 
 ## Overview
 
@@ -304,3 +304,14 @@ Resolution rules to implement:
 
 - 2026-05-29 — Created plan for CLI online identity, localhost dev wiring, and PGlite/Postgres runtime modes.
 - 2026-05-29 — Note: server-stack assumptions in this plan have been superseded by `043-server-migration-to-bun-elysia-and-drizzle.md`. Future CLI/web integration work should target the Bun + Elysia + Drizzle backend that now exists, while preserving the same broad `/players` and `/leaderboard` API responsibilities.
+- 2026-05-29 — Marked step 1.1 complete because the Bun + Elysia + Drizzle migration in plan `043` already delivered typed dev/prod database-mode config, PGlite development defaults, and coverage for production/postgres requirements.
+- 2026-05-29 — Completed step 1.2 by adding `--server` as a documented global CLI flag, reserving the noun-first `online` command surface, defining durable online-profile path resolution, and codifying `--server` > profile > `DCT_SERVER_URL` > disabled precedence in CLI tests.
+- 2026-05-29 — Completed step 1.3 by extracting a shared web online-config helper that trims explicit API URLs, defaults development to `http://localhost:3000`, and preserves the existing production offline fallback when no API URL is configured.
+- 2026-05-29 — Completed step 2.1 by introducing a shared server database adapter with query/exec/transaction helpers, routing repository and migration code through that boundary, and adding explicit adapter-backed migration/repository tests.
+- 2026-05-29 — Completed step 2.2 by adding closable runtime service lifecycles, auto-bootstrapping file-backed PGlite on development startup, and proving persistence across runtime reopen cycles in server dependency tests.
+- 2026-05-29 — Completed step 2.3 by making migration target resolution reuse server config rules, surfacing consistent provider metadata through health/startup paths, expanding provider-specific health/migration tests, and clarifying migrate/check-migrations docs for Postgres vs file-backed PGlite.
+- 2026-05-29 — Completed step 3.1 by adding CLI online-profile read/write/clear helpers, Node-side player registration and leaderboard submission clients, shared game-logic leaderboard payload construction, and unit coverage for profile round-trips, request shaping, and disabled/offline error mapping.
+- 2026-05-29 — Completed step 3.2 by wiring a noun-first `dct online` command router for login/status/logout, persisting identities through the dedicated profile path, and covering successful registration, profile reuse, logout, invalid-username, and unreachable-server flows in CLI command tests.
+- 2026-05-29 — Completed step 3.3 by adding a shared CLI leaderboard-sync helper with persisted duplicate-signature debouncing, wiring automatic post-mutation submissions and manual `dct online submit`, propagating selected game/server overrides into the TUI command palette, and covering successful/duplicate/offline sync behavior in CLI command, sync, tick, and TUI tests.
+- 2026-05-29 — Completed phase 4 by tightening web API mode resolution around explicit dev-vs-production signals, adding a web `.env.example` for real-server configuration, and expanding App/config tests to cover localhost dev targeting, production overrides, offline fallback, and intentionally disabled online registration builds.
+- 2026-05-29 — Completed phase 5 by adding a root `npm run dev:online` helper, validating the online stack through the server/cli/web test suites, and documenting the local-vs-production online workflow across the root, server, web, and CLI READMEs.
