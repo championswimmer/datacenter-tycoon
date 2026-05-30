@@ -76,7 +76,7 @@ DATABASE_URL=postgres://localhost:5432/datacenter_tycoon npm run dev:server
 
 ### Railway deployment
 
-This repository includes a checked-in root [`railway.toml`](../../railway.toml) and [`Dockerfile`](../../Dockerfile) for deploying the backend from the monorepo. Railway uses the Dockerfile builder, builds only the workspaces needed by the API (`@datacenter-tycoon/game-logic` and `@datacenter-tycoon/server`), runs migrations with `bun` as a pre-deploy command, starts the compiled Bun/Elysia server with `bun`, and healthchecks `GET /healthz`.
+This repository includes a checked-in root [`railway.toml`](../../railway.toml) and [`Dockerfile`](../../Dockerfile) for deploying the backend from the monorepo. Railway uses the Dockerfile builder, installs/builds only the workspaces needed by the API (`@datacenter-tycoon/game-logic` and `@datacenter-tycoon/server`), runs migrations with `bun` as a pre-deploy command, starts the compiled Bun/Elysia server with `bun`, and healthchecks `GET /healthz`.
 
 The Docker build context intentionally remains the repository root because the server depends on the workspace package `@datacenter-tycoon/game-logic` and the root lockfile. The final container target is still only the server: `railway.toml` starts `packages/server/dist/index.js` via Bun.
 
