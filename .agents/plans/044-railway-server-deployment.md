@@ -9,9 +9,9 @@ owner: server
 
 ## Progress
 
-- [ ] **Phase 1 — Deployment configuration readiness**
+- [x] **Phase 1 — Deployment configuration readiness**
   - [x] 1.1 Verify Railway auth/project state and server deployment requirements
-  - [ ] 1.2 Document Railway deployment commands and required variables in server docs
+  - [x] 1.2 Document Railway deployment commands and required variables in server docs
 - [ ] **Phase 2 — Railway project and services**
   - [ ] 2.1 Create or link the Railway project/environment
   - [ ] 2.2 Create the `dctycoon-api` service and Postgres database service
@@ -144,5 +144,6 @@ railway service logs --service dctycoon-api
 
 ## Changelog
 
+- 2026-05-30 — completed Step 1.2: expanded the server README with Railway project/service/database commands, private Postgres `DATABASE_URL` wiring, deploy, logs, domain, and healthcheck guidance.
 - 2026-05-30 — completed Step 1.1: Railway CLI is authenticated as the expected user, the repo is not yet linked to a Railway project, and the existing root `railway.toml` matches the server workspace build/migrate/start/healthcheck scripts.
 - 2026-05-30 — created.

@@ -76,15 +76,44 @@ DATABASE_URL=postgres://localhost:5432/datacenter_tycoon npm run dev:server
 
 ### Railway deployment
 
-This repository includes a checked-in `railway.toml` for the first backend launch, but the service has **not** been deployed automatically from this implementation session.
+This repository includes a checked-in root [`railway.toml`](../../railway.toml) for deploying the backend from the monorepo. It uses Nixpacks, builds `@datacenter-tycoon/game-logic` and `@datacenter-tycoon/server`, runs migrations as a pre-deploy command, starts the Bun/Elysia server, and healthchecks `GET /healthz`.
 
-1. Create the backend service from this monorepo in Railway.
-2. Add a Railway Postgres service to the same project.
-3. Attach the Postgres service so Railway injects `DATABASE_URL` into the backend service.
-4. Set `CORS_ALLOWED_ORIGINS` to the allowed web origin list for your deployed frontend.
-5. Review production rate-limit values before enabling traffic.
-6. Confirm the pre-deploy migration command succeeds before exposing the public domain.
-7. Verify `/healthz`, `/version`, player registration, leaderboard submission, and leaderboard reads against the Railway URL.
+Create or link the Railway project and services from the repository root:
+
+```bash
+# If this repo is not linked yet, create the Railway project and production environment link.
+railway init --name datacenter-tycoon --json
+# Or, for an existing project:
+# railway link --project <project-id-or-name> --environment production --json
+
+# Create the API service and database service.
+railway add --service dctycoon-api --json
+railway add --database postgres --json
+
+# Confirm both services exist before configuring variables.
+railway service list --json
+```
+
+Configure the API service variables before the first production deploy:
+
+```bash
+railway variable set --service dctycoon-api NODE_ENV=production
+railway variable set --service dctycoon-api 'DATABASE_URL=${{Postgres.DATABASE_URL}}'
+railway variable set --service dctycoon-api 'CORS_ALLOWED_ORIGINS=https://your-frontend.example'
+```
+
+Use the Railway Postgres service's private `DATABASE_URL` reference (`${{Postgres.DATABASE_URL}}`, or `${{<postgres-service-name>.DATABASE_URL}}` if the database service is named differently). Do **not** wire `DATABASE_PUBLIC_URL` or another public proxy URL into the server service; API-to-database traffic should stay on Railway's private network.
+
+Deploy and verify:
+
+```bash
+railway up --service dctycoon-api
+railway service logs --service dctycoon-api
+railway domain --service dctycoon-api
+curl https://<generated-api-domain>/healthz
+```
+
+Before enabling traffic, review production rate-limit values, confirm the pre-deploy migration command succeeds, and verify `/healthz`, `/version`, player registration, leaderboard submission, and leaderboard reads against the Railway URL.
 
 ### Rollback considerations
 
