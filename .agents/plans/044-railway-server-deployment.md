@@ -1,7 +1,7 @@
 ---
 name: Railway Server Deployment
 description: Deploy the Datacenter Tycoon server to Railway as dctycoon-api with a private Postgres DATABASE_URL.
-status: started
+status: completed
 created: 2026-05-30
 updated: 2026-05-30
 owner: server
@@ -19,10 +19,10 @@ owner: server
   - [x] 3.1 Set `DATABASE_URL` on `dctycoon-api` from the Postgres private service variable
   - [x] 3.2 Switch Railway deployment to a Dockerfile-backed Bun runtime
   - [x] 3.3 Set production runtime variables and deploy `dctycoon-api`
-- [ ] **Phase 4 — Verification, GitHub autodeploy, and handoff**
+- [x] **Phase 4 — Verification, GitHub autodeploy, and handoff**
   - [x] 4.1 Verify health, migrations, and deployment logs
   - [x] 4.2 Configure GitHub Actions server-scoped autodeploys
-  - [ ] 4.3 Record final Railway service details and operational notes
+  - [x] 4.3 Record final Railway service details and operational notes
 
 ## Overview
 
@@ -162,6 +162,7 @@ railway service logs --service dctycoon-api
 
 ## Changelog
 
+- 2026-05-30 — completed Step 4.3 and the plan: recorded production Railway IDs, public URL, Bun runtime, private DB URL note, and GitHub Actions autodeploy/path-filter details in the server README.
 - 2026-05-30 — completed Step 4.2: added `.github/workflows/deploy-dctycoon-api.yml`, created a Railway project token stored as GitHub secret `RAILWAY_TOKEN`, pushed branch `arnav/server-on-railway`, and verified GitHub Actions run `26669991414` successfully deployed Railway deployment `eed0a216-9ebb-4515-b5fb-2c1569593b23`. The workflow uses server-scoped path filters and the Dockerfile now runs `npm ci` only for the API/game-logic workspaces to avoid unrelated workspace installs.
 - 2026-05-30 — revised Step 4.2 to use GitHub Actions with a Railway project token because Railway's API reports no GitHub integration access to `championswimmer/datacenter-tycoon` from the current Railway account; this still redeploys the same Railway service on GitHub pushes with server-scoped path filters.
 - 2026-05-30 — completed Step 4.1: verified `GET /healthz` returns 200 with `runtime=bun`, `databaseMode=postgres`, `databaseProvider=bun-sql`; `/version` returns server/game-logic `0.1.0`; Railway logs show migrations and Bun/Elysia startup on Postgres.

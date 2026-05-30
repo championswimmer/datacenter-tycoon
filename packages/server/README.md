@@ -119,6 +119,19 @@ curl https://<generated-api-domain>/healthz
 
 Before enabling traffic, review production rate-limit values, confirm the pre-deploy migration command succeeds, and verify `/healthz`, `/version`, player registration, leaderboard submission, and leaderboard reads against the Railway URL.
 
+Current production Railway details:
+
+- Project: `datacenter-tycoon` (`02342aec-7d94-4cb7-9090-5bf53d101eaf`)
+- Environment: `production` (`77ff1d78-bf23-4e3b-b5a4-66616c4fe080`)
+- API service: `dctycoon-api` (`00549536-b2e0-49f8-888b-3ffc66275920`)
+- Database service: `Postgres` (`4659293a-0f78-4a4d-af42-addb4c0ab33d`)
+- Public API URL: `https://dctycoon-api-production.up.railway.app`
+- Healthcheck: `GET /healthz`
+- Runtime: Dockerfile final image `oven/bun:1.3.14`; Railway pre-deploy/start commands run `bun` against compiled server files.
+- Database URL: `DATABASE_URL` is set from the private Railway Postgres URL (`postgres.railway.internal`), not a public proxy URL.
+
+GitHub autodeploy is implemented with `.github/workflows/deploy-dctycoon-api.yml` instead of Railway-native GitHub autodeploy because the current Railway account does not have GitHub integration access to this repository. The workflow uses the GitHub repository secret `RAILWAY_TOKEN` (a Railway project token) and runs `railway up --service 00549536-b2e0-49f8-888b-3ffc66275920 --environment production` on pushes to `main` and `arnav/server-on-railway` when server-relevant paths change. Those path filters include `packages/server/**`, `packages/game-logic/**`, root dependency/config files, `Dockerfile`, `.dockerignore`, `railway.toml`, and the workflow file; unrelated package-only changes should not redeploy the API.
+
 ### Rollback considerations
 
 If the backend misbehaves after launch, the safest rollback is to disable online submission in the frontend by removing `VITE_API_BASE_URL` from the web deployment and redeploying the web app. Local gameplay continues to work without the backend.
