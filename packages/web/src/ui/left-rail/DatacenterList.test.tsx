@@ -140,4 +140,15 @@ describe("DatacenterList", () => {
     button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(window.location.hash).toBe("#/contracts");
   });
+
+  it("renders a finances button that navigates to the finances screen", () => {
+    render(
+      <Wrapper>
+        <DatacenterList currentRoute={{ view: "home" }} onOpenFinances={() => { window.location.hash = "#/finances"; }} />
+      </Wrapper>,
+    );
+    const button = screen.getByTitle("Open finances screen");
+    button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(window.location.hash).toBe("#/finances");
+  });
 });
