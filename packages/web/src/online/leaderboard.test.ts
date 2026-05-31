@@ -6,6 +6,8 @@ import {
   submitLeaderboardRun,
 } from "./leaderboard.js";
 
+const PLAYER_ID = "8d8f3b8f-0d43-4d7a-a2d0-8c2b6fd0d927";
+
 describe("online leaderboard submission", () => {
   beforeEach(() => {
     vi.stubEnv("VITE_API_BASE_URL", "https://api.dctycoon.test");
@@ -16,8 +18,8 @@ describe("online leaderboard submission", () => {
     state.tick = 3;
     state.player.cash = 1_500_000;
 
-    expect(buildLeaderboardRunSubmission("player_abc", state)).toEqual({
-      playerId: "player_abc",
+    expect(buildLeaderboardRunSubmission(PLAYER_ID, state)).toEqual({
+      playerId: PLAYER_ID,
       clientRunId: state.gameId,
       metrics: {
         money: 1_500_000,
@@ -38,7 +40,7 @@ describe("online leaderboard submission", () => {
         created: true,
         run: {
           runId: "run_123",
-          playerId: "player_abc",
+          playerId: PLAYER_ID,
           clientRunId: "game-123",
           metrics: {
             money: 1,
@@ -60,7 +62,7 @@ describe("online leaderboard submission", () => {
     );
 
     const submission = {
-      playerId: "player_abc",
+      playerId: PLAYER_ID,
       clientRunId: "game-123",
       metrics: {
         money: 1,
@@ -101,7 +103,7 @@ describe("online leaderboard submission", () => {
     );
 
     await expect(submitLeaderboardRun({
-      playerId: "player_abc",
+      playerId: PLAYER_ID,
       clientRunId: "game-123",
       metrics: {
         money: -1,

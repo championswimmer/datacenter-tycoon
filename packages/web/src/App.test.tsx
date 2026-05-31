@@ -48,6 +48,10 @@ function makeSession(
 }
 
 const PLAYER_IDENTITY_KEY = "datacenter-tycoon:player-identity-v1";
+const ACME_PLAYER_ID = "550e8400-e29b-41d4-a716-446655440000";
+const LOCAL_OPS_PLAYER_ID = "72f3f58a-b2eb-4f55-9d11-5f9d4d0d4f6e";
+const CLOUD_ATLAS_PLAYER_ID = "8d8f3b8f-0d43-4d7a-a2d0-8c2b6fd0d927";
+
 const savedGameInfo: SaveInfo = {
   gameId: "save-1",
   tick: 3,
@@ -63,6 +67,9 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockReset();
   persistMocks.latestSave = null;
+  persistMocks.getLatestSaveInfo.mockReset();
+  persistMocks.createFreshSession.mockReset();
+  persistMocks.createLoadedSession.mockReset();
   persistMocks.getLatestSaveInfo.mockImplementation(() => persistMocks.latestSave);
   persistMocks.createFreshSession.mockImplementation(() => makeSession("fresh"));
   persistMocks.createLoadedSession.mockImplementation(() => makeSession("loaded"));
@@ -108,7 +115,7 @@ describe("App start flow", () => {
 
   it("registers a first-time player before starting a fresh run", async () => {
     fetchMock.mockResolvedValue(
-      new Response(JSON.stringify({ playerId: "player_123", username: "Acme Cloud" }), {
+      new Response(JSON.stringify({ playerId: ACME_PLAYER_ID, username: "Acme Cloud" }), {
         status: 201,
         headers: { "content-type": "application/json" },
       }),
@@ -132,7 +139,7 @@ describe("App start flow", () => {
       expect.objectContaining({ method: "POST" }),
     );
     expect(JSON.parse(localStorage.getItem(PLAYER_IDENTITY_KEY) ?? "null")).toEqual({
-      playerId: "player_123",
+      playerId: ACME_PLAYER_ID,
       username: "Acme Cloud",
     });
     expect(screen.getByTestId("shell").getAttribute("data-auto-open")).toBe("true");
@@ -142,7 +149,7 @@ describe("App start flow", () => {
     vi.stubEnv("MODE", "development");
     vi.stubEnv("VITE_API_BASE_URL", "");
     fetchMock.mockResolvedValue(
-      new Response(JSON.stringify({ playerId: "player_local", username: "Local Ops" }), {
+      new Response(JSON.stringify({ playerId: LOCAL_OPS_PLAYER_ID, username: "Local Ops" }), {
         status: 201,
         headers: { "content-type": "application/json" },
       }),
@@ -162,10 +169,37 @@ describe("App start flow", () => {
     });
   });
 
+  it("shows a clear error when the chosen leaderboard name is already claimed", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({
+        error: {
+          code: "USERNAME_UNAVAILABLE",
+          message: "That username is already taken.",
+        },
+      }), {
+        status: 409,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    render(<App />);
+    fireEvent.change(screen.getByLabelText("Leaderboard name"), {
+      target: { value: "John Doe123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert").textContent).toMatch(/already claimed\. pick another one/i);
+    });
+
+    expect(persistMocks.createFreshSession).not.toHaveBeenCalled();
+    expect(localStorage.getItem(PLAYER_IDENTITY_KEY)).toBeNull();
+  });
+
   it("reuses an already-registered local identity without hitting the backend", async () => {
     localStorage.setItem(
       PLAYER_IDENTITY_KEY,
-      JSON.stringify({ playerId: "player_abc", username: "Cloud Atlas" }),
+      JSON.stringify({ playerId: CLOUD_ATLAS_PLAYER_ID, username: "Cloud Atlas" }),
     );
 
     render(<App />);
@@ -245,7 +279,7 @@ describe("App start flow", () => {
   it("uses the selected difficulty for a fresh game", async () => {
     localStorage.setItem(
       PLAYER_IDENTITY_KEY,
-      JSON.stringify({ playerId: "player_abc", username: "Cloud Atlas" }),
+      JSON.stringify({ playerId: CLOUD_ATLAS_PLAYER_ID, username: "Cloud Atlas" }),
     );
 
     render(<App />);
@@ -264,7 +298,7 @@ describe("App start flow", () => {
   it("submits a shared leaderboard snapshot once gameplay has progressed", async () => {
     localStorage.setItem(
       PLAYER_IDENTITY_KEY,
-      JSON.stringify({ playerId: "player_abc", username: "Cloud Atlas" }),
+      JSON.stringify({ playerId: CLOUD_ATLAS_PLAYER_ID, username: "Cloud Atlas" }),
     );
     persistMocks.latestSave = savedGameInfo;
     persistMocks.createLoadedSession.mockImplementation(() => makeSession("loaded", (state) => ({
@@ -280,7 +314,7 @@ describe("App start flow", () => {
         created: true,
         run: {
           runId: "run_123",
-          playerId: "player_abc",
+          playerId: CLOUD_ATLAS_PLAYER_ID,
           clientRunId: "game-123",
           metrics: {
             money: 1_725_000,
@@ -313,7 +347,7 @@ describe("App start flow", () => {
 
     const [, requestInit] = fetchMock.mock.calls[0] ?? [];
     expect(JSON.parse(String(requestInit?.body))).toMatchObject({
-      playerId: "player_abc",
+      playerId: CLOUD_ATLAS_PLAYER_ID,
       gameMonth: 2,
       metrics: {
         money: 1_725_000,
@@ -326,7 +360,7 @@ describe("App start flow", () => {
     vi.stubEnv("VITE_API_BASE_URL", "https://prod.api.dctycoon.test");
     localStorage.setItem(
       PLAYER_IDENTITY_KEY,
-      JSON.stringify({ playerId: "player_abc", username: "Cloud Atlas" }),
+      JSON.stringify({ playerId: CLOUD_ATLAS_PLAYER_ID, username: "Cloud Atlas" }),
     );
     persistMocks.latestSave = savedGameInfo;
     persistMocks.createLoadedSession.mockImplementation(() => makeSession("loaded", (state) => ({
@@ -338,7 +372,7 @@ describe("App start flow", () => {
         created: true,
         run: {
           runId: "run_prod",
-          playerId: "player_abc",
+          playerId: CLOUD_ATLAS_PLAYER_ID,
           clientRunId: "game-123",
           metrics: {
             money: 1_250_000,
