@@ -67,6 +67,7 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 		contractMarket: [],
 		activeContracts: [],
 		ledger: [],
+		financialHistory: [],
 		audioEnabled: true,
 		audioSettings: {
 			master: true,
