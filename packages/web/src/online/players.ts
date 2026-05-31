@@ -53,12 +53,12 @@ export async function registerPlayer(
 
   if (!response.ok) {
     const apiError = isApiErrorPayload(payload) ? payload.error : null;
+    const errorCode = apiError?.code ?? "REGISTRATION_FAILED";
 
     throw new PlayerRegistrationError(
-      apiError?.message
-        ?? `Player registration failed with status ${response.status}.`,
+      getPlayerRegistrationErrorMessage(errorCode, apiError?.message, response.status),
       {
-        code: apiError?.code ?? "REGISTRATION_FAILED",
+        code: errorCode,
         status: response.status,
       },
     );
@@ -88,6 +88,18 @@ export function isRegistrationUnavailableError(error: unknown): boolean {
   }
 
   return error.status === null || error.status >= 500;
+}
+
+function getPlayerRegistrationErrorMessage(
+  code: string,
+  message: string | undefined,
+  status: number,
+): string {
+  if (code === "USERNAME_UNAVAILABLE") {
+    return "That leaderboard name is already claimed. Pick another one.";
+  }
+
+  return message ?? `Player registration failed with status ${status}.`;
 }
 
 function isPlayerRegistrationPayload(payload: unknown): payload is StoredPlayerIdentity {
