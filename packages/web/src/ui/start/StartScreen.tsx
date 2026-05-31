@@ -1,9 +1,11 @@
 import type { Difficulty } from "@datacenter-tycoon/game-logic";
 import type { StoredPlayerIdentity } from "../../store/playerIdentity.js";
 import { formatGameDateShort, tickToGameDate } from "../../store/gameTime.js";
+import type { LeaderboardListResult } from "../../online/leaderboard.js";
 import type { SaveInfo } from "../../store/persist.js";
 import gameBannerUrl from "@assets/images/game-banner-001.jpg";
 import gameBannerMobileUrl from "@assets/images/game-banner-001-mobile.jpg";
+import { LeaderboardDialog } from "./LeaderboardDialog.js";
 import styles from "./StartScreen.module.css";
 
 interface StartScreenProps {
@@ -20,6 +22,13 @@ interface StartScreenProps {
   onPlay: () => void | Promise<void>;
   onLoadGame: () => void;
   onNewGame: () => void | Promise<void>;
+  isLeaderboardOpen: boolean;
+  isLeaderboardLoading: boolean;
+  leaderboardResult: LeaderboardListResult | null;
+  leaderboardError: string | null;
+  onOpenLeaderboard: () => void;
+  onCloseLeaderboard: () => void;
+  onRetryLeaderboard: () => void;
 }
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -47,6 +56,13 @@ export function StartScreen({
   onPlay,
   onLoadGame,
   onNewGame,
+  isLeaderboardOpen,
+  isLeaderboardLoading,
+  leaderboardResult,
+  leaderboardError,
+  onOpenLeaderboard,
+  onCloseLeaderboard,
+  onRetryLeaderboard,
 }: StartScreenProps) {
   const latestSaveDate = latestSave
     ? timestampFormatter.format(new Date(latestSave.updatedAt))
@@ -190,6 +206,13 @@ export function StartScreen({
               >
                 {isStarting ? "Starting…" : "New Game"}
               </button>
+              <button
+                type="button"
+                className={styles.secondaryAction}
+                onClick={onOpenLeaderboard}
+              >
+                View Leaderboard
+              </button>
             </div>
           </>
         ) : (
@@ -202,9 +225,26 @@ export function StartScreen({
             >
               {isStarting ? "Starting…" : "Play"}
             </button>
+            <button
+              type="button"
+              className={styles.secondaryAction}
+              onClick={onOpenLeaderboard}
+            >
+              View Leaderboard
+            </button>
           </div>
         )}
       </section>
+
+      {isLeaderboardOpen && (
+        <LeaderboardDialog
+          result={leaderboardResult}
+          isLoading={isLeaderboardLoading}
+          errorMessage={leaderboardError}
+          onClose={onCloseLeaderboard}
+          onRetry={onRetryLeaderboard}
+        />
+      )}
     </main>
   );
 }

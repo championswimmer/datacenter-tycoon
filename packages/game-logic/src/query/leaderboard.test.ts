@@ -57,7 +57,7 @@ test("summarizeLeaderboardFromState derives top-level leaderboard metrics from g
     tick: 6,
     player: {
       ...baseState.player,
-      cash: 1_875_000,
+      cash: 1_875_000.75,
     },
     datacenters: [
       makeDatacenter([
@@ -68,9 +68,9 @@ test("summarizeLeaderboardFromState derives top-level leaderboard metrics from g
       ]),
     ],
     ledger: [
-      { id: "ledger-1" as GameState["ledger"][number]["id"], tick: 1, type: "revenue", amount: 120_000, reason: "rev-1" },
+      { id: "ledger-1" as GameState["ledger"][number]["id"], tick: 1, type: "revenue", amount: 120_000.4, reason: "rev-1" },
       { id: "ledger-2" as GameState["ledger"][number]["id"], tick: 2, type: "opex", amount: -10_000, reason: "opex" },
-      { id: "ledger-3" as GameState["ledger"][number]["id"], tick: 3, type: "revenue", amount: 90_000, reason: "rev-2" },
+      { id: "ledger-3" as GameState["ledger"][number]["id"], tick: 3, type: "revenue", amount: 90_000.2, reason: "rev-2" },
       { id: "ledger-4" as GameState["ledger"][number]["id"], tick: 4, type: "penalty", amount: -5_000, reason: "penalty" },
     ],
   };
@@ -80,8 +80,8 @@ test("summarizeLeaderboardFromState derives top-level leaderboard metrics from g
   assert.equal(summary.gameId, state.gameId);
   assert.equal(summary.gameMonth, 6);
   assert.deepEqual(summary.metrics, {
-    money: 1_875_000,
-    cumulativeRevenue: 210_000,
+    money: 1_875_001,
+    cumulativeRevenue: 210_001,
     totalServers: 4,
     computeCapacity: computeRack.vCpu + memoryRack.vCpu + storageRack.vCpu + gpuRack.vCpu,
     memoryCapacity: computeRack.ramGb + memoryRack.ramGb + storageRack.ramGb + gpuRack.ramGb,

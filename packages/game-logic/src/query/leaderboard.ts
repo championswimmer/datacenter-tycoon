@@ -47,7 +47,7 @@ export function summarizeLeaderboardFromState(
   return {
     gameId: state.gameId,
     gameMonth: state.tick,
-    metrics: {
+    metrics: normalizeLeaderboardMetrics({
       money: state.player.cash,
       cumulativeRevenue: summarizeCumulativeRevenue(state.ledger),
       totalServers: countInstalledServers(state),
@@ -55,7 +55,7 @@ export function summarizeLeaderboardFromState(
       memoryCapacity: network.installed.ramGb,
       storageCapacity: network.installed.storageTb,
       gpuCapacity: network.installed.gpuFlops,
-    },
+    }),
   };
 }
 
@@ -81,4 +81,23 @@ export function totalLeaderboardCapacity(metrics: LeaderboardMetrics): number {
     + metrics.memoryCapacity
     + metrics.storageCapacity
     + metrics.gpuCapacity;
+}
+
+function normalizeLeaderboardMetrics(metrics: LeaderboardMetrics): LeaderboardMetrics {
+  // The online leaderboard transport and persistence layers store integral values.
+  // Cash and cumulative revenue can contain cents in live game state, so round here
+  // before clients serialize the shared summary for submission.
+  return {
+    money: roundLeaderboardMetric(metrics.money),
+    cumulativeRevenue: roundLeaderboardMetric(metrics.cumulativeRevenue),
+    totalServers: roundLeaderboardMetric(metrics.totalServers),
+    computeCapacity: roundLeaderboardMetric(metrics.computeCapacity),
+    memoryCapacity: roundLeaderboardMetric(metrics.memoryCapacity),
+    storageCapacity: roundLeaderboardMetric(metrics.storageCapacity),
+    gpuCapacity: roundLeaderboardMetric(metrics.gpuCapacity),
+  };
+}
+
+function roundLeaderboardMetric(value: number): number {
+  return Math.round(value);
 }

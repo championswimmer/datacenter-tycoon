@@ -84,18 +84,20 @@ describe("App start flow", () => {
     render(<App />);
 
     expect(screen.getByRole("button", { name: "Play" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "View Leaderboard" })).toBeTruthy();
     expect(screen.getByLabelText("Leaderboard name")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Load Game" })).toBeNull();
     expect(screen.getByRole("radio", { name: "HARD" }).getAttribute("aria-checked")).toBe("true");
   });
 
-  it("shows Load Game and New Game when a save exists", () => {
+  it("shows Load Game, New Game, and View Leaderboard when a save exists", () => {
     persistMocks.latestSave = savedGameInfo;
 
     render(<App />);
 
     expect(screen.getByRole("button", { name: "Load Game" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "New Game" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "View Leaderboard" })).toBeTruthy();
     expect(screen.getByDisplayValue("Acme Cloud")).toBeTruthy();
   });
 
@@ -293,6 +295,77 @@ describe("App start flow", () => {
         playerName: "Cloud Atlas",
       });
     });
+  });
+
+  it("opens the start-screen leaderboard dialog and renders fetched entries", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({
+        metric: "money",
+        period: "all-time",
+        limit: 10,
+        entries: [
+          {
+            rank: 1,
+            playerId: CLOUD_ATLAS_PLAYER_ID,
+            username: "Cloud Atlas",
+            metric: "money",
+            value: 2_400_000,
+            submittedAt: "2026-05-18T12:00:00.000Z",
+            gameMonth: 18,
+            metrics: {
+              money: 2_400_000,
+              cumulativeRevenue: 900_000,
+              totalServers: 12,
+              computeCapacity: 640,
+              memoryCapacity: 1024,
+              storageCapacity: 256,
+              gpuCapacity: 32,
+            },
+          },
+        ],
+      }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "View Leaderboard" }));
+
+    expect(await screen.findByRole("dialog", { name: "Cash Leaderboard" })).toBeTruthy();
+    expect(await screen.findByText("Cloud Atlas")).toBeTruthy();
+    expect(screen.getByText("$2,400,000")).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.dctycoon.test/leaderboard?metric=money&period=all-time&limit=10",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Close leaderboard" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Cash Leaderboard" })).toBeNull();
+    });
+  });
+
+  it("shows leaderboard query errors inside the start-screen dialog", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({
+        error: {
+          code: "LEADERBOARD_UNAVAILABLE",
+          message: "Online leaderboard submission is not configured.",
+        },
+      }), {
+        status: 503,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "View Leaderboard" }));
+
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "Online leaderboard submission is not configured.",
+    );
+    expect(screen.getByRole("button", { name: "Retry" })).toBeTruthy();
   });
 
   it("submits a shared leaderboard snapshot once gameplay has progressed", async () => {
