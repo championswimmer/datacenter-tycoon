@@ -189,6 +189,23 @@ function formatMetricValue(metric: LeaderboardQueryMetric, value: number): strin
   return numberFormatter.format(value);
 }
 
+function formatElapsedDuration(totalMonths: number): string {
+  const months = Math.max(0, Math.floor(totalMonths));
+  const years = Math.floor(months / 12);
+  const remainingMonths = months % 12;
+  const parts: string[] = [];
+
+  if (years > 0) {
+    parts.push(`${numberFormatter.format(years)} year${years === 1 ? "" : "s"}`);
+  }
+
+  if (remainingMonths > 0 || parts.length === 0) {
+    parts.push(`${numberFormatter.format(remainingMonths)} month${remainingMonths === 1 ? "" : "s"}`);
+  }
+
+  return parts.join(" ");
+}
+
 function getLeaderboardEntryDetails(
   metric: LeaderboardQueryMetric,
   entry: LeaderboardListResult["entries"][number],
@@ -205,7 +222,7 @@ function getLeaderboardEntryDetails(
   if (metric === "cumulativeRevenue") {
     return [
       { label: "Cash", value: currencyFormatter.format(entry.metrics.money) },
-      { label: "Played Through", value: `Month ${numberFormatter.format(entry.gameMonth)}` },
+      { label: "Played Through", value: formatElapsedDuration(entry.gameMonth) },
       { label: "Servers", value: numberFormatter.format(entry.metrics.totalServers) },
     ];
   }
