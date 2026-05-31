@@ -8,7 +8,8 @@ The web app resolves its online API target like this:
 
 1. `VITE_API_BASE_URL` when it is explicitly set.
 2. Otherwise `http://localhost:3000` during Vite development.
-3. Otherwise no online API target in non-development builds, which keeps local/offline play available as a rollback path.
+3. Otherwise the checked-in production default from `packages/web/.env.production` (`https://dctycoon-api-production.up.railway.app`) for production builds in this repo.
+4. Otherwise no online API target in non-development builds, which keeps local/offline play available as a rollback path.
 
 Typical local flow:
 
@@ -26,13 +27,24 @@ npm run dev:online
 
 ## Production and staging
 
-Set `VITE_API_BASE_URL` explicitly in the deployment environment so the built frontend points at the real backend origin:
+Production builds from this repository now default to the live Railway backend:
 
 ```bash
-VITE_API_BASE_URL=https://api.datacenter-tycoon.example npm run build:web
+npm run build:web
+# resolves to https://dctycoon-api-production.up.railway.app via packages/web/.env.production
 ```
 
-If you intentionally omit `VITE_API_BASE_URL`, the web client keeps online registration and leaderboard submission disabled while local gameplay still works.
+Override `VITE_API_BASE_URL` only if you need a different staging/production backend:
+
+```bash
+VITE_API_BASE_URL=https://your-other-api.example npm run build:web
+```
+
+If you intentionally want an offline/local-only production build, override the value with an empty string at build time:
+
+```bash
+VITE_API_BASE_URL= npm run build:web
+```
 
 ## Verification
 

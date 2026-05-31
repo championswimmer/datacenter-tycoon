@@ -61,7 +61,7 @@ What each package expects:
 
 - `npm run dev:server` starts the Bun + Elysia backend and defaults to file-backed PGlite.
 - `npm run dev:web` targets `http://localhost:3000` automatically in development when `VITE_API_BASE_URL` is omitted.
-- `VITE_API_BASE_URL` should be set explicitly for staging/production web deployments so the built frontend points at the real API.
+- Production web builds from this repo now default to `https://dctycoon-api-production.up.railway.app` via `packages/web/.env.production`; override `VITE_API_BASE_URL` only when you need a different backend or intentionally want an offline build.
 - `dct online login --username <name> --server http://localhost:3000` registers a CLI identity against the same local backend, and subsequent mutating CLI commands can auto-sync leaderboard summaries.
 
 Deployment notes, environment variables, Railway setup, and the release checklist are documented in [`packages/server/README.md`](./packages/server/README.md).

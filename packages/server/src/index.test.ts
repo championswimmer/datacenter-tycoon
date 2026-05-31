@@ -76,6 +76,20 @@ test("loadServerConfig prefers Postgres when DATABASE_URL is present", () => {
   assert.equal(config.databaseUrl, "postgres://127.0.0.1:5432/datacenter_tycoon");
 });
 
+test("loadServerConfig always includes the first-party production web origin", () => {
+  const config = loadServerConfig({
+    NODE_ENV: "production",
+    PORT: "3000",
+    CORS_ALLOWED_ORIGINS: "https://dctycoon-api-production.up.railway.app",
+    DATABASE_URL: "postgres://127.0.0.1:5432/datacenter_tycoon",
+  });
+
+  assert.deepEqual(config.corsAllowedOrigins, [
+    "https://dctycoon-api-production.up.railway.app",
+    "https://dctycoon.arnav.tech",
+  ]);
+});
+
 test("loadServerConfig rejects invalid rate-limit configuration", () => {
   assert.throws(
     () =>

@@ -34,6 +34,9 @@ export interface ServerDatabaseRuntimeInfo {
   configured: boolean;
 }
 
+export const DEFAULT_DEV_CORS_ALLOWED_ORIGINS = ["http://localhost:5173"] as const;
+export const FIRST_PARTY_PRODUCTION_CORS_ALLOWED_ORIGINS = ["https://dctycoon.arnav.tech"] as const;
+
 export class ConfigError extends Error {
   readonly code = "CONFIG_ERROR";
 
@@ -149,6 +152,15 @@ function parseCorsAllowedOrigins(
     .filter(Boolean);
 
   if (origins && origins.length > 0) {
+    if (environment === "production") {
+      return [
+        ...new Set([
+          ...origins,
+          ...FIRST_PARTY_PRODUCTION_CORS_ALLOWED_ORIGINS,
+        ]),
+      ];
+    }
+
     return [...new Set(origins)];
   }
 
@@ -156,7 +168,7 @@ function parseCorsAllowedOrigins(
     throw new ConfigError("CORS_ALLOWED_ORIGINS is required in production.");
   }
 
-  return ["http://localhost:5173"];
+  return [...DEFAULT_DEV_CORS_ALLOWED_ORIGINS];
 }
 
 function parseDatabaseConfig(

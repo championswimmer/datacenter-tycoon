@@ -101,7 +101,7 @@ Configure the API service variables before the first production deploy:
 ```bash
 railway variable set --service dctycoon-api NODE_ENV=production
 railway variable set --service dctycoon-api 'DATABASE_URL=${{Postgres.DATABASE_URL}}'
-railway variable set --service dctycoon-api 'CORS_ALLOWED_ORIGINS=https://your-frontend.example'
+railway variable set --service dctycoon-api 'CORS_ALLOWED_ORIGINS=https://dctycoon.arnav.tech,https://dctycoon-api-production.up.railway.app'
 ```
 
 Use the Railway Postgres service's private `DATABASE_URL` reference (`${{Postgres.DATABASE_URL}}`, or `${{<postgres-service-name>.DATABASE_URL}}` if the database service is named differently). Do **not** wire `DATABASE_PUBLIC_URL` or another public proxy URL into the server service; API-to-database traffic should stay on Railway's private network.
@@ -126,9 +126,12 @@ Current production Railway details:
 - API service: `dctycoon-api` (`00549536-b2e0-49f8-888b-3ffc66275920`)
 - Database service: `Postgres` (`4659293a-0f78-4a4d-af42-addb4c0ab33d`)
 - Public API URL: `https://dctycoon-api-production.up.railway.app`
+- Web production origin: `https://dctycoon.arnav.tech`
 - Healthcheck: `GET /healthz`
 - Runtime: Dockerfile final image `oven/bun:1.3.14`; Railway pre-deploy/start commands run `bun` against compiled server files.
 - Database URL: `DATABASE_URL` is set from the private Railway Postgres URL (`postgres.railway.internal`), not a public proxy URL.
+- Required CORS config: `CORS_ALLOWED_ORIGINS=https://dctycoon.arnav.tech,https://dctycoon-api-production.up.railway.app`
+- Runtime note: production config now always unions the first-party web origin `https://dctycoon.arnav.tech` into the allowed-origin list even when the environment variable only names the API origin.
 
 Autodeploy should be configured manually in Railway by connecting the `dctycoon-api` service to the GitHub repository. Keep the Railway build context/root at the repository root so the Dockerfile can access workspace manifests, `packages/server`, and `packages/game-logic`. Configure Railway watch paths so unrelated package-only changes do not redeploy the API; include at least `packages/server/**`, `packages/game-logic/**`, `package.json`, `package-lock.json`, `tsconfig.json`, `Dockerfile`, `.dockerignore`, and `railway.toml`.
 

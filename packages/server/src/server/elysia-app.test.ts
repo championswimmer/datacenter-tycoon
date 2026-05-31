@@ -42,6 +42,35 @@ test("createElysiaServerApp adds CORS for configured origins", async () => {
   assert.equal(response.headers.get("access-control-allow-origin"), "http://localhost:5173");
 });
 
+test("createElysiaServerApp allows the first-party production web origin when configured origins omit it", async () => {
+  const app = createElysiaServerApp({
+    context: {
+      ...createDependencies(),
+      config: loadServerConfig({
+        NODE_ENV: "production",
+        PORT: "3000",
+        HOST: "127.0.0.1",
+        CORS_ALLOWED_ORIGINS: "https://dctycoon-api-production.up.railway.app",
+        DATABASE_URL: "postgres://127.0.0.1:5432/datacenter_tycoon",
+        SERVER_VERSION: "9.9.9-test",
+      }),
+    },
+    register: (elysia) => elysia.get("/probe", () => ({ ok: true })),
+  });
+
+  const response = await app.handle(
+    new Request("http://localhost/probe", {
+      headers: {
+        origin: "https://dctycoon.arnav.tech",
+      },
+    }),
+  );
+
+  assert.equal(response.status, 200);
+  assertJson(response);
+  assert.equal(response.headers.get("access-control-allow-origin"), "https://dctycoon.arnav.tech");
+});
+
 test("createElysiaServerApp maps NOT_FOUND responses into the existing JSON error envelope", async () => {
   const app = createElysiaServerApp({
     context: createDependencies(),
