@@ -64,7 +64,7 @@ export class DrizzlePlayersRepository implements PlayersRepository {
       .returning();
 
     if (!inserted[0]) {
-      throw new UsernameUnavailableError(`Username is already taken: ${parsed.username}`);
+      throw new UsernameUnavailableError();
     }
 
     return mapPlayerRow(inserted[0]);

@@ -56,12 +56,12 @@ test("POST /players registers a username and returns the new player identity", a
   assert.match(json?.playerId ?? "", /^player_[a-f0-9]{32}$/);
 });
 
-test("POST /players rejects duplicate usernames with a stable error code", async () => {
+test("POST /players rejects duplicate usernames after case and whitespace normalization", async () => {
   const { app } = createTestApp();
 
   await apiRequest(app, "/players", {
     method: "POST",
-    body: JSON.stringify({ username: "Acme Cloud" }),
+    body: JSON.stringify({ username: "John Doe123" }),
     headers: { "content-type": "application/json" },
   });
 
@@ -69,12 +69,13 @@ test("POST /players rejects duplicate usernames with a stable error code", async
     error: { code: string; message: string };
   }>(app, "/players", {
     method: "POST",
-    body: JSON.stringify({ username: "acme cloud" }),
+    body: JSON.stringify({ username: "  john   doe123  " }),
     headers: { "content-type": "application/json" },
   });
 
   assert.equal(response.status, 409);
   assert.equal(json?.error.code, "USERNAME_UNAVAILABLE");
+  assert.match(json?.error.message ?? "", /choose another one/i);
 });
 
 test("POST /players rejects invalid usernames", async () => {
