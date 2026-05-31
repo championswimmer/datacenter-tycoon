@@ -23,7 +23,7 @@ owner: game-logic/web
 - [ ] **Phase 3 — Global finances screen with charts**
   - [x] 3.1 Add a global `#/finances` route and navigation entry next to regions/contracts/datacenters
   - [x] 3.2 Build the finances page summary cards and month table
-  - [ ] 3.3 Add an SVG cash-history line chart
+  - [x] 3.3 Add an SVG cash-history line chart
   - [ ] 3.4 Add an SVG monthly revenue/OpEx/net bar chart
   - [ ] 3.5 Add responsive styles and web tests for the finances page
 - [ ] **Phase 4 — Contract history cleanup**
