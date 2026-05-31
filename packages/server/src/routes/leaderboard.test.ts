@@ -1,9 +1,14 @@
 import assert from "node:assert/strict";
 import { newGame, summarizeLeaderboardFromState } from "@datacenter-tycoon/game-logic";
 import { test } from "bun:test";
+import type { ServerConfig } from "../config.js";
+import {
+  InMemoryFixedWindowRateLimiter,
+  type RateLimiter,
+  type RateLimitRule,
+} from "../rate-limit/fixed-window.js";
 import type { RegisterPlayerInput } from "../players/repository.js";
 import { InMemoryPlayersRepository, type PlayersRepository } from "../players/repository.js";
-import type { RateLimiter, RateLimitRule } from "../rate-limit/fixed-window.js";
 import {
   InMemoryLeaderboardRepository,
   type LeaderboardRepository,
@@ -21,11 +26,20 @@ async function registerPlayer(app: ReturnType<typeof createTestApp>["app"]) {
 }
 
 function createLeaderboardApp(options?: {
+  config?: Partial<ServerConfig>;
   players?: PlayersRepository;
   leaderboard?: LeaderboardRepository;
   rateLimiter?: RateLimiter;
 }) {
   return createTestApp({
+    config: {
+      rateLimits: {
+        backendGlobal: { windowMs: 1_000, maxRequests: 100 },
+        playerRegistration: { windowMs: 60_000, maxRequests: 100 },
+        leaderboardSubmission: { windowMs: 1_000, maxRequests: 100 },
+      },
+      ...options?.config,
+    },
     services: {
       players: options?.players ?? new InMemoryPlayersRepository(),
       leaderboard: options?.leaderboard ?? new InMemoryLeaderboardRepository(),
@@ -515,6 +529,87 @@ test("POST /leaderboard/runs rate-limits repeated submissions from the same clie
   assert.equal(response.status, 429);
   assert.equal(json?.error.code, "RATE_LIMITED");
   assert.match(json?.error.message ?? "", /Retry after 15 seconds/);
+});
+
+test("POST /leaderboard/runs allows one submission per second for the same client IP", async () => {
+  const { app } = createLeaderboardApp({
+    config: {
+      rateLimits: {
+        backendGlobal: { windowMs: 1_000, maxRequests: 100 },
+        playerRegistration: { windowMs: 60_000, maxRequests: 100 },
+        leaderboardSubmission: { windowMs: 1_000, maxRequests: 1 },
+      },
+    },
+    rateLimiter: new InMemoryFixedWindowRateLimiter(),
+  });
+  const player = await registerPlayer(app);
+  const requestHeaders = {
+    "content-type": "application/json",
+    "x-forwarded-for": "198.51.100.24",
+  };
+  const first = await apiRequest<{ created: boolean }>(app, "/leaderboard/runs", {
+    method: "POST",
+    headers: requestHeaders,
+    body: JSON.stringify({
+      playerId: player?.playerId,
+      clientRunId: "run-fast-1",
+      metrics: {
+        money: 1,
+        cumulativeRevenue: 1,
+        totalServers: 1,
+        computeCapacity: 1,
+        memoryCapacity: 1,
+        storageCapacity: 1,
+        gpuCapacity: 1,
+      },
+      gameMonth: 1,
+    }),
+  });
+  const second = await apiRequest<{ error: { code: string; message: string } }>(app, "/leaderboard/runs", {
+    method: "POST",
+    headers: requestHeaders,
+    body: JSON.stringify({
+      playerId: player?.playerId,
+      clientRunId: "run-fast-2",
+      metrics: {
+        money: 2,
+        cumulativeRevenue: 2,
+        totalServers: 2,
+        computeCapacity: 2,
+        memoryCapacity: 2,
+        storageCapacity: 2,
+        gpuCapacity: 2,
+      },
+      gameMonth: 2,
+    }),
+  });
+  const third = await apiRequest<{ created: boolean }>(app, "/leaderboard/runs", {
+    method: "POST",
+    headers: {
+      ...requestHeaders,
+      "x-forwarded-for": "198.51.100.25",
+    },
+    body: JSON.stringify({
+      playerId: player?.playerId,
+      clientRunId: "run-fast-3",
+      metrics: {
+        money: 3,
+        cumulativeRevenue: 3,
+        totalServers: 3,
+        computeCapacity: 3,
+        memoryCapacity: 3,
+        storageCapacity: 3,
+        gpuCapacity: 3,
+      },
+      gameMonth: 3,
+    }),
+  });
+
+  assert.equal(first.response.status, 201);
+  assert.equal(second.response.status, 429);
+  assert.equal(second.json?.error.code, "RATE_LIMITED");
+  assert.match(second.json?.error.message ?? "", /leaderboard submissions/i);
+  assert.equal(third.response.status, 201);
 });
 
 test("service-level register input types remain usable in fake repositories", async () => {

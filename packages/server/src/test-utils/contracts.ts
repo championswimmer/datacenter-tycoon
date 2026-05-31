@@ -10,19 +10,19 @@ export const frozenEndpointContracts = {
     method: "GET",
     path: "/healthz",
     successStatus: 200,
-    errorCodes: [],
+    errorCodes: ["RATE_LIMITED"],
   },
   version: {
     method: "GET",
     path: "/version",
     successStatus: 200,
-    errorCodes: [],
+    errorCodes: ["RATE_LIMITED"],
   },
   playerAvailability: {
     method: "GET",
     path: "/players/availability",
     successStatus: 200,
-    errorCodes: ["INVALID_USERNAME", "PLAYERS_UNAVAILABLE"],
+    errorCodes: ["INVALID_USERNAME", "PLAYERS_UNAVAILABLE", "RATE_LIMITED"],
   },
   registerPlayer: {
     method: "POST",
@@ -41,7 +41,7 @@ export const frozenEndpointContracts = {
     method: "GET",
     path: "/leaderboard",
     successStatus: 200,
-    errorCodes: ["INVALID_LEADERBOARD_QUERY", "LEADERBOARD_UNAVAILABLE"],
+    errorCodes: ["INVALID_LEADERBOARD_QUERY", "LEADERBOARD_UNAVAILABLE", "RATE_LIMITED"],
   },
   submitLeaderboardRun: {
     method: "POST",
@@ -62,9 +62,9 @@ export const frozenEndpointContracts = {
 export const stableTransportContractDetails = [
   "HTTP methods and paths for /healthz, /version, /players/availability, /players, /leaderboard, and /leaderboard/runs.",
   "Success and error status codes plus stable JSON envelope shapes for the public endpoints, including runtime/framework/database metadata on /healthz.",
-  "Stable machine-readable error codes such as INVALID_JSON, INVALID_USERNAME, USERNAME_UNAVAILABLE, PLAYER_NOT_FOUND, INVALID_LEADERBOARD_QUERY, INVALID_LEADERBOARD_SUBMISSION, NON_MONOTONIC_RUN_UPDATE, RATE_LIMITED, and INTERNAL_SERVER_ERROR.",
+  "Stable machine-readable error codes such as INVALID_JSON, INVALID_USERNAME, USERNAME_UNAVAILABLE, PLAYER_NOT_FOUND, INVALID_LEADERBOARD_QUERY, INVALID_LEADERBOARD_SUBMISSION, NON_MONOTONIC_RUN_UPDATE, RATE_LIMITED, and INTERNAL_SERVER_ERROR across both global and route-level throttles.",
   "JSON content type responses plus the current Elysia CORS metadata behavior (no echoed origin without an Origin request header, but access-control-allow-credentials remains present) / Retry-After headers.",
-  "Rate-limited requests returning status 429 with a RATE_LIMITED error body whose message embeds the retry-after seconds.",
+  "Rate-limited requests returning status 429 with a RATE_LIMITED error body whose message embeds the retry-after seconds, whether triggered by the backend-global throttle or a route-level throttle.",
 ] as const;
 
 export const internalImplementationDetailsFreeToChange = [

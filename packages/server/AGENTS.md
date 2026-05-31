@@ -17,6 +17,7 @@ It does **not** yet host multiplayer sessions, password auth, cross-device accou
 
 - Reuse `@datacenter-tycoon/game-logic` for shared gameplay-derived summaries and validation contracts — never re-implement scoring rules in routes.
 - Keep transport (HTTP) thin. Route files should parse requests, call services, and serialize responses; business rules belong in `src/players/`, `src/leaderboard/`, or `game-logic`.
+- Global cross-cutting transport concerns such as whole-backend rate limiting belong in Elysia app lifecycle hooks (`src/server/elysia-app.ts`), while endpoint-specific throttles can stay as small transport guards near the affected route.
 - Treat all client input as untrusted. Validate usernames, query params, payload shapes, and leaderboard metrics before touching persistence.
 - Prefer adding or extending repository/service interfaces over embedding SQL or storage branching directly in route handlers.
 - Keep transport (Elysia routes/hooks) thin. Business rules stay in services/repositories, not in route callbacks.
@@ -49,7 +50,7 @@ It does **not** yet host multiplayer sessions, password auth, cross-device accou
   - Submission/query types, validation, ranking queries, service orchestration, and repository implementations.
   - Includes idempotent run upserts and monotonic-update checks for repeated submissions.
 - `src/rate-limit/`
-  - In-memory fixed-window rate limiter used to throttle player registration and leaderboard submissions.
+  - In-memory fixed-window rate limiter used to throttle backend-wide request volume plus player registration and leaderboard submissions.
 - `src/db/`
   - Drizzle schema/client/database factories, migration loader/workflow, and migration verification scripts.
 - `src/test-utils/`
@@ -146,8 +147,9 @@ Important variables:
 - `DATABASE_URL` — required in production, optional in local dev
 - `PGLITE_DATA_DIR` — optional local data path, defaults to `.data/pglite` in development
 - `SERVER_VERSION` — optional version override
+- `BACKEND_RATE_LIMIT_*` — optional backend-wide request throttling (defaults to 10 req/sec)
 - `PLAYER_REGISTRATION_RATE_LIMIT_*` — optional registration throttling
-- `LEADERBOARD_SUBMISSION_RATE_LIMIT_*` — optional submission throttling
+- `LEADERBOARD_SUBMISSION_RATE_LIMIT_*` — optional submission throttling (defaults to 1 req/sec per client IP)
 
 ### 2. Migrate the local database
 
