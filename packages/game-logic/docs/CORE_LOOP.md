@@ -42,7 +42,7 @@ flowchart TD
     J --> K[Apply tax]
     K --> L[Finalize completed or auto-cancelled contracts]
     L --> M[Update player reliability]
-    M --> N[Append ledger entries]
+    M --> N[Append ledger entries and finance snapshot]
     N --> O[Refresh contract market]
     O --> P[Return state tick=N+1 subtick=0]
 ```
@@ -143,14 +143,23 @@ The reliability system consumes the `outcomes` produced by `tickRevenue()`:
 
 Reliability is updated before market refresh, so the same month’s SLA results immediately affect future offers.
 
-### 7. Append ledger entries and apply net cash delta
+### 7. Append ledger entries, apply net cash delta, and record a finance snapshot
 
 Monthly settlement appends ledger entries in stable order:
 
 1. `opex`
 2. either `revenue` or `penalty`
 
-Daily subticks do **not** append ledger entries.
+After cash is finalized for the closing month, settlement appends exactly one `financialHistory` snapshot containing:
+
+- closing cash
+- that month’s revenue / opex / penalty totals
+- capex spent since the previous snapshot
+- net operating result
+- net cash flow vs the previous snapshot
+- cumulative revenue through the new tick
+
+Daily subticks do **not** append ledger entries or finance snapshots.
 
 ### 8. Refresh the market and rebuild derived contract views
 
@@ -242,6 +251,7 @@ function settleMonthlyTick(state: GameState): GameState {
       player: { ...monthlyState.player, reliability },
       contracts: finalizedContracts,
       ledger: appendMonthlyLedgerEntries(...),
+      financialHistory: appendMonthlyFinancialSnapshot(...),
     }),
   );
 }

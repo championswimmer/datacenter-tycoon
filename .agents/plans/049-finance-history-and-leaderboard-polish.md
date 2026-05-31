@@ -1,7 +1,7 @@
 ---
 name: Finance History and Leaderboard Polish
 description: Add cumulative revenue visibility, persisted monthly finance history, a finances screen with charts, leaderboard duration formatting, and cleaner contract history.
-status: started
+status: completed
 created: 2026-05-31
 updated: 2026-05-31
 owner: game-logic/web
@@ -30,10 +30,10 @@ owner: game-logic/web
   - [x] 4.1 Add a game-logic query for player-accounted historical contracts that excludes unaccepted expired offers
   - [x] 4.2 Update web contract history selectors and UI footer copy to use the filtered history
   - [x] 4.3 Add regression tests proving market-expired offers are stored but hidden from the history screen
-- [ ] **Phase 5 — Validation and documentation pass**
-  - [ ] 5.1 Update public API/docs where new game-logic exports are introduced
-  - [ ] 5.2 Run targeted game-logic and web validation commands
-  - [ ] 5.3 Update this plan with completion notes
+- [x] **Phase 5 — Validation and documentation pass**
+  - [x] 5.1 Update public API/docs where new game-logic exports are introduced
+  - [x] 5.2 Run targeted game-logic and web validation commands
+  - [x] 5.3 Update this plan with completion notes
 
 ## Overview
 
@@ -299,3 +299,5 @@ Snapshot convention:
 ## Changelog
 
 - 2026-05-31 — created.
+- 2026-05-31 — completed implementation across game-logic and web: cumulative revenue HUD, year/month leaderboard durations, persisted monthly finance history with save migration, finances route/page/charts, and accounted contract-history filtering.
+- 2026-05-31 — validation passed: `npm run test -w @datacenter-tycoon/game-logic`, `npm run typecheck -w @datacenter-tycoon/game-logic`, `npm run test -w @datacenter-tycoon/web`, `npm run typecheck -w @datacenter-tycoon/web`, and `npm run audit:query-boundary`.
