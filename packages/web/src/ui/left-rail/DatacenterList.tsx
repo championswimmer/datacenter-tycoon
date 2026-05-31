@@ -17,9 +17,10 @@ interface DatacenterListProps {
   currentRoute: Route;
   /** Called when the rail footer should open the regions screen. */
   onOpenRegions?: () => void;
+  onOpenFinances?: () => void;
 }
 
-export function DatacenterList({ currentRoute, onOpenRegions }: DatacenterListProps) {
+export function DatacenterList({ currentRoute, onOpenRegions, onOpenFinances }: DatacenterListProps) {
   const datacenters  = useSelector(selectAllDatacenters);
   const usageAggreg  = useSelector(selectResourceUsage);
   const infrastructureSummaries = useSelector((state) =>
@@ -34,6 +35,8 @@ export function DatacenterList({ currentRoute, onOpenRegions }: DatacenterListPr
   const selectedDcId = currentRoute.view === "dc" ? currentRoute.dcId : null;
 
   const openContracts = () => navigate({ view: "contracts" });
+  const isContractsRoute = currentRoute.view === "contracts";
+  const isFinancesRoute = currentRoute.view === "finances";
 
   const usageByDcId = useMemo(
     () => new Map(usageAggreg.perDc.map((entry) => [entry.dcId, entry])),
@@ -58,14 +61,24 @@ export function DatacenterList({ currentRoute, onOpenRegions }: DatacenterListPr
 
   return (
     <div className={styles.rail}>
-      <button
-        className={styles.contractsBtn}
-        onClick={openContracts}
-        title="Open contracts market"
-        aria-label="Open contracts market"
-      >
-        📋 CONTRACTS
-      </button>
+      <div className={styles.railActions}>
+        <button
+          className={[styles.railActionBtn, isContractsRoute ? styles.railActionBtnActive : ""].join(" ")}
+          onClick={openContracts}
+          title="Open contracts market"
+          aria-label="Open contracts market"
+        >
+          📋 CONTRACTS
+        </button>
+        <button
+          className={[styles.railActionBtn, isFinancesRoute ? styles.railActionBtnActive : ""].join(" ")}
+          onClick={onOpenFinances}
+          title="Open finances screen"
+          aria-label="Open finances screen"
+        >
+          💹 FINANCES
+        </button>
+      </div>
 
       <div className={styles.header}>
         <span className={styles.headerLabel}>DATACENTERS</span>
