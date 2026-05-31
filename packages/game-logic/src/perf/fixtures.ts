@@ -736,6 +736,7 @@ function buildBaseState(seed: number, profile: PerformanceFixtureProfile): GameS
 				reason: "Performance fixture seed checkpoint",
 			},
 		],
+		financialHistory: [],
 		audioEnabled: true,
 		audioSettings: {
 			master: true,

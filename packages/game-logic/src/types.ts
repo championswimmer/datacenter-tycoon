@@ -219,6 +219,18 @@ export interface LedgerEntry {
 	reason: string;
 }
 
+export interface FinancialSnapshot {
+	tick: Tick;
+	cash: Money;
+	revenue: Money;
+	opex: Money;
+	penalty: Money;
+	capex: Money;
+	netOperating: Money;
+	netCashFlow: Money;
+	cumulativeRevenue: Money;
+}
+
 export interface DatacenterResourceUsage {
 	powerKw: number;
 	heatOutputBtuPerHr: number;
@@ -341,6 +353,7 @@ export interface GameState {
 	/** @deprecated Use lifecycle selectors over `contracts`. This is a runtime compatibility view and is not required in newly serialized saves. */
 	activeContracts: Contract[];
 	ledger: LedgerEntry[];
+	financialHistory: FinancialSnapshot[];
 	audioEnabled: boolean;
 	audioSettings: AudioSettings;
 	map: MapState;
