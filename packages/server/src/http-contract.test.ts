@@ -158,7 +158,10 @@ test("POST /players preserves success and duplicate-username contracts", async (
   assert.equal(created.response.status, frozenEndpointContracts.registerPlayer.successStatus);
   assertJsonContentType(created.response);
   assert.equal(created.json?.username, "Acme Cloud");
-  assert.match(created.json?.playerId ?? "", /^player_[a-f0-9]{32}$/);
+  assert.match(
+    created.json?.playerId ?? "",
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+  );
 
   const duplicate = await apiRequest<{ error: { code: string; message: string } }>(app, "/players", {
     method: "POST",
