@@ -197,3 +197,5 @@ If stronger guarantees are needed later, the next step is to design deterministi
 ## Compatibility note for existing player ids
 
 The `players.id` column is stored as text and the API treats `playerId` as opaque. That means there is no migration requirement for older stored ids such as `player_<hex>` values: they remain valid in the database and on existing clients, while newly registered players now receive UUID strings.
+
+Mixed fleets are expected during rollout: existing browsers/CLI profiles may continue submitting with older ids, and new clients will submit UUIDs through the same `playerId` field. Do not add client-side regex validation that assumes only one id format.

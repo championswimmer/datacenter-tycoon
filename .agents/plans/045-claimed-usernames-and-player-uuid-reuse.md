@@ -1,7 +1,7 @@
 ---
 name: Claimed Usernames and Player UUID Reuse
 description: Tighten leaderboard identity so usernames are permanently claimed by normalized form and clients reuse a returned UUID for future submissions.
-status: started
+status: completed
 created: 2026-05-31
 updated: 2026-05-31
 owner: server
@@ -17,9 +17,9 @@ owner: server
   - [x] 2.1 Keep startup registration keyed off missing local identity and improve duplicate-name UX copy
   - [x] 2.2 Persist and reuse the returned UUID-backed identity from local storage for future leaderboard submissions
   - [x] 2.3 Update web tests for registration, conflict handling, and reuse flow
-- [ ] **Phase 3 — Documentation and compatibility notes**
+- [x] **Phase 3 — Documentation and compatibility notes**
   - [x] 3.1 Document claimed-username behavior and UUID reuse in server/web docs
-  - [ ] 3.2 Record compatibility expectations for existing stored ids and database rows
+  - [x] 3.2 Record compatibility expectations for existing stored ids and database rows
 
 ## Overview
 
@@ -161,3 +161,4 @@ interface PlayerRegistrationResponse {
 - 2026-05-31 — Completed step 2.2 by hardening local identity persistence around trimmed non-empty opaque `playerId` strings and continuing to reuse the stored identity for future run submissions.
 - 2026-05-31 — Completed step 2.3 by updating web fixtures to UUID-style player ids, adding explicit claimed-name conflict coverage, and expanding local identity persistence tests.
 - 2026-05-31 — Completed step 3.1 by documenting normalized username claiming, reusable UUID-backed `playerId` registration, and browser-local identity reuse conventions in the server/web docs.
+- 2026-05-31 — Completed step 3.2 by documenting mixed old/new `playerId` format compatibility and the lack of any schema migration requirement for existing player rows.
