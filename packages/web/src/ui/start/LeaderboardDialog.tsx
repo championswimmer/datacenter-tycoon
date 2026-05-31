@@ -104,22 +104,24 @@ export function LeaderboardDialog({
         </header>
 
         <div className={styles.tabBar}>
-          <div className={styles.tabList} aria-label="Leaderboard metrics">
-            {START_SCREEN_LEADERBOARD_TABS.map((tab) => {
-              const isActive = tab.metric === activeMetric;
+          <div className={styles.tabScroller}>
+            <div className={styles.tabList} aria-label="Leaderboard metrics">
+              {START_SCREEN_LEADERBOARD_TABS.map((tab) => {
+                const isActive = tab.metric === activeMetric;
 
-              return (
-                <button
-                  key={tab.metric}
-                  type="button"
-                  className={[styles.tabButton, isActive ? styles.tabButtonActive : ""].join(" ")}
-                  aria-pressed={isActive}
-                  onClick={() => onSelectMetric(tab.metric)}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={tab.metric}
+                    type="button"
+                    className={[styles.tabButton, isActive ? styles.tabButtonActive : ""].join(" ")}
+                    aria-pressed={isActive}
+                    onClick={() => onSelectMetric(tab.metric)}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
