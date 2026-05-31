@@ -134,8 +134,9 @@ export function StartScreen({
               placeholder="Acme Cloud"
             />
             <p className={styles.identityHint}>
-              Pick a display name for this browser before your first run. If the backend is down,
-              you can still keep playing locally.
+              Pick a unique display name for this browser before your first run. Once claimed,
+              nobody else can use that leaderboard name. If the backend is down, you can still
+              keep playing locally.
             </p>
           </div>
         )}
