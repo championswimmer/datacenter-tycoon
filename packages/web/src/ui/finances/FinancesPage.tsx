@@ -6,6 +6,7 @@ import {
 } from "../../store/selectors.js";
 import { formatGameDateShort, tickToGameDate } from "../../store/gameTime.js";
 import { CashHistoryChart } from "./CashHistoryChart.js";
+import { MonthlyPnlChart } from "./MonthlyPnlChart.js";
 import styles from "./FinancesPage.module.css";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -66,6 +67,7 @@ export function FinancesPage() {
 
       <div className={styles.chartGrid}>
         <CashHistoryChart snapshots={financialHistory} />
+        <MonthlyPnlChart snapshots={financialHistory} />
       </div>
 
       <section className={styles.section}>
