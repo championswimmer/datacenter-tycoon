@@ -7,6 +7,7 @@ import { DAYS_PER_TICK } from "../balance/maintenance.js";
 import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
 import { tickOpex } from "../economy/opex.js";
 import { withDerivedContractViews } from "../contracts/lifecycle.js";
+import { createBaselineFinancialSnapshot } from "../state/financial-history.js";
 import { advanceSubtick } from "./subtick.js";
 import { tick } from "./tick.js";
 import type {
@@ -112,6 +113,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
 		contractMarket: [],
 		activeContracts: [],
 		ledger: [],
+		financialHistory: [createBaselineFinancialSnapshot(500_000, tickValue(0))],
 		audioEnabled: true,
 		audioSettings: { master: true, music: true, sfx: true, money: true, ambient: true },
 		map: { regions: [TEST_REGION] },

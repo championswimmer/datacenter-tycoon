@@ -1,9 +1,10 @@
 import { contractsFromState, stripDerivedContractViews, withDerivedContractViews } from "../contracts/lifecycle.js";
 import { withContractSlaDefaults } from "../contracts/sla.js";
 import { createEmptyRegionFabric } from "../entities/fabric.js";
+import { backfillFinancialHistoryFromLedger } from "../state/financial-history.js";
 import type { GameState, PersistedGameState, Subtick } from "../types.js";
 
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 14;
 
 export interface SaveEnvelope<TState = PersistedGameState> {
 	saveVersion: number;
@@ -12,6 +13,7 @@ export interface SaveEnvelope<TState = PersistedGameState> {
 
 type LegacyPersistedGameState = PersistedGameState & {
 	subtick?: Subtick;
+	financialHistory?: PersistedGameState["financialHistory"];
 };
 
 function isSaveEnvelope(value: unknown): value is SaveEnvelope<LegacyPersistedGameState> {
@@ -56,6 +58,16 @@ function attachContractSlaDefaults(state: PersistedGameState): PersistedGameStat
 	};
 }
 
+function attachFinancialHistory(state: LegacyPersistedGameState): PersistedGameState {
+	return {
+		...state,
+		financialHistory:
+			state.financialHistory && state.financialHistory.length > 0
+				? state.financialHistory
+				: backfillFinancialHistoryFromLedger(state),
+	};
+}
+
 function rehydrateDerivedContractViews(state: PersistedGameState): GameState {
 	return withDerivedContractViews({
 		...state,
@@ -65,13 +77,20 @@ function rehydrateDerivedContractViews(state: PersistedGameState): GameState {
 }
 
 function attachModernDefaults(state: LegacyPersistedGameState): GameState {
-	return rehydrateDerivedContractViews(attachContractSlaDefaults(attachInitialSubtick(state)));
+	return rehydrateDerivedContractViews(attachContractSlaDefaults(attachFinancialHistory(attachInitialSubtick(state))));
 }
 
 export function migrate(envelope: SaveEnvelope<LegacyPersistedGameState>): SaveEnvelope<GameState> {
 	if (envelope.saveVersion === SAVE_VERSION) {
 		return {
 			...envelope,
+			state: attachModernDefaults(envelope.state),
+		};
+	}
+
+	if (envelope.saveVersion === 13) {
+		return {
+			saveVersion: SAVE_VERSION,
 			state: attachModernDefaults(envelope.state),
 		};
 	}
