@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef, type SetStateAction } from "react";
 import { useSelector, useTickDriver, useGameDispatch } from "../../store/storeContext.js";
 import { selectAllDatacenters } from "../../store/selectors.js";
-import { useRoute, navigate, navigateToDc, navigateToMap } from "../../router/hashRouter.js";
+import { useRoute, navigate, navigateToDc, navigateToFinances, navigateToMap } from "../../router/hashRouter.js";
 import type { Speed } from "../../store/tickDriver.js";
 import { hasSeenTutorial } from "../../store/tutorialPersist.js";
 import { useIsPhoneViewport } from "../responsive.js";
@@ -13,6 +13,7 @@ import { LogFeed } from "../log/LogFeed.js";
 import { ContractsPage } from "../contracts/ContractsPage.js";
 import { TutorialModal } from "../help/TutorialModal.js";
 import { MapView } from "../map/MapView.js";
+import { FinancesPage } from "../finances/FinancesPage.js";
 import styles from "./Shell.module.css";
 
 interface ShellProps {
@@ -123,6 +124,7 @@ export function Shell({ shouldAutoOpenTutorial = false }: ShellProps) {
   const openTutorial    = useCallback(() => setShowTutorial(true),   []);
   const closeTutorial   = useCallback(() => setShowTutorial(false),  []);
   const openMap         = useCallback(() => navigateToMap(),         []);
+  const openFinances    = useCallback(() => navigateToFinances(),    []);
 
   return (
     <div className={styles.shell}>
@@ -145,6 +147,7 @@ export function Shell({ shouldAutoOpenTutorial = false }: ShellProps) {
             <DatacenterList
               currentRoute={route}
               onOpenRegions={openMap}
+              onOpenFinances={openFinances}
             />
           </nav>
         )}
@@ -240,6 +243,9 @@ function MainContent({ route, datacenters, onNewDatacenter }: MainContentProps) 
 
     case "map":
       return <MapView />;
+
+    case "finances":
+      return <FinancesPage />;
 
     case "log":
       return <GlobalPlaceholder icon="📜" title="Full Event Log" phase="Phase 9" />;
