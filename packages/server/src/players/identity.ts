@@ -66,7 +66,7 @@ export function normalizeUsername(rawUsername: string): string {
 }
 
 export function generatePlayerId(): string {
-  return `player_${crypto.randomUUID().replaceAll("-", "")}`;
+  return crypto.randomUUID();
 }
 
 export function createRegisteredPlayer(input: CreatePlayerInput): RegisteredPlayer {

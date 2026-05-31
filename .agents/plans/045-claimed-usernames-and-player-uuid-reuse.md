@@ -11,7 +11,7 @@ owner: server
 
 - [ ] **Phase 1 — Server identity contract tightening**
   - [x] 1.1 Preserve permanent normalized-username uniqueness with explicit conflict semantics
-  - [ ] 1.2 Switch generated player ids to UUIDs while keeping the existing `playerId` API field name
+  - [x] 1.2 Switch generated player ids to UUIDs while keeping the existing `playerId` API field name
   - [ ] 1.3 Update server tests and transport-contract expectations
 - [ ] **Phase 2 — Web startup registration and local identity reuse**
   - [ ] 2.1 Keep startup registration keyed off missing local identity and improve duplicate-name UX copy
@@ -155,3 +155,4 @@ interface PlayerRegistrationResponse {
 
 - 2026-05-31 — Created follow-up plan for claimed usernames and reusable player UUIDs.
 - 2026-05-31 — Completed step 1.1 by tightening duplicate-registration coverage around case/whitespace normalization and standardizing user-friendly conflict copy for claimed usernames.
+- 2026-05-31 — Completed step 1.2 by switching new player-id generation to plain UUIDs while preserving the existing `playerId` API field name and opaque-string treatment elsewhere.
