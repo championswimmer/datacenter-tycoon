@@ -74,7 +74,10 @@
 .tabBar {
   box-sizing: border-box;
   min-width: 0;
-  padding: calc(var(--space-4) + var(--space-1)) var(--space-6);
+  padding: calc(var(--space-4) + var(--space-2)) var(--space-6);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
   border-bottom: 1px solid rgba(138, 160, 200, 0.18);
   background: linear-gradient(180deg, rgba(10, 14, 22, 0.98), rgba(10, 14, 22, 0.94));
 }
@@ -90,12 +93,10 @@
 }
 
 .tabList {
-  display: flex;
+  display: inline-flex;
+  min-width: max-content;
   gap: var(--space-2);
-  overflow-x: auto;
-  padding: var(--space-1);
-  margin: calc(var(--space-1) * -1);
-  scrollbar-width: thin;
+  padding: var(--space-2);
 }
 
 .tabButton {
@@ -288,13 +289,13 @@
     padding-right: var(--space-4);
   }
 
+  .tabBar {
+    padding-top: calc(var(--space-4) + var(--space-1));
+    padding-bottom: calc(var(--space-4) + var(--space-1));
+  }
+
   .tabList {
-    margin-left: calc(var(--space-1) * -1);
-    margin-right: calc(var(--space-1) * -1);
-    padding-left: var(--space-1);
-    padding-right: var(--space-1);
-    padding-top: var(--space-1);
-    padding-bottom: var(--space-1);
+    padding: var(--space-1);
   }
 
   .entryRow {
