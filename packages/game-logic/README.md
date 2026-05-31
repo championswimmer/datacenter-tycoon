@@ -89,6 +89,11 @@ Consumer packages should prefer exported query helpers over reconstructing gamep
 - `selectOpenMarketContractsFromState(state)`
 - `selectLiveContractsFromState(state)`
 - `selectHistoricalContractsFromState(state)`
+- `selectAccountedHistoricalContractsFromState(state)`
+- `selectFinancialHistoryFromState(state)`
+- `selectLatestFinancialSnapshotFromState(state)`
+- `selectCumulativeRevenueFromState(state)`
+- `summarizeCumulativeRevenue(ledger)`
 - `selectLiveContractsForDatacenter(state, dcId)`
 - `summarizeContractAssignmentFit(state, contractId)`
 - `summarizeOpenMarketContractFits(state)`
@@ -181,7 +186,31 @@ interface ContractSlaOutcome {
 }
 ```
 
-The current save policy is **destructive on incompatible format changes**. Version `11` is the current save format and includes persisted `subtick` state plus contract SLA defaults. Version `10` saves migrate by attaching default SLA fields, versions `9` and `8` migrate by attaching `subtick: 0` plus other modern defaults, and version `7` still migrates forward by attaching empty regional fabric state before the newer defaults are applied. Older save versions are intentionally rejected and should be recreated.
+## Finance history
+
+`GameState` now persists a lightweight monthly finance series for charts and leaderboard-adjacent UI:
+
+```ts
+interface FinancialSnapshot {
+  tick: Tick;
+  cash: Money;
+  revenue: Money;
+  opex: Money;
+  penalty: Money;
+  capex: Money;
+  netOperating: Money;
+  netCashFlow: Money;
+  cumulativeRevenue: Money;
+}
+
+interface GameState {
+  financialHistory: FinancialSnapshot[];
+}
+```
+
+New games begin with a tick-0 baseline snapshot. Each month-end settlement appends one closing snapshot after ledger entries and cash are finalized. Consumers should prefer the exported finance query helpers over rebuilding cumulative revenue or monthly summaries from raw UI state.
+
+The current save policy is **destructive on incompatible format changes**. Version `14` is the current save format and includes persisted `financialHistory`, `subtick`, contract SLA defaults, and other modern compatibility fields. Version `13` saves migrate by backfilling finance history from the ledger, version `10` saves migrate by attaching default SLA fields, versions `9` and `8` migrate by attaching `subtick: 0` plus other modern defaults, and version `7` still migrates forward by attaching empty regional fabric state before the newer defaults are applied. Older save versions are intentionally rejected and should be recreated.
 
 ## Contract region affinity
 

@@ -79,6 +79,7 @@ describe("TopBar", () => {
     const base = newGame(42, { playerName: "Acme Corp" });
     const revenueState: GameState = {
       ...base,
+      financialHistory: [],
       ledger: [
         { id: "ledger-rev-1" as GameState["ledger"][number]["id"], tick: 0, type: "revenue", amount: 5_000, reason: "Contract Alpha" },
         { id: "ledger-opex-1" as GameState["ledger"][number]["id"], tick: 0, type: "opex", amount: -2_000, reason: "Operations" },

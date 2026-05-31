@@ -375,7 +375,7 @@ describe("App start flow", () => {
     expect(screen.getByText("Cash")).toBeTruthy();
     expect(screen.getByText("$2,400,000")).toBeTruthy();
     expect(screen.getByText("Played Through")).toBeTruthy();
-    expect(screen.getByText("Month 18")).toBeTruthy();
+    expect(screen.getByText("1 year 6 months")).toBeTruthy();
     expect(screen.getAllByText("Servers")).toHaveLength(2);
     expect(screen.getByText("12")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Cash" })).toBeNull();
