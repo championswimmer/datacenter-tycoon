@@ -4,6 +4,7 @@ import { withDerivedContractViews } from "../contracts/lifecycle.js";
 import { refreshContractMarket } from "../contracts/market.js";
 import { createEmptyRegionFabric } from "../entities/fabric.js";
 import { generateMap } from "../sim/mapgen.js";
+import { createBaselineFinancialSnapshot } from "./financial-history.js";
 import type { Difficulty, GameId, GameState, Money, PlayerId, Subtick, Tick } from "../types.js";
 
 export interface NewGameOptions {
@@ -67,7 +68,7 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 		contractMarket: [],
 		activeContracts: [],
 		ledger: [],
-		financialHistory: [],
+		financialHistory: [createBaselineFinancialSnapshot(startingCash, INITIAL_TICK)],
 		audioEnabled: true,
 		audioSettings: {
 			master: true,
