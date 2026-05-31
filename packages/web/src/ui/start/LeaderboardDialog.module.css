@@ -15,6 +15,7 @@
 }
 
 .panel {
+  box-sizing: border-box;
   width: min(100%, 560px);
   max-height: min(80vh, 640px);
   display: grid;
@@ -71,15 +72,20 @@
 }
 
 .tabBar {
+  box-sizing: border-box;
+  min-width: 0;
   padding: var(--space-4) var(--space-6);
   border-bottom: 1px solid rgba(138, 160, 200, 0.18);
   background: linear-gradient(180deg, rgba(10, 14, 22, 0.98), rgba(10, 14, 22, 0.94));
 }
 
 .body {
+  box-sizing: border-box;
+  min-width: 0;
   display: grid;
   gap: var(--space-4);
   overflow-y: auto;
+  overflow-x: hidden;
   padding: var(--space-5) var(--space-6) max(var(--space-5), var(--safe-area-bottom));
 }
 
@@ -161,6 +167,7 @@
 }
 
 .entryList {
+  min-width: 0;
   display: grid;
   gap: var(--space-3);
   margin: 0;
@@ -169,10 +176,12 @@
 }
 
 .entryRow {
+  box-sizing: border-box;
+  min-width: 0;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--space-4);
-  align-items: center;
+  align-items: start;
   padding: var(--space-4);
   border: 1px solid rgba(138, 160, 200, 0.24);
   border-radius: 14px;
@@ -198,8 +207,9 @@
 }
 
 .detailGrid {
+  min-width: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
   gap: var(--space-2);
   margin: 0;
 }
@@ -285,7 +295,16 @@
   }
 
   .entryRow {
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-3);
+  }
+
+  .rankBadge {
+    justify-self: start;
+  }
+
+  .detailGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .entryHeader,
