@@ -15,7 +15,7 @@ owner: server
   - [x] 1.3 Update server tests and transport-contract expectations
 - [ ] **Phase 2 — Web startup registration and local identity reuse**
   - [x] 2.1 Keep startup registration keyed off missing local identity and improve duplicate-name UX copy
-  - [ ] 2.2 Persist and reuse the returned UUID-backed identity from local storage for future leaderboard submissions
+  - [x] 2.2 Persist and reuse the returned UUID-backed identity from local storage for future leaderboard submissions
   - [ ] 2.3 Update web tests for registration, conflict handling, and reuse flow
 - [ ] **Phase 3 — Documentation and compatibility notes**
   - [ ] 3.1 Document claimed-username behavior and UUID reuse in server/web docs
@@ -158,3 +158,4 @@ interface PlayerRegistrationResponse {
 - 2026-05-31 — Completed step 1.2 by switching new player-id generation to plain UUIDs while preserving the existing `playerId` API field name and opaque-string treatment elsewhere.
 - 2026-05-31 — Completed step 1.3 by updating server transport-contract and route tests to expect UUID-shaped registration ids while preserving existing HTTP status/error semantics.
 - 2026-05-31 — Completed step 2.1 by keeping first-run registration gated on missing local identity, adding clearer claimed-name conflict copy, and updating start-screen guidance to explain uniqueness.
+- 2026-05-31 — Completed step 2.2 by hardening local identity persistence around trimmed non-empty opaque `playerId` strings and continuing to reuse the stored identity for future run submissions.

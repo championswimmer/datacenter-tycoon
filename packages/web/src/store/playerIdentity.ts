@@ -13,25 +13,42 @@ export function getStoredPlayerIdentity(): StoredPlayerIdentity | null {
       return null;
     }
 
-    const parsed = JSON.parse(raw) as Partial<StoredPlayerIdentity>;
-
-    if (typeof parsed.playerId !== "string" || typeof parsed.username !== "string") {
-      return null;
-    }
-
-    return {
-      playerId: parsed.playerId,
-      username: parsed.username,
-    };
+    return parseStoredPlayerIdentity(JSON.parse(raw) as Partial<StoredPlayerIdentity>);
   } catch {
     return null;
   }
 }
 
 export function writeStoredPlayerIdentity(identity: StoredPlayerIdentity): void {
-  localStorage.setItem(PLAYER_IDENTITY_KEY, JSON.stringify(identity));
+  const normalizedIdentity = parseStoredPlayerIdentity(identity);
+
+  if (!normalizedIdentity) {
+    throw new Error("Stored player identity must include non-empty playerId and username strings.");
+  }
+
+  localStorage.setItem(PLAYER_IDENTITY_KEY, JSON.stringify(normalizedIdentity));
 }
 
 export function clearStoredPlayerIdentity(): void {
   localStorage.removeItem(PLAYER_IDENTITY_KEY);
+}
+
+function parseStoredPlayerIdentity(
+  identity: Partial<StoredPlayerIdentity>,
+): StoredPlayerIdentity | null {
+  if (typeof identity.playerId !== "string" || typeof identity.username !== "string") {
+    return null;
+  }
+
+  const playerId = identity.playerId.trim();
+  const username = identity.username.trim();
+
+  if (!playerId || !username) {
+    return null;
+  }
+
+  return {
+    playerId,
+    username,
+  };
 }
