@@ -16,7 +16,7 @@ owner: game-logic/web
   - [x] 1.4 Add focused web tests for the new HUD value and leaderboard duration copy
 - [ ] **Phase 2 — Persisted monthly finance history in game logic**
   - [x] 2.1 Add a serialized monthly finance snapshot model to `GameState`
-  - [ ] 2.2 Initialize and append finance snapshots during new-game and monthly settlement flows
+  - [x] 2.2 Initialize and append finance snapshots during new-game and monthly settlement flows
   - [ ] 2.3 Add finance query helpers for history, latest snapshot, and cumulative revenue
   - [ ] 2.4 Migrate older saves by backfilling finance history from ledger entries
   - [ ] 2.5 Add game-logic tests for snapshots, migration, and leaderboard summary parity

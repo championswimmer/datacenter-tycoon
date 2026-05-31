@@ -11,6 +11,7 @@ import {
 	tickOpexFromInputs,
 	tickRevenue,
 } from "../economy/opex.js";
+import { createBaselineFinancialSnapshot, createMonthlyFinancialSnapshot, summarizeCapexBetweenTicks } from "../state/financial-history.js";
 import { createIndexedGameStateView } from "../state/indexed-view.js";
 import { advanceSubtick } from "./subtick.js";
 import type {
@@ -126,6 +127,8 @@ export function settleMonthlyTick(state: GameState): GameState {
 
 	const finalizedContracts = revenueResult.updatedContracts.map((contract) => finalizeContract(contract, nextTick));
 	const nextReliability = updatePlayerReliability(state.player.reliability, revenueResult.outcomes);
+	const revenue = Math.max(0, revenueResult.revenue);
+	const penalty = Math.max(0, -revenueResult.revenue);
 	const netCashDelta = roundMoney(revenueResult.revenue - totalOpex);
 	const ledgerEntries: LedgerEntry[] = [];
 
@@ -135,39 +138,56 @@ export function settleMonthlyTick(state: GameState): GameState {
 		);
 	}
 
-	if (revenueResult.revenue > 0) {
+	if (revenue > 0) {
 		ledgerEntries.push(
 			createLedgerEntry(
 				state,
 				nextTick,
 				"revenue",
-				revenueResult.revenue,
+				revenue,
 				"Contract revenue for SLA-compliant months",
 				ledgerEntries.length,
 			),
 		);
-	} else if (revenueResult.revenue < 0) {
+	} else if (penalty > 0) {
 		ledgerEntries.push(
 			createLedgerEntry(
 				state,
 				nextTick,
 				"penalty",
-				revenueResult.revenue,
+				-penalty,
 				"Contract penalties for missed SLA months",
 				ledgerEntries.length,
 			),
 		);
 	}
 
+	const nextCash = roundMoney(state.player.cash + netCashDelta);
+	const previousSnapshot =
+		state.financialHistory.at(-1) ?? createBaselineFinancialSnapshot(state.player.cash, state.tick);
+	const capex = summarizeCapexBetweenTicks(state.ledger, previousSnapshot.tick, nextTick);
+
 	const advancedState: GameState = {
 		...maintenanceState,
 		player: {
 			...maintenanceState.player,
-			cash: roundMoney(state.player.cash + netCashDelta),
+			cash: nextCash,
 			reliability: nextReliability,
 		},
 		contracts: finalizedContracts,
 		ledger: [...state.ledger, ...ledgerEntries],
+		financialHistory: [
+			...state.financialHistory,
+			createMonthlyFinancialSnapshot({
+				previousSnapshot,
+				tick: nextTick,
+				cash: nextCash,
+				revenue,
+				opex: totalOpex,
+				penalty,
+				capex,
+			}),
+		],
 	};
 
 	return refreshContractMarket(withDerivedContractViews(advancedState));
