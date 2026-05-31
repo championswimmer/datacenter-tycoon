@@ -26,10 +26,10 @@ owner: game-logic/web
   - [x] 3.3 Add an SVG cash-history line chart
   - [x] 3.4 Add an SVG monthly revenue/OpEx/net bar chart
   - [x] 3.5 Add responsive styles and web tests for the finances page
-- [ ] **Phase 4 — Contract history cleanup**
+- [x] **Phase 4 — Contract history cleanup**
   - [x] 4.1 Add a game-logic query for player-accounted historical contracts that excludes unaccepted expired offers
   - [x] 4.2 Update web contract history selectors and UI footer copy to use the filtered history
-  - [ ] 4.3 Add regression tests proving market-expired offers are stored but hidden from the history screen
+  - [x] 4.3 Add regression tests proving market-expired offers are stored but hidden from the history screen
 - [ ] **Phase 5 — Validation and documentation pass**
   - [ ] 5.1 Update public API/docs where new game-logic exports are introduced
   - [ ] 5.2 Run targeted game-logic and web validation commands
