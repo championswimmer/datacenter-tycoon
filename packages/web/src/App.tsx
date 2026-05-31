@@ -2,6 +2,9 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react"
 import type { Difficulty } from "@datacenter-tycoon/game-logic";
 import {
   buildLeaderboardRunSubmission,
+  fetchLeaderboard,
+  type LeaderboardListResult,
+  LeaderboardQueryError,
   LeaderboardSubmissionError,
   submitLeaderboardRun,
 } from "./online/leaderboard.js";
@@ -36,7 +39,14 @@ type StartChoice = "load" | "new";
 const OFFLINE_LEADERBOARD_NOTICE = "Online leaderboard registration is unavailable right now. New runs from this device will stay local until the backend is reachable again.";
 const DISABLED_LEADERBOARD_NOTICE = "Online leaderboard registration is disabled for this build. New runs from this device will stay local.";
 const LEADERBOARD_SYNC_UNAVAILABLE_NOTICE = "Online leaderboard sync is unavailable right now. This run will keep progressing locally until the backend is reachable again.";
+const LEADERBOARD_QUERY_FAILED_MESSAGE = "Could not load the online leaderboard right now.";
 const TRANSIENT_STATUS_MESSAGE_DURATION_MS = 3_000;
+
+const START_SCREEN_LEADERBOARD_QUERY = {
+  metric: "money",
+  period: "all-time",
+  limit: 10,
+} as const;
 
 function createAppSession(
   choice: StartChoice,
@@ -62,10 +72,17 @@ interface AppSessionController {
   startError: string | null;
   isStarting: boolean;
   selectedDifficulty: Difficulty;
+  isLeaderboardOpen: boolean;
+  isLeaderboardLoading: boolean;
+  leaderboardResult: LeaderboardListResult | null;
+  leaderboardError: string | null;
   selectDifficulty: (difficulty: Difficulty) => void;
   setUsernameDraft: (username: string) => void;
   startNewGame: () => Promise<void>;
   loadLatestGame: () => void;
+  openLeaderboard: () => void;
+  closeLeaderboard: () => void;
+  retryLeaderboard: () => void;
 }
 
 function useAppSession(): AppSessionController {
@@ -81,6 +98,10 @@ function useAppSession(): AppSessionController {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+  const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
+  const [leaderboardResult, setLeaderboardResult] = useState<LeaderboardListResult | null>(null);
+  const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
   const sessionRef = useRef<StoreSession | null>(null);
 
   useEffect(() => {
@@ -177,6 +198,30 @@ function useAppSession(): AppSessionController {
     };
   }, [statusMessage]);
 
+  const loadLeaderboard = useCallback(async () => {
+    if (isLeaderboardLoading) {
+      return;
+    }
+
+    setIsLeaderboardLoading(true);
+    setLeaderboardError(null);
+
+    try {
+      const result = await fetchLeaderboard(START_SCREEN_LEADERBOARD_QUERY);
+      setLeaderboardResult(result);
+    } catch (error) {
+      if (error instanceof LeaderboardQueryError) {
+        setLeaderboardError(error.message);
+      } else if (error instanceof Error) {
+        setLeaderboardError(error.message);
+      } else {
+        setLeaderboardError(LEADERBOARD_QUERY_FAILED_MESSAGE);
+      }
+    } finally {
+      setIsLeaderboardLoading(false);
+    }
+  }, [isLeaderboardLoading]);
+
   useEffect(() => {
     if (!session || !playerIdentity) {
       return undefined;
@@ -272,10 +317,24 @@ function useAppSession(): AppSessionController {
     startError,
     isStarting,
     selectedDifficulty,
+    isLeaderboardOpen,
+    isLeaderboardLoading,
+    leaderboardResult,
+    leaderboardError,
     selectDifficulty: setSelectedDifficulty,
     setUsernameDraft,
     startNewGame,
     loadLatestGame: () => replaceSession("load", playerIdentity?.username ?? usernameDraft.trim()),
+    openLeaderboard: () => {
+      setIsLeaderboardOpen(true);
+      if (!leaderboardResult && !isLeaderboardLoading) {
+        void loadLeaderboard();
+      }
+    },
+    closeLeaderboard: () => setIsLeaderboardOpen(false),
+    retryLeaderboard: () => {
+      void loadLeaderboard();
+    },
   };
 }
 
@@ -290,10 +349,17 @@ export default function App() {
     startError,
     isStarting,
     selectedDifficulty,
+    isLeaderboardOpen,
+    isLeaderboardLoading,
+    leaderboardResult,
+    leaderboardError,
     selectDifficulty,
     setUsernameDraft,
     startNewGame,
     loadLatestGame,
+    openLeaderboard,
+    closeLeaderboard,
+    retryLeaderboard,
   } = useAppSession();
 
   // Dev-only route — bypass shell entirely
@@ -316,11 +382,18 @@ export default function App() {
         startError={startError}
         isStarting={isStarting}
         selectedDifficulty={selectedDifficulty}
+        isLeaderboardOpen={isLeaderboardOpen}
+        isLeaderboardLoading={isLeaderboardLoading}
+        leaderboardResult={leaderboardResult}
+        leaderboardError={leaderboardError}
         onSelectDifficulty={selectDifficulty}
         onUsernameDraftChange={setUsernameDraft}
         onPlay={startNewGame}
         onLoadGame={loadLatestGame}
         onNewGame={startNewGame}
+        onOpenLeaderboard={openLeaderboard}
+        onCloseLeaderboard={closeLeaderboard}
+        onRetryLeaderboard={retryLeaderboard}
       />
     );
   }

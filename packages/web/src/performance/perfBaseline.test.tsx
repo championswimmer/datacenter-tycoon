@@ -342,11 +342,18 @@ describe("web performance baseline harness", () => {
           startError={null}
           isStarting={false}
           selectedDifficulty="hard"
+          isLeaderboardOpen={false}
+          isLeaderboardLoading={false}
+          leaderboardResult={null}
+          leaderboardError={null}
           onSelectDifficulty={() => {}}
           onUsernameDraftChange={() => {}}
           onPlay={() => {}}
           onLoadGame={() => {}}
           onNewGame={() => {}}
+          onOpenLeaderboard={() => {}}
+          onCloseLeaderboard={() => {}}
+          onRetryLeaderboard={() => {}}
         />,
       ),
       measureRenderScenario(

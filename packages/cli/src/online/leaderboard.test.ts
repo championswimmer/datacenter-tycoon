@@ -9,17 +9,24 @@ import {
   submitLeaderboardRun,
 } from "./leaderboard.js";
 
-test("buildLeaderboardRunSubmission uses the shared game-logic summary helper", () => {
+test("buildLeaderboardRunSubmission rounds shared metrics to backend-safe integers", () => {
   const state = newGame(123, { playerName: "Acme Cloud" });
   state.tick = 3;
-  state.player.cash = 1_500_000;
+  state.player.cash = 1_500_000.75;
+  state.ledger.push({
+    id: "ledger-1" as (typeof state.ledger)[number]["id"],
+    tick: 1,
+    type: "revenue",
+    amount: 99.6,
+    reason: "contract revenue",
+  });
 
   assert.deepEqual(buildLeaderboardRunSubmission("player_abc", state), {
     playerId: "player_abc",
     clientRunId: state.gameId,
     metrics: {
-      money: 1_500_000,
-      cumulativeRevenue: 0,
+      money: 1_500_001,
+      cumulativeRevenue: 100,
       totalServers: 0,
       computeCapacity: 0,
       memoryCapacity: 0,
