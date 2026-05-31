@@ -209,6 +209,38 @@ test("serialize and deserialize preserve every supported region affinity family"
 	);
 });
 
+test("serialize preserves raw market-expired offers while player-facing history queries can hide them", () => {
+	const state = newGame(42, { playerName: "Archive Ops" });
+	const expiredOffer: Contract = {
+		id: contractId("expired-offer"),
+		name: "Expired Offer",
+		requirements: { vCpu: 16, ramGb: 32, storageTb: 2, gpuFlops: 0 },
+		monthlyPayment: 2_500,
+		penaltyPerMonth: 500,
+		termMonths: 2,
+		slaTargetPercent: 90,
+		currentSlaWindow: { sampledDays: 0, servedDays: 0, failedDays: 0 },
+		lifecycleState: "market_expired",
+		status: "expired",
+		urgency: "standard",
+		tier: 1,
+		offeredAtTick: 0,
+		expiresAtTick: 2,
+		closedAtTick: 2,
+	};
+
+	const roundTripped = deserialize(serialize({
+		...state,
+		contracts: [expiredOffer],
+		contractMarket: [],
+		activeContracts: [],
+	}));
+
+	assert.equal(roundTripped.contracts.length, 1);
+	assert.equal(roundTripped.contracts[0]?.lifecycleState, "market_expired");
+	assert.equal(roundTripped.contracts[0]?.status, "expired");
+});
+
 test("serialize persists default datacenter upgrade progress after build", () => {
 	let state = newGame(42, { startingCash: 3_000_000 });
 	const firstRegionId = state.map.regions[0]!.id;
