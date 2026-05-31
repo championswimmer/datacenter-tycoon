@@ -37,9 +37,9 @@ test("parseUsernameRegistration rejects usernames with unsupported characters", 
   );
 });
 
-test("normalized usernames collapse case differences for uniqueness", () => {
-  const first = parseUsernameRegistration("Acme.Cloud");
-  const second = parseUsernameRegistration(" acme.cloud ");
+test("normalized usernames collapse case and repeated whitespace differences for uniqueness", () => {
+  const first = parseUsernameRegistration("John Doe123");
+  const second = parseUsernameRegistration("  john   doe123  ");
 
   assert.equal(first.normalizedUsername, second.normalizedUsername);
 });

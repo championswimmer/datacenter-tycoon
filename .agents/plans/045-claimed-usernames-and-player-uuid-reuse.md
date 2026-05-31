@@ -1,7 +1,7 @@
 ---
 name: Claimed Usernames and Player UUID Reuse
 description: Tighten leaderboard identity so usernames are permanently claimed by normalized form and clients reuse a returned UUID for future submissions.
-status: created
+status: started
 created: 2026-05-31
 updated: 2026-05-31
 owner: server
@@ -10,7 +10,7 @@ owner: server
 ## Progress
 
 - [ ] **Phase 1 — Server identity contract tightening**
-  - [ ] 1.1 Preserve permanent normalized-username uniqueness with explicit conflict semantics
+  - [x] 1.1 Preserve permanent normalized-username uniqueness with explicit conflict semantics
   - [ ] 1.2 Switch generated player ids to UUIDs while keeping the existing `playerId` API field name
   - [ ] 1.3 Update server tests and transport-contract expectations
 - [ ] **Phase 2 — Web startup registration and local identity reuse**
@@ -154,3 +154,4 @@ interface PlayerRegistrationResponse {
 ## Changelog
 
 - 2026-05-31 — Created follow-up plan for claimed usernames and reusable player UUIDs.
+- 2026-05-31 — Completed step 1.1 by tightening duplicate-registration coverage around case/whitespace normalization and standardizing user-friendly conflict copy for claimed usernames.
