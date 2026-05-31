@@ -334,7 +334,7 @@ describe("web performance baseline harness", () => {
             updatedAt: Date.now(),
           }}
           playerIdentity={{
-            playerId: "player_perf",
+            playerId: "6f8c3e61-6ef1-4d97-b637-c590971e4490",
             username: TEST_PLAYER,
           }}
           usernameDraft={TEST_PLAYER}
