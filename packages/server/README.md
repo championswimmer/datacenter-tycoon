@@ -166,6 +166,16 @@ See [`docs/redis-decision.md`](./docs/redis-decision.md) for the rationale and r
 
 See [`docs/release-checklist.md`](./docs/release-checklist.md) for the first-launch smoke tests, rollback steps, and operational checks.
 
+## Player identity model
+
+`POST /players` is a lightweight username-claim endpoint for leaderboard identity, not a full account system.
+
+- Usernames are normalized before uniqueness checks, so values like `John Doe123`, ` john   doe123 `, and `JOHN DOE123` all refer to the same claimed leaderboard name.
+- A successful registration returns `{ playerId, username }` where `playerId` is the client-held identifier used for future leaderboard submissions. New registrations now receive UUID strings in the `playerId` field.
+- Clients are expected to persist that `playerId` locally (for example in browser local storage) and reuse it for future `POST /leaderboard/runs` calls.
+- If a normalized username has already been claimed, the server returns `409 USERNAME_UNAVAILABLE`.
+- Security is intentionally lightweight for now: possession of a valid `playerId` is sufficient to submit or update runs for that player.
+
 ## Trust model
 
 This first backend launch accepts **top-level run summaries**, not full save snapshots or deterministic replays.
@@ -183,3 +193,7 @@ What it does **not** guarantee yet:
 - replay verification of every submitted run.
 
 If stronger guarantees are needed later, the next step is to design deterministic replay or signed run-summary verification on top of the existing `game-logic` helpers.
+
+## Compatibility note for existing player ids
+
+The `players.id` column is stored as text and the API treats `playerId` as opaque. That means there is no migration requirement for older stored ids such as `player_<hex>` values: they remain valid in the database and on existing clients, while newly registered players now receive UUID strings.

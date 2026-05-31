@@ -73,7 +73,8 @@ It does **not** yet host multiplayer sessions, password auth, cross-device accou
 - `GET /players/availability?username=...`
   - Validates and checks normalized username availability.
 - `POST /players`
-  - Registers a username and returns `{ playerId, username }`.
+  - Registers a previously unclaimed normalized username and returns `{ playerId, username }`.
+  - `playerId` is a reusable UUID string for new registrations; duplicate normalized usernames return `409 USERNAME_UNAVAILABLE`.
 - `GET /leaderboard?metric=...&period=all-time&limit=...`
   - Reads ranked leaderboard entries.
 - `POST /leaderboard/runs`
@@ -229,6 +230,7 @@ curl "http://localhost:3000/leaderboard?metric=money&period=all-time&limit=10"
 - Start in `src/players/identity.ts` and its tests.
 - Keep normalization, allowed characters, and length limits consistent between availability checks and registration.
 - Preserve stable, user-friendly error codes for the frontend.
+- Treat `playerId` as an opaque API field even though new registrations currently return UUIDs; existing stored/database ids may use older formats and must keep working.
 
 ### Changing schema or persistence
 
