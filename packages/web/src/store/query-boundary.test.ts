@@ -120,6 +120,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
     contractMarket: [],
     activeContracts: [],
     ledger: [],
+    financialHistory: [],
     audioEnabled: true,
     audioSettings: { master: true, music: true, sfx: true, money: true, ambient: true },
     map: {
