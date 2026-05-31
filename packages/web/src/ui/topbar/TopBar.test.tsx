@@ -75,6 +75,28 @@ describe("TopBar", () => {
     expect(screen.queryByText("TICK")).toBeNull();
   });
 
+  it("shows total cumulative revenue derived from revenue ledger entries", () => {
+    const base = newGame(42, { playerName: "Acme Corp" });
+    const revenueState: GameState = {
+      ...base,
+      ledger: [
+        { id: "ledger-rev-1" as GameState["ledger"][number]["id"], tick: 0, type: "revenue", amount: 5_000, reason: "Contract Alpha" },
+        { id: "ledger-opex-1" as GameState["ledger"][number]["id"], tick: 0, type: "opex", amount: -2_000, reason: "Operations" },
+        { id: "ledger-rev-2" as GameState["ledger"][number]["id"], tick: 1, type: "revenue", amount: 7_000, reason: "Contract Beta" },
+        { id: "ledger-penalty-1" as GameState["ledger"][number]["id"], tick: 1, type: "penalty", amount: -300, reason: "SLA breach" },
+      ],
+    };
+
+    render(
+      <Wrapper state={revenueState}>
+        <TopBar speed={1} onSpeedChange={() => {}} />
+      </Wrapper>,
+    );
+
+    expect(screen.getByText("TOTAL REV")).toBeTruthy();
+    expect(screen.getByText("$12.0K")).toBeTruthy();
+  });
+
   it("renders reliability score and market effect count in the persistent HUD", () => {
     render(
       <Wrapper>
