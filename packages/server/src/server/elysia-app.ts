@@ -1,5 +1,6 @@
 import { cors } from "@elysiajs/cors";
 import { Elysia } from "elysia";
+import { type RateLimiter } from "../rate-limit/fixed-window.js";
 import type { AppDependencies } from "../types.js";
 import { createErrorBody, HttpError } from "./errors.js";
 
@@ -21,6 +22,14 @@ export function createElysiaServerApp(options: CreateElysiaServerAppOptions): Se
         allowedHeaders: ["content-type", "x-forwarded-for"],
       }),
     )
+    .onRequest(() => {
+      if (context.services.rateLimiter) {
+        enforceGlobalRateLimit(
+          context.services.rateLimiter,
+          context.config.rateLimits.backendGlobal,
+        );
+      }
+    })
     .onError(({ code, error, request, set }) => {
       if (code === "NOT_FOUND") {
         set.status = 404;
@@ -48,4 +57,19 @@ export function createElysiaServerApp(options: CreateElysiaServerAppOptions): Se
     }) as ServerElysiaApp;
 
   return register ? register(app, context) : app;
+}
+
+function enforceGlobalRateLimit(
+  rateLimiter: RateLimiter,
+  rule: { windowMs: number; maxRequests: number },
+): void {
+  const decision = rateLimiter.consume("backend requests", "global", rule);
+
+  if (!decision.allowed) {
+    throw new HttpError(
+      429,
+      "RATE_LIMITED",
+      `Too many backend requests. Retry after ${decision.retryAfterSeconds} seconds.`,
+    );
+  }
 }

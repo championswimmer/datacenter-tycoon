@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
+import type { ServerConfig } from "./config.js";
 import {
   InMemoryLeaderboardRepository,
   type LeaderboardRepository,
@@ -8,7 +9,11 @@ import {
   InMemoryPlayersRepository,
   type PlayersRepository,
 } from "./players/repository.js";
-import type { RateLimiter, RateLimitRule } from "./rate-limit/fixed-window.js";
+import {
+  InMemoryFixedWindowRateLimiter,
+  type RateLimiter,
+  type RateLimitRule,
+} from "./rate-limit/fixed-window.js";
 import {
   frozenEndpointContracts,
   internalImplementationDetailsFreeToChange,
@@ -40,11 +45,20 @@ async function registerPlayer(app: ReturnType<typeof createTestApp>["app"]) {
 }
 
 function createContractTestApp(options?: {
+  config?: Partial<ServerConfig>;
   players?: PlayersRepository;
   leaderboard?: LeaderboardRepository;
   rateLimiter?: RateLimiter;
 }) {
   return createTestApp({
+    config: {
+      rateLimits: {
+        backendGlobal: { windowMs: 1_000, maxRequests: 100 },
+        playerRegistration: { windowMs: 60_000, maxRequests: 100 },
+        leaderboardSubmission: { windowMs: 1_000, maxRequests: 100 },
+      },
+      ...options?.config,
+    },
     services: {
       players: options?.players ?? new InMemoryPlayersRepository(),
       leaderboard: options?.leaderboard ?? new InMemoryLeaderboardRepository(),
@@ -344,6 +358,29 @@ test("POST /leaderboard/runs preserves success, idempotent retry, and player-not
   assert.equal(missingPlayer.json?.error.code, "PLAYER_NOT_FOUND");
 });
 
+test("global backend throttling applies to all routes after 10 requests in one second", async () => {
+  const { app } = createContractTestApp({
+    config: {
+      rateLimits: {
+        backendGlobal: { windowMs: 1_000, maxRequests: 10 },
+        playerRegistration: { windowMs: 60_000, maxRequests: 100 },
+        leaderboardSubmission: { windowMs: 1_000, maxRequests: 100 },
+      },
+    },
+    rateLimiter: new InMemoryFixedWindowRateLimiter(),
+  });
+
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const response = await apiRequest(app, "/healthz");
+    assert.equal(response.response.status, 200);
+  }
+
+  const limited = await apiRequest<{ error: { code: string; message: string } }>(app, "/healthz");
+  assert.equal(limited.response.status, 429);
+  assert.equal(limited.json?.error.code, "RATE_LIMITED");
+  assert.match(limited.json?.error.message ?? "", /backend requests/i);
+});
+
 test("rate-limited requests preserve 429/RATE_LIMITED bodies and current header behavior", async () => {
   class DenyAllRateLimiter implements RateLimiter {
     consume(_scope: string, _key: string, _rule: RateLimitRule) {
@@ -358,6 +395,13 @@ test("rate-limited requests preserve 429/RATE_LIMITED bodies and current header 
   const { app } = createContractTestApp({
     rateLimiter: new DenyAllRateLimiter(),
   });
+
+  const healthz = await apiRequest<{ error: { code: string; message: string } }>(app, "/healthz");
+  assert.equal(healthz.response.status, 429);
+  assert.equal(healthz.json?.error.code, "RATE_LIMITED");
+  assert.match(healthz.json?.error.message ?? "", /backend requests/i);
+  assert.equal(healthz.response.headers.get("retry-after"), null);
+  assertCurrentCorsBehavior(healthz.response);
 
   const playerRegistration = await apiRequest<{ error: { code: string; message: string } }>(app, "/players", {
     method: "POST",

@@ -44,10 +44,12 @@ Copy `packages/server/.env.example` into your own local env file or export the v
 | `SERVER_VERSION` | optional | Overrides the version returned by `GET /version`. |
 | `DATABASE_URL` | required in production, optional in local dev | Postgres connection string. When omitted outside production, the server falls back to PGlite. |
 | `PGLITE_DATA_DIR` | optional outside production | File-backed PGlite data directory. Defaults to `.data/pglite` in development. |
+| `BACKEND_RATE_LIMIT_WINDOW_MS` | optional | Window size for backend-wide request throttling. Defaults to `1000`. |
+| `BACKEND_RATE_LIMIT_MAX_REQUESTS` | optional | Max requests across the whole backend within the window. Defaults to `10`. |
 | `PLAYER_REGISTRATION_RATE_LIMIT_WINDOW_MS` | optional | Window size for registration throttling. |
 | `PLAYER_REGISTRATION_RATE_LIMIT_MAX_REQUESTS` | optional | Max registration attempts per client within the window. |
-| `LEADERBOARD_SUBMISSION_RATE_LIMIT_WINDOW_MS` | optional | Window size for leaderboard submission throttling. |
-| `LEADERBOARD_SUBMISSION_RATE_LIMIT_MAX_REQUESTS` | optional | Max leaderboard submissions per client within the window. |
+| `LEADERBOARD_SUBMISSION_RATE_LIMIT_WINDOW_MS` | optional | Window size for leaderboard submission throttling. Defaults to `1000`. |
+| `LEADERBOARD_SUBMISSION_RATE_LIMIT_MAX_REQUESTS` | optional | Max leaderboard submissions per client IP within the window. Defaults to `1`. |
 
 ## Postgres provisioning
 
@@ -175,6 +177,7 @@ See [`docs/release-checklist.md`](./docs/release-checklist.md) for the first-lau
 - Clients are expected to persist that `playerId` locally (for example in browser local storage) and reuse it for future `POST /leaderboard/runs` calls.
 - If a normalized username has already been claimed, the server returns `409 USERNAME_UNAVAILABLE`.
 - Security is intentionally lightweight for now: possession of a valid `playerId` is sufficient to submit or update runs for that player.
+- Abuse resistance is intentionally simple and single-instance for now: Elysia applies an app-wide `onRequest` throttle, and leaderboard submissions also use a tighter per-IP submission throttle.
 
 ## Trust model
 
@@ -184,7 +187,7 @@ That means it is intentionally conservative about what it validates:
 - usernames, ids, and request JSON must be well-formed;
 - leaderboard metrics must be safe non-negative integers with the shared `game-logic` contract;
 - repeated submissions for the same `clientRunId` must move forward monotonically for fields where monotonicity is expected (`gameMonth`, `cumulativeRevenue`);
-- registration and submission endpoints are protected by simple in-memory rate limiting.
+- the entire backend is protected by a simple in-memory 10 req/sec throttle, and leaderboard submissions are further limited to 1 req/sec per client IP.
 
 What it does **not** guarantee yet:
 

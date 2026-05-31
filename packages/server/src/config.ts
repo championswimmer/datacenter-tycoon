@@ -6,6 +6,7 @@ export type ServerDatabaseMode = "postgres" | "pglite";
 export type ServerDatabaseProvider = "bun-sql" | "pglite-file" | "pglite-memory";
 
 export interface ServerRateLimitConfig {
+  backendGlobal: RateLimitRule;
   playerRegistration: RateLimitRule;
   leaderboardSubmission: RateLimitRule;
 }
@@ -55,6 +56,18 @@ export function loadServerConfig(
   const corsAllowedOrigins = parseCorsAllowedOrigins(environment, env.CORS_ALLOWED_ORIGINS);
   const database = parseDatabaseConfig(environment, env);
   const rateLimits = {
+    backendGlobal: {
+      windowMs: parsePositiveInteger(
+        env.BACKEND_RATE_LIMIT_WINDOW_MS,
+        1_000,
+        "BACKEND_RATE_LIMIT_WINDOW_MS",
+      ),
+      maxRequests: parsePositiveInteger(
+        env.BACKEND_RATE_LIMIT_MAX_REQUESTS,
+        10,
+        "BACKEND_RATE_LIMIT_MAX_REQUESTS",
+      ),
+    },
     playerRegistration: {
       windowMs: parsePositiveInteger(
         env.PLAYER_REGISTRATION_RATE_LIMIT_WINDOW_MS,
@@ -70,12 +83,12 @@ export function loadServerConfig(
     leaderboardSubmission: {
       windowMs: parsePositiveInteger(
         env.LEADERBOARD_SUBMISSION_RATE_LIMIT_WINDOW_MS,
-        60_000,
+        1_000,
         "LEADERBOARD_SUBMISSION_RATE_LIMIT_WINDOW_MS",
       ),
       maxRequests: parsePositiveInteger(
         env.LEADERBOARD_SUBMISSION_RATE_LIMIT_MAX_REQUESTS,
-        120,
+        1,
         "LEADERBOARD_SUBMISSION_RATE_LIMIT_MAX_REQUESTS",
       ),
     },

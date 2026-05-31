@@ -90,16 +90,27 @@ test("loadServerConfig always includes the first-party production web origin", (
   ]);
 });
 
+test("loadServerConfig defaults global and leaderboard submission rate limits to the anti-spam profile", () => {
+  const config = loadServerConfig({
+    NODE_ENV: "test",
+  });
+
+  assert.equal(config.rateLimits.backendGlobal.windowMs, 1_000);
+  assert.equal(config.rateLimits.backendGlobal.maxRequests, 10);
+  assert.equal(config.rateLimits.leaderboardSubmission.windowMs, 1_000);
+  assert.equal(config.rateLimits.leaderboardSubmission.maxRequests, 1);
+});
+
 test("loadServerConfig rejects invalid rate-limit configuration", () => {
   assert.throws(
     () =>
       loadServerConfig({
         NODE_ENV: "test",
-        PLAYER_REGISTRATION_RATE_LIMIT_MAX_REQUESTS: "0",
+        BACKEND_RATE_LIMIT_MAX_REQUESTS: "0",
       }),
     (error: unknown) => {
       assert.ok(error instanceof ConfigError);
-      assert.match(error.message, /PLAYER_REGISTRATION_RATE_LIMIT_MAX_REQUESTS/);
+      assert.match(error.message, /BACKEND_RATE_LIMIT_MAX_REQUESTS/);
       return true;
     },
   );

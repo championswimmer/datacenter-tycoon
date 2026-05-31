@@ -4,6 +4,7 @@ import type { LeaderboardRunRecord } from "../leaderboard/types.js";
 import {
   getClientRateLimitKey,
   type RateLimitRule,
+  type RateLimitServerLike,
 } from "../rate-limit/fixed-window.js";
 import { HttpError } from "../server/errors.js";
 import type { ServerElysiaApp } from "../server/elysia-app.js";
@@ -39,7 +40,7 @@ export function registerLeaderboardRoutes(
         entries: entries.map((entry) => serializeLeaderboardEntry(entry)),
       };
     })
-    .post("/leaderboard/runs", async ({ request, set }) => {
+    .post("/leaderboard/runs", async ({ request, set, server }) => {
       const playersRepository = services.players;
       const leaderboardRepository = services.leaderboard;
 
@@ -54,6 +55,7 @@ export function registerLeaderboardRoutes(
       if (services.rateLimiter) {
         enforceRateLimit(
           request,
+          server,
           services.rateLimiter,
           config.rateLimits.leaderboardSubmission,
           "leaderboard submissions",
@@ -110,11 +112,12 @@ function serializeLeaderboardEntry(entry: LeaderboardEntry) {
 
 function enforceRateLimit(
   request: Request,
+  server: RateLimitServerLike | null | undefined,
   rateLimiter: { consume: (scope: string, key: string, rule: RateLimitRule) => { allowed: boolean; retryAfterSeconds: number } },
   rule: RateLimitRule,
   resourceName: string,
 ): void {
-  const decision = rateLimiter.consume(resourceName, getClientRateLimitKey(request), rule);
+  const decision = rateLimiter.consume(resourceName, getClientRateLimitKey(request, server), rule);
 
   if (!decision.allowed) {
     throw new HttpError(

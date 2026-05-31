@@ -1,6 +1,7 @@
 import {
   getClientRateLimitKey,
   type RateLimitRule,
+  type RateLimitServerLike,
 } from "../rate-limit/fixed-window.js";
 import { HttpError } from "../server/errors.js";
 import type { ServerElysiaApp } from "../server/elysia-app.js";
@@ -30,7 +31,7 @@ export function registerPlayerRoutes(
 
       return await checkUsernameAvailability(repository, username);
     })
-    .post("/players", async ({ request, set }) => {
+    .post("/players", async ({ request, set, server }) => {
       const repository = services.players;
 
       if (!repository) {
@@ -40,6 +41,7 @@ export function registerPlayerRoutes(
       if (services.rateLimiter) {
         enforceRateLimit(
           request,
+          server,
           services.rateLimiter,
           config.rateLimits.playerRegistration,
           "player registrations",
@@ -78,11 +80,12 @@ async function parseRegistrationRequest(request: Request): Promise<{ username: s
 
 function enforceRateLimit(
   request: Request,
+  server: RateLimitServerLike | null | undefined,
   rateLimiter: { consume: (scope: string, key: string, rule: RateLimitRule) => { allowed: boolean; retryAfterSeconds: number } },
   rule: RateLimitRule,
   resourceName: string,
 ): void {
-  const decision = rateLimiter.consume(resourceName, getClientRateLimitKey(request), rule);
+  const decision = rateLimiter.consume(resourceName, getClientRateLimitKey(request, server), rule);
 
   if (!decision.allowed) {
     throw new HttpError(

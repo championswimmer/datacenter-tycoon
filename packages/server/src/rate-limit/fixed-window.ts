@@ -13,6 +13,10 @@ export interface RateLimiter {
   consume(scope: string, key: string, rule: RateLimitRule, now?: Date): RateLimitDecision;
 }
 
+export interface RateLimitServerLike {
+  requestIP?: (request: Request) => { address?: string | null } | null;
+}
+
 interface FixedWindowBucket {
   windowStartedAtMs: number;
   count: number;
@@ -50,7 +54,10 @@ export class InMemoryFixedWindowRateLimiter implements RateLimiter {
   }
 }
 
-export function getClientRateLimitKey(request: Request): string {
+export function getClientRateLimitKey(
+  request: Request,
+  server?: RateLimitServerLike | null,
+): string {
   const forwardedFor = request.headers.get("x-forwarded-for");
 
   if (forwardedFor) {
@@ -62,10 +69,22 @@ export function getClientRateLimitKey(request: Request): string {
     }
   }
 
+  const cloudflareIp = request.headers.get("cf-connecting-ip")?.trim();
+
+  if (cloudflareIp) {
+    return cloudflareIp;
+  }
+
   const realIp = request.headers.get("x-real-ip")?.trim();
 
   if (realIp) {
     return realIp;
+  }
+
+  const requestIp = server?.requestIP?.(request)?.address?.trim();
+
+  if (requestIp) {
+    return requestIp;
   }
 
   return "anonymous";
