@@ -387,14 +387,14 @@ describe("App start flow", () => {
 
     expect(await screen.findByRole("dialog", { name: "Servers Leaderboard" })).toBeTruthy();
     expect(await screen.findByText("42")).toBeTruthy();
-    expect(screen.getByText("CPUs")).toBeTruthy();
-    expect(screen.getByText("640")).toBeTruthy();
+    expect(screen.getByText("Compute")).toBeTruthy();
+    expect(screen.getByText("640 vCPU")).toBeTruthy();
     expect(screen.getByText("Memory")).toBeTruthy();
-    expect(screen.getByText("1,024")).toBeTruthy();
+    expect(screen.getByText("1,024 GB")).toBeTruthy();
     expect(screen.getByText("Storage")).toBeTruthy();
-    expect(screen.getByText("256")).toBeTruthy();
-    expect(screen.getByText("GPUs")).toBeTruthy();
-    expect(screen.getByText("32")).toBeTruthy();
+    expect(screen.getByText("256 TB")).toBeTruthy();
+    expect(screen.getByText("GPU")).toBeTruthy();
+    expect(screen.getByText("32 TFLOPS")).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.dctycoon.test/leaderboard?metric=totalServers&period=all-time&limit=10",
     );

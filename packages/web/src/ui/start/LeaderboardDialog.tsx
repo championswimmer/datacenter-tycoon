@@ -195,10 +195,10 @@ function getLeaderboardEntryDetails(
 ): Array<{ label: string; value: string }> {
   if (metric === "totalServers") {
     return [
-      { label: "CPUs", value: numberFormatter.format(entry.metrics.computeCapacity) },
-      { label: "Memory", value: numberFormatter.format(entry.metrics.memoryCapacity) },
-      { label: "Storage", value: numberFormatter.format(entry.metrics.storageCapacity) },
-      { label: "GPUs", value: numberFormatter.format(entry.metrics.gpuCapacity) },
+      { label: "Compute", value: `${numberFormatter.format(entry.metrics.computeCapacity)} vCPU` },
+      { label: "Memory", value: `${numberFormatter.format(entry.metrics.memoryCapacity)} GB` },
+      { label: "Storage", value: `${numberFormatter.format(entry.metrics.storageCapacity)} TB` },
+      { label: "GPU", value: `${numberFormatter.format(entry.metrics.gpuCapacity)} TFLOPS` },
     ];
   }
 
