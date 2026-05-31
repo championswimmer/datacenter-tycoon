@@ -188,6 +188,16 @@ export function selectHistoricalContractsFromState(
 	return selectHistoricalContracts(contractsFromState(state));
 }
 
+/**
+ * Player-facing historical contracts: accepted/completed or cancelled contracts that had gameplay impact.
+ * Raw market-expired offers remain in state and raw historical queries, but are intentionally excluded here.
+ */
+export function selectAccountedHistoricalContractsFromState(
+	state: Pick<GameState, "contracts" | "contractMarket" | "activeContracts">,
+): Contract[] {
+	return selectHistoricalContractsFromState(state).filter((contract) => contract.lifecycleState !== "market_expired");
+}
+
 export function selectContractByIdFromState(
 	state: Pick<GameState, "contracts" | "contractMarket" | "activeContracts" | "datacenters" | "map">,
 	contractId: ContractId,

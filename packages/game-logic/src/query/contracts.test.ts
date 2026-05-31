@@ -7,6 +7,7 @@ import {
 	bucketContractsFromState,
 	contractAllowsRegion,
 	contractDealScore,
+	selectAccountedHistoricalContractsFromState,
 	summarizeContractAssignmentFit,
 	summarizeOpenMarketContractFits,
 	summarizeContractRegionAffinity,
@@ -121,6 +122,37 @@ test("bucketContractsFromState derives market, live, and historical buckets from
 	assert.deepEqual(buckets.market.map((contract) => contract.id), [contractId("market-open")]);
 	assert.deepEqual(buckets.live.map((contract) => contract.id), [contractId("live")]);
 	assert.deepEqual(buckets.historical.map((contract) => contract.id), [contractId("history")]);
+});
+
+test("selectAccountedHistoricalContractsFromState excludes unaccepted expired offers", () => {
+	const state = makeState({
+		contracts: [
+			makeContract("completed", {
+				lifecycleState: "completed",
+				status: "expired",
+				assignedDcId: datacenterId("dc-1"),
+				startedAtTick: 1,
+				closedAtTick: 6,
+			}),
+			makeContract("cancelled", {
+				lifecycleState: "cancelled",
+				status: "cancelled",
+				assignedDcId: datacenterId("dc-1"),
+				startedAtTick: 1,
+				closedAtTick: 3,
+			}),
+			makeContract("expired-offer", {
+				lifecycleState: "market_expired",
+				status: "expired",
+				closedAtTick: 2,
+			}),
+		],
+	});
+
+	assert.deepEqual(
+		selectAccountedHistoricalContractsFromState(state).map((contract) => contract.id),
+		[contractId("completed"), contractId("cancelled")],
+	);
 });
 
 test("summarizeContractRegionAffinity reports unrestricted and restricted contracts consistently", () => {
