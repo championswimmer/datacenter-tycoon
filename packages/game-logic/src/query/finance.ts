@@ -21,7 +21,10 @@ export function summarizeCumulativeRevenue(
 }
 
 export function selectCumulativeRevenueFromState(
-	state: Pick<GameState, "financialHistory" | "ledger">,
+	state: Pick<GameState, "tick" | "financialHistory" | "ledger">,
 ): Money {
-	return selectLatestFinancialSnapshotFromState(state)?.cumulativeRevenue ?? summarizeCumulativeRevenue(state.ledger);
+	const latestSnapshot = selectLatestFinancialSnapshotFromState(state);
+	return latestSnapshot && latestSnapshot.tick >= state.tick
+		? latestSnapshot.cumulativeRevenue
+		: summarizeCumulativeRevenue(state.ledger);
 }

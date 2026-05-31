@@ -6,10 +6,10 @@ import { newGame } from "../state/newGame.js";
 import type { Datacenter, GameState, RackPlacement, RackPlacementId } from "../types.js";
 import {
   countInstalledServers,
-  summarizeCumulativeRevenue,
   summarizeLeaderboardFromState,
   totalLeaderboardCapacity,
 } from "./leaderboard.js";
+import { selectCumulativeRevenueFromState, summarizeCumulativeRevenue } from "./finance.js";
 
 function rackPlacementId(value: string): RackPlacementId {
   return value as RackPlacementId;
@@ -93,6 +93,7 @@ test("summarizeLeaderboardFromState derives top-level leaderboard metrics from g
       + summary.metrics.memoryCapacity
       + summary.metrics.storageCapacity
       + summary.metrics.gpuCapacity);
+  assert.equal(summary.metrics.cumulativeRevenue, Math.round(selectCumulativeRevenueFromState(state)));
 });
 
 test("summarizeCumulativeRevenue only counts revenue ledger entries", () => {

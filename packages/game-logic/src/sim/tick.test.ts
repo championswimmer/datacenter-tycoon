@@ -9,6 +9,8 @@ import { CONTRACT_BREACH_AUTO_CANCEL_MONTHS } from "../contracts/lifecycle.js";
 import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
 import { tickOpex } from "../economy/opex.js";
 import { createPerformanceFixture } from "../perf/fixtures.js";
+import { createBaselineFinancialSnapshot } from "../state/financial-history.js";
+import { newGame } from "../state/newGame.js";
 import { advanceSubtick } from "./subtick.js";
 import { settleMonthlyTick, tick } from "./tick.js";
 import type {
@@ -132,10 +134,29 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
 		contractMarket: [],
 		activeContracts: [],
 		ledger: [],
+		financialHistory: [createBaselineFinancialSnapshot(500_000, tickValue(0))],
 		map: { regions: [TEST_REGION] },
 		...overrides,
 	};
 }
+
+test("newGame seeds a baseline financial snapshot at tick zero", () => {
+	const state = newGame(42, { startingCash: 123_456, playerName: "Finance Test" });
+
+	assert.deepEqual(state.financialHistory, [
+		{
+			tick: 0,
+			cash: 123_456,
+			revenue: 0,
+			opex: 0,
+			penalty: 0,
+			capex: 0,
+			netOperating: 0,
+			netCashFlow: 0,
+			cumulativeRevenue: 0,
+		},
+	]);
+});
 
 test("tick advances time, applies opex and revenue, and refreshes the contract market", () => {
 	const datacenter = makeDatacenter("dc-1");
@@ -206,6 +227,47 @@ test("tick honors pooled regional fabric capacity during monthly contract settle
 	assert.equal(nextState.ledger.some((entry) => entry.type === "penalty"), false);
 });
 
+test("settleMonthlyTick appends a finance snapshot with capex, revenue, and opex", () => {
+	const datacenter = makeDatacenter("dc-1");
+	const contract = makeContract("contract-1", datacenter);
+	const capexSpend = 12_500;
+	const state = makeState({
+		datacenters: [datacenter],
+		activeContracts: [contract],
+		ledger: [
+			{
+				id: "ledger-capex-0" as GameState["ledger"][number]["id"],
+				tick: tickValue(0),
+				type: "capex",
+				amount: -capexSpend,
+				reason: "Build datacenter",
+			},
+		],
+		player: {
+			...makeState().player,
+			cash: 500_000 - capexSpend,
+		},
+		financialHistory: [createBaselineFinancialSnapshot(500_000, tickValue(0))],
+	});
+	const opex = tickOpex(datacenter, TEST_REGION, state.activeContracts).total;
+
+	const nextState = settleMonthlyTick(state);
+	const snapshot = nextState.financialHistory.at(-1);
+
+	assert.equal(nextState.financialHistory.length, state.financialHistory.length + 1);
+	assert.deepEqual(snapshot, {
+		tick: 1,
+		cash: nextState.player.cash,
+		revenue: contract.monthlyPayment,
+		opex,
+		penalty: 0,
+		capex: capexSpend,
+		netOperating: contract.monthlyPayment - opex,
+		netCashFlow: -69_896.03,
+		cumulativeRevenue: contract.monthlyPayment,
+	});
+});
+
 test("tick expires breached contracts when their term ends and records penalties", () => {
 	const weakDatacenter = makeDatacenter("dc-1", [placement("rack-1", "C1", 0, 0)]);
 	const expiringContract = makeContract("contract-1", weakDatacenter, {
@@ -233,6 +295,35 @@ test("tick expires breached contracts when their term ends and records penalties
 			{ type: "penalty", amount: -expiringContract.penaltyPerMonth },
 		],
 	);
+});
+
+test("settleMonthlyTick appends a finance snapshot with penalties for breached months", () => {
+	const weakDatacenter = makeDatacenter("dc-1", [placement("rack-1", "C1", 0, 0)]);
+	const breachedContract = makeContract("contract-penalty", weakDatacenter, {
+		requirements: { vCpu: 500, ramGb: 5_000, storageTb: 500, gpuFlops: 500 },
+		penaltyPerMonth: 6_000,
+		currentSlaWindow: { sampledDays: DAYS_PER_TICK, servedDays: 0, failedDays: DAYS_PER_TICK },
+	});
+	const state = makeState({
+		datacenters: [weakDatacenter],
+		activeContracts: [breachedContract],
+	});
+	const opex = tickOpex(weakDatacenter, TEST_REGION, state.activeContracts).total;
+
+	const nextState = settleMonthlyTick(state);
+	const snapshot = nextState.financialHistory.at(-1);
+
+	assert.deepEqual(snapshot, {
+		tick: 1,
+		cash: nextState.player.cash,
+		revenue: 0,
+		opex,
+		penalty: breachedContract.penaltyPerMonth,
+		capex: 0,
+		netOperating: -opex - breachedContract.penaltyPerMonth,
+		netCashFlow: nextState.player.cash - state.financialHistory[0]!.cash,
+		cumulativeRevenue: 0,
+	});
 });
 
 test("month-end SLA settlement tolerates short outages for 80/90 targets but breaches 95", () => {

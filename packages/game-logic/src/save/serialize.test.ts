@@ -269,6 +269,25 @@ test("migrate rehydrates derived contract views for current-version compact enve
 	});
 });
 
+test("migrate upgrades v13 saves by backfilling financial history from the ledger", () => {
+	const current = reduce(newGame(7, { startingCash: 1_000_000 }), { type: "Tick" });
+	const { financialHistory: _financialHistory, ...legacyState } = current;
+
+	const migrated = migrate({
+		saveVersion: 13,
+		state: legacyState as PersistedGameState,
+	});
+
+	assert.equal(migrated.saveVersion, SAVE_VERSION);
+	assert.ok(migrated.state.financialHistory.length > 0);
+	assert.equal(migrated.state.financialHistory[0]?.tick, 0);
+	assert.equal(migrated.state.financialHistory.at(-1)?.tick, current.tick);
+	assert.equal(migrated.state.financialHistory.at(-1)?.cash, current.player.cash);
+	assert.equal(migrated.state.financialHistory.at(-1)?.cumulativeRevenue, 0);
+	assert.deepEqual(migrated.state.contractMarket, current.contractMarket);
+	assert.deepEqual(migrated.state.activeContracts, current.activeContracts);
+});
+
 test("migrate upgrades v11 saves by canonicalizing legacy contract compatibility overrides", () => {
 	const legacyOffer: Contract = {
 		id: contractId("legacy-offer-v11"),
