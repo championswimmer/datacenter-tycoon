@@ -53,7 +53,10 @@ test("POST /players registers a username and returns the new player identity", a
 
   assert.equal(response.status, 201);
   assert.equal(json?.username, "Acme Cloud");
-  assert.match(json?.playerId ?? "", /^player_[a-f0-9]{32}$/);
+  assert.match(
+    json?.playerId ?? "",
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+  );
 });
 
 test("POST /players rejects duplicate usernames after case and whitespace normalization", async () => {
