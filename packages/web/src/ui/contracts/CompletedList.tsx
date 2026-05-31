@@ -18,7 +18,6 @@ const STATUS_LABEL: Record<ContractStatus, string> = {
 };
 
 function statusLabel(contract: Pick<Contract, "lifecycleState" | "status">): string {
-  if (contract.lifecycleState === "market_expired") return "OFFER EXPIRED";
   if (contract.lifecycleState === "completed") return "COMPLETED";
   return STATUS_LABEL[contract.status];
 }
@@ -30,13 +29,6 @@ function historyFinancials(
     return {
       className: styles.payment,
       label: `${fmt(contract.monthlyPayment)}/mo revenue`,
-    };
-  }
-
-  if (contract.lifecycleState === "market_expired") {
-    return {
-      className: styles.noPenalty,
-      label: "No penalty",
     };
   }
 
@@ -66,7 +58,7 @@ export function CompletedList() {
                   {statusLabel(contract)}
                 </span>
                 <div className={styles.name}>{contract.name}</div>
-                <div className={styles.dcLabel}>→ {view.assignedDcName ?? (contract.lifecycleState === "market_expired" ? "Not accepted" : "—")}</div>
+                <div className={styles.dcLabel}>→ {view.assignedDcName ?? "—"}</div>
                 <div className={styles.affinityRow}>
                   <span className={[
                     styles.affinityBadge,
@@ -90,8 +82,6 @@ export function CompletedList() {
         <span>Completed: <strong className={styles.footerRevenue}>{historySummary.completedCount}</strong></span>
         <span className={styles.footerDivider}>|</span>
         <span>Cancelled: <strong className={styles.footerPenalty}>{historySummary.cancelledCount}</strong></span>
-        <span className={styles.footerDivider}>|</span>
-        <span>Expired offers: <strong className={styles.footerExpired}>{historySummary.marketExpiredCount}</strong></span>
         <span className={styles.footerDivider}>|</span>
         <span>History: <strong>{historySummary.totalCount}</strong></span>
       </div>

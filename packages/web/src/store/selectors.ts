@@ -15,8 +15,8 @@ import {
   selectDatacenterMaintenanceStaffingViewFromState,
   selectDatacenterRackActivityViewFromState,
   selectDatacenterRackPowerSummaryFromState,
+  selectAccountedHistoricalContractsFromState,
   selectFinancialHistoryFromState,
-  selectHistoricalContractsFromState,
   selectLatestFinancialSnapshotFromState,
   selectLiveContractsFromState,
   selectOpenMarketContractsFromState,
@@ -256,21 +256,23 @@ const ACTIVE_CONTRACT_STATUS_ORDER: Record<Contract["status"], number> = {
   cancelled: 4,
 };
 
+const selectMemoizedAccountedHistoricalContracts = memoizeByInputs(
+  (state: GameState) => [selectHistoricalContracts(state)],
+  (state) => selectAccountedHistoricalContractsFromState(state),
+);
+
 const selectMemoizedHistoricalContractSummary = memoizeByInputs(
   (state: GameState) => [selectHistoricalContractViews(state)],
-  (state): HistoricalContractSummary => {
-    const views = selectHistoricalContractViews(state);
+  (_state): HistoricalContractSummary => {
+    const views = selectHistoricalContractViews(_state);
     let completedCount = 0;
     let cancelledCount = 0;
-    let marketExpiredCount = 0;
 
     for (const view of views) {
       if (view.contract.lifecycleState === "completed") {
         completedCount += 1;
       } else if (view.contract.lifecycleState === "cancelled") {
         cancelledCount += 1;
-      } else if (view.contract.lifecycleState === "market_expired") {
-        marketExpiredCount += 1;
       }
     }
 
@@ -278,7 +280,6 @@ const selectMemoizedHistoricalContractSummary = memoizeByInputs(
       views,
       completedCount,
       cancelledCount,
-      marketExpiredCount,
       totalCount: views.length,
     };
   },
@@ -835,7 +836,6 @@ export interface HistoricalContractSummary {
   views: AssignedContractView[];
   completedCount: number;
   cancelledCount: number;
-  marketExpiredCount: number;
   totalCount: number;
 }
 
@@ -934,7 +934,7 @@ export function selectActiveContractViews(state: GameState): ActiveContractView[
 }
 
 export function selectHistoricalContractViews(state: GameState): AssignedContractView[] {
-  return selectAssignedContractViews(state, selectHistoricalContracts(state));
+  return selectAssignedContractViews(state, selectMemoizedAccountedHistoricalContracts(state));
 }
 
 export function selectHistoricalContractSummary(state: GameState): HistoricalContractSummary {

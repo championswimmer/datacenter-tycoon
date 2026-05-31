@@ -634,7 +634,7 @@ describe("contract affinity selectors", () => {
     expect(selectHistoricalContractViews(stateWithAssignments)[0]?.affinity.badgeLabel).toBe("USA ONLY");
   });
 
-  it("summarizes historical contract counts in a single derived view", () => {
+  it("summarizes player-facing historical contract counts without expired offers", () => {
     const state = stateWithOneDc();
     const dcId = state.datacenters[0]!.id;
     const completedContract: Contract = {
@@ -661,9 +661,18 @@ describe("contract affinity selectors", () => {
       lifecycleState: "cancelled",
       status: "cancelled",
     };
+    const expiredOffer: Contract = {
+      ...completedContract,
+      id: "history-expired-offer" as Contract["id"],
+      lifecycleState: "market_expired",
+      status: "expired",
+      assignedDcId: undefined,
+      startedAtTick: undefined,
+      closedAtTick: state.tick,
+    };
     const historicalState: GameState = {
       ...state,
-      contracts: [completedContract, cancelledContract],
+      contracts: [completedContract, cancelledContract, expiredOffer],
       activeContracts: [],
       contractMarket: [],
     };
@@ -673,6 +682,10 @@ describe("contract affinity selectors", () => {
       cancelledCount: 1,
       totalCount: 2,
     });
+    expect(selectHistoricalContractViews(historicalState).map((view) => view.contract.id)).toEqual([
+      completedContract.id,
+      cancelledContract.id,
+    ]);
   });
 });
 
