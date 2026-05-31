@@ -1,5 +1,6 @@
-import type { GameState, LedgerEntry, Money } from "../types.js";
+import type { GameState } from "../types.js";
 import { summarizeNetworkCapacityFromState } from "./datacenters.js";
+import { selectCumulativeRevenueFromState } from "./finance.js";
 
 export const LEADERBOARD_METRIC_KEYS = [
   "money",
@@ -36,6 +37,7 @@ export function summarizeLeaderboardFromState(
     | "tick"
     | "player"
     | "ledger"
+    | "financialHistory"
     | "datacenters"
     | "contracts"
     | "contractMarket"
@@ -49,7 +51,7 @@ export function summarizeLeaderboardFromState(
     gameMonth: state.tick,
     metrics: normalizeLeaderboardMetrics({
       money: state.player.cash,
-      cumulativeRevenue: summarizeCumulativeRevenue(state.ledger),
+      cumulativeRevenue: selectCumulativeRevenueFromState(state),
       totalServers: countInstalledServers(state),
       computeCapacity: network.installed.vCpu,
       memoryCapacity: network.installed.ramGb,
@@ -57,14 +59,6 @@ export function summarizeLeaderboardFromState(
       gpuCapacity: network.installed.gpuFlops,
     }),
   };
-}
-
-export function summarizeCumulativeRevenue(
-  ledger: readonly Pick<LedgerEntry, "type" | "amount">[],
-): Money {
-  return ledger
-    .filter((entry) => entry.type === "revenue")
-    .reduce((sum, entry) => sum + entry.amount, 0);
 }
 
 export function countInstalledServers(
