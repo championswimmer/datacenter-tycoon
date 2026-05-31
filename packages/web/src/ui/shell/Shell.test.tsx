@@ -87,6 +87,22 @@ describe("Shell tutorial flow", () => {
 });
 
 describe("Shell route recovery", () => {
+  it("renders the finances screen for the finances route", async () => {
+    window.location.hash = "#/finances";
+
+    render(
+      <Wrapper state={stateWithGarageDatacenter()}>
+        <Shell />
+      </Wrapper>,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByRole("heading", { name: "FINANCES" })).toBeTruthy();
+  });
+
   it("redirects a stale datacenter route to the first available datacenter", async () => {
     const state = stateWithGarageDatacenter();
     window.location.hash = "#/dc/missing-dc/floor";

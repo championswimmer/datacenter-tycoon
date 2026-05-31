@@ -20,12 +20,12 @@ owner: game-logic/web
   - [x] 2.3 Add finance query helpers for history, latest snapshot, and cumulative revenue
   - [x] 2.4 Migrate older saves by backfilling finance history from ledger entries
   - [x] 2.5 Add game-logic tests for snapshots, migration, and leaderboard summary parity
-- [ ] **Phase 3 — Global finances screen with charts**
+- [x] **Phase 3 — Global finances screen with charts**
   - [x] 3.1 Add a global `#/finances` route and navigation entry next to regions/contracts/datacenters
   - [x] 3.2 Build the finances page summary cards and month table
   - [x] 3.3 Add an SVG cash-history line chart
   - [x] 3.4 Add an SVG monthly revenue/OpEx/net bar chart
-  - [ ] 3.5 Add responsive styles and web tests for the finances page
+  - [x] 3.5 Add responsive styles and web tests for the finances page
 - [ ] **Phase 4 — Contract history cleanup**
   - [ ] 4.1 Add a game-logic query for player-accounted historical contracts that excludes unaccepted expired offers
   - [ ] 4.2 Update web contract history selectors and UI footer copy to use the filtered history

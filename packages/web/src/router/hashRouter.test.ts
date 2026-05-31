@@ -10,6 +10,7 @@ const cases: Array<[string, Route]> = [
   ["#/dc/dc-abc/contracts", { view: "dc", dcId: "dc-abc", tab: "contracts" }],
   ["#/dc/dc-abc",           { view: "dc", dcId: "dc-abc", tab: "floor" }],
   ["#/contracts",           { view: "contracts" }],
+  ["#/finances",            { view: "finances" }],
   ["#/log",                 { view: "log" }],
   ["#/__theme",             { view: "theme-playground" }],
   ["#/unknown",             { view: "home" }],
@@ -31,6 +32,11 @@ describe("routeToHash", () => {
 
   it("round-trips contracts route", () => {
     const route: Route = { view: "contracts" };
+    expect(parseRoute(routeToHash(route))).toEqual(route);
+  });
+
+  it("round-trips finances route", () => {
+    const route: Route = { view: "finances" };
     expect(parseRoute(routeToHash(route))).toEqual(route);
   });
 
