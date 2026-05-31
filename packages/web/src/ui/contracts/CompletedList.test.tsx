@@ -91,15 +91,15 @@ describe("CompletedList", () => {
     const footer = screen.getByText((_content, element) => Boolean(
       element?.textContent?.includes("Completed: 1")
       && element.textContent.includes("Cancelled: 1")
-      && element.textContent.includes("Expired offers: 0")
       && element.textContent.includes("History: 2")
       && element.className.includes("aggregateFooter")
     ));
 
     expect(footer).toBeTruthy();
+    expect(screen.queryByText(/Expired offers:/i)).toBeNull();
   });
 
-  it("renders expired unaccepted offers without a penalty", () => {
+  it("hides expired unaccepted offers while keeping the empty history state", () => {
     const state = buildHistoricalState();
     const {
       assignedDcId: _assignedDcId,
@@ -117,9 +117,8 @@ describe("CompletedList", () => {
 
     renderCompleted(state);
 
-    expect(screen.getByText("OFFER EXPIRED")).toBeTruthy();
-    expect(screen.getByText("→ Not accepted")).toBeTruthy();
-    expect(screen.getByText("No penalty")).toBeTruthy();
-    expect(screen.queryByText(/\/mo penalty/i)).toBeNull();
+    expect(screen.getByText("No historical contracts yet.")).toBeTruthy();
+    expect(screen.queryByText("OFFER EXPIRED")).toBeNull();
+    expect(screen.queryByText("No penalty")).toBeNull();
   });
 });
