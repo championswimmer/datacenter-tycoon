@@ -1,7 +1,7 @@
 import type { Difficulty } from "@datacenter-tycoon/game-logic";
 import type { StoredPlayerIdentity } from "../../store/playerIdentity.js";
 import { formatGameDateShort, tickToGameDate } from "../../store/gameTime.js";
-import type { LeaderboardListResult } from "../../online/leaderboard.js";
+import type { LeaderboardListResult, LeaderboardQueryMetric } from "../../online/leaderboard.js";
 import type { SaveInfo } from "../../store/persist.js";
 import gameBannerUrl from "@assets/images/game-banner-001.jpg";
 import gameBannerMobileUrl from "@assets/images/game-banner-001-mobile.jpg";
@@ -23,11 +23,13 @@ interface StartScreenProps {
   onLoadGame: () => void;
   onNewGame: () => void | Promise<void>;
   isLeaderboardOpen: boolean;
+  activeLeaderboardMetric: LeaderboardQueryMetric;
   isLeaderboardLoading: boolean;
   leaderboardResult: LeaderboardListResult | null;
   leaderboardError: string | null;
   onOpenLeaderboard: () => void;
   onCloseLeaderboard: () => void;
+  onSelectLeaderboardMetric: (metric: LeaderboardQueryMetric) => void;
   onRetryLeaderboard: () => void;
 }
 
@@ -57,11 +59,13 @@ export function StartScreen({
   onLoadGame,
   onNewGame,
   isLeaderboardOpen,
+  activeLeaderboardMetric,
   isLeaderboardLoading,
   leaderboardResult,
   leaderboardError,
   onOpenLeaderboard,
   onCloseLeaderboard,
+  onSelectLeaderboardMetric,
   onRetryLeaderboard,
 }: StartScreenProps) {
   const latestSaveDate = latestSave
@@ -238,10 +242,12 @@ export function StartScreen({
 
       {isLeaderboardOpen && (
         <LeaderboardDialog
+          activeMetric={activeLeaderboardMetric}
           result={leaderboardResult}
           isLoading={isLeaderboardLoading}
           errorMessage={leaderboardError}
           onClose={onCloseLeaderboard}
+          onSelectMetric={onSelectLeaderboardMetric}
           onRetry={onRetryLeaderboard}
         />
       )}

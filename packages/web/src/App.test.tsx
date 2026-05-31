@@ -297,37 +297,105 @@ describe("App start flow", () => {
     });
   });
 
-  it("opens the start-screen leaderboard dialog and renders fetched entries", async () => {
-    fetchMock.mockResolvedValue(
-      new Response(JSON.stringify({
-        metric: "money",
-        period: "all-time",
-        limit: 10,
-        entries: [
-          {
-            rank: 1,
-            playerId: CLOUD_ATLAS_PLAYER_ID,
-            username: "Cloud Atlas",
-            metric: "money",
-            value: 2_400_000,
-            submittedAt: "2026-05-18T12:00:00.000Z",
-            gameMonth: 18,
-            metrics: {
-              money: 2_400_000,
-              cumulativeRevenue: 900_000,
-              totalServers: 12,
-              computeCapacity: 640,
-              memoryCapacity: 1024,
-              storageCapacity: 256,
-              gpuCapacity: 32,
+  it("switches leaderboard metric tabs and reuses cached results", async () => {
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes("metric=money")) {
+        return new Response(JSON.stringify({
+          metric: "money",
+          period: "all-time",
+          limit: 10,
+          entries: [
+            {
+              rank: 1,
+              playerId: CLOUD_ATLAS_PLAYER_ID,
+              username: "Cloud Atlas",
+              metric: "money",
+              value: 2_400_000,
+              submittedAt: "2026-05-18T12:00:00.000Z",
+              gameMonth: 18,
+              metrics: {
+                money: 2_400_000,
+                cumulativeRevenue: 900_000,
+                totalServers: 12,
+                computeCapacity: 640,
+                memoryCapacity: 1024,
+                storageCapacity: 256,
+                gpuCapacity: 32,
+              },
             },
-          },
-        ],
-      }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      }),
-    );
+          ],
+        }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+
+      if (url.includes("metric=cumulativeRevenue")) {
+        return new Response(JSON.stringify({
+          metric: "cumulativeRevenue",
+          period: "all-time",
+          limit: 10,
+          entries: [
+            {
+              rank: 1,
+              playerId: CLOUD_ATLAS_PLAYER_ID,
+              username: "Cloud Atlas",
+              metric: "cumulativeRevenue",
+              value: 900_000,
+              submittedAt: "2026-05-19T12:00:00.000Z",
+              gameMonth: 18,
+              metrics: {
+                money: 2_400_000,
+                cumulativeRevenue: 900_000,
+                totalServers: 12,
+                computeCapacity: 640,
+                memoryCapacity: 1024,
+                storageCapacity: 256,
+                gpuCapacity: 32,
+              },
+            },
+          ],
+        }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+
+      if (url.includes("metric=totalServers")) {
+        return new Response(JSON.stringify({
+          metric: "totalServers",
+          period: "all-time",
+          limit: 10,
+          entries: [
+            {
+              rank: 1,
+              playerId: CLOUD_ATLAS_PLAYER_ID,
+              username: "Cloud Atlas",
+              metric: "totalServers",
+              value: 42,
+              submittedAt: "2026-05-20T12:00:00.000Z",
+              gameMonth: 18,
+              metrics: {
+                money: 2_400_000,
+                cumulativeRevenue: 900_000,
+                totalServers: 42,
+                computeCapacity: 640,
+                memoryCapacity: 1024,
+                storageCapacity: 256,
+                gpuCapacity: 32,
+              },
+            },
+          ],
+        }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+
+      throw new Error(`Unexpected leaderboard request: ${url}`);
+    });
 
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "View Leaderboard" }));
@@ -338,6 +406,29 @@ describe("App start flow", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.dctycoon.test/leaderboard?metric=money&period=all-time&limit=10",
     );
+
+    fireEvent.click(screen.getByRole("button", { name: "Revenue" }));
+
+    expect(await screen.findByRole("dialog", { name: "Revenue Leaderboard" })).toBeTruthy();
+    expect(await screen.findByText("$900,000")).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.dctycoon.test/leaderboard?metric=cumulativeRevenue&period=all-time&limit=10",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Servers" }));
+
+    expect(await screen.findByRole("dialog", { name: "Servers Leaderboard" })).toBeTruthy();
+    expect(await screen.findByText("42")).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.dctycoon.test/leaderboard?metric=totalServers&period=all-time&limit=10",
+    );
+
+    const fetchCallCount = fetchMock.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "Cash" }));
+
+    expect(await screen.findByRole("dialog", { name: "Cash Leaderboard" })).toBeTruthy();
+    expect(await screen.findByText("$2,400,000")).toBeTruthy();
+    expect(fetchMock.mock.calls).toHaveLength(fetchCallCount);
 
     fireEvent.click(screen.getByRole("button", { name: "Close leaderboard" }));
 

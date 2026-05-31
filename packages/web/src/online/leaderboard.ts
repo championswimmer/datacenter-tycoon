@@ -28,6 +28,26 @@ export interface LeaderboardSubmissionResult {
 export type LeaderboardQueryMetric = keyof LeaderboardMetrics | "totalCapacity";
 export type LeaderboardPeriod = "all-time";
 
+export interface StartScreenLeaderboardTab {
+  metric: LeaderboardQueryMetric;
+  label: string;
+}
+
+export const START_SCREEN_LEADERBOARD_TABS = [
+  { metric: "money", label: "Cash" },
+  { metric: "cumulativeRevenue", label: "Revenue" },
+  { metric: "totalServers", label: "Servers" },
+  { metric: "totalCapacity", label: "Capacity" },
+  { metric: "computeCapacity", label: "Compute" },
+  { metric: "memoryCapacity", label: "Memory" },
+  { metric: "storageCapacity", label: "Storage" },
+  { metric: "gpuCapacity", label: "GPU" },
+] as const satisfies readonly StartScreenLeaderboardTab[];
+
+export const DEFAULT_START_SCREEN_LEADERBOARD_METRIC = START_SCREEN_LEADERBOARD_TABS[0].metric;
+export const DEFAULT_START_SCREEN_LEADERBOARD_PERIOD: LeaderboardPeriod = "all-time";
+export const DEFAULT_START_SCREEN_LEADERBOARD_LIMIT = 10;
+
 export interface LeaderboardEntry {
   rank: number;
   playerId: string;
@@ -50,6 +70,10 @@ export interface FetchLeaderboardOptions {
   metric?: LeaderboardQueryMetric;
   period?: LeaderboardPeriod;
   limit?: number;
+}
+
+export function getLeaderboardMetricLabel(metric: LeaderboardQueryMetric): string {
+  return START_SCREEN_LEADERBOARD_TABS.find((tab) => tab.metric === metric)?.label ?? metric;
 }
 
 export class LeaderboardSubmissionError extends Error {
@@ -104,9 +128,9 @@ export async function fetchLeaderboard(
   }
 
   const url = new URL("/leaderboard", `${baseUrl}/`);
-  url.searchParams.set("metric", options.metric ?? "money");
-  url.searchParams.set("period", options.period ?? "all-time");
-  url.searchParams.set("limit", String(options.limit ?? 10));
+  url.searchParams.set("metric", options.metric ?? DEFAULT_START_SCREEN_LEADERBOARD_METRIC);
+  url.searchParams.set("period", options.period ?? DEFAULT_START_SCREEN_LEADERBOARD_PERIOD);
+  url.searchParams.set("limit", String(options.limit ?? DEFAULT_START_SCREEN_LEADERBOARD_LIMIT));
 
   let response: Response;
 

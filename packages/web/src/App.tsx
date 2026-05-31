@@ -2,8 +2,12 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react"
 import type { Difficulty } from "@datacenter-tycoon/game-logic";
 import {
   buildLeaderboardRunSubmission,
+  DEFAULT_START_SCREEN_LEADERBOARD_LIMIT,
+  DEFAULT_START_SCREEN_LEADERBOARD_METRIC,
+  DEFAULT_START_SCREEN_LEADERBOARD_PERIOD,
   fetchLeaderboard,
   type LeaderboardListResult,
+  type LeaderboardQueryMetric,
   LeaderboardQueryError,
   LeaderboardSubmissionError,
   submitLeaderboardRun,
@@ -42,12 +46,6 @@ const LEADERBOARD_SYNC_UNAVAILABLE_NOTICE = "Online leaderboard sync is unavaila
 const LEADERBOARD_QUERY_FAILED_MESSAGE = "Could not load the online leaderboard right now.";
 const TRANSIENT_STATUS_MESSAGE_DURATION_MS = 3_000;
 
-const START_SCREEN_LEADERBOARD_QUERY = {
-  metric: "money",
-  period: "all-time",
-  limit: 10,
-} as const;
-
 function createAppSession(
   choice: StartChoice,
   difficulty: Difficulty,
@@ -62,6 +60,10 @@ function createAppSession(
   return createFreshSession({ difficulty, playerName });
 }
 
+type LeaderboardResultCache = Partial<Record<LeaderboardQueryMetric, LeaderboardListResult>>;
+type LeaderboardErrorCache = Partial<Record<LeaderboardQueryMetric, string>>;
+type LeaderboardLoadingCache = Partial<Record<LeaderboardQueryMetric, boolean>>;
+
 interface AppSessionController {
   session: StoreSession | null;
   hasSavedGame: boolean;
@@ -73,6 +75,7 @@ interface AppSessionController {
   isStarting: boolean;
   selectedDifficulty: Difficulty;
   isLeaderboardOpen: boolean;
+  activeLeaderboardMetric: LeaderboardQueryMetric;
   isLeaderboardLoading: boolean;
   leaderboardResult: LeaderboardListResult | null;
   leaderboardError: string | null;
@@ -82,6 +85,7 @@ interface AppSessionController {
   loadLatestGame: () => void;
   openLeaderboard: () => void;
   closeLeaderboard: () => void;
+  selectLeaderboardMetric: (metric: LeaderboardQueryMetric) => void;
   retryLeaderboard: () => void;
 }
 
@@ -99,9 +103,12 @@ function useAppSession(): AppSessionController {
   const [startError, setStartError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
-  const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
-  const [leaderboardResult, setLeaderboardResult] = useState<LeaderboardListResult | null>(null);
-  const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
+  const [activeLeaderboardMetric, setActiveLeaderboardMetric] = useState<LeaderboardQueryMetric>(
+    DEFAULT_START_SCREEN_LEADERBOARD_METRIC,
+  );
+  const [leaderboardResultsByMetric, setLeaderboardResultsByMetric] = useState<LeaderboardResultCache>({});
+  const [leaderboardErrorsByMetric, setLeaderboardErrorsByMetric] = useState<LeaderboardErrorCache>({});
+  const [leaderboardLoadingByMetric, setLeaderboardLoadingByMetric] = useState<LeaderboardLoadingCache>({});
   const sessionRef = useRef<StoreSession | null>(null);
 
   useEffect(() => {
@@ -198,29 +205,59 @@ function useAppSession(): AppSessionController {
     };
   }, [statusMessage]);
 
-  const loadLeaderboard = useCallback(async () => {
-    if (isLeaderboardLoading) {
+  const loadLeaderboard = useCallback(async (
+    metric: LeaderboardQueryMetric,
+    options: { force?: boolean } = {},
+  ) => {
+    if (leaderboardLoadingByMetric[metric]) {
       return;
     }
 
-    setIsLeaderboardLoading(true);
-    setLeaderboardError(null);
+    if (!options.force && leaderboardResultsByMetric[metric]) {
+      return;
+    }
+
+    setLeaderboardLoadingByMetric((current) => ({
+      ...current,
+      [metric]: true,
+    }));
+    setLeaderboardErrorsByMetric((current) => {
+      const next = { ...current };
+      delete next[metric];
+      return next;
+    });
 
     try {
-      const result = await fetchLeaderboard(START_SCREEN_LEADERBOARD_QUERY);
-      setLeaderboardResult(result);
+      const result = await fetchLeaderboard({
+        metric,
+        period: DEFAULT_START_SCREEN_LEADERBOARD_PERIOD,
+        limit: DEFAULT_START_SCREEN_LEADERBOARD_LIMIT,
+      });
+      setLeaderboardResultsByMetric((current) => ({
+        ...current,
+        [metric]: result,
+      }));
     } catch (error) {
-      if (error instanceof LeaderboardQueryError) {
-        setLeaderboardError(error.message);
-      } else if (error instanceof Error) {
-        setLeaderboardError(error.message);
-      } else {
-        setLeaderboardError(LEADERBOARD_QUERY_FAILED_MESSAGE);
-      }
+      const message = error instanceof LeaderboardQueryError || error instanceof Error
+        ? error.message
+        : LEADERBOARD_QUERY_FAILED_MESSAGE;
+
+      setLeaderboardErrorsByMetric((current) => ({
+        ...current,
+        [metric]: message,
+      }));
     } finally {
-      setIsLeaderboardLoading(false);
+      setLeaderboardLoadingByMetric((current) => {
+        const next = { ...current };
+        delete next[metric];
+        return next;
+      });
     }
-  }, [isLeaderboardLoading]);
+  }, [leaderboardLoadingByMetric, leaderboardResultsByMetric]);
+
+  const leaderboardResult = leaderboardResultsByMetric[activeLeaderboardMetric] ?? null;
+  const leaderboardError = leaderboardErrorsByMetric[activeLeaderboardMetric] ?? null;
+  const isLeaderboardLoading = Boolean(leaderboardLoadingByMetric[activeLeaderboardMetric]);
 
   useEffect(() => {
     if (!session || !playerIdentity) {
@@ -318,6 +355,7 @@ function useAppSession(): AppSessionController {
     isStarting,
     selectedDifficulty,
     isLeaderboardOpen,
+    activeLeaderboardMetric,
     isLeaderboardLoading,
     leaderboardResult,
     leaderboardError,
@@ -327,13 +365,15 @@ function useAppSession(): AppSessionController {
     loadLatestGame: () => replaceSession("load", playerIdentity?.username ?? usernameDraft.trim()),
     openLeaderboard: () => {
       setIsLeaderboardOpen(true);
-      if (!leaderboardResult && !isLeaderboardLoading) {
-        void loadLeaderboard();
-      }
+      void loadLeaderboard(activeLeaderboardMetric);
     },
     closeLeaderboard: () => setIsLeaderboardOpen(false),
+    selectLeaderboardMetric: (metric) => {
+      setActiveLeaderboardMetric(metric);
+      void loadLeaderboard(metric);
+    },
     retryLeaderboard: () => {
-      void loadLeaderboard();
+      void loadLeaderboard(activeLeaderboardMetric, { force: true });
     },
   };
 }
@@ -350,6 +390,7 @@ export default function App() {
     isStarting,
     selectedDifficulty,
     isLeaderboardOpen,
+    activeLeaderboardMetric,
     isLeaderboardLoading,
     leaderboardResult,
     leaderboardError,
@@ -359,6 +400,7 @@ export default function App() {
     loadLatestGame,
     openLeaderboard,
     closeLeaderboard,
+    selectLeaderboardMetric,
     retryLeaderboard,
   } = useAppSession();
 
@@ -383,6 +425,7 @@ export default function App() {
         isStarting={isStarting}
         selectedDifficulty={selectedDifficulty}
         isLeaderboardOpen={isLeaderboardOpen}
+        activeLeaderboardMetric={activeLeaderboardMetric}
         isLeaderboardLoading={isLeaderboardLoading}
         leaderboardResult={leaderboardResult}
         leaderboardError={leaderboardError}
@@ -393,6 +436,7 @@ export default function App() {
         onNewGame={startNewGame}
         onOpenLeaderboard={openLeaderboard}
         onCloseLeaderboard={closeLeaderboard}
+        onSelectLeaderboardMetric={selectLeaderboardMetric}
         onRetryLeaderboard={retryLeaderboard}
       />
     );

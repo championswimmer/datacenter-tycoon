@@ -1,13 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import type { LeaderboardListResult } from "../../online/leaderboard.js";
+import {
+  DEFAULT_START_SCREEN_LEADERBOARD_LIMIT,
+  getLeaderboardMetricLabel,
+  START_SCREEN_LEADERBOARD_TABS,
+  type LeaderboardListResult,
+  type LeaderboardQueryMetric,
+} from "../../online/leaderboard.js";
 import { useDialogFocus } from "../dialogFocus.js";
 import styles from "./LeaderboardDialog.module.css";
 
 interface LeaderboardDialogProps {
+  activeMetric: LeaderboardQueryMetric;
   result: LeaderboardListResult | null;
   isLoading: boolean;
   errorMessage: string | null;
   onClose: () => void;
+  onSelectMetric: (metric: LeaderboardQueryMetric) => void;
   onRetry: () => void;
 }
 
@@ -26,25 +34,24 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, {
 });
 
 export function LeaderboardDialog({
+  activeMetric,
   result,
   isLoading,
   errorMessage,
   onClose,
+  onSelectMetric,
   onRetry,
 }: LeaderboardDialogProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   useDialogFocus(closeButtonRef);
 
-  const heading = useMemo(() => {
-    if (!result) {
-      return "Online Leaderboard";
-    }
-
-    return `${formatMetricLabel(result.metric)} Leaderboard`;
-  }, [result]);
+  const heading = useMemo(
+    () => `${getLeaderboardMetricLabel(activeMetric)} Leaderboard`,
+    [activeMetric],
+  );
 
   const subtitle = useMemo(() => {
-    const limit = result?.limit ?? 10;
+    const limit = result?.limit ?? DEFAULT_START_SCREEN_LEADERBOARD_LIMIT;
     return `Top ${limit} runs across all time`;
   }, [result]);
 
@@ -97,9 +104,27 @@ export function LeaderboardDialog({
         </header>
 
         <div className={styles.content}>
+          <div className={styles.tabList} aria-label="Leaderboard metrics">
+            {START_SCREEN_LEADERBOARD_TABS.map((tab) => {
+              const isActive = tab.metric === activeMetric;
+
+              return (
+                <button
+                  key={tab.metric}
+                  type="button"
+                  className={[styles.tabButton, isActive ? styles.tabButtonActive : ""].join(" ")}
+                  aria-pressed={isActive}
+                  onClick={() => onSelectMetric(tab.metric)}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
           {isLoading ? (
             <div className={styles.stateMessage} role="status">
-              Loading leaderboard…
+              Loading {getLeaderboardMetricLabel(activeMetric).toLowerCase()} leaderboard…
             </div>
           ) : errorMessage ? (
             <div className={styles.stateStack}>
@@ -113,12 +138,12 @@ export function LeaderboardDialog({
           ) : result && result.entries.length > 0 ? (
             <ol className={styles.entryList}>
               {result.entries.map((entry) => (
-                <li key={`${entry.playerId}-${entry.rank}`} className={styles.entryRow}>
+                <li key={`${entry.playerId}-${entry.rank}-${entry.metric}`} className={styles.entryRow}>
                   <div className={styles.rankBadge}>#{entry.rank}</div>
                   <div className={styles.entryBody}>
                     <div className={styles.entryHeader}>
                       <span className={styles.username}>{entry.username}</span>
-                      <span className={styles.value}>{formatMetricValue(entry.metric, entry.value)}</span>
+                      <span className={styles.value}>{formatMetricValue(activeMetric, entry.value)}</span>
                     </div>
                     <div className={styles.entryMeta}>
                       <span>Month {numberFormatter.format(entry.gameMonth)}</span>
@@ -130,7 +155,7 @@ export function LeaderboardDialog({
             </ol>
           ) : (
             <div className={styles.stateMessage} role="status">
-              No leaderboard runs have been submitted yet. Start a game and claim the top spot.
+              No {getLeaderboardMetricLabel(activeMetric).toLowerCase()} leaderboard runs have been submitted yet.
             </div>
           )}
         </div>
@@ -139,30 +164,7 @@ export function LeaderboardDialog({
   );
 }
 
-function formatMetricLabel(metric: NonNullable<LeaderboardListResult["metric"]>): string {
-  switch (metric) {
-    case "money":
-      return "Cash";
-    case "cumulativeRevenue":
-      return "Revenue";
-    case "totalServers":
-      return "Servers";
-    case "computeCapacity":
-      return "Compute";
-    case "memoryCapacity":
-      return "Memory";
-    case "storageCapacity":
-      return "Storage";
-    case "gpuCapacity":
-      return "GPU";
-    case "totalCapacity":
-      return "Total Capacity";
-    default:
-      return metric;
-  }
-}
-
-function formatMetricValue(metric: LeaderboardListResult["metric"], value: number): string {
+function formatMetricValue(metric: LeaderboardQueryMetric, value: number): string {
   if (metric === "money" || metric === "cumulativeRevenue") {
     return currencyFormatter.format(value);
   }

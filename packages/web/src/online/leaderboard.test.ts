@@ -84,6 +84,31 @@ describe("online leaderboard", () => {
     expect(result.entries[0]?.username).toBe("Acme Cloud");
   });
 
+  it("fetchLeaderboard accepts explicit metric queries for leaderboard tabs", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({
+        metric: "totalServers",
+        period: "all-time",
+        limit: 5,
+        entries: [],
+      }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const result = await fetchLeaderboard({
+      metric: "totalServers",
+      limit: 5,
+    }, fetchMock);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.dctycoon.test/leaderboard?metric=totalServers&period=all-time&limit=5",
+    );
+    expect(result.metric).toBe("totalServers");
+    expect(result.limit).toBe(5);
+  });
+
   it("fetchLeaderboard surfaces structured API errors", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(JSON.stringify({
