@@ -1,7 +1,7 @@
 ---
 name: Finance History and Leaderboard Polish
 description: Add cumulative revenue visibility, persisted monthly finance history, a finances screen with charts, leaderboard duration formatting, and cleaner contract history.
-status: created
+status: started
 created: 2026-05-31
 updated: 2026-05-31
 owner: game-logic/web
@@ -10,7 +10,7 @@ owner: game-logic/web
 ## Progress
 
 - [ ] **Phase 1 — Lightweight HUD and leaderboard polish**
-  - [ ] 1.1 Add a reusable cumulative-revenue selector for web UI
+  - [x] 1.1 Add a reusable cumulative-revenue selector for web UI
   - [ ] 1.2 Show total cumulative revenue in the top bar beside cash
   - [ ] 1.3 Format leaderboard run duration as years and months instead of raw months
   - [ ] 1.4 Add focused web tests for the new HUD value and leaderboard duration copy

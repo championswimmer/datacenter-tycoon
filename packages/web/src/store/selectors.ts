@@ -26,6 +26,7 @@ import {
   summarizeAllRegionFabricViewsFromState,
   summarizeNetworkCapacityFromState,
   summarizeContractRegionAffinity,
+  summarizeCumulativeRevenue,
   summarizeOpenMarketContractFits,
   summarizeRegionFabricViewFromState,
   tickOpex,
@@ -508,6 +509,10 @@ export function selectAnimatedGameTimeView(state: GameState, fraction = 0): Game
 
 export function selectCash(state: GameState): Money {
   return state.player.cash;
+}
+
+export function selectCumulativeRevenue(state: GameState): Money {
+  return summarizeCumulativeRevenue(state.ledger);
 }
 
 export function selectDifficulty(state: GameState): Difficulty {
