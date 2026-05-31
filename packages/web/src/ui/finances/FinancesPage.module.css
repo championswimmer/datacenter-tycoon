@@ -79,6 +79,12 @@
   border-color: rgba(255, 196, 61, 0.28);
 }
 
+.chartGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
 .section {
   display: flex;
   flex-direction: column;

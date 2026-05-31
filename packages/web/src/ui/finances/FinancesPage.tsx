@@ -5,6 +5,7 @@ import {
   selectFinancialHistory,
 } from "../../store/selectors.js";
 import { formatGameDateShort, tickToGameDate } from "../../store/gameTime.js";
+import { CashHistoryChart } from "./CashHistoryChart.js";
 import styles from "./FinancesPage.module.css";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -61,6 +62,10 @@ export function FinancesPage() {
           value={formatCompactMoney(overview.lastMonthNetOperating)}
           tone={overview.lastMonthNetOperating >= 0 ? "profit" : "loss"}
         />
+      </div>
+
+      <div className={styles.chartGrid}>
+        <CashHistoryChart snapshots={financialHistory} />
       </div>
 
       <section className={styles.section}>
