@@ -9,11 +9,11 @@ owner: game-logic/web
 
 ## Progress
 
-- [ ] **Phase 1 — Lightweight HUD and leaderboard polish**
+- [x] **Phase 1 — Lightweight HUD and leaderboard polish**
   - [x] 1.1 Add a reusable cumulative-revenue selector for web UI
   - [x] 1.2 Show total cumulative revenue in the top bar beside cash
   - [x] 1.3 Format leaderboard run duration as years and months instead of raw months
-  - [ ] 1.4 Add focused web tests for the new HUD value and leaderboard duration copy
+  - [x] 1.4 Add focused web tests for the new HUD value and leaderboard duration copy
 - [ ] **Phase 2 — Persisted monthly finance history in game logic**
   - [ ] 2.1 Add a serialized monthly finance snapshot model to `GameState`
   - [ ] 2.2 Initialize and append finance snapshots during new-game and monthly settlement flows
