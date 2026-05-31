@@ -15,7 +15,9 @@ import {
   selectDatacenterMaintenanceStaffingViewFromState,
   selectDatacenterRackActivityViewFromState,
   selectDatacenterRackPowerSummaryFromState,
+  selectFinancialHistoryFromState,
   selectHistoricalContractsFromState,
+  selectLatestFinancialSnapshotFromState,
   selectLiveContractsFromState,
   selectOpenMarketContractsFromState,
   summarizeDatacenterCapacityFromState,
@@ -25,6 +27,7 @@ import {
   summarizeDatacenterUpgradeViewFromState,
   summarizeAllRegionFabricViewsFromState,
   summarizeNetworkCapacityFromState,
+  selectCumulativeRevenueFromState,
   summarizeContractRegionAffinity,
   summarizeCumulativeRevenue,
   summarizeOpenMarketContractFits,
@@ -52,6 +55,7 @@ import type {
   Subtick,
   DatacenterCapacityFromStateSummary,
   DatacenterFabricStatusView,
+  FinancialSnapshot,
   DatacenterInfrastructureView,
   DatacenterMaintenanceStaffingView,
   DatacenterUpgradeView,
@@ -512,7 +516,7 @@ export function selectCash(state: GameState): Money {
 }
 
 export function selectCumulativeRevenue(state: GameState): Money {
-  return summarizeCumulativeRevenue(state.ledger);
+  return selectCumulativeRevenueFromState(state);
 }
 
 export function selectDifficulty(state: GameState): Difficulty {
@@ -1102,6 +1106,38 @@ export function selectRackPowerSummary(state: GameState): AggregateRackPowerSumm
 /** Real-time resource usage (power, cooling, bandwidth, slots). */
 export function selectResourceUsage(state: GameState): AggregateResourceUsage {
   return selectMemoizedResourceUsage(state);
+}
+
+export function selectFinancialHistory(state: GameState): FinancialSnapshot[] {
+  return selectFinancialHistoryFromState(state);
+}
+
+export function selectLatestFinancialSnapshot(state: GameState): FinancialSnapshot | undefined {
+  return selectLatestFinancialSnapshotFromState(state);
+}
+
+export interface FinanceOverview {
+  currentCash: Money;
+  cumulativeRevenue: Money;
+  lastMonthRevenue: Money;
+  lastMonthOpex: Money;
+  lastMonthPenalty: Money;
+  lastMonthCapex: Money;
+  lastMonthNetOperating: Money;
+}
+
+export function selectFinanceOverview(state: GameState): FinanceOverview {
+  const latestSnapshot = selectLatestFinancialSnapshot(state);
+
+  return {
+    currentCash: selectCash(state),
+    cumulativeRevenue: selectCumulativeRevenue(state),
+    lastMonthRevenue: latestSnapshot?.revenue ?? 0,
+    lastMonthOpex: latestSnapshot?.opex ?? 0,
+    lastMonthPenalty: latestSnapshot?.penalty ?? 0,
+    lastMonthCapex: latestSnapshot?.capex ?? 0,
+    lastMonthNetOperating: latestSnapshot?.netOperating ?? 0,
+  };
 }
 
 export interface MonthlyPnl {

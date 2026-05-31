@@ -1,9 +1,11 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-5);
   padding: var(--space-5);
   min-width: 0;
+  height: 100%;
+  overflow: auto;
 }
 
 .header {
@@ -17,7 +19,7 @@
   font-family: var(--font-display);
   font-size: var(--text-xl);
   color: var(--fg-0);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.16em;
 }
 
 .subtitle {
@@ -25,4 +27,165 @@
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   color: var(--fg-2);
+  max-width: 72ch;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.summaryCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--grid);
+  background: var(--bg-2);
+  min-width: 0;
+}
+
+.summaryLabel {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.summaryValue {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  color: var(--fg-0);
+}
+
+.toneCash {
+  border-color: rgba(94, 240, 255, 0.28);
+}
+
+.toneRevenue,
+.toneProfit {
+  border-color: rgba(165, 255, 125, 0.28);
+}
+
+.toneExpense,
+.toneLoss {
+  border-color: rgba(255, 84, 112, 0.28);
+}
+
+.toneNeutral {
+  border-color: rgba(255, 196, 61, 0.28);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  letter-spacing: 0.14em;
+  color: var(--fg-0);
+}
+
+.sectionMeta {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-2);
+}
+
+.emptyState {
+  padding: var(--space-5);
+  border: 1px dashed var(--grid);
+  border-radius: var(--radius-md);
+  background: var(--bg-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--fg-2);
+}
+
+.tableWrap {
+  overflow: auto;
+  border: 1px solid var(--grid);
+  border-radius: var(--radius-md);
+  background: var(--bg-2);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 820px;
+}
+
+.table th,
+.table td {
+  padding: var(--space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--grid);
+  white-space: nowrap;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-1);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.table td {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-1);
+}
+
+.table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.valueRevenue,
+.valueProfit {
+  color: var(--neon-lime);
+}
+
+.valueExpense,
+.valueLoss {
+  color: var(--neon-red);
+}
+
+@media (max-width: 1024px) {
+  .summaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: var(--space-4);
+  }
+
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
