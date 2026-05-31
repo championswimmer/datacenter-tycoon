@@ -5,6 +5,7 @@ import {
   selectActiveContracts,
   selectAudioSettings,
   selectCash,
+  selectCumulativeRevenue,
   selectDifficulty,
   selectMarket,
   selectMonthlyPnl,
@@ -46,6 +47,7 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
   const playerName = useSelector(selectPlayerName);
   const difficulty = useSelector(selectDifficulty);
   const cash = useSelector(selectCash);
+  const cumulativeRevenue = useSelector(selectCumulativeRevenue);
   const tick = useSelector(selectTick);
   const subtick = useSelector(selectSubtick);
   const pnl = useSelector(selectMonthlyPnl);
@@ -97,6 +99,13 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
             <span className={styles.hudLabel}>CASH</span>
             <span className={[styles.hudValue, cashLow ? styles.cashLow : styles.cashOk].join(" ")}>
               {formatMoney(cash)}
+            </span>
+          </div>
+
+          <div className={styles.hudBlock}>
+            <span className={styles.hudLabel}>TOTAL REV</span>
+            <span className={[styles.hudValue, styles.revenue].join(" ")}>
+              {formatMoney(cumulativeRevenue)}
             </span>
           </div>
 
