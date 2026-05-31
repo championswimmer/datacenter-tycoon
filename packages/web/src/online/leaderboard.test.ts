@@ -43,10 +43,10 @@ describe("online leaderboard", () => {
     });
   });
 
-  it("fetchLeaderboard requests the default start-screen leaderboard", async () => {
+  it("fetchLeaderboard requests the revenue leaderboard by default", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(JSON.stringify({
-        metric: "money",
+        metric: "cumulativeRevenue",
         period: "all-time",
         limit: 10,
         entries: [
@@ -54,8 +54,8 @@ describe("online leaderboard", () => {
             rank: 1,
             playerId: PLAYER_ID,
             username: "Acme Cloud",
-            metric: "money",
-            value: 1_750_000,
+            metric: "cumulativeRevenue",
+            value: 300_000,
             submittedAt: "2026-05-18T12:00:00.000Z",
             gameMonth: 12,
             metrics: {
@@ -78,7 +78,7 @@ describe("online leaderboard", () => {
     const result = await fetchLeaderboard(undefined, fetchMock);
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.dctycoon.test/leaderboard?metric=money&period=all-time&limit=10",
+      "https://api.dctycoon.test/leaderboard?metric=cumulativeRevenue&period=all-time&limit=10",
     );
     expect(result.entries).toHaveLength(1);
     expect(result.entries[0]?.username).toBe("Acme Cloud");

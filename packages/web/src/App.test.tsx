@@ -297,7 +297,7 @@ describe("App start flow", () => {
     });
   });
 
-  it("switches leaderboard metric tabs and reuses cached results", async () => {
+  it("opens the revenue leaderboard by default and reuses cached tab results", async () => {
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
 
@@ -400,17 +400,9 @@ describe("App start flow", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "View Leaderboard" }));
 
-    expect(await screen.findByRole("dialog", { name: "Cash Leaderboard" })).toBeTruthy();
-    expect(await screen.findByText("Cloud Atlas")).toBeTruthy();
-    expect(screen.getByText("$2,400,000")).toBeTruthy();
-    expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.dctycoon.test/leaderboard?metric=money&period=all-time&limit=10",
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Revenue" }));
-
     expect(await screen.findByRole("dialog", { name: "Revenue Leaderboard" })).toBeTruthy();
-    expect(await screen.findByText("$900,000")).toBeTruthy();
+    expect(await screen.findByText("Cloud Atlas")).toBeTruthy();
+    expect(screen.getByText("$900,000")).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.dctycoon.test/leaderboard?metric=cumulativeRevenue&period=all-time&limit=10",
     );
@@ -423,17 +415,25 @@ describe("App start flow", () => {
       "https://api.dctycoon.test/leaderboard?metric=totalServers&period=all-time&limit=10",
     );
 
-    const fetchCallCount = fetchMock.mock.calls.length;
     fireEvent.click(screen.getByRole("button", { name: "Cash" }));
 
     expect(await screen.findByRole("dialog", { name: "Cash Leaderboard" })).toBeTruthy();
     expect(await screen.findByText("$2,400,000")).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.dctycoon.test/leaderboard?metric=money&period=all-time&limit=10",
+    );
+
+    const fetchCallCount = fetchMock.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "Revenue" }));
+
+    expect(await screen.findByRole("dialog", { name: "Revenue Leaderboard" })).toBeTruthy();
+    expect(await screen.findByText("$900,000")).toBeTruthy();
     expect(fetchMock.mock.calls).toHaveLength(fetchCallCount);
 
     fireEvent.click(screen.getByRole("button", { name: "Close leaderboard" }));
 
     await waitFor(() => {
-      expect(screen.queryByRole("dialog", { name: "Cash Leaderboard" })).toBeNull();
+      expect(screen.queryByRole("dialog", { name: "Revenue Leaderboard" })).toBeNull();
     });
   });
 

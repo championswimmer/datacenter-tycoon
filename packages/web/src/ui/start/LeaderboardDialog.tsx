@@ -103,7 +103,7 @@ export function LeaderboardDialog({
           </button>
         </header>
 
-        <div className={styles.content}>
+        <div className={styles.tabBar}>
           <div className={styles.tabList} aria-label="Leaderboard metrics">
             {START_SCREEN_LEADERBOARD_TABS.map((tab) => {
               const isActive = tab.metric === activeMetric;
@@ -121,7 +121,9 @@ export function LeaderboardDialog({
               );
             })}
           </div>
+        </div>
 
+        <div className={styles.body}>
           {isLoading ? (
             <div className={styles.stateMessage} role="status">
               Loading {getLeaderboardMetricLabel(activeMetric).toLowerCase()} leaderboard…
