@@ -21,6 +21,7 @@
 - Treat `datacenter.spec.powerCapacityKw`, `coolingCapacityBtuPerHr`, `bandwidthGbps`, `networkType`, and `coolingType` as blueprint-display fields only. Upgrade-aware UI must render canonical infrastructure/upgrade selectors instead of raw spec capacities.
 - Import game logic via the package name (`@datacenter-tycoon/game-logic`), never via relative paths across packages.
 - Keep UI state separate from game state. Game state comes from `game-logic`; UI state (selected tab, modals open, etc.) lives in the frontend only.
+- Online leaderboard identity is browser-local: when no stored identity exists, the start flow may register the chosen unique username with the backend, persist the returned `playerId`, and reuse that same identity for future submissions. Do not force re-registration for every run.
 - Prefer presentational components that take game state as props.
 - All CSS goes through CSS Modules (`.module.css`) or the global theme files in `src/theme/`. No inline styles except dynamic values.
 - The theme playground route `#/__theme` is dev-only — gate it with `import.meta.env.DEV`.
