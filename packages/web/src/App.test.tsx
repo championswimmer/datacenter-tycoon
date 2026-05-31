@@ -297,40 +297,9 @@ describe("App start flow", () => {
     });
   });
 
-  it("opens the revenue leaderboard by default and reuses cached tab results", async () => {
+  it("shows only revenue and servers leaderboard tabs with metric-specific details", async () => {
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
-
-      if (url.includes("metric=money")) {
-        return new Response(JSON.stringify({
-          metric: "money",
-          period: "all-time",
-          limit: 10,
-          entries: [
-            {
-              rank: 1,
-              playerId: CLOUD_ATLAS_PLAYER_ID,
-              username: "Cloud Atlas",
-              metric: "money",
-              value: 2_400_000,
-              submittedAt: "2026-05-18T12:00:00.000Z",
-              gameMonth: 18,
-              metrics: {
-                money: 2_400_000,
-                cumulativeRevenue: 900_000,
-                totalServers: 12,
-                computeCapacity: 640,
-                memoryCapacity: 1024,
-                storageCapacity: 256,
-                gpuCapacity: 32,
-              },
-            },
-          ],
-        }), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        });
-      }
 
       if (url.includes("metric=cumulativeRevenue")) {
         return new Response(JSON.stringify({
@@ -403,6 +372,13 @@ describe("App start flow", () => {
     expect(await screen.findByRole("dialog", { name: "Revenue Leaderboard" })).toBeTruthy();
     expect(await screen.findByText("Cloud Atlas")).toBeTruthy();
     expect(screen.getByText("$900,000")).toBeTruthy();
+    expect(screen.getByText("Cash")).toBeTruthy();
+    expect(screen.getByText("$2,400,000")).toBeTruthy();
+    expect(screen.getByText("Played Through")).toBeTruthy();
+    expect(screen.getByText("Month 18")).toBeTruthy();
+    expect(screen.getAllByText("Servers")).toHaveLength(2);
+    expect(screen.getByText("12")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Cash" })).toBeNull();
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.dctycoon.test/leaderboard?metric=cumulativeRevenue&period=all-time&limit=10",
     );
@@ -411,16 +387,16 @@ describe("App start flow", () => {
 
     expect(await screen.findByRole("dialog", { name: "Servers Leaderboard" })).toBeTruthy();
     expect(await screen.findByText("42")).toBeTruthy();
+    expect(screen.getByText("CPUs")).toBeTruthy();
+    expect(screen.getByText("640")).toBeTruthy();
+    expect(screen.getByText("Memory")).toBeTruthy();
+    expect(screen.getByText("1,024")).toBeTruthy();
+    expect(screen.getByText("Storage")).toBeTruthy();
+    expect(screen.getByText("256")).toBeTruthy();
+    expect(screen.getByText("GPUs")).toBeTruthy();
+    expect(screen.getByText("32")).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.dctycoon.test/leaderboard?metric=totalServers&period=all-time&limit=10",
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Cash" }));
-
-    expect(await screen.findByRole("dialog", { name: "Cash Leaderboard" })).toBeTruthy();
-    expect(await screen.findByText("$2,400,000")).toBeTruthy();
-    expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.dctycoon.test/leaderboard?metric=money&period=all-time&limit=10",
     );
 
     const fetchCallCount = fetchMock.mock.calls.length;

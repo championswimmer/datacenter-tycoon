@@ -193,8 +193,42 @@
 
 .entryBody {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
   min-width: 0;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.detailItem {
+  display: grid;
+  gap: 0.125rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid rgba(138, 160, 200, 0.16);
+  border-radius: 12px;
+  background: rgba(10, 14, 22, 0.38);
+}
+
+.detailLabel,
+.detailValue {
+  margin: 0;
+}
+
+.detailLabel {
+  color: var(--fg-1);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.detailValue {
+  color: var(--fg-0);
+  font-size: var(--text-sm);
+  font-weight: 700;
 }
 
 .entryHeader,

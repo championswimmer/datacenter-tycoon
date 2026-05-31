@@ -35,13 +35,7 @@ export interface StartScreenLeaderboardTab {
 
 export const START_SCREEN_LEADERBOARD_TABS = [
   { metric: "cumulativeRevenue", label: "Revenue" },
-  { metric: "money", label: "Cash" },
   { metric: "totalServers", label: "Servers" },
-  { metric: "totalCapacity", label: "Capacity" },
-  { metric: "computeCapacity", label: "Compute" },
-  { metric: "memoryCapacity", label: "Memory" },
-  { metric: "storageCapacity", label: "Storage" },
-  { metric: "gpuCapacity", label: "GPU" },
 ] as const satisfies readonly StartScreenLeaderboardTab[];
 
 export const DEFAULT_START_SCREEN_LEADERBOARD_METRIC: LeaderboardQueryMetric = "cumulativeRevenue";

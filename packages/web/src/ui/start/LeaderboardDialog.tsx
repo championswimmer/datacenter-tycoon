@@ -139,21 +139,34 @@ export function LeaderboardDialog({
             </div>
           ) : result && result.entries.length > 0 ? (
             <ol className={styles.entryList}>
-              {result.entries.map((entry) => (
-                <li key={`${entry.playerId}-${entry.rank}-${entry.metric}`} className={styles.entryRow}>
-                  <div className={styles.rankBadge}>#{entry.rank}</div>
-                  <div className={styles.entryBody}>
-                    <div className={styles.entryHeader}>
-                      <span className={styles.username}>{entry.username}</span>
-                      <span className={styles.value}>{formatMetricValue(activeMetric, entry.value)}</span>
+              {result.entries.map((entry) => {
+                const detailItems = getLeaderboardEntryDetails(activeMetric, entry);
+
+                return (
+                  <li key={`${entry.playerId}-${entry.rank}-${entry.metric}`} className={styles.entryRow}>
+                    <div className={styles.rankBadge}>#{entry.rank}</div>
+                    <div className={styles.entryBody}>
+                      <div className={styles.entryHeader}>
+                        <span className={styles.username}>{entry.username}</span>
+                        <span className={styles.value}>{formatMetricValue(activeMetric, entry.value)}</span>
+                      </div>
+                      {detailItems.length > 0 && (
+                        <dl className={styles.detailGrid}>
+                          {detailItems.map((item) => (
+                            <div key={item.label} className={styles.detailItem}>
+                              <dt className={styles.detailLabel}>{item.label}</dt>
+                              <dd className={styles.detailValue}>{item.value}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      )}
+                      <div className={styles.entryMeta}>
+                        <span>{dateFormatter.format(new Date(entry.submittedAt))}</span>
+                      </div>
                     </div>
-                    <div className={styles.entryMeta}>
-                      <span>Month {numberFormatter.format(entry.gameMonth)}</span>
-                      <span>{dateFormatter.format(new Date(entry.submittedAt))}</span>
-                    </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ol>
           ) : (
             <div className={styles.stateMessage} role="status">
@@ -172,4 +185,28 @@ function formatMetricValue(metric: LeaderboardQueryMetric, value: number): strin
   }
 
   return numberFormatter.format(value);
+}
+
+function getLeaderboardEntryDetails(
+  metric: LeaderboardQueryMetric,
+  entry: LeaderboardListResult["entries"][number],
+): Array<{ label: string; value: string }> {
+  if (metric === "totalServers") {
+    return [
+      { label: "CPUs", value: numberFormatter.format(entry.metrics.computeCapacity) },
+      { label: "Memory", value: numberFormatter.format(entry.metrics.memoryCapacity) },
+      { label: "Storage", value: numberFormatter.format(entry.metrics.storageCapacity) },
+      { label: "GPUs", value: numberFormatter.format(entry.metrics.gpuCapacity) },
+    ];
+  }
+
+  if (metric === "cumulativeRevenue") {
+    return [
+      { label: "Cash", value: currencyFormatter.format(entry.metrics.money) },
+      { label: "Played Through", value: `Month ${numberFormatter.format(entry.gameMonth)}` },
+      { label: "Servers", value: numberFormatter.format(entry.metrics.totalServers) },
+    ];
+  }
+
+  return [];
 }
