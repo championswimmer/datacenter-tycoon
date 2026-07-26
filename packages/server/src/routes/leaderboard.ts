@@ -36,6 +36,7 @@ export function registerLeaderboardRoutes(
         metric: query.metric,
         period: query.period,
         limit: query.limit,
+        visibility: query.visibility,
         entries: entries.map((entry) => serializeLeaderboardEntry(entry)),
       };
     })

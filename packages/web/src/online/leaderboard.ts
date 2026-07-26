@@ -7,6 +7,7 @@ import type {
 
 export type LeaderboardQueryMetric = keyof LeaderboardMetrics | "totalCapacity";
 export type LeaderboardPeriod = "all-time";
+export type LeaderboardVisibility = "verified" | "all";
 
 export interface StartScreenLeaderboardTab {
   metric: LeaderboardQueryMetric;
@@ -20,6 +21,7 @@ export const START_SCREEN_LEADERBOARD_TABS = [
 
 export const DEFAULT_START_SCREEN_LEADERBOARD_METRIC: LeaderboardQueryMetric = "cumulativeRevenue";
 export const DEFAULT_START_SCREEN_LEADERBOARD_PERIOD: LeaderboardPeriod = "all-time";
+export const DEFAULT_START_SCREEN_LEADERBOARD_VISIBILITY: LeaderboardVisibility = "all";
 export const DEFAULT_START_SCREEN_LEADERBOARD_LIMIT = 10;
 
 export interface LeaderboardEntry {
@@ -37,6 +39,7 @@ export interface LeaderboardListResult {
   metric: LeaderboardQueryMetric;
   period: LeaderboardPeriod;
   limit: number;
+  visibility: LeaderboardVisibility;
   entries: LeaderboardEntry[];
 }
 
@@ -44,6 +47,7 @@ export interface FetchLeaderboardOptions {
   metric?: LeaderboardQueryMetric;
   period?: LeaderboardPeriod;
   limit?: number;
+  visibility?: LeaderboardVisibility;
 }
 
 export function getLeaderboardMetricLabel(metric: LeaderboardQueryMetric): string {
@@ -91,6 +95,7 @@ export async function fetchLeaderboard(
   url.searchParams.set("metric", options.metric ?? DEFAULT_START_SCREEN_LEADERBOARD_METRIC);
   url.searchParams.set("period", options.period ?? DEFAULT_START_SCREEN_LEADERBOARD_PERIOD);
   url.searchParams.set("limit", String(options.limit ?? DEFAULT_START_SCREEN_LEADERBOARD_LIMIT));
+  url.searchParams.set("visibility", options.visibility ?? DEFAULT_START_SCREEN_LEADERBOARD_VISIBILITY);
 
   let response: Response;
 
@@ -208,6 +213,7 @@ function isLeaderboardListResult(payload: unknown): payload is LeaderboardListRe
     && typeof (payload as { metric?: unknown }).metric === "string"
     && typeof (payload as { period?: unknown }).period === "string"
     && typeof (payload as { limit?: unknown }).limit === "number"
+    && typeof (payload as { visibility?: unknown }).visibility === "string"
     && Array.isArray((payload as { entries?: unknown[] }).entries)
     && (payload as { entries: unknown[] }).entries.every(isLeaderboardEntry);
 }

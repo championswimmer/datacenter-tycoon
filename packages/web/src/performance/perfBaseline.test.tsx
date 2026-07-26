@@ -344,6 +344,7 @@ describe("web performance baseline harness", () => {
           selectedDifficulty="hard"
           isLeaderboardOpen={false}
           activeLeaderboardMetric="money"
+          activeLeaderboardVisibility="all"
           isLeaderboardLoading={false}
           leaderboardResult={null}
           leaderboardError={null}
@@ -355,6 +356,7 @@ describe("web performance baseline harness", () => {
           onOpenLeaderboard={() => {}}
           onCloseLeaderboard={() => {}}
           onSelectLeaderboardMetric={() => {}}
+          onSelectLeaderboardVisibility={() => {}}
           onRetryLeaderboard={() => {}}
         />,
       ),

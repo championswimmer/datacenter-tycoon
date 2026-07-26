@@ -36,6 +36,7 @@ describe("online leaderboard", () => {
         metric: "cumulativeRevenue",
         period: "all-time",
         limit: 10,
+        visibility: "all",
         entries: [
           {
             rank: 1,
@@ -65,7 +66,7 @@ describe("online leaderboard", () => {
     const result = await fetchLeaderboard(undefined, fetchMock);
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.dctycoon.test/leaderboard?metric=cumulativeRevenue&period=all-time&limit=10",
+      "https://api.dctycoon.test/leaderboard?metric=cumulativeRevenue&period=all-time&limit=10&visibility=all",
     );
     expect(result.entries).toHaveLength(1);
     expect(result.entries[0]?.username).toBe("Acme Cloud");
@@ -77,6 +78,7 @@ describe("online leaderboard", () => {
         metric: "totalServers",
         period: "all-time",
         limit: 5,
+        visibility: "verified",
         entries: [],
       }), {
         status: 200,
@@ -87,13 +89,15 @@ describe("online leaderboard", () => {
     const result = await fetchLeaderboard({
       metric: "totalServers",
       limit: 5,
+      visibility: "verified",
     }, fetchMock);
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.dctycoon.test/leaderboard?metric=totalServers&period=all-time&limit=5",
+      "https://api.dctycoon.test/leaderboard?metric=totalServers&period=all-time&limit=5&visibility=verified",
     );
     expect(result.metric).toBe("totalServers");
     expect(result.limit).toBe(5);
+    expect(result.visibility).toBe("verified");
   });
 
   it("fetchLeaderboard surfaces structured API errors", async () => {

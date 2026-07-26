@@ -5,17 +5,20 @@ import {
   START_SCREEN_LEADERBOARD_TABS,
   type LeaderboardListResult,
   type LeaderboardQueryMetric,
+  type LeaderboardVisibility,
 } from "../../online/leaderboard.js";
 import { useDialogFocus } from "../dialogFocus.js";
 import styles from "./LeaderboardDialog.module.css";
 
 interface LeaderboardDialogProps {
   activeMetric: LeaderboardQueryMetric;
+  activeVisibility: LeaderboardVisibility;
   result: LeaderboardListResult | null;
   isLoading: boolean;
   errorMessage: string | null;
   onClose: () => void;
   onSelectMetric: (metric: LeaderboardQueryMetric) => void;
+  onSelectVisibility: (visibility: LeaderboardVisibility) => void;
   onRetry: () => void;
 }
 
@@ -35,11 +38,13 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, {
 
 export function LeaderboardDialog({
   activeMetric,
+  activeVisibility,
   result,
   isLoading,
   errorMessage,
   onClose,
   onSelectMetric,
+  onSelectVisibility,
   onRetry,
 }: LeaderboardDialogProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -52,8 +57,8 @@ export function LeaderboardDialog({
 
   const subtitle = useMemo(() => {
     const limit = result?.limit ?? DEFAULT_START_SCREEN_LEADERBOARD_LIMIT;
-    return `Top ${limit} runs across all time`;
-  }, [result]);
+    return `Top ${limit} ${activeVisibility === "all" ? "verified + unverified" : "verified"} runs across all time`;
+  }, [activeVisibility, result]);
 
   const handleClose = useCallback(() => {
     onClose();
@@ -104,20 +109,43 @@ export function LeaderboardDialog({
         </header>
 
         <div className={styles.tabBar}>
-          <div className={styles.tabScroller}>
-            <div className={styles.tabList} aria-label="Leaderboard metrics">
-              {START_SCREEN_LEADERBOARD_TABS.map((tab) => {
-                const isActive = tab.metric === activeMetric;
+          <div className={styles.controlStack}>
+            <div className={styles.tabScroller}>
+              <div className={styles.tabList} aria-label="Leaderboard metrics">
+                {START_SCREEN_LEADERBOARD_TABS.map((tab) => {
+                  const isActive = tab.metric === activeMetric;
+
+                  return (
+                    <button
+                      key={tab.metric}
+                      type="button"
+                      className={[styles.tabButton, isActive ? styles.tabButtonActive : ""].join(" ")}
+                      aria-pressed={isActive}
+                      onClick={() => onSelectMetric(tab.metric)}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className={styles.visibilityList} aria-label="Leaderboard visibility">
+              {([
+                ["all", "All"],
+                ["verified", "Verified"],
+              ] as const).map(([visibility, label]) => {
+                const isActive = visibility === activeVisibility;
 
                 return (
                   <button
-                    key={tab.metric}
+                    key={visibility}
                     type="button"
                     className={[styles.tabButton, isActive ? styles.tabButtonActive : ""].join(" ")}
                     aria-pressed={isActive}
-                    onClick={() => onSelectMetric(tab.metric)}
+                    onClick={() => onSelectVisibility(visibility)}
                   >
-                    {tab.label}
+                    {label}
                   </button>
                 );
               })}
@@ -128,7 +156,7 @@ export function LeaderboardDialog({
         <div className={styles.body}>
           {isLoading ? (
             <div className={styles.stateMessage} role="status">
-              Loading {getLeaderboardMetricLabel(activeMetric).toLowerCase()} leaderboard…
+              Loading {activeVisibility === "all" ? "all" : "verified"} {getLeaderboardMetricLabel(activeMetric).toLowerCase()} leaderboard…
             </div>
           ) : errorMessage ? (
             <div className={styles.stateStack}>
@@ -172,7 +200,7 @@ export function LeaderboardDialog({
             </ol>
           ) : (
             <div className={styles.stateMessage} role="status">
-              No {getLeaderboardMetricLabel(activeMetric).toLowerCase()} leaderboard runs have been submitted yet.
+              No {activeVisibility === "all" ? "all" : "verified"} {getLeaderboardMetricLabel(activeMetric).toLowerCase()} leaderboard runs have been submitted yet.
             </div>
           )}
         </div>

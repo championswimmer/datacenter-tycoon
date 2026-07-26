@@ -99,7 +99,14 @@ export class InMemoryLeaderboardRepository implements LeaderboardRepository {
 
   async listRuns(query: LeaderboardQuery): Promise<LeaderboardRunRecord[]> {
     return [...this.#runsByKey.values()]
-      .filter((run) => run.verificationStatus === "verified" && this.#headsByKey.has(buildRunKey(run.playerId, run.clientRunId)))
+      .filter((run) => {
+        if (query.visibility === "all") {
+          return true;
+        }
+
+        return run.verificationStatus === "verified"
+          && this.#headsByKey.has(buildRunKey(run.playerId, run.clientRunId));
+      })
       .sort((left, right) => compareLeaderboardRuns(left, right, query.metric))
       .slice(0, query.limit);
   }
@@ -211,6 +218,18 @@ export class DrizzleLeaderboardRepository implements LeaderboardRepository {
       + ${leaderboardRuns.gpuCapacity}
     `;
 
+    const orderBy = resolveOrderExpressions(query.metric, totalCapacityExpression);
+
+    if (query.visibility === "all") {
+      const rows = await this.#database
+        .select()
+        .from(leaderboardRuns)
+        .orderBy(...orderBy)
+        .limit(query.limit);
+
+      return rows.map((row) => mapLeaderboardRunRow(row));
+    }
+
     const rows = await this.#database
       .select({ run: leaderboardRuns })
       .from(leaderboardRuns)
@@ -222,7 +241,7 @@ export class DrizzleLeaderboardRepository implements LeaderboardRepository {
         ),
       )
       .where(eq(leaderboardRuns.verificationStatus, "verified"))
-      .orderBy(...resolveOrderExpressions(query.metric, totalCapacityExpression))
+      .orderBy(...orderBy)
       .limit(query.limit);
 
     return rows.map((row) => mapLeaderboardRunRow(row.run));

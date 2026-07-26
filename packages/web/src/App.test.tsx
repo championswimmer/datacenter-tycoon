@@ -320,6 +320,7 @@ describe("App start flow", () => {
           metric: "cumulativeRevenue",
           period: "all-time",
           limit: 10,
+          visibility: url.includes("visibility=verified") ? "verified" : "all",
           entries: [
             {
               rank: 1,
@@ -351,6 +352,7 @@ describe("App start flow", () => {
           metric: "totalServers",
           period: "all-time",
           limit: 10,
+          visibility: url.includes("visibility=verified") ? "verified" : "all",
           entries: [
             {
               rank: 1,
@@ -393,8 +395,9 @@ describe("App start flow", () => {
     expect(screen.getAllByText("Servers")).toHaveLength(2);
     expect(screen.getByText("12")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Cash" })).toBeNull();
+    expect(screen.getByRole("button", { name: "All" }).getAttribute("aria-pressed")).toBe("true");
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.dctycoon.test/leaderboard?metric=cumulativeRevenue&period=all-time&limit=10",
+      "https://api.dctycoon.test/leaderboard?metric=cumulativeRevenue&period=all-time&limit=10&visibility=all",
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Servers" }));
@@ -410,15 +413,33 @@ describe("App start flow", () => {
     expect(screen.getByText("GPU")).toBeTruthy();
     expect(screen.getByText("32 TFLOPS")).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.dctycoon.test/leaderboard?metric=totalServers&period=all-time&limit=10",
+      "https://api.dctycoon.test/leaderboard?metric=totalServers&period=all-time&limit=10&visibility=all",
     );
+
+    fireEvent.click(screen.getByRole("button", { name: "Verified" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://api.dctycoon.test/leaderboard?metric=totalServers&period=all-time&limit=10&visibility=verified",
+      );
+    });
+    expect(screen.getByRole("button", { name: "Verified" }).getAttribute("aria-pressed")).toBe("true");
 
     const fetchCallCount = fetchMock.mock.calls.length;
     fireEvent.click(screen.getByRole("button", { name: "Revenue" }));
 
     expect(await screen.findByRole("dialog", { name: "Revenue Leaderboard" })).toBeTruthy();
     expect(await screen.findByText("$900,000")).toBeTruthy();
-    expect(fetchMock.mock.calls).toHaveLength(fetchCallCount);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.dctycoon.test/leaderboard?metric=cumulativeRevenue&period=all-time&limit=10&visibility=verified",
+    );
+
+    const verifiedFetchCallCount = fetchMock.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "All" }));
+
+    expect(await screen.findByRole("dialog", { name: "Revenue Leaderboard" })).toBeTruthy();
+    expect(await screen.findByText("$900,000")).toBeTruthy();
+    expect(fetchMock.mock.calls).toHaveLength(verifiedFetchCallCount);
 
     fireEvent.click(screen.getByRole("button", { name: "Close leaderboard" }));
 
@@ -445,6 +466,9 @@ describe("App start flow", () => {
 
     expect((await screen.findByRole("alert")).textContent).toContain(
       "Online leaderboard submission is not configured.",
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.dctycoon.test/leaderboard?metric=cumulativeRevenue&period=all-time&limit=10&visibility=all",
     );
     expect(screen.getByRole("button", { name: "Retry" })).toBeTruthy();
   });

@@ -8,6 +8,7 @@ function buildResult(): LeaderboardListResult {
     metric: "cumulativeRevenue",
     period: "all-time",
     limit: 10,
+    visibility: "all",
     entries: [
       {
         rank: 1,
@@ -36,11 +37,13 @@ describe("LeaderboardDialog", () => {
     render(
       <LeaderboardDialog
         activeMetric="cumulativeRevenue"
+        activeVisibility="all"
         result={buildResult()}
         isLoading={false}
         errorMessage={null}
         onClose={vi.fn()}
         onSelectMetric={vi.fn()}
+        onSelectVisibility={vi.fn()}
         onRetry={vi.fn()}
       />,
     );
