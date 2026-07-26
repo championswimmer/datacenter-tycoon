@@ -1,29 +1,9 @@
-import {
-  summarizeLeaderboardFromState,
-  type GameState,
-  type LeaderboardMetrics,
-} from "@datacenter-tycoon/game-logic";
+import type { LeaderboardMetrics } from "@datacenter-tycoon/game-logic";
 import { resolveOnlineApiBaseUrl } from "./config.js";
-
-export interface LeaderboardRunSubmission {
-  playerId: string;
-  clientRunId: string;
-  metrics: LeaderboardMetrics;
-  gameMonth: number;
-}
-
-export interface LeaderboardSubmissionResult {
-  created: boolean;
-  run: {
-    runId: string;
-    playerId: string;
-    clientRunId: string;
-    metrics: LeaderboardMetrics;
-    gameMonth: number;
-    submittedAt: string;
-    updatedAt: string;
-  };
-}
+import type {
+  VerifiedRunCheckpointResponse as LeaderboardSubmissionResult,
+  VerifiedRunCheckpointSubmission as LeaderboardRunSubmission,
+} from "./verified-run.js";
 
 export type LeaderboardQueryMetric = keyof LeaderboardMetrics | "totalCapacity";
 export type LeaderboardPeriod = "all-time";
@@ -80,20 +60,6 @@ export class LeaderboardSubmissionError extends Error {
     this.code = options.code;
     this.status = options.status ?? null;
   }
-}
-
-export function buildLeaderboardRunSubmission(
-  playerId: string,
-  state: GameState,
-): LeaderboardRunSubmission {
-  const summary = summarizeLeaderboardFromState(state);
-
-  return {
-    playerId,
-    clientRunId: summary.gameId,
-    metrics: summary.metrics,
-    gameMonth: summary.gameMonth,
-  };
 }
 
 export class LeaderboardQueryError extends Error {
@@ -230,8 +196,10 @@ function isLeaderboardSubmissionResult(payload: unknown): payload is Leaderboard
   return Boolean(payload)
     && typeof payload === "object"
     && typeof (payload as { created?: unknown }).created === "boolean"
-    && Boolean((payload as { run?: unknown }).run)
-    && typeof (payload as { run?: { runId?: unknown } }).run?.runId === "string";
+    && typeof (payload as { rootHash?: unknown }).rootHash === "string"
+    && typeof (payload as { headHash?: unknown }).headHash === "string"
+    && typeof (payload as { gameMonth?: unknown }).gameMonth === "number"
+    && isLeaderboardMetrics((payload as { metrics?: unknown }).metrics);
 }
 
 function isLeaderboardListResult(payload: unknown): payload is LeaderboardListResult {

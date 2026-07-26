@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { newGame } from "@datacenter-tycoon/game-logic";
 import type { Difficulty, GameState } from "@datacenter-tycoon/game-logic";
+import { createInitialVerifiedRunState, createVerifiedRunController } from "./online/verified-run.js";
 import { createGameStore } from "./store/gameStore.js";
 import type { SaveInfo, StoreSession } from "./store/persist.js";
 
@@ -16,12 +17,14 @@ const persistMocks = vi.hoisted(() => ({
   createFreshSession: vi.fn<(options?: Difficulty | FreshSessionOptions) => StoreSession>(),
   createLoadedSession: vi.fn<() => StoreSession | null>(),
   getLatestSaveInfo: vi.fn<() => SaveInfo | null>(),
+  writeSaveData: vi.fn(),
 }));
 
 vi.mock("./store/persist.js", () => ({
   createFreshSession: persistMocks.createFreshSession,
   createLoadedSession: persistMocks.createLoadedSession,
   getLatestSaveInfo: persistMocks.getLatestSaveInfo,
+  writeSaveData: persistMocks.writeSaveData,
 }));
 
 vi.mock("./ui/shell/Shell.js", () => ({
@@ -40,8 +43,11 @@ function makeSession(
 ): StoreSession {
   const baseState = newGame(kind === "fresh" ? 11 : 22);
 
+  const state = configureState ? configureState(baseState) : baseState;
+
   return {
-    store: createGameStore(configureState ? configureState(baseState) : baseState),
+    store: createGameStore(state),
+    verification: createVerifiedRunController(createInitialVerifiedRunState(state)),
     stopAutosave: vi.fn(),
     isFreshStart: kind === "fresh",
   };
@@ -71,6 +77,7 @@ beforeEach(() => {
   persistMocks.createFreshSession.mockReset();
   persistMocks.createLoadedSession.mockReset();
   persistMocks.getLatestSaveInfo.mockImplementation(() => persistMocks.latestSave);
+  persistMocks.writeSaveData.mockReset();
   persistMocks.createFreshSession.mockImplementation(() => makeSession("fresh"));
   persistMocks.createLoadedSession.mockImplementation(() => makeSession("loaded"));
 });
@@ -110,7 +117,9 @@ describe("App start flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Load Game" }));
 
     expect(persistMocks.createLoadedSession).toHaveBeenCalledTimes(1);
-    expect(persistMocks.createLoadedSession).toHaveBeenCalledWith(savedGameInfo.gameId);
+    expect(persistMocks.createLoadedSession).toHaveBeenCalledWith(savedGameInfo.gameId, {
+      onlineEligible: false,
+    });
     expect(persistMocks.getLatestSaveInfo.mock.calls.length).toBe(initialReadCount);
     expect(screen.getByTestId("shell").getAttribute("data-auto-open")).toBe("false");
   });
@@ -133,6 +142,7 @@ describe("App start flow", () => {
       expect(persistMocks.createFreshSession).toHaveBeenCalledWith({
         difficulty: "hard",
         playerName: "Acme Cloud",
+        onlineEligible: true,
       });
     });
 
@@ -213,6 +223,7 @@ describe("App start flow", () => {
       expect(persistMocks.createFreshSession).toHaveBeenCalledWith({
         difficulty: "hard",
         playerName: "Cloud Atlas",
+        onlineEligible: true,
       });
     });
 
@@ -237,6 +248,7 @@ describe("App start flow", () => {
     expect(persistMocks.createFreshSession).toHaveBeenCalledWith({
       difficulty: "hard",
       playerName: "Offline Ops",
+      onlineEligible: false,
     });
     expect(localStorage.getItem(PLAYER_IDENTITY_KEY)).toBeNull();
     expect(screen.getByText(/stay local until the backend is reachable again/i)).toBeTruthy();
@@ -268,6 +280,7 @@ describe("App start flow", () => {
     expect(persistMocks.createFreshSession).toHaveBeenCalledWith({
       difficulty: "hard",
       playerName: "Offline Build",
+      onlineEligible: false,
     });
     expect(screen.getByText(/registration is disabled for this build/i)).toBeTruthy();
 
@@ -293,6 +306,7 @@ describe("App start flow", () => {
       expect(persistMocks.createFreshSession).toHaveBeenCalledWith({
         difficulty: "easy",
         playerName: "Cloud Atlas",
+        onlineEligible: true,
       });
     });
   });
@@ -441,33 +455,36 @@ describe("App start flow", () => {
       JSON.stringify({ playerId: CLOUD_ATLAS_PLAYER_ID, username: "Cloud Atlas" }),
     );
     persistMocks.latestSave = savedGameInfo;
-    persistMocks.createLoadedSession.mockImplementation(() => makeSession("loaded", (state) => ({
-      ...state,
-      tick: 2,
-      player: {
-        ...state.player,
-        cash: 1_725_000,
-      },
-    })));
+    persistMocks.createLoadedSession.mockImplementation(() => {
+      const session = makeSession("loaded", (state) => ({
+        ...state,
+        tick: 2,
+        player: {
+          ...state.player,
+          cash: 1_725_000,
+        },
+      }));
+      session.verification.setState({
+        ...session.verification.getState(),
+        status: "pending-genesis",
+        pendingActions: [{ type: "Tick" }],
+      });
+      return session;
+    });
     fetchMock.mockResolvedValue(
       new Response(JSON.stringify({
         created: true,
-        run: {
-          runId: "run_123",
-          playerId: CLOUD_ATLAS_PLAYER_ID,
-          clientRunId: "game-123",
-          metrics: {
-            money: 1_725_000,
-            cumulativeRevenue: 0,
-            totalServers: 0,
-            computeCapacity: 0,
-            memoryCapacity: 0,
-            storageCapacity: 0,
-            gpuCapacity: 0,
-          },
-          gameMonth: 2,
-          submittedAt: "2026-05-18T12:00:00.000Z",
-          updatedAt: "2026-05-18T12:00:00.000Z",
+        rootHash: "a".repeat(64),
+        headHash: "b".repeat(64),
+        gameMonth: 2,
+        metrics: {
+          money: 1_725_000,
+          cumulativeRevenue: 0,
+          totalServers: 0,
+          computeCapacity: 0,
+          memoryCapacity: 0,
+          storageCapacity: 0,
+          gpuCapacity: 0,
         },
       }), {
         status: 201,
@@ -488,10 +505,8 @@ describe("App start flow", () => {
     const [, requestInit] = fetchMock.mock.calls[0] ?? [];
     expect(JSON.parse(String(requestInit?.body))).toMatchObject({
       playerId: CLOUD_ATLAS_PLAYER_ID,
-      gameMonth: 2,
-      metrics: {
-        money: 1_725_000,
-      },
+      parentHeadHash: null,
+      actions: [{ type: "Tick" }],
     });
   });
 
@@ -503,29 +518,32 @@ describe("App start flow", () => {
       JSON.stringify({ playerId: CLOUD_ATLAS_PLAYER_ID, username: "Cloud Atlas" }),
     );
     persistMocks.latestSave = savedGameInfo;
-    persistMocks.createLoadedSession.mockImplementation(() => makeSession("loaded", (state) => ({
-      ...state,
-      tick: 2,
-    })));
+    persistMocks.createLoadedSession.mockImplementation(() => {
+      const session = makeSession("loaded", (state) => ({
+        ...state,
+        tick: 2,
+      }));
+      session.verification.setState({
+        ...session.verification.getState(),
+        status: "pending-genesis",
+        pendingActions: [{ type: "Tick" }],
+      });
+      return session;
+    });
     fetchMock.mockResolvedValue(
       new Response(JSON.stringify({
         created: true,
-        run: {
-          runId: "run_prod",
-          playerId: CLOUD_ATLAS_PLAYER_ID,
-          clientRunId: "game-123",
-          metrics: {
-            money: 1_250_000,
-            cumulativeRevenue: 0,
-            totalServers: 0,
-            computeCapacity: 0,
-            memoryCapacity: 0,
-            storageCapacity: 0,
-            gpuCapacity: 0,
-          },
-          gameMonth: 2,
-          submittedAt: "2026-05-18T12:00:00.000Z",
-          updatedAt: "2026-05-18T12:00:00.000Z",
+        rootHash: "c".repeat(64),
+        headHash: "d".repeat(64),
+        gameMonth: 2,
+        metrics: {
+          money: 1_250_000,
+          cumulativeRevenue: 0,
+          totalServers: 0,
+          computeCapacity: 0,
+          memoryCapacity: 0,
+          storageCapacity: 0,
+          gpuCapacity: 0,
         },
       }), {
         status: 201,

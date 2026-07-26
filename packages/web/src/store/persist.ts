@@ -4,12 +4,21 @@ import {
   serialize,
 } from "@datacenter-tycoon/game-logic";
 import type { Difficulty, GameState } from "@datacenter-tycoon/game-logic";
+import {
+  appendVerificationAction,
+  createInitialVerifiedRunState,
+  createLegacyLocalOnlyVerifiedRunState,
+  createVerifiedRunController,
+  type WebVerifiedRunController,
+  type WebVerifiedRunState,
+} from "../online/verified-run.js";
 import { createGameStore } from "./gameStore.js";
 import type { GameStore } from "./gameStore.js";
 import { attachAudioEvents } from "./audioEvents.js";
 
 const SAVE_PREFIX = "datacenter-tycoon:save-v1";
 const SAVE_INDEX_KEY = "datacenter-tycoon:save-index";
+const APP_SAVE_VERSION = 1;
 const BYTE_ENCODER = new TextEncoder();
 let saveIndexCache: SaveInfo[] | null = null;
 let lastSaveAudit: SaveStorageAudit | null = null;
@@ -35,6 +44,17 @@ export interface SaveStorageAudit {
 export interface SaveWriteOptions {
   payloadWarnBytes?: number;
   indexWarnBytes?: number;
+}
+
+export interface SaveData {
+  state: GameState;
+  verification: WebVerifiedRunState | null;
+}
+
+interface AppSaveEnvelope {
+  appSaveVersion: number;
+  save: unknown;
+  verification?: WebVerifiedRunState;
 }
 
 export const SAVE_PAYLOAD_WARN_BYTES = 128 * 1024;
@@ -124,8 +144,44 @@ function buildSaveIndexSnapshot(state: GameState, updatedAt = Date.now()): {
   };
 }
 
-export function inspectSaveStorage(state: GameState, updatedAt = Date.now()): SaveStorageAudit {
-  const payloadBytes = byteLength(serialize(state));
+function isAppSaveEnvelope(value: unknown): value is AppSaveEnvelope {
+  return Boolean(value)
+    && typeof value === "object"
+    && typeof (value as { appSaveVersion?: unknown }).appSaveVersion === "number"
+    && "save" in (value as Record<string, unknown>);
+}
+
+function serializeSaveData(data: SaveData): string {
+  const save = JSON.parse(serialize(data.state)) as unknown;
+  return JSON.stringify({
+    appSaveVersion: APP_SAVE_VERSION,
+    save,
+    verification: data.verification ?? undefined,
+  } satisfies AppSaveEnvelope);
+}
+
+function deserializeSaveData(raw: string): SaveData {
+  const parsed = JSON.parse(raw) as unknown;
+
+  if (isAppSaveEnvelope(parsed)) {
+    return {
+      state: deserialize(JSON.stringify(parsed.save)),
+      verification: parsed.verification ?? null,
+    };
+  }
+
+  return {
+    state: deserialize(raw),
+    verification: null,
+  };
+}
+
+export function inspectSaveStorage(
+  state: GameState,
+  verification: WebVerifiedRunState | null = null,
+  updatedAt = Date.now(),
+): SaveStorageAudit {
+  const payloadBytes = byteLength(serializeSaveData({ state, verification }));
   const { indexBytes } = buildSaveIndexSnapshot(state, updatedAt);
 
   return {
@@ -163,39 +219,37 @@ export function getCurrentGameId(): string | null {
   return getLatestSaveInfo()?.gameId ?? null;
 }
 
-/** The number of Tick actions between automatic saves. */
 export const AUTOSAVE_EVERY_TICKS = 5;
-/** Debounce window for Tick-driven autosaves so writes happen off the dispatch critical path. */
 export const AUTOSAVE_TICK_DEBOUNCE_MS = 150;
 
-// ── Low-level read / write ─────────────────────────────────────────────────────
-
-/** Load a GameState from localStorage. Returns null on miss or corrupt save. */
-export function loadSave(keyOrGameId: string): GameState | null {
+export function loadSaveData(keyOrGameId: string): SaveData | null {
   try {
     const key = keyOrGameId.includes(":") ? keyOrGameId : getSaveKey(keyOrGameId);
     const raw = localStorage.getItem(key);
     if (!raw) return null;
-    return deserialize(raw);
+    return deserializeSaveData(raw);
   } catch (err) {
     console.warn("[persist] Failed to load save — starting fresh:", err);
     return null;
   }
 }
 
-/** Persist a GameState snapshot to localStorage. Silently swallows quota errors. */
-export function writeSave(
-  state: GameState,
+export function loadSave(keyOrGameId: string): GameState | null {
+  return loadSaveData(keyOrGameId)?.state ?? null;
+}
+
+export function writeSaveData(
+  data: SaveData,
   options: SaveWriteOptions = {},
 ): SaveStorageAudit | null {
   const payloadWarnBytes = options.payloadWarnBytes ?? SAVE_PAYLOAD_WARN_BYTES;
   const indexWarnBytes = options.indexWarnBytes ?? SAVE_INDEX_WARN_BYTES;
 
   try {
-    const key = getSaveKey(state.gameId);
-    const payloadJson = serialize(state);
+    const key = getSaveKey(data.state.gameId);
+    const payloadJson = serializeSaveData(data);
     const payloadBytes = byteLength(payloadJson);
-    const { index, indexJson, indexBytes } = buildSaveIndexSnapshot(state);
+    const { index, indexJson, indexBytes } = buildSaveIndexSnapshot(data.state);
 
     localStorage.setItem(key, payloadJson);
     localStorage.setItem(SAVE_INDEX_KEY, indexJson);
@@ -209,7 +263,7 @@ export function writeSave(
     warnIfSaveIsLarge(lastSaveAudit, payloadWarnBytes, indexWarnBytes);
     return lastSaveAudit;
   } catch (err) {
-    const snapshot = inspectSaveStorage(state);
+    const snapshot = inspectSaveStorage(data.state, data.verification);
     lastSaveAudit = snapshot;
     if (isQuotaExceededError(err)) {
       console.warn(
@@ -222,7 +276,14 @@ export function writeSave(
   }
 }
 
-/** Remove the save from localStorage (used by "New Game"). */
+export function writeSave(
+  state: GameState,
+  options: SaveWriteOptions = {},
+  verification: WebVerifiedRunState | null = null,
+): SaveStorageAudit | null {
+  return writeSaveData({ state, verification }, options);
+}
+
 export function clearSave(gameId: string): void {
   localStorage.removeItem(getSaveKey(gameId));
   const index = getSaveIndex().filter((entry) => entry.gameId !== gameId);
@@ -230,7 +291,6 @@ export function clearSave(gameId: string): void {
   setSaveIndexCache(index);
 }
 
-/** Wipe all game saves and the index from localStorage. */
 export function clearAllSaves(): void {
   try {
     const index = getSaveIndex();
@@ -238,7 +298,7 @@ export function clearAllSaves(): void {
       localStorage.removeItem(getSaveKey(info.gameId));
     }
     localStorage.removeItem(SAVE_INDEX_KEY);
-    localStorage.removeItem("datacenter-tycoon:save-v1"); // Legacy key
+    localStorage.removeItem("datacenter-tycoon:save-v1");
     setSaveIndexCache([]);
     lastSaveAudit = null;
   } catch (err) {
@@ -246,22 +306,23 @@ export function clearAllSaves(): void {
   }
 }
 
-// ── Autosave subscription ──────────────────────────────────────────────────────
-
-/**
- * Attach an autosave subscription to a GameStore.
- *
- * Rules:
- *  - Every non-Tick dispatch (capex, contracts, etc.) → save immediately.
- *  - Tick dispatches → save every AUTOSAVE_EVERY_TICKS ticks.
- *
- * Returns the unsubscribe function (stops autosaving; call on unmount/new-game).
- */
 export function attachAutosave(
   store: GameStore,
-  everyTicks = AUTOSAVE_EVERY_TICKS,
+  verificationOrEveryTicks: WebVerifiedRunController | number = createVerifiedRunController(
+    createLegacyLocalOnlyVerifiedRunState(store.getState()),
+  ),
+  everyTicksOrDebounceMs = AUTOSAVE_EVERY_TICKS,
   tickDebounceMs = AUTOSAVE_TICK_DEBOUNCE_MS,
 ): () => void {
+  const verification = typeof verificationOrEveryTicks === "number"
+    ? createVerifiedRunController(createLegacyLocalOnlyVerifiedRunState(store.getState()))
+    : verificationOrEveryTicks;
+  const everyTicks = typeof verificationOrEveryTicks === "number"
+    ? verificationOrEveryTicks
+    : everyTicksOrDebounceMs;
+  const resolvedTickDebounceMs = typeof verificationOrEveryTicks === "number"
+    ? everyTicksOrDebounceMs
+    : tickDebounceMs;
   let lastSavedTick = store.getState().tick;
   let pendingState: GameState | null = null;
   let pendingTimer: ReturnType<typeof setTimeout> | null = null;
@@ -271,7 +332,7 @@ export function attachAutosave(
       return;
     }
 
-    writeSave(pendingState);
+    writeSaveData({ state: pendingState, verification: verification.getState() });
     lastSavedTick = pendingState.tick;
     pendingState = null;
     if (pendingTimer) {
@@ -288,7 +349,7 @@ export function attachAutosave(
     pendingTimer = setTimeout(() => {
       pendingTimer = null;
       flushPendingSave();
-    }, tickDebounceMs);
+    }, resolvedTickDebounceMs);
   };
 
   const unsubscribe = store.subscribe(() => {
@@ -308,7 +369,7 @@ export function attachAutosave(
       clearTimeout(pendingTimer);
       pendingTimer = null;
     }
-    writeSave(state);
+    writeSaveData({ state, verification: verification.getState() });
     lastSavedTick = state.tick;
   });
 
@@ -318,21 +379,38 @@ export function attachAutosave(
   };
 }
 
-// ── Bootstrap helper ───────────────────────────────────────────────────────────
-
 export interface StoreSession {
   store: GameStore;
+  verification: WebVerifiedRunController;
   stopAutosave: () => void;
   isFreshStart: boolean;
 }
 
-function createStoreSession(initial: GameState, isFreshStart: boolean): StoreSession {
-  const store = createGameStore(initial);
-  const stopAutosave = attachAutosave(store);
+interface CreateStoreSessionOptions {
+  initialVerification?: WebVerifiedRunState | null;
+  onlineEligible?: boolean;
+}
+
+function createStoreSession(
+  initial: GameState,
+  isFreshStart: boolean,
+  options: CreateStoreSessionOptions = {},
+): StoreSession {
+  const verification = createVerifiedRunController(
+    options.initialVerification
+      ?? createInitialVerifiedRunState(initial, { onlineEligible: options.onlineEligible }),
+  );
+  const store = createGameStore(initial, {
+    onDispatch(action) {
+      verification.update((current) => appendVerificationAction(current, action));
+    },
+  });
+  const stopAutosave = attachAutosave(store, verification);
   const stopAudioEvents = attachAudioEvents(store);
 
   return {
     store,
+    verification,
     stopAutosave: () => {
       stopAutosave();
       stopAudioEvents();
@@ -341,23 +419,23 @@ function createStoreSession(initial: GameState, isFreshStart: boolean): StoreSes
   };
 }
 
-function loadSavedState(gameId?: string): GameState | null {
+function loadSavedData(gameId?: string): SaveData | null {
   if (gameId) {
-    return loadSave(getSaveKey(gameId));
+    return loadSaveData(getSaveKey(gameId));
   }
 
   const latestSave = getLatestSaveInfo();
   if (latestSave) {
-    return loadSave(getSaveKey(latestSave.gameId));
+    return loadSaveData(getSaveKey(latestSave.gameId));
   }
 
-  // Compatibility with old save key
-  return loadSave("datacenter-tycoon:save-v1");
+  return loadSaveData("datacenter-tycoon:save-v1");
 }
 
 export interface CreateFreshSessionOptions {
   difficulty?: Difficulty;
   playerName?: string;
+  onlineEligible?: boolean;
 }
 
 export function createFreshSession(
@@ -367,28 +445,33 @@ export function createFreshSession(
     ? { difficulty: options }
     : options;
 
-  return createStoreSession(
-    newGame(Math.floor(Math.random() * 2 ** 31), {
-      difficulty: resolvedOptions.difficulty,
-      playerName: resolvedOptions.playerName,
-    }),
-    true,
-  );
+  const state = newGame(Math.floor(Math.random() * 2 ** 31), {
+    difficulty: resolvedOptions.difficulty,
+    playerName: resolvedOptions.playerName,
+  });
+
+  return createStoreSession(state, true, {
+    onlineEligible: resolvedOptions.onlineEligible,
+  });
 }
 
-export function createLoadedSession(gameId?: string): StoreSession | null {
-  const saved = loadSavedState(gameId);
-  return saved ? createStoreSession(saved, false) : null;
+export function createLoadedSession(
+  gameId?: string,
+  options: { onlineEligible?: boolean } = {},
+): StoreSession | null {
+  const saved = loadSavedData(gameId);
+  if (!saved) {
+    return null;
+  }
+
+  return createStoreSession(saved.state, false, {
+    onlineEligible: options.onlineEligible,
+    initialVerification: saved.verification
+      ?? createLegacyLocalOnlyVerifiedRunState(saved.state),
+  });
 }
 
-/**
- * Create (or restore) the single global GameStore:
- *  1. Try loading a saved game from localStorage.
- *  2. Fall back to a fresh game with a random seed.
- *  3. Attach autosave.
- *
- * Returns the ready-to-use store and the autosave unsubscribe fn.
- */
 export function bootstrapStore(gameId?: string): StoreSession {
   return createLoadedSession(gameId) ?? createFreshSession();
 }
+

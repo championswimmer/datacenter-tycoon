@@ -1,12 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { newGame } from "@datacenter-tycoon/game-logic";
-import {
-  buildLeaderboardRunSubmission,
-  fetchLeaderboard,
-  LeaderboardQueryError,
-  LeaderboardSubmissionError,
-  submitLeaderboardRun,
-} from "./leaderboard.js";
+import { fetchLeaderboard, LeaderboardQueryError, LeaderboardSubmissionError, submitLeaderboardRun } from "./leaderboard.js";
+import { buildVerifiedCheckpointSubmission, createInitialVerifiedRunState } from "./verified-run.js";
 
 const PLAYER_ID = "8d8f3b8f-0d43-4d7a-a2d0-8c2b6fd0d927";
 
@@ -15,31 +9,24 @@ describe("online leaderboard", () => {
     vi.stubEnv("VITE_API_BASE_URL", "https://api.dctycoon.test");
   });
 
-  it("buildLeaderboardRunSubmission rounds shared metrics to backend-safe integers", () => {
-    const state = newGame(123, { playerName: "Acme Cloud" });
-    state.tick = 3;
-    state.player.cash = 1_500_000.75;
-    state.ledger.push({
-      id: "ledger-1" as (typeof state.ledger)[number]["id"],
-      tick: 1,
-      type: "revenue",
-      amount: 99.6,
-      reason: "contract revenue",
-    });
+  it("buildVerifiedCheckpointSubmission emits action-only payloads", async () => {
+    const { newGame, reduce } = await import("@datacenter-tycoon/game-logic");
+    const state = reduce(newGame(123, { playerName: "Acme Cloud" }), { type: "Tick" });
+    const verification = {
+      ...createInitialVerifiedRunState(state, { onlineEligible: true }),
+      pendingActions: [{ type: "Tick" as const }],
+    };
 
-    expect(buildLeaderboardRunSubmission(PLAYER_ID, state)).toEqual({
+    expect(buildVerifiedCheckpointSubmission(PLAYER_ID, verification)).toEqual({
       playerId: PLAYER_ID,
       clientRunId: state.gameId,
-      metrics: {
-        money: 1_500_001,
-        cumulativeRevenue: 100,
-        totalServers: 0,
-        computeCapacity: 0,
-        memoryCapacity: 0,
-        storageCapacity: 0,
-        gpuCapacity: 0,
+      genesis: {
+        seed: state.seed,
+        difficulty: state.difficulty,
+        rulesetId: "leaderboard-ruleset-v1",
       },
-      gameMonth: 3,
+      parentHeadHash: null,
+      actions: [{ type: "Tick" }],
     });
   });
 
@@ -132,22 +119,17 @@ describe("online leaderboard", () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(JSON.stringify({
         created: true,
-        run: {
-          runId: "run_123",
-          playerId: PLAYER_ID,
-          clientRunId: "game-123",
-          metrics: {
-            money: 1,
-            cumulativeRevenue: 2,
-            totalServers: 3,
-            computeCapacity: 4,
-            memoryCapacity: 5,
-            storageCapacity: 6,
-            gpuCapacity: 7,
-          },
-          gameMonth: 8,
-          submittedAt: "2026-05-18T12:00:00.000Z",
-          updatedAt: "2026-05-18T12:00:00.000Z",
+        rootHash: "a".repeat(64),
+        headHash: "b".repeat(64),
+        gameMonth: 8,
+        metrics: {
+          money: 1,
+          cumulativeRevenue: 2,
+          totalServers: 3,
+          computeCapacity: 4,
+          memoryCapacity: 5,
+          storageCapacity: 6,
+          gpuCapacity: 7,
         },
       }), {
         status: 201,
@@ -158,16 +140,13 @@ describe("online leaderboard", () => {
     const submission = {
       playerId: PLAYER_ID,
       clientRunId: "game-123",
-      metrics: {
-        money: 1,
-        cumulativeRevenue: 2,
-        totalServers: 3,
-        computeCapacity: 4,
-        memoryCapacity: 5,
-        storageCapacity: 6,
-        gpuCapacity: 7,
+      genesis: {
+        seed: 42,
+        difficulty: "easy" as const,
+        rulesetId: "leaderboard-ruleset-v1",
       },
-      gameMonth: 8,
+      parentHeadHash: null,
+      actions: [{ type: "Tick" as const }],
     };
 
     const result = await submitLeaderboardRun(submission, fetchMock);
@@ -180,15 +159,15 @@ describe("online leaderboard", () => {
       }),
     );
     expect(result.created).toBe(true);
-    expect(result.run.runId).toBe("run_123");
+    expect(result.headHash).toBe("b".repeat(64));
   });
 
   it("submitLeaderboardRun surfaces structured API errors", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(JSON.stringify({
         error: {
-          code: "INVALID_LEADERBOARD_SUBMISSION",
-          message: "metrics.money must be non-negative.",
+          code: "INVALID_VERIFIED_RUN",
+          message: "actions may contain at most 512 entries.",
         },
       }), {
         status: 400,
@@ -199,18 +178,15 @@ describe("online leaderboard", () => {
     await expect(submitLeaderboardRun({
       playerId: PLAYER_ID,
       clientRunId: "game-123",
-      metrics: {
-        money: -1,
-        cumulativeRevenue: 2,
-        totalServers: 3,
-        computeCapacity: 4,
-        memoryCapacity: 5,
-        storageCapacity: 6,
-        gpuCapacity: 7,
+      genesis: {
+        seed: 42,
+        difficulty: "easy",
+        rulesetId: "leaderboard-ruleset-v1",
       },
-      gameMonth: 8,
+      parentHeadHash: null,
+      actions: [{ type: "Tick" }],
     }, fetchMock)).rejects.toMatchObject({
-      code: "INVALID_LEADERBOARD_SUBMISSION",
+      code: "INVALID_VERIFIED_RUN",
       status: 400,
     } satisfies Partial<LeaderboardSubmissionError>);
   });
