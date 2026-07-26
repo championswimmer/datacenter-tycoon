@@ -14,4 +14,5 @@ export * from "./contracts/index.js";
 export * from "./query/index.js";
 export * from "./sim/index.js";
 export * from "./state/index.js";
+export * from "./verification/index.js";
 export * from "./save/index.js";

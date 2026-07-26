@@ -68,6 +68,7 @@ Main exports from `src/index.ts`:
 
 - `newGame(seed, options?)`
 - `createVerifiedGenesisState({ seed, difficulty, gameId, playerName })`
+- `replayLeaderboardVerificationActions(initialState, actions)`
 - `reduce(state, action)`
 - `advanceSubtick(state)`
 - `tick(state)`
