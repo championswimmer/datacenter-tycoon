@@ -3,6 +3,7 @@ import {
   index,
   integer,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -29,6 +30,7 @@ export const leaderboardRuns = pgTable(
       .notNull()
       .references(() => players.id, { onDelete: "cascade" }),
     clientRunId: text("client_run_id").notNull(),
+    verificationStatus: text("verification_status").notNull().default("unverified"),
     money: bigint("money", { mode: "number" }).notNull(),
     cumulativeRevenue: bigint("cumulative_revenue", { mode: "number" }).notNull(),
     totalServers: integer("total_servers").notNull(),
@@ -77,6 +79,45 @@ export const leaderboardRuns = pgTable(
       table.gpuCapacity,
       table.submittedAt,
       table.id,
+    ),
+  ],
+);
+
+export const verifiedLeaderboardRunHeads = pgTable(
+  "verified_leaderboard_run_heads",
+  {
+    playerId: text("player_id")
+      .notNull()
+      .references(() => players.id, { onDelete: "cascade" }),
+    clientRunId: text("client_run_id").notNull(),
+    protocolVersion: text("protocol_version").notNull(),
+    rulesetId: text("ruleset_id").notNull(),
+    genesisSeed: bigint("genesis_seed", { mode: "number" }).notNull(),
+    genesisDifficulty: text("genesis_difficulty").notNull(),
+    rootHash: text("root_hash").notNull(),
+    headHash: text("head_hash").notNull(),
+    stateHash: text("state_hash").notNull(),
+    previousHeadHash: text("previous_head_hash"),
+    lastRequestHash: text("last_request_hash").notNull(),
+    gameStateJson: text("game_state_json").notNull(),
+    gameMonth: integer("game_month").notNull(),
+    revision: integer("revision").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "verified_leaderboard_run_heads_pkey",
+      columns: [table.playerId, table.clientRunId],
+    }),
+    uniqueIndex("verified_leaderboard_run_heads_head_hash_key").on(table.headHash),
+    index("verified_leaderboard_run_heads_player_updated_at_idx").on(
+      table.playerId,
+      table.updatedAt,
     ),
   ],
 );

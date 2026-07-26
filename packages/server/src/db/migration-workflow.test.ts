@@ -63,7 +63,10 @@ test("migrateConfiguredDatabase bootstraps an empty PGlite database with the SQL
 
     assert.equal(result.mode, "pglite");
     assert.equal(result.provider, "pglite-file");
-    assert.deepEqual(result.appliedBaselineMigrations, ["001_leaderboard_foundation.sql"]);
+    assert.deepEqual(result.appliedBaselineMigrations, [
+      "001_leaderboard_foundation.sql",
+      "002_verified_leaderboard_heads.sql",
+    ]);
 
     const database = await createServerDatabase({
       mode: "pglite",
@@ -81,7 +84,10 @@ test("migrateConfiguredDatabase bootstraps an empty PGlite database with the SQL
       "select table_name from information_schema.tables where table_name = '__drizzle_migrations'",
     );
 
-    assert.deepEqual(baselineRows.rows, [{ name: "001_leaderboard_foundation.sql" }]);
+    assert.deepEqual(baselineRows.rows, [
+      { name: "001_leaderboard_foundation.sql" },
+      { name: "002_verified_leaderboard_heads.sql" },
+    ]);
     assert.deepEqual(drizzleLedger.rows, [{ table_name: "__drizzle_migrations" }]);
 
     await database.close();

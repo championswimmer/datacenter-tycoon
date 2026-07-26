@@ -1,89 +1,93 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
+import { createVerifiedGenesisState } from "@datacenter-tycoon/game-logic";
 import { createMigratedPgliteDatabase } from "../db/test-database.js";
+import { leaderboardRuns } from "../db/schema.js";
 import { DrizzlePlayersRepository } from "../players/drizzle-repository.js";
 import { DrizzleLeaderboardRepository } from "./repository.js";
+import { createLeaderboardRunRecord } from "./types.js";
 
-test("DrizzleLeaderboardRepository upserts idempotently and orders runs by metric", async () => {
+test("DrizzleLeaderboardRepository commits verified heads and lists only verified runs", async () => {
   const database = await createMigratedPgliteDatabase();
   const players = new DrizzlePlayersRepository(database);
   const leaderboard = new DrizzleLeaderboardRepository(database);
   const alpha = await players.createPlayer({ username: "Alpha Cloud" });
   const beta = await players.createPlayer({ username: "Beta Cloud" });
+  const now = new Date("2026-07-26T12:00:00.000Z");
 
-  const first = await leaderboard.upsertRun({
-    playerId: alpha.playerId,
-    clientRunId: "run-alpha",
-    metrics: {
-      money: 10,
-      cumulativeRevenue: 20,
-      totalServers: 1,
-      computeCapacity: 100,
-      memoryCapacity: 200,
-      storageCapacity: 300,
-      gpuCapacity: 0,
+  const committed = await leaderboard.commitVerifiedRun({
+    expectedParentHeadHash: null,
+    run: createLeaderboardRunRecord({
+      runId: "placeholder",
+      playerId: alpha.playerId,
+      clientRunId: "run-alpha",
+      verificationStatus: "verified",
+      metrics: {
+        money: 10,
+        cumulativeRevenue: 20,
+        totalServers: 1,
+        computeCapacity: 100,
+        memoryCapacity: 200,
+        storageCapacity: 300,
+        gpuCapacity: 0,
+      },
+      gameMonth: 3,
+      updatedAt: now,
+    }),
+    head: {
+      playerId: alpha.playerId,
+      clientRunId: "run-alpha",
+      protocolVersion: "verified-run-v1",
+      rulesetId: "leaderboard-ruleset-v1",
+      genesisDescriptor: {
+        seed: 42,
+        difficulty: "easy",
+        gameId: "run-alpha" as never,
+        playerName: "Alpha Cloud",
+      },
+      rootHash: "a".repeat(64),
+      headHash: "b".repeat(64),
+      stateHash: "c".repeat(64),
+      previousHeadHash: null,
+      lastRequestHash: "d".repeat(64),
+      authoritativeState: createVerifiedGenesisState({
+        seed: 42,
+        difficulty: "easy",
+        gameId: "run-alpha" as never,
+        playerName: "Alpha Cloud",
+      }),
+      gameMonth: 3,
     },
-    gameMonth: 3,
   });
-  assert.equal(first.created, true);
 
-  const replay = await leaderboard.upsertRun({
-    playerId: alpha.playerId,
-    clientRunId: "run-alpha",
-    metrics: {
-      money: 10,
-      cumulativeRevenue: 20,
-      totalServers: 1,
-      computeCapacity: 100,
-      memoryCapacity: 200,
-      storageCapacity: 300,
-      gpuCapacity: 0,
-    },
-    gameMonth: 3,
-  });
-  assert.equal(replay.created, false);
-  assert.equal(replay.run.runId, first.run.runId);
+  assert.equal(committed.created, true);
+  assert.equal(committed.run.verificationStatus, "verified");
+  assert.equal((await leaderboard.findRunHead(alpha.playerId, "run-alpha"))?.headHash, "b".repeat(64));
 
-  await leaderboard.upsertRun({
+  await database.db.insert(leaderboardRuns).values({
+    id: "legacy-run",
     playerId: beta.playerId,
     clientRunId: "run-beta",
-    metrics: {
-      money: 25,
-      cumulativeRevenue: 50,
-      totalServers: 2,
-      computeCapacity: 10,
-      memoryCapacity: 10,
-      storageCapacity: 10,
-      gpuCapacity: 10,
-    },
-    gameMonth: 4,
+    verificationStatus: "unverified",
+    money: 99,
+    cumulativeRevenue: 99,
+    totalServers: 9,
+    computeCapacity: 9,
+    memoryCapacity: 9,
+    storageCapacity: 9,
+    gpuCapacity: 9,
+    gameMonth: 9,
   });
 
-  const moneyRuns = await leaderboard.listRuns({
+  const listed = await leaderboard.listRuns({
     metric: "money",
     period: "all-time",
     limit: 5,
   });
-  assert.deepEqual(
-    moneyRuns.map((run) => [run.playerId, run.metrics.money]),
-    [
-      [beta.playerId, 25],
-      [alpha.playerId, 10],
-    ],
-  );
 
-  const totalCapacityRuns = await leaderboard.listRuns({
-    metric: "totalCapacity",
-    period: "all-time",
-    limit: 5,
-  });
-  assert.deepEqual(
-    totalCapacityRuns.map((run) => [run.playerId, run.metrics.computeCapacity + run.metrics.memoryCapacity + run.metrics.storageCapacity + run.metrics.gpuCapacity]),
-    [
-      [alpha.playerId, 600],
-      [beta.playerId, 40],
-    ],
-  );
+  assert.deepEqual(listed.map((run) => [run.playerId, run.verificationStatus]), [
+    [alpha.playerId, "verified"],
+  ]);
 
   await database.close();
 });

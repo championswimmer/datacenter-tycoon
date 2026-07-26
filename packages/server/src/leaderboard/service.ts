@@ -1,3 +1,4 @@
+import type { ServerConfig } from "../config.js";
 import { HttpError } from "../server/errors.js";
 import type { PlayersRepository } from "../players/repository.js";
 import {
@@ -7,14 +8,21 @@ import {
   type LeaderboardQuery,
   LeaderboardQueryValidationError,
 } from "./queries.js";
-import type { LeaderboardRepository, LeaderboardUpsertResult } from "./repository.js";
+import type { LeaderboardRepository } from "./repository.js";
+import {
+  submitVerifiedCheckpoint,
+  type VerifiedCheckpointResponse,
+} from "./verification.js";
 import {
   LeaderboardPlayerNotFoundError,
-  LeaderboardRunConflictError,
-  LeaderboardRunRegressionError,
+  LeaderboardReplayRejectedError,
+  LeaderboardRulesetUnsupportedError,
+  LeaderboardStaleRunHeadError,
+  LeaderboardTickGapExceededError,
+  LeaderboardUnknownRunHeadError,
   LeaderboardValidationError,
 } from "./types.js";
-import { parseLeaderboardRunSubmission } from "./validation.js";
+import { parseVerifiedRunCheckpointSubmission } from "./validation.js";
 
 export async function queryLeaderboardEntries(
   playersRepository: PlayersRepository,
@@ -38,9 +46,10 @@ export async function submitLeaderboardRun(
   playersRepository: PlayersRepository,
   leaderboardRepository: LeaderboardRepository,
   payload: unknown,
-): Promise<LeaderboardUpsertResult> {
+  config: Pick<ServerConfig, "leaderboardVerification">,
+): Promise<VerifiedCheckpointResponse> {
   try {
-    const submission = parseLeaderboardRunSubmission(payload);
+    const submission = parseVerifiedRunCheckpointSubmission(payload);
     const player = await playersRepository.findByPlayerId(submission.playerId);
 
     if (!player) {
@@ -49,7 +58,12 @@ export async function submitLeaderboardRun(
       );
     }
 
-    const result = await leaderboardRepository.upsertRun(submission);
+    const result = await submitVerifiedCheckpoint(
+      leaderboardRepository,
+      player,
+      submission,
+      config,
+    );
     await playersRepository.touchPlayer(submission.playerId);
     return result;
   } catch (error) {
@@ -70,11 +84,23 @@ function normalizeLeaderboardError(error: unknown): unknown {
     return new HttpError(404, error.code, error.message);
   }
 
-  if (error instanceof LeaderboardRunConflictError) {
+  if (error instanceof LeaderboardUnknownRunHeadError) {
+    return new HttpError(404, error.code, error.message);
+  }
+
+  if (error instanceof LeaderboardStaleRunHeadError) {
     return new HttpError(409, error.code, error.message);
   }
 
-  if (error instanceof LeaderboardRunRegressionError) {
+  if (error instanceof LeaderboardRulesetUnsupportedError) {
+    return new HttpError(409, error.code, error.message);
+  }
+
+  if (error instanceof LeaderboardTickGapExceededError) {
+    return new HttpError(409, error.code, error.message);
+  }
+
+  if (error instanceof LeaderboardReplayRejectedError) {
     return new HttpError(409, error.code, error.message);
   }
 

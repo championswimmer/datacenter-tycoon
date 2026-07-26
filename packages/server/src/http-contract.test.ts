@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
+import { createVerifiedGenesisState } from "@datacenter-tycoon/game-logic";
 import { test } from "bun:test";
 import type { ServerConfig } from "./config.js";
 import {
   InMemoryLeaderboardRepository,
   type LeaderboardRepository,
 } from "./leaderboard/repository.js";
+import { createLeaderboardRunRecord } from "./leaderboard/types.js";
 import {
   InMemoryPlayersRepository,
   type PlayersRepository,
@@ -42,6 +44,75 @@ async function registerPlayer(app: ReturnType<typeof createTestApp>["app"]) {
 
   assert.equal(result.response.status, frozenEndpointContracts.registerPlayer.successStatus);
   return result.json;
+}
+
+function buildGenesisPayload(playerId: string, clientRunId: string) {
+  return {
+    playerId,
+    clientRunId,
+    genesis: {
+      seed: 42,
+      difficulty: "easy",
+      rulesetId: "leaderboard-ruleset-v1",
+    },
+    parentHeadHash: null,
+    actions: [],
+  };
+}
+
+async function seedVerifiedRun(
+  leaderboard: InMemoryLeaderboardRepository,
+  input: { playerId: string; clientRunId: string; money: number; cumulativeRevenue: number; totalServers: number; computeCapacity: number; memoryCapacity: number; storageCapacity: number; gpuCapacity: number; gameMonth: number; submittedAt: Date },
+) {
+  const state = createVerifiedGenesisState({
+    seed: 42,
+    difficulty: "easy",
+    gameId: input.clientRunId as never,
+    playerName: "Seeded",
+  });
+  state.player.cash = input.money;
+  state.tick = input.gameMonth as never;
+
+  await leaderboard.commitVerifiedRun({
+    expectedParentHeadHash: null,
+    run: createLeaderboardRunRecord({
+      runId: "placeholder",
+      playerId: input.playerId,
+      clientRunId: input.clientRunId,
+      verificationStatus: "verified",
+      metrics: {
+        money: input.money,
+        cumulativeRevenue: input.cumulativeRevenue,
+        totalServers: input.totalServers,
+        computeCapacity: input.computeCapacity,
+        memoryCapacity: input.memoryCapacity,
+        storageCapacity: input.storageCapacity,
+        gpuCapacity: input.gpuCapacity,
+      },
+      gameMonth: input.gameMonth,
+      submittedAt: input.submittedAt,
+      updatedAt: input.submittedAt,
+    }),
+    head: {
+      playerId: input.playerId,
+      clientRunId: input.clientRunId,
+      protocolVersion: "verified-run-v1",
+      rulesetId: "leaderboard-ruleset-v1",
+      genesisDescriptor: {
+        seed: 42,
+        difficulty: "easy",
+        gameId: input.clientRunId as never,
+        playerName: "Seeded",
+      },
+      rootHash: `${input.clientRunId}-root`.padEnd(64, "0").slice(0, 64),
+      headHash: `${input.clientRunId}-head`.padEnd(64, "1").slice(0, 64),
+      stateHash: `${input.clientRunId}-state`.padEnd(64, "2").slice(0, 64),
+      previousHeadHash: null,
+      lastRequestHash: `${input.clientRunId}-request`.padEnd(64, "3").slice(0, 64),
+      authoritativeState: state,
+      gameMonth: input.gameMonth,
+    },
+  });
 }
 
 function createContractTestApp(options?: {
@@ -195,33 +266,31 @@ test("GET /leaderboard preserves query-validation and response-envelope behavior
   const alpha = await players.createPlayer({ username: "Alpha Cloud" });
   const beta = await players.createPlayer({ username: "Beta Cloud" });
 
-  await leaderboard.upsertRun({
+  await seedVerifiedRun(leaderboard, {
     playerId: alpha.playerId,
     clientRunId: "run-alpha",
-    metrics: {
-      money: 1200,
-      cumulativeRevenue: 2200,
-      totalServers: 10,
-      computeCapacity: 40,
-      memoryCapacity: 400,
-      storageCapacity: 800,
-      gpuCapacity: 0,
-    },
+    money: 1200,
+    cumulativeRevenue: 2200,
+    totalServers: 10,
+    computeCapacity: 40,
+    memoryCapacity: 400,
+    storageCapacity: 800,
+    gpuCapacity: 0,
     gameMonth: 12,
+    submittedAt: fixedSubmittedAt,
   });
-  await leaderboard.upsertRun({
+  await seedVerifiedRun(leaderboard, {
     playerId: beta.playerId,
     clientRunId: "run-beta",
-    metrics: {
-      money: 900,
-      cumulativeRevenue: 1900,
-      totalServers: 9,
-      computeCapacity: 30,
-      memoryCapacity: 300,
-      storageCapacity: 700,
-      gpuCapacity: 0,
-    },
+    money: 900,
+    cumulativeRevenue: 1900,
+    totalServers: 9,
+    computeCapacity: 30,
+    memoryCapacity: 300,
+    storageCapacity: 700,
+    gpuCapacity: 0,
     gameMonth: 11,
+    submittedAt: fixedSubmittedAt,
   });
 
   const { app } = createContractTestApp({ players, leaderboard });
@@ -295,32 +364,14 @@ test("GET /leaderboard preserves query-validation and response-envelope behavior
 test("POST /leaderboard/runs preserves success, idempotent retry, and player-not-found contracts", async () => {
   const { app } = createContractTestApp();
   const player = await registerPlayer(app);
-  const payload = {
-    playerId: player?.playerId,
-    clientRunId: "run-001",
-    metrics: {
-      money: 1250000,
-      cumulativeRevenue: 2750000,
-      totalServers: 12,
-      computeCapacity: 160,
-      memoryCapacity: 2048,
-      storageCapacity: 800,
-      gpuCapacity: 24,
-    },
-    gameMonth: 18,
-  };
+  const payload = buildGenesisPayload(player!.playerId, "run-001");
 
   const created = await apiRequest<{
     created: boolean;
-    run: {
-      runId: string;
-      playerId: string;
-      clientRunId: string;
-      metrics: { money: number; cumulativeRevenue: number; totalServers: number };
-      gameMonth: number;
-      submittedAt: string;
-      updatedAt: string;
-    };
+    rootHash: string;
+    headHash: string;
+    gameMonth: number;
+    metrics: { money: number; cumulativeRevenue: number; totalServers: number };
   }>(app, "/leaderboard/runs", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -330,29 +381,24 @@ test("POST /leaderboard/runs preserves success, idempotent retry, and player-not
   assert.equal(created.response.status, frozenEndpointContracts.submitLeaderboardRun.successStatus);
   assertJsonContentType(created.response);
   assert.equal(created.json?.created, true);
-  assert.match(created.json?.run.runId ?? "", /^run_[a-f0-9]{32}$/);
-  assert.equal(created.json?.run.playerId, player?.playerId);
-  assert.equal(created.json?.run.clientRunId, payload.clientRunId);
-  assert.equal(created.json?.run.gameMonth, payload.gameMonth);
+  assert.match(created.json?.rootHash ?? "", /^[a-f0-9]{64}$/);
+  assert.match(created.json?.headHash ?? "", /^[a-f0-9]{64}$/);
+  assert.equal(created.json?.gameMonth, 0);
   assert.equal(created.response.headers.get("retry-after"), null);
 
-  const replay = await apiRequest<{ created: boolean; run: { runId: string } }>(app, "/leaderboard/runs", {
+  const replay = await apiRequest<{ created: boolean; headHash: string }>(app, "/leaderboard/runs", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(payload),
   });
   assert.equal(replay.response.status, 200);
   assert.equal(replay.json?.created, false);
-  assert.equal(replay.json?.run.runId, created.json?.run.runId);
+  assert.equal(replay.json?.headHash, created.json?.headHash);
 
   const missingPlayer = await apiRequest<{ error: { code: string; message: string } }>(app, "/leaderboard/runs", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      ...payload,
-      playerId: "player_missing",
-      clientRunId: "run-missing",
-    }),
+    body: JSON.stringify(buildGenesisPayload("player_missing", "run-missing")),
   });
   assert.equal(missingPlayer.response.status, 404);
   assert.equal(missingPlayer.json?.error.code, "PLAYER_NOT_FOUND");

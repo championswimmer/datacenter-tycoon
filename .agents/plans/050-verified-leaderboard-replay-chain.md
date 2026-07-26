@@ -13,10 +13,10 @@ owner: server, game-logic, web, cli
   - [x] 1.1 Specify the verified-run protocol, trust model, and compatibility policy
   - [x] 1.2 Make leaderboard genesis reconstructible by the server
   - [x] 1.3 Add a shared, tested replay projection for leaderboard verification
-- [ ] **Phase 2 — Server-side authoritative checkpointing**
-  - [ ] 2.1 Persist one rolling verified head per player/run and add the migration
-  - [ ] 2.2 Validate, replay, hash, and atomically commit submissions
-  - [ ] 2.3 Publish only verified runs and retire the raw-summary write path
+- [x] **Phase 2 — Server-side authoritative checkpointing**
+  - [x] 2.1 Persist one rolling verified head per player/run and add the migration
+  - [x] 2.2 Validate, replay, hash, and atomically commit submissions
+  - [x] 2.3 Publish only verified runs and retire the raw-summary write path
 - [ ] **Phase 3 — Durable client action journals and sync**
   - [ ] 3.1 Add a durable verification cursor and pending-action journal to web saves
   - [ ] 3.2 Replace web summary sync with bounded verified-checkpoint sync

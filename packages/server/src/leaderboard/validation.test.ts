@@ -1,141 +1,97 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
 import {
-  MAX_LEADERBOARD_GAME_MONTH,
-  assertMonotonicRunUpdate,
-  parseLeaderboardRunSubmission,
+  parseVerifiedRunCheckpointSubmission,
 } from "./validation.js";
-import {
-  createLeaderboardRunRecord,
-  LeaderboardRunRegressionError,
-  LeaderboardValidationError,
-} from "./types.js";
+import { LeaderboardValidationError } from "./types.js";
 
-test("parseLeaderboardRunSubmission rejects missing metric fields", () => {
-  assert.throws(
-    () =>
-      parseLeaderboardRunSubmission({
-        playerId: "player_123",
-        clientRunId: "run-1",
-        metrics: {
-          money: 1,
-          cumulativeRevenue: 1,
-          totalServers: 1,
-          computeCapacity: 1,
-          memoryCapacity: 1,
-          storageCapacity: 1,
-        },
-        gameMonth: 1,
-      }),
-    (error: unknown) => {
-      assert.ok(error instanceof LeaderboardValidationError);
-      assert.match(error.message, /metrics\.gpuCapacity/);
-      return true;
-    },
-  );
-});
-
-test("parseLeaderboardRunSubmission rejects unknown metric keys", () => {
-  assert.throws(
-    () =>
-      parseLeaderboardRunSubmission({
-        playerId: "player_123",
-        clientRunId: "run-2",
-        metrics: {
-          money: 1,
-          cumulativeRevenue: 1,
-          totalServers: 1,
-          computeCapacity: 1,
-          memoryCapacity: 1,
-          storageCapacity: 1,
-          gpuCapacity: 1,
-          totalCapacity: 4,
-        },
-        gameMonth: 1,
-      }),
-    (error: unknown) => {
-      assert.ok(error instanceof LeaderboardValidationError);
-      assert.match(error.message, /unsupported keys: totalCapacity/);
-      return true;
-    },
-  );
-});
-
-test("parseLeaderboardRunSubmission rejects impossible-looking game months", () => {
-  assert.throws(
-    () =>
-      parseLeaderboardRunSubmission({
-        playerId: "player_123",
-        clientRunId: "run-3",
-        metrics: {
-          money: 1,
-          cumulativeRevenue: 1,
-          totalServers: 1,
-          computeCapacity: 1,
-          memoryCapacity: 1,
-          storageCapacity: 1,
-          gpuCapacity: 1,
-        },
-        gameMonth: MAX_LEADERBOARD_GAME_MONTH + 1,
-      }),
-    (error: unknown) => {
-      assert.ok(error instanceof LeaderboardValidationError);
-      assert.match(error.message, new RegExp(String(MAX_LEADERBOARD_GAME_MONTH)));
-      return true;
-    },
-  );
-});
-
-test("assertMonotonicRunUpdate rejects game-month or cumulative-revenue regressions", () => {
-  const existingRun = createLeaderboardRunRecord({
-    runId: "run_123",
+test("parseVerifiedRunCheckpointSubmission parses a valid genesis checkpoint", () => {
+  const submission = parseVerifiedRunCheckpointSubmission({
     playerId: "player_123",
-    clientRunId: "client-run-1",
-    metrics: {
-      money: 100,
-      cumulativeRevenue: 200,
-      totalServers: 3,
-      computeCapacity: 10,
-      memoryCapacity: 20,
-      storageCapacity: 30,
-      gpuCapacity: 0,
+    clientRunId: "run-1",
+    genesis: {
+      seed: 42,
+      difficulty: "easy",
+      rulesetId: "leaderboard-ruleset-v1",
     },
-    gameMonth: 6,
-    submittedAt: new Date("2026-05-18T12:00:00.000Z"),
+    parentHeadHash: null,
+    actions: [
+      { type: "BuildDatacenter", specId: "garage", dcId: "dc-1", regionId: "region-1" },
+      { type: "Tick" },
+    ],
   });
 
+  assert.equal(submission.clientRunId, "run-1");
+  assert.equal(submission.genesis?.seed, 42);
+  assert.equal(submission.parentHeadHash, null);
+  assert.equal(submission.actions.length, 2);
+});
+
+test("parseVerifiedRunCheckpointSubmission rejects legacy summary fields", () => {
   assert.throws(
     () =>
-      assertMonotonicRunUpdate(existingRun, {
-        playerId: existingRun.playerId,
-        clientRunId: existingRun.clientRunId,
-        metrics: {
-          ...existingRun.metrics,
-          money: 90,
-        },
-        gameMonth: 5,
+      parseVerifiedRunCheckpointSubmission({
+        playerId: "player_123",
+        clientRunId: "run-2",
+        parentHeadHash: null,
+        actions: [],
+        metrics: { money: 1 },
+        gameMonth: 1,
       }),
     (error: unknown) => {
-      assert.ok(error instanceof LeaderboardRunRegressionError);
-      assert.match(error.message, /gameMonth 5/);
+      assert.ok(error instanceof LeaderboardValidationError);
+      assert.match(error.message, /Unsupported field\(s\): metrics, gameMonth/);
       return true;
     },
   );
+});
 
+test("parseVerifiedRunCheckpointSubmission rejects unsupported action types", () => {
   assert.throws(
     () =>
-      assertMonotonicRunUpdate(existingRun, {
-        playerId: existingRun.playerId,
-        clientRunId: existingRun.clientRunId,
-        metrics: {
-          ...existingRun.metrics,
-          cumulativeRevenue: 199,
-        },
-        gameMonth: 6,
+      parseVerifiedRunCheckpointSubmission({
+        playerId: "player_123",
+        clientRunId: "run-3",
+        parentHeadHash: null,
+        actions: [{ type: "SetPaused", paused: true }],
       }),
     (error: unknown) => {
-      assert.ok(error instanceof LeaderboardRunRegressionError);
-      assert.match(error.message, /cumulativeRevenue 199/);
+      assert.ok(error instanceof LeaderboardValidationError);
+      assert.match(error.message, /unsupported/i);
+      return true;
+    },
+  );
+});
+
+test("parseVerifiedRunCheckpointSubmission rejects malformed parent hashes", () => {
+  assert.throws(
+    () =>
+      parseVerifiedRunCheckpointSubmission({
+        playerId: "player_123",
+        clientRunId: "run-4",
+        parentHeadHash: "abc",
+        actions: [],
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof LeaderboardValidationError);
+      assert.match(error.message, /parentHeadHash/);
+      return true;
+    },
+  );
+});
+
+test("parseVerifiedRunCheckpointSubmission rejects extra action fields", () => {
+  assert.throws(
+    () =>
+      parseVerifiedRunCheckpointSubmission({
+        playerId: "player_123",
+        clientRunId: "run-5",
+        parentHeadHash: null,
+        actions: [{ type: "Tick", bogus: true }],
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof LeaderboardValidationError);
+      assert.match(error.message, /Unsupported field/);
       return true;
     },
   );

@@ -32,7 +32,7 @@ test("request-level flows work with Drizzle repositories backed by PGlite", asyn
   });
   assert.equal(registered.response.status, 201);
 
-  const submitted = await apiRequest<{ created: boolean; run: { playerId: string } }>(
+  const submitted = await apiRequest<{ created: boolean; headHash: string; metrics: { money: number } }>(
     app,
     "/leaderboard/runs",
     {
@@ -41,28 +41,25 @@ test("request-level flows work with Drizzle repositories backed by PGlite", asyn
       body: JSON.stringify({
         playerId: registered.json?.playerId,
         clientRunId: "run-001",
-        metrics: {
-          money: 100,
-          cumulativeRevenue: 200,
-          totalServers: 3,
-          computeCapacity: 10,
-          memoryCapacity: 20,
-          storageCapacity: 30,
-          gpuCapacity: 40,
+        genesis: {
+          seed: 42,
+          difficulty: "easy",
+          rulesetId: "leaderboard-ruleset-v1",
         },
-        gameMonth: 6,
+        parentHeadHash: null,
+        actions: [],
       }),
     },
   );
   assert.equal(submitted.response.status, 201);
-  assert.equal(submitted.json?.run.playerId, registered.json?.playerId);
+  assert.match(submitted.json?.headHash ?? "", /^[a-f0-9]{64}$/);
 
   const leaderboard = await apiRequest<{
     entries: Array<{ username: string; value: number }>;
   }>(app, "/leaderboard?metric=money&period=all-time&limit=5");
   assert.equal(leaderboard.response.status, 200);
   assert.equal(leaderboard.json?.entries[0]?.username, "Acme Cloud");
-  assert.equal(leaderboard.json?.entries[0]?.value, 100);
+  assert.equal(leaderboard.json?.entries[0]?.value, 8_000_000);
 
   await database.close();
 });
