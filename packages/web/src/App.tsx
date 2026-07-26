@@ -1,7 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { Difficulty } from "@datacenter-tycoon/game-logic";
 import {
-  buildLeaderboardRunSubmission,
   DEFAULT_START_SCREEN_LEADERBOARD_LIMIT,
   DEFAULT_START_SCREEN_LEADERBOARD_METRIC,
   DEFAULT_START_SCREEN_LEADERBOARD_PERIOD,
@@ -13,6 +12,14 @@ import {
   submitLeaderboardRun,
 } from "./online/leaderboard.js";
 import {
+  acknowledgeVerifiedCheckpoint,
+  buildVerifiedCheckpointSubmission,
+  getLastEligibleGameMonth,
+  getPendingTickDelta,
+  getRemainingTickAllowance,
+  markVerifiedRunSyncFailure,
+} from "./online/verified-run.js";
+import {
   isRegistrationUnavailableError,
   PlayerRegistrationError,
   registerPlayer,
@@ -23,6 +30,7 @@ import {
   createLoadedSession,
   getLatestSaveInfo,
   type StoreSession,
+  writeSaveData,
 } from "./store/persist.js";
 import {
   getStoredPlayerIdentity,
@@ -42,7 +50,8 @@ type StartChoice = "load" | "new";
 
 const OFFLINE_LEADERBOARD_NOTICE = "Online leaderboard registration is unavailable right now. New runs from this device will stay local until the backend is reachable again.";
 const DISABLED_LEADERBOARD_NOTICE = "Online leaderboard registration is disabled for this build. New runs from this device will stay local.";
-const LEADERBOARD_SYNC_UNAVAILABLE_NOTICE = "Online leaderboard sync is unavailable right now. This run will keep progressing locally until the backend is reachable again.";
+const LEADERBOARD_SYNC_UNAVAILABLE_NOTICE = "Online leaderboard verification is unavailable right now.";
+const LOCAL_ONLY_RUN_NOTICE = "This run is local-only and will not appear on the verified leaderboard.";
 const LEADERBOARD_QUERY_FAILED_MESSAGE = "Could not load the online leaderboard right now.";
 const TRANSIENT_STATUS_MESSAGE_DURATION_MS = 3_000;
 
@@ -50,14 +59,23 @@ function createAppSession(
   choice: StartChoice,
   difficulty: Difficulty,
   latestSaveGameId: string | null,
-  playerName?: string,
+  options: { playerName?: string; onlineEligible?: boolean } = {},
 ): StoreSession {
   if (choice === "load") {
-    return createLoadedSession(latestSaveGameId ?? undefined)
-      ?? createFreshSession({ difficulty, playerName });
+    return createLoadedSession(latestSaveGameId ?? undefined, {
+      onlineEligible: options.onlineEligible,
+    }) ?? createFreshSession({
+      difficulty,
+      playerName: options.playerName,
+      onlineEligible: options.onlineEligible,
+    });
   }
 
-  return createFreshSession({ difficulty, playerName });
+  return createFreshSession({
+    difficulty,
+    playerName: options.playerName,
+    onlineEligible: options.onlineEligible,
+  });
 }
 
 type LeaderboardResultCache = Partial<Record<LeaderboardQueryMetric, LeaderboardListResult>>;
@@ -121,25 +139,28 @@ function useAppSession(): AppSessionController {
     };
   }, []);
 
-  const replaceSession = useCallback((choice: StartChoice, playerName?: string) => {
+  const replaceSession = useCallback((choice: StartChoice, playerName?: string, onlineEligible = Boolean(playerIdentity)) => {
     const nextSession = createAppSession(
       choice,
       selectedDifficulty,
       latestSave?.gameId ?? null,
-      playerName,
+      {
+        playerName,
+        onlineEligible,
+      },
     );
     sessionRef.current?.stopAutosave();
     sessionRef.current = nextSession;
     setSession(nextSession);
     setLatestSave((currentLatestSave) => currentLatestSave);
-  }, [latestSave?.gameId, selectedDifficulty]);
+  }, [latestSave?.gameId, playerIdentity, selectedDifficulty]);
 
   const startNewGame = useCallback(async () => {
     setStartError(null);
 
     if (playerIdentity) {
       setStatusMessage(null);
-      replaceSession("new", playerIdentity.username);
+      replaceSession("new", playerIdentity.username, true);
       return;
     }
 
@@ -158,17 +179,17 @@ function useAppSession(): AppSessionController {
       setPlayerIdentity(identity);
       setUsernameDraft(identity.username);
       setStatusMessage(null);
-      replaceSession("new", identity.username);
+      replaceSession("new", identity.username, true);
     } catch (error) {
       if (error instanceof PlayerRegistrationError && error.code === "ONLINE_LEADERBOARD_DISABLED") {
         setStatusMessage(DISABLED_LEADERBOARD_NOTICE);
-        replaceSession("new", requestedUsername);
+        replaceSession("new", requestedUsername, false);
         return;
       }
 
       if (isRegistrationUnavailableError(error)) {
         setStatusMessage(OFFLINE_LEADERBOARD_NOTICE);
-        replaceSession("new", requestedUsername);
+        replaceSession("new", requestedUsername, false);
         return;
       }
 
@@ -178,7 +199,7 @@ function useAppSession(): AppSessionController {
       }
 
       setStatusMessage(OFFLINE_LEADERBOARD_NOTICE);
-      replaceSession("new", requestedUsername);
+      replaceSession("new", requestedUsername, false);
     } finally {
       setIsStarting(false);
     }
@@ -260,65 +281,70 @@ function useAppSession(): AppSessionController {
   const isLeaderboardLoading = Boolean(leaderboardLoadingByMetric[activeLeaderboardMetric]);
 
   useEffect(() => {
-    if (!session || !playerIdentity) {
+    if (!session) {
+      return undefined;
+    }
+
+    if (!playerIdentity) {
+      if (session.verification.getState().status !== "local-only") {
+        session.verification.update((current) => ({ ...current, status: "local-only" }));
+      }
       return undefined;
     }
 
     let cancelled = false;
     let timeout: ReturnType<typeof setTimeout> | null = null;
-    let lastSubmittedSignature: string | null = null;
 
-    const submitSnapshot = async () => {
+    const submitCheckpoint = async () => {
       const state = session.store.getState();
+      const verification = session.verification.getState();
+      const submission = buildVerifiedCheckpointSubmission(playerIdentity.playerId, verification);
 
-      if (state.tick < 1) {
-        return;
-      }
-
-      const submission = buildLeaderboardRunSubmission(playerIdentity.playerId, state);
-      const signature = JSON.stringify(submission);
-
-      if (signature === lastSubmittedSignature) {
+      if (!submission) {
         return;
       }
 
       try {
-        await submitLeaderboardRun(submission);
-        lastSubmittedSignature = signature;
-        if (!cancelled) {
-          setStatusMessage((current) =>
-            current === LEADERBOARD_SYNC_UNAVAILABLE_NOTICE ? null : current);
-        }
+        const response = await submitLeaderboardRun(submission);
+        const nextVerification = acknowledgeVerifiedCheckpoint(verification, response);
+        session.verification.setState(nextVerification);
+        writeSaveData({ state, verification: nextVerification });
+        setStatusMessage((current) =>
+          current === LEADERBOARD_SYNC_UNAVAILABLE_NOTICE || current === LOCAL_ONLY_RUN_NOTICE
+            ? null
+            : current);
       } catch (error) {
         if (cancelled) {
           return;
         }
 
-        if (error instanceof LeaderboardSubmissionError) {
-          if (error.code === "ONLINE_LEADERBOARD_DISABLED") {
-            setStatusMessage((current) =>
-              current === LEADERBOARD_SYNC_UNAVAILABLE_NOTICE ? null : current
-            );
-            return;
-          }
+        const nextVerification = markVerifiedRunSyncFailure(
+          verification,
+          error instanceof LeaderboardSubmissionError ? error.code : null,
+          state,
+        );
+        session.verification.setState(nextVerification);
+        writeSaveData({ state, verification: nextVerification });
 
-          console.warn("[leaderboard] Failed to sync run summary:", error.message);
-
-          // Permanent 4xx errors (except 429 rate-limiting) are not transient:
-          // mark this snapshot as already-attempted so we don't re-submit on
-          // every store tick and mislead the user about backend availability.
-          const isPermanentClientError = error.status !== null
-            && error.status >= 400
-            && error.status < 500
-            && error.status !== 429;
-
-          if (isPermanentClientError) {
-            lastSubmittedSignature = signature;
-            return;
-          }
+        if (nextVerification.status === "local-only") {
+          setStatusMessage(LOCAL_ONLY_RUN_NOTICE);
+          return;
         }
 
-        setStatusMessage((current) => current ?? LEADERBOARD_SYNC_UNAVAILABLE_NOTICE);
+        if (error instanceof LeaderboardSubmissionError && error.code === "ONLINE_LEADERBOARD_DISABLED") {
+          setStatusMessage((current) =>
+            current === LEADERBOARD_SYNC_UNAVAILABLE_NOTICE ? null : current
+          );
+          return;
+        }
+
+        const pendingTicks = getPendingTickDelta(nextVerification, state);
+        const remainingTicks = getRemainingTickAllowance(nextVerification, state);
+        const lastEligibleMonth = getLastEligibleGameMonth(nextVerification);
+        console.warn("[leaderboard] Failed to sync verified checkpoint:", error instanceof Error ? error.message : error);
+        setStatusMessage(
+          `${LEADERBOARD_SYNC_UNAVAILABLE_NOTICE} Reconnect before month ${lastEligibleMonth} (${pendingTicks} of ${nextVerification.maxTickDelta} months pending, ${remainingTicks} remaining).`,
+        );
       }
     };
 
@@ -328,7 +354,7 @@ function useAppSession(): AppSessionController {
       }
 
       timeout = setTimeout(() => {
-        void submitSnapshot();
+        void submitCheckpoint();
       }, 750);
     };
 
