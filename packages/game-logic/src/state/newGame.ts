@@ -12,6 +12,14 @@ export interface NewGameOptions {
 	difficulty?: Difficulty;
 	startingCash?: Money;
 	playerName?: string;
+	gameId?: GameId;
+}
+
+export interface VerifiedGameGenesisDescriptor {
+	seed: number;
+	difficulty: Difficulty;
+	gameId: GameId;
+	playerName: string;
 }
 
 const DEFAULT_PLAYER_ID = "player-1" as PlayerId;
@@ -36,6 +44,7 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 	const effectiveSeed = normalizeSeed(options.seed ?? seed);
 	const difficulty = options.difficulty ?? DEFAULT_DIFFICULTY;
 	const startingCash = options.startingCash ?? DIFFICULTY_CONFIG[difficulty].startingCash;
+	const gameId = options.gameId ?? (crypto.randomUUID() as GameId);
 
 	if (!Number.isFinite(startingCash) || startingCash < 0) {
 		throw new Error(`Invalid starting cash: ${startingCash}`);
@@ -44,7 +53,7 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 	const initialMap = initializeRegionalFabric(generateMap(effectiveSeed));
 
 	const initialState: GameState = {
-		gameId: crypto.randomUUID() as GameId,
+		gameId,
 		game: {
 			speed: 1,
 			paused: false,
@@ -81,4 +90,14 @@ export function newGame(seed: number, options: NewGameOptions = {}): GameState {
 	};
 
 	return withDerivedContractViews(refreshContractMarket(initialState));
+}
+
+export function createVerifiedGenesisState(
+	descriptor: VerifiedGameGenesisDescriptor,
+): GameState {
+	return newGame(descriptor.seed, {
+		difficulty: descriptor.difficulty,
+		gameId: descriptor.gameId,
+		playerName: descriptor.playerName,
+	});
 }
