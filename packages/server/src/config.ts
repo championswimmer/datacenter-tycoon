@@ -17,6 +17,14 @@ export interface ServerDatabaseConfig {
   pgliteDataDir?: string;
 }
 
+export interface LeaderboardVerificationConfig {
+  protocolVersion: string;
+  rulesetId: string;
+  maxTickDelta: number;
+  maxActionCount: number;
+  maxRequestBodyBytes: number;
+}
+
 export interface ServerConfig {
   environment: ServerEnvironment;
   host: string;
@@ -25,6 +33,7 @@ export interface ServerConfig {
   database: ServerDatabaseConfig;
   databaseUrl?: string;
   rateLimits: ServerRateLimitConfig;
+  leaderboardVerification: LeaderboardVerificationConfig;
   serverVersion: string;
   gameLogicVersion: string;
 }
@@ -93,6 +102,33 @@ export function loadServerConfig(
       ),
     },
   } satisfies ServerRateLimitConfig;
+  const leaderboardVerification = {
+    protocolVersion: parseRequiredConfigString(
+      env.LEADERBOARD_VERIFICATION_PROTOCOL_VERSION,
+      "verified-run-v1",
+      "LEADERBOARD_VERIFICATION_PROTOCOL_VERSION",
+    ),
+    rulesetId: parseRequiredConfigString(
+      env.LEADERBOARD_VERIFICATION_RULESET_ID,
+      "leaderboard-ruleset-v1",
+      "LEADERBOARD_VERIFICATION_RULESET_ID",
+    ),
+    maxTickDelta: parsePositiveInteger(
+      env.LEADERBOARD_VERIFICATION_MAX_TICK_DELTA,
+      5,
+      "LEADERBOARD_VERIFICATION_MAX_TICK_DELTA",
+    ),
+    maxActionCount: parsePositiveInteger(
+      env.LEADERBOARD_VERIFICATION_MAX_ACTION_COUNT,
+      512,
+      "LEADERBOARD_VERIFICATION_MAX_ACTION_COUNT",
+    ),
+    maxRequestBodyBytes: parsePositiveInteger(
+      env.LEADERBOARD_VERIFICATION_MAX_REQUEST_BODY_BYTES,
+      262_144,
+      "LEADERBOARD_VERIFICATION_MAX_REQUEST_BODY_BYTES",
+    ),
+  } satisfies LeaderboardVerificationConfig;
   const serverVersion = env.SERVER_VERSION?.trim() || env.npm_package_version?.trim() || "0.1.0";
 
   return {
@@ -103,6 +139,7 @@ export function loadServerConfig(
     database,
     databaseUrl: database.mode === "postgres" ? database.connectionString : undefined,
     rateLimits,
+    leaderboardVerification,
     serverVersion,
     gameLogicVersion,
   };
@@ -214,6 +251,26 @@ function parseDatabaseConfig(
     mode: "pglite",
     pgliteDataDir: pgliteDataDir || undefined,
   };
+}
+
+function parseRequiredConfigString(
+  value: string | undefined,
+  defaultValue: string,
+  fieldName: string,
+): string {
+  const trimmed = value?.trim() ?? "";
+
+  if (trimmed.length === 0) {
+    return defaultValue;
+  }
+
+  if (!/^[A-Za-z0-9._:-]{1,128}$/.test(trimmed)) {
+    throw new ConfigError(
+      `${fieldName} must be 1-128 characters of letters, numbers, periods, underscores, colons, or hyphens. Received: ${value}`,
+    );
+  }
+
+  return trimmed;
 }
 
 function parsePositiveInteger(

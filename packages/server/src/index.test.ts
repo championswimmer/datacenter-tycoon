@@ -90,7 +90,7 @@ test("loadServerConfig always includes the first-party production web origin", (
   ]);
 });
 
-test("loadServerConfig defaults global and leaderboard submission rate limits to the anti-spam profile", () => {
+test("loadServerConfig defaults global, leaderboard submission, and verification limits", () => {
   const config = loadServerConfig({
     NODE_ENV: "test",
   });
@@ -99,6 +99,60 @@ test("loadServerConfig defaults global and leaderboard submission rate limits to
   assert.equal(config.rateLimits.backendGlobal.maxRequests, 10);
   assert.equal(config.rateLimits.leaderboardSubmission.windowMs, 1_000);
   assert.equal(config.rateLimits.leaderboardSubmission.maxRequests, 1);
+  assert.deepEqual(config.leaderboardVerification, {
+    protocolVersion: "verified-run-v1",
+    rulesetId: "leaderboard-ruleset-v1",
+    maxTickDelta: 5,
+    maxActionCount: 512,
+    maxRequestBodyBytes: 262_144,
+  });
+});
+
+test("loadServerConfig accepts explicit leaderboard verification settings", () => {
+  const config = loadServerConfig({
+    NODE_ENV: "test",
+    LEADERBOARD_VERIFICATION_PROTOCOL_VERSION: "verified-run-v2",
+    LEADERBOARD_VERIFICATION_RULESET_ID: "season-2026-07",
+    LEADERBOARD_VERIFICATION_MAX_TICK_DELTA: "7",
+    LEADERBOARD_VERIFICATION_MAX_ACTION_COUNT: "1024",
+    LEADERBOARD_VERIFICATION_MAX_REQUEST_BODY_BYTES: "524288",
+  });
+
+  assert.deepEqual(config.leaderboardVerification, {
+    protocolVersion: "verified-run-v2",
+    rulesetId: "season-2026-07",
+    maxTickDelta: 7,
+    maxActionCount: 1024,
+    maxRequestBodyBytes: 524_288,
+  });
+});
+
+test("loadServerConfig rejects invalid leaderboard verification configuration", () => {
+  assert.throws(
+    () =>
+      loadServerConfig({
+        NODE_ENV: "test",
+        LEADERBOARD_VERIFICATION_RULESET_ID: "bad ruleset id",
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof ConfigError);
+      assert.match(error.message, /LEADERBOARD_VERIFICATION_RULESET_ID/);
+      return true;
+    },
+  );
+
+  assert.throws(
+    () =>
+      loadServerConfig({
+        NODE_ENV: "test",
+        LEADERBOARD_VERIFICATION_MAX_TICK_DELTA: "0",
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof ConfigError);
+      assert.match(error.message, /LEADERBOARD_VERIFICATION_MAX_TICK_DELTA/);
+      return true;
+    },
+  );
 });
 
 test("loadServerConfig rejects invalid rate-limit configuration", () => {
