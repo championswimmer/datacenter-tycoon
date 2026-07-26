@@ -1,7 +1,7 @@
 ---
 name: Verified Leaderboard Replay Chain
 description: Replace trusted client leaderboard summaries with bounded server-replayed action checkpoints chained from a deterministic genesis state.
-status: started
+status: completed
 created: 2026-07-26
 updated: 2026-07-26
 owner: server, game-logic, web, cli
@@ -17,14 +17,14 @@ owner: server, game-logic, web, cli
   - [x] 2.1 Persist one rolling verified head per player/run and add the migration
   - [x] 2.2 Validate, replay, hash, and atomically commit submissions
   - [x] 2.3 Publish only verified runs and retire the raw-summary write path
-- [ ] **Phase 3 — Durable client action journals and sync**
-  - [ ] 3.1 Add a durable verification cursor and pending-action journal to web saves
-  - [ ] 3.2 Replace web summary sync with bounded verified-checkpoint sync
-  - [ ] 3.3 Add equivalent journaled verification support to the CLI daemon and online sync
-- [ ] **Phase 4 — Rollout, adversarial tests, and operations**
-  - [ ] 4.1 Define legacy/offline eligibility behavior and user-facing status
-  - [ ] 4.2 Add end-to-end, race, retry, and tamper-resistance coverage
-  - [ ] 4.3 Document protocol configuration, limits, and residual risks
+- [x] **Phase 3 — Durable client action journals and sync**
+  - [x] 3.1 Add a durable verification cursor and pending-action journal to web saves
+  - [x] 3.2 Replace web summary sync with bounded verified-checkpoint sync
+  - [x] 3.3 Add equivalent journaled verification support to the CLI daemon and online sync
+- [x] **Phase 4 — Rollout, adversarial tests, and operations**
+  - [x] 4.1 Define legacy/offline eligibility behavior and user-facing status
+  - [x] 4.2 Add end-to-end, race, retry, and tamper-resistance coverage
+  - [x] 4.3 Document protocol configuration, limits, and residual risks
 
 ## Overview
 
@@ -269,3 +269,4 @@ Only server-normalized data enters those hashes. `canonical(...)` must be a deli
 - 2026-07-26 — Created after repository and security-model research. Chosen design is server-side deterministic replay with a rolling server-authoritative hash head; a client-only hash chain was rejected because it cannot establish that client-provided state is legitimate.
 - 2026-07-26 — Updated rollout policy: preserve all existing leaderboard rows and mark them `unverified`; only newly server-replayed checkpoints become `verified` and rank in the normal leaderboard.
 - 2026-07-26 — Clarified deterministic-randomness assumption: contract/failure outcomes replay from server-owned persisted `rngState` and generated contracts; client-selected seed fairness is intentionally separate from fabricated-state prevention.
+- 2026-07-26 — Completed client rollout: web saves and CLI daemon saves now persist verified-run cursors plus action journals, both clients submit replay checkpoints instead of raw summaries, and user-facing docs/status copy describe pending vs local-only verification behavior.

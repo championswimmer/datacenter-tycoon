@@ -19,6 +19,13 @@ import {
 	type GameState,
 	type RackSpec,
 } from "@datacenter-tycoon/game-logic";
+import {
+	appendVerificationAction,
+	createInitialVerifiedRunState,
+	createVerifiedRunController,
+	type CliVerifiedRunController,
+	type CliVerifiedRunState,
+} from "../online/verified-run.js";
 
 import type {
 	Action,
@@ -43,6 +50,7 @@ export interface IntervalScheduler {
 
 export interface GameRuntimeOptions {
 	state: GameState;
+	verificationState?: CliVerifiedRunState;
 	initialSpeedTps?: number;
 	paused?: boolean;
 	scheduler?: IntervalScheduler;
@@ -184,6 +192,7 @@ function createListResult(state: GameState, query: ListQuery): ListResult {
 
 export class GameRuntime extends EventEmitter<GameRuntimeEventMap> {
 	private state: GameState;
+	private readonly verification: CliVerifiedRunController;
 	private readonly scheduler: IntervalScheduler;
 	private speedTps: number;
 	private lastActiveSpeedTps: number;
@@ -197,6 +206,9 @@ export class GameRuntime extends EventEmitter<GameRuntimeEventMap> {
 		assertValidSpeed(initialSpeedTps);
 
 		this.state = options.state;
+		this.verification = createVerifiedRunController(
+			options.verificationState ?? createInitialVerifiedRunState(options.state),
+		);
 		this.scheduler = options.scheduler ?? defaultScheduler;
 		this.speedTps = initialSpeedTps;
 		this.lastActiveSpeedTps = initialSpeedTps > 0 ? initialSpeedTps : DEFAULT_SPEED_TPS;
@@ -224,6 +236,7 @@ export class GameRuntime extends EventEmitter<GameRuntimeEventMap> {
 		const newLedgerEntries = nextState.ledger.slice(previousState.ledger.length);
 
 		this.state = nextState;
+		this.verification.update((current) => appendVerificationAction(current, action));
 
 		if (nextState.tick !== previousState.tick) {
 			this.emit("tick", { type: "tick", tick: nextState.tick });
@@ -258,6 +271,8 @@ export class GameRuntime extends EventEmitter<GameRuntimeEventMap> {
 		switch (query.kind) {
 			case "snapshot":
 				return this.getSnapshot();
+			case "verification":
+				return this.getVerificationState();
 			case "status":
 				return this.getStatus();
 			case "list":
@@ -327,6 +342,14 @@ export class GameRuntime extends EventEmitter<GameRuntimeEventMap> {
 
 	getStatus(): StatusView {
 		return createStatusView(this.state, this.getRuntimeStatus());
+	}
+
+	getVerificationState(): CliVerifiedRunState {
+		return this.verification.getState();
+	}
+
+	setVerificationState(state: CliVerifiedRunState): void {
+		this.verification.setState(state);
 	}
 
 	getRuntimeStatus(): RuntimeStatus {

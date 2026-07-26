@@ -5,19 +5,25 @@ import test from "node:test";
 import { newGame, type Action, type GameState } from "@datacenter-tycoon/game-logic";
 
 import { parseArgv } from "../argv.js";
+import { appendVerificationAction, createInitialVerifiedRunState } from "../online/verified-run.js";
 import type { CommandClient } from "./common.js";
 import { runTickCommand } from "./tick.js";
 
 function createFakeClient(actions: Action[], snapshot: GameState = newGame(1)): CommandClient {
+	const verification = createInitialVerifiedRunState(snapshot, { onlineEligible: true });
 	return {
 		connect: async () => undefined,
 		dispatch: async (action) => {
 			actions.push(action);
+			Object.assign(verification, appendVerificationAction(verification, action));
 			return { tick: actions.length };
 		},
 		query: async (params) => {
 			if (params.kind === "snapshot") {
 				return snapshot;
+			}
+			if (params.kind === "verification") {
+				return verification;
 			}
 
 			return {
@@ -34,7 +40,12 @@ function createFakeClient(actions: Action[], snapshot: GameState = newGame(1)): 
 				marketContractCount: 0,
 			};
 		},
-		control: async () => ({ ok: true }),
+		control: async (params) => {
+			if (params.op === "set-verification") {
+				Object.assign(verification, params.verification);
+			}
+			return { ok: true };
+		},
 		close: async () => undefined,
 	};
 }
@@ -77,22 +88,17 @@ async function startLeaderboardServer(): Promise<{
 			response.setHeader("content-type", "application/json");
 			response.end(JSON.stringify({
 				created: true,
-				run: {
-					runId: "run_123",
-					playerId: "player_123",
-					clientRunId: "game-123",
-					metrics: {
-						money: 500_000,
-						cumulativeRevenue: 0,
-						totalServers: 0,
-						computeCapacity: 0,
-						memoryCapacity: 0,
-						storageCapacity: 0,
-						gpuCapacity: 0,
-					},
-					gameMonth: 1,
-					submittedAt: "2026-05-29T00:00:00.000Z",
-					updatedAt: "2026-05-29T00:00:00.000Z",
+				rootHash: "a".repeat(64),
+				headHash: "b".repeat(64),
+				gameMonth: 1,
+				metrics: {
+					money: 500_000,
+					cumulativeRevenue: 0,
+					totalServers: 0,
+					computeCapacity: 0,
+					memoryCapacity: 0,
+					storageCapacity: 0,
+					gpuCapacity: 0,
 				},
 			}));
 		});
@@ -167,7 +173,7 @@ test("runTickCommand keeps month-based wording for compatibility", async () => {
 	assert.match(printed[0] ?? "", /Advanced 2 months to tick 2/);
 });
 
-test("runTickCommand submits the leaderboard payload when a profile and server are configured", async () => {
+test("runTickCommand submits the verified leaderboard payload when a profile and server are configured", async () => {
 	const actions: Action[] = [];
 	const server = await startLeaderboardServer();
 	const snapshot = newGame(123);
@@ -186,8 +192,6 @@ test("runTickCommand submits the leaderboard payload when a profile and server a
 						playerId: "player_123",
 						username: "Acme Cloud",
 					}),
-					readSyncState: async () => ({ signaturesByRunKey: {} }),
-					writeSyncState: async () => undefined,
 				},
 			),
 		);
@@ -196,14 +200,15 @@ test("runTickCommand submits the leaderboard payload when a profile and server a
 				tick: number;
 				onlineSync?: {
 					status: string;
-					response?: { run: { runId: string } };
+					response?: { headHash: string };
 				};
 			};
 		};
 		const submission = JSON.parse(server.requests[0]?.body ?? "{}") as {
 			playerId: string;
 			clientRunId: string;
-			gameMonth: number;
+			parentHeadHash: string | null;
+			actions: Array<{ type: string }>;
 		};
 
 		assert.deepEqual(actions, [{ type: "Tick" }]);
@@ -212,10 +217,11 @@ test("runTickCommand submits the leaderboard payload when a profile and server a
 		assert.equal(server.requests[0]?.path, "/leaderboard/runs");
 		assert.equal(submission.playerId, "player_123");
 		assert.equal(submission.clientRunId, "game-123");
-		assert.equal(submission.gameMonth, 1);
+		assert.equal(submission.parentHeadHash, null);
+		assert.deepEqual(submission.actions, [{ type: "Tick" }]);
 		assert.equal(payload.data?.tick, 1);
 		assert.equal(payload.data?.onlineSync?.status, "submitted");
-		assert.equal(payload.data?.onlineSync?.response?.run.runId, "run_123");
+		assert.match(payload.data?.onlineSync?.response?.headHash ?? "", /^[a-f0-9]{64}$/);
 	} finally {
 		await server.close();
 	}
@@ -237,8 +243,6 @@ test("runTickCommand treats unreachable online sync targets as warnings instead 
 					playerId: "player_123",
 					username: "Acme Cloud",
 				}),
-				readSyncState: async () => ({ signaturesByRunKey: {} }),
-				writeSyncState: async () => undefined,
 			},
 		),
 	);
