@@ -50,6 +50,11 @@ Copy `packages/server/.env.example` into your own local env file or export the v
 | `PLAYER_REGISTRATION_RATE_LIMIT_MAX_REQUESTS` | optional | Max registration attempts per client within the window. |
 | `LEADERBOARD_SUBMISSION_RATE_LIMIT_WINDOW_MS` | optional | Window size for leaderboard submission throttling. Defaults to `1000`. |
 | `LEADERBOARD_SUBMISSION_RATE_LIMIT_MAX_REQUESTS` | optional | Max leaderboard submissions per client IP within the window. Defaults to `1`. |
+| `LEADERBOARD_VERIFICATION_PROTOCOL_VERSION` | optional | Stable verified-run wire/hash format version. Defaults to `verified-run-v1`. |
+| `LEADERBOARD_VERIFICATION_RULESET_ID` | optional | Active verified leaderboard ruleset/season id. Defaults to `leaderboard-ruleset-v1`. |
+| `LEADERBOARD_VERIFICATION_MAX_TICK_DELTA` | optional | Maximum completed monthly ticks one checkpoint may advance. Defaults to `5`. |
+| `LEADERBOARD_VERIFICATION_MAX_ACTION_COUNT` | optional | Maximum replay actions accepted in a single checkpoint. Defaults to `512`. |
+| `LEADERBOARD_VERIFICATION_MAX_REQUEST_BODY_BYTES` | optional | Maximum JSON body size for a verified checkpoint request. Defaults to `262144`. |
 
 ## Postgres provisioning
 
@@ -181,21 +186,32 @@ See [`docs/release-checklist.md`](./docs/release-checklist.md) for the first-lau
 
 ## Trust model
 
-This first backend launch accepts **top-level run summaries**, not full save snapshots or deterministic replays.
-That means it is intentionally conservative about what it validates:
+`POST /leaderboard/runs` now accepts **verified replay checkpoints**, not client-computed score summaries.
 
-- usernames, ids, and request JSON must be well-formed;
-- leaderboard metrics must be safe non-negative integers with the shared `game-logic` contract;
-- repeated submissions for the same `clientRunId` must move forward monotonically for fields where monotonicity is expected (`gameMonth`, `cumulativeRevenue`);
-- the entire backend is protected by a simple in-memory 10 req/sec throttle, and leaderboard submissions are further limited to 1 req/sec per client IP.
+Clients submit only:
 
-What it does **not** guarantee yet:
+- `playerId`
+- `clientRunId`
+- a deterministic `genesis` descriptor on the first request
+- the previously acknowledged `parentHeadHash`
+- a bounded array of gameplay-affecting actions
 
-- cryptographic anti-cheat protection;
-- cross-device account recovery;
-- replay verification of every submitted run.
+The server then reconstructs or loads the authoritative state, replays those actions with `@datacenter-tycoon/game-logic`, derives the leaderboard metrics itself, hashes the normalized result, and atomically replaces one rolling verified head for that `(playerId, clientRunId)`.
 
-If stronger guarantees are needed later, the next step is to design deterministic replay or signed run-summary verification on top of the existing `game-logic` helpers.
+Current guarantees:
+
+- ranked `GET /leaderboard` responses include only `verificationStatus: "verified"` runs with a stored verified head;
+- direct `{ metrics, gameMonth }` bodies are rejected;
+- stale branches, oversized batches, malformed actions, unsupported rulesets, and replay failures are rejected with stable machine-readable error codes;
+- exact retries of the just-accepted checkpoint are idempotent.
+
+This still does **not** guarantee:
+
+- authenticated ownership of a `playerId`;
+- proof of human play rather than automation;
+- protection against valid-action botting or server-side bugs.
+
+See [`docs/leaderboard-verification.md`](./docs/leaderboard-verification.md) for the full checkpoint format, limits, retry semantics, and residual risks.
 
 ## Compatibility note for existing player ids
 

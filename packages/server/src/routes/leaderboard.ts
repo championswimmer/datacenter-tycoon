@@ -1,6 +1,5 @@
 import { queryLeaderboardEntries, submitLeaderboardRun } from "../leaderboard/service.js";
 import type { LeaderboardEntry } from "../leaderboard/queries.js";
-import type { LeaderboardRunRecord } from "../leaderboard/types.js";
 import {
   getClientRateLimitKey,
   type RateLimitRule,
@@ -62,39 +61,39 @@ export function registerLeaderboardRoutes(
         );
       }
 
-      const payload = await parseJsonBody(request);
+      const payload = await parseJsonBody(
+        request,
+        config.leaderboardVerification.maxRequestBodyBytes,
+      );
       const result = await submitLeaderboardRun(
         playersRepository,
         leaderboardRepository,
         payload,
+        config,
       );
 
       set.status = result.created ? 201 : 200;
-      return {
-        created: result.created,
-        run: serializeLeaderboardRun(result.run),
-      };
+      return result;
     });
 }
 
-async function parseJsonBody(request: Request): Promise<unknown> {
+async function parseJsonBody(request: Request, maxRequestBodyBytes: number): Promise<unknown> {
+  const rawBody = await request.text();
+  const bodyBytes = new TextEncoder().encode(rawBody).length;
+
+  if (bodyBytes > maxRequestBodyBytes) {
+    throw new HttpError(
+      400,
+      "INVALID_VERIFIED_RUN",
+      `Verified leaderboard submission body exceeds the limit of ${maxRequestBodyBytes} bytes.`,
+    );
+  }
+
   try {
-    return await request.json();
+    return rawBody.length === 0 ? null : JSON.parse(rawBody) as unknown;
   } catch {
     throw new HttpError(400, "INVALID_JSON", "Request body must be valid JSON.");
   }
-}
-
-function serializeLeaderboardRun(run: LeaderboardRunRecord) {
-  return {
-    runId: run.runId,
-    playerId: run.playerId,
-    clientRunId: run.clientRunId,
-    metrics: run.metrics,
-    gameMonth: run.gameMonth,
-    submittedAt: run.submittedAt.toISOString(),
-    updatedAt: run.updatedAt.toISOString(),
-  };
 }
 
 function serializeLeaderboardEntry(entry: LeaderboardEntry) {

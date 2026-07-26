@@ -1,83 +1,105 @@
 import { and, asc, desc, eq, sql } from "drizzle-orm";
+import type { GameState } from "@datacenter-tycoon/game-logic";
 import type { ServerDrizzleDatabase } from "../db/client.js";
 import type { ServerDatabaseConnection } from "../db/database.js";
-import { leaderboardRuns } from "../db/schema.js";
-import {
-  getMetricValue,
-  type LeaderboardQuery,
-  type LeaderboardQueryMetric,
-} from "./queries.js";
+import { leaderboardRuns, verifiedLeaderboardRunHeads } from "../db/schema.js";
+import type { LeaderboardQuery, LeaderboardQueryMetric } from "./queries.js";
 import {
   createLeaderboardRunRecord,
   generateLeaderboardRunId,
-  leaderboardRunMatchesSubmission,
+  LeaderboardStaleRunHeadError,
+  type CommitVerifiedRunInput,
   type LeaderboardRunRecord,
-  type LeaderboardRunSubmission,
+  type VerifiedLeaderboardRunHeadRecord,
+  type VerifiedRunCommitResult,
 } from "./types.js";
-import { assertMonotonicRunUpdate } from "./validation.js";
-
-export interface LeaderboardUpsertResult {
-  created: boolean;
-  run: LeaderboardRunRecord;
-}
 
 export interface LeaderboardRepository {
-  upsertRun(submission: LeaderboardRunSubmission): Promise<LeaderboardUpsertResult>;
+  findRunHead(playerId: string, clientRunId: string): Promise<VerifiedLeaderboardRunHeadRecord | null>;
+  commitVerifiedRun(input: CommitVerifiedRunInput): Promise<VerifiedRunCommitResult>;
   listRuns(query: LeaderboardQuery): Promise<LeaderboardRunRecord[]>;
 }
 
 export class InMemoryLeaderboardRepository implements LeaderboardRepository {
   readonly #runsByKey = new Map<string, LeaderboardRunRecord>();
+  readonly #headsByKey = new Map<string, VerifiedLeaderboardRunHeadRecord>();
   readonly #clock: () => Date;
 
   constructor(clock: () => Date = () => new Date()) {
     this.#clock = clock;
   }
 
-  async upsertRun(submission: LeaderboardRunSubmission): Promise<LeaderboardUpsertResult> {
-    const key = buildRunKey(submission.playerId, submission.clientRunId);
-    const existingRun = this.#runsByKey.get(key);
+  async findRunHead(playerId: string, clientRunId: string): Promise<VerifiedLeaderboardRunHeadRecord | null> {
+    return this.#headsByKey.get(buildRunKey(playerId, clientRunId)) ?? null;
+  }
 
-    if (existingRun) {
-      if (leaderboardRunMatchesSubmission(existingRun, submission)) {
-        return {
-          created: false,
-          run: existingRun,
-        };
+  async commitVerifiedRun(input: CommitVerifiedRunInput): Promise<VerifiedRunCommitResult> {
+    const key = buildRunKey(input.run.playerId, input.run.clientRunId);
+    const existingHead = this.#headsByKey.get(key);
+
+    if (!existingHead) {
+      if (input.expectedParentHeadHash !== null) {
+        throw new LeaderboardStaleRunHeadError(
+          `Run ${input.run.clientRunId} does not have a verified head for parent ${input.expectedParentHeadHash}.`,
+        );
       }
 
-      assertMonotonicRunUpdate(existingRun, submission);
-      const updatedRun = createLeaderboardRunRecord({
-        ...submission,
-        runId: existingRun.runId,
-        submittedAt: existingRun.submittedAt,
-        updatedAt: this.#clock(),
+      const now = this.#clock();
+      const run = createLeaderboardRunRecord({
+        ...input.run,
+        runId: this.#runsByKey.get(key)?.runId ?? generateLeaderboardRunId(),
+        submittedAt: this.#runsByKey.get(key)?.submittedAt ?? now,
+        updatedAt: now,
       });
-      this.#runsByKey.set(key, updatedRun);
+      const head: VerifiedLeaderboardRunHeadRecord = {
+        ...input.head,
+        revision: 1,
+        createdAt: now,
+        updatedAt: now,
+      };
+      this.#runsByKey.set(key, run);
+      this.#headsByKey.set(key, head);
 
       return {
-        created: false,
-        run: updatedRun,
+        created: true,
+        run,
+        head,
       };
     }
 
-    const submittedAt = this.#clock();
+    if (existingHead.headHash !== input.expectedParentHeadHash) {
+      throw new LeaderboardStaleRunHeadError(
+        `Run ${input.run.clientRunId} expected parent ${input.expectedParentHeadHash}, current head is ${existingHead.headHash}.`,
+      );
+    }
+
+    const now = this.#clock();
+    const existingRun = this.#runsByKey.get(key);
     const run = createLeaderboardRunRecord({
-      ...submission,
-      runId: generateLeaderboardRunId(),
-      submittedAt,
-      updatedAt: submittedAt,
+      ...input.run,
+      runId: existingRun?.runId ?? generateLeaderboardRunId(),
+      submittedAt: existingRun?.submittedAt ?? now,
+      updatedAt: now,
     });
+    const head: VerifiedLeaderboardRunHeadRecord = {
+      ...input.head,
+      revision: existingHead.revision + 1,
+      createdAt: existingHead.createdAt,
+      updatedAt: now,
+    };
     this.#runsByKey.set(key, run);
+    this.#headsByKey.set(key, head);
 
     return {
-      created: true,
+      created: false,
       run,
+      head,
     };
   }
 
   async listRuns(query: LeaderboardQuery): Promise<LeaderboardRunRecord[]> {
     return [...this.#runsByKey.values()]
+      .filter((run) => run.verificationStatus === "verified" && this.#headsByKey.has(buildRunKey(run.playerId, run.clientRunId)))
       .sort((left, right) => compareLeaderboardRuns(left, right, query.metric))
       .slice(0, query.limit);
   }
@@ -90,35 +112,95 @@ export class DrizzleLeaderboardRepository implements LeaderboardRepository {
     this.#database = "db" in database ? database.db : database;
   }
 
-  async upsertRun(submission: LeaderboardRunSubmission): Promise<LeaderboardUpsertResult> {
-    const existingRun = await this.findRun(submission.playerId, submission.clientRunId);
+  async findRunHead(playerId: string, clientRunId: string): Promise<VerifiedLeaderboardRunHeadRecord | null> {
+    const [row] = await this.#database
+      .select()
+      .from(verifiedLeaderboardRunHeads)
+      .where(
+        and(
+          eq(verifiedLeaderboardRunHeads.playerId, playerId),
+          eq(verifiedLeaderboardRunHeads.clientRunId, clientRunId),
+        ),
+      )
+      .limit(1);
 
-    if (existingRun) {
-      return this.handleExistingRun(existingRun, submission);
-    }
+    return row ? mapVerifiedRunHeadRow(row) : null;
+  }
 
-    const inserted = await this.#database
-      .insert(leaderboardRuns)
-      .values(buildRunInsert(submission))
-      .onConflictDoNothing({
-        target: [leaderboardRuns.playerId, leaderboardRuns.clientRunId],
-      })
-      .returning();
+  async commitVerifiedRun(input: CommitVerifiedRunInput): Promise<VerifiedRunCommitResult> {
+    return this.#database.transaction(async (tx) => {
+      const existingHead = await tx
+        .select()
+        .from(verifiedLeaderboardRunHeads)
+        .where(
+          and(
+            eq(verifiedLeaderboardRunHeads.playerId, input.run.playerId),
+            eq(verifiedLeaderboardRunHeads.clientRunId, input.run.clientRunId),
+          ),
+        )
+        .limit(1)
+        .then((rows) => rows[0]);
 
-    if (inserted[0]) {
+      if (!existingHead) {
+        if (input.expectedParentHeadHash !== null) {
+          throw new LeaderboardStaleRunHeadError(
+            `Run ${input.run.clientRunId} does not have a verified head for parent ${input.expectedParentHeadHash}.`,
+          );
+        }
+      } else if (existingHead.headHash !== input.expectedParentHeadHash) {
+        throw new LeaderboardStaleRunHeadError(
+          `Run ${input.run.clientRunId} expected parent ${input.expectedParentHeadHash}, current head is ${existingHead.headHash}.`,
+        );
+      }
+
+      const [existingRun] = await tx
+        .select()
+        .from(leaderboardRuns)
+        .where(
+          and(
+            eq(leaderboardRuns.playerId, input.run.playerId),
+            eq(leaderboardRuns.clientRunId, input.run.clientRunId),
+          ),
+        )
+        .limit(1);
+
+      const runInsert = buildRunInsert(input, existingRun?.id ?? generateLeaderboardRunId(), existingRun?.submittedAt);
+      let runRow: typeof leaderboardRuns.$inferSelect | undefined;
+
+      if (existingRun) {
+        [runRow] = await tx
+          .update(leaderboardRuns)
+          .set(runInsert)
+          .where(eq(leaderboardRuns.id, existingRun.id))
+          .returning();
+      } else {
+        [runRow] = await tx.insert(leaderboardRuns).values(runInsert).returning();
+      }
+
+      const headInsert = buildHeadInsert(input, existingHead?.revision ?? 0, existingHead?.createdAt);
+      let headRow: typeof verifiedLeaderboardRunHeads.$inferSelect | undefined;
+
+      if (existingHead) {
+        [headRow] = await tx
+          .update(verifiedLeaderboardRunHeads)
+          .set(headInsert)
+          .where(
+            and(
+              eq(verifiedLeaderboardRunHeads.playerId, input.run.playerId),
+              eq(verifiedLeaderboardRunHeads.clientRunId, input.run.clientRunId),
+            ),
+          )
+          .returning();
+      } else {
+        [headRow] = await tx.insert(verifiedLeaderboardRunHeads).values(headInsert).returning();
+      }
+
       return {
-        created: true,
-        run: mapLeaderboardRunRow(inserted[0]),
+        created: !existingHead,
+        run: mapLeaderboardRunRow(runRow),
+        head: mapVerifiedRunHeadRow(headRow),
       };
-    }
-
-    const conflictedRun = await this.findRun(submission.playerId, submission.clientRunId);
-
-    if (!conflictedRun) {
-      throw new Error("Expected conflicting leaderboard run to exist after upsert.");
-    }
-
-    return this.handleExistingRun(conflictedRun, submission);
+    });
   }
 
   async listRuns(query: LeaderboardQuery): Promise<LeaderboardRunRecord[]> {
@@ -130,59 +212,20 @@ export class DrizzleLeaderboardRepository implements LeaderboardRepository {
     `;
 
     const rows = await this.#database
-      .select()
+      .select({ run: leaderboardRuns })
       .from(leaderboardRuns)
+      .innerJoin(
+        verifiedLeaderboardRunHeads,
+        and(
+          eq(verifiedLeaderboardRunHeads.playerId, leaderboardRuns.playerId),
+          eq(verifiedLeaderboardRunHeads.clientRunId, leaderboardRuns.clientRunId),
+        ),
+      )
+      .where(eq(leaderboardRuns.verificationStatus, "verified"))
       .orderBy(...resolveOrderExpressions(query.metric, totalCapacityExpression))
       .limit(query.limit);
 
-    return rows.map((row) => mapLeaderboardRunRow(row));
-  }
-
-  private async handleExistingRun(
-    existingRun: LeaderboardRunRecord,
-    submission: LeaderboardRunSubmission,
-  ): Promise<LeaderboardUpsertResult> {
-    if (leaderboardRunMatchesSubmission(existingRun, submission)) {
-      return {
-        created: false,
-        run: existingRun,
-      };
-    }
-
-    assertMonotonicRunUpdate(existingRun, submission);
-    const [updated] = await this.#database
-      .update(leaderboardRuns)
-      .set({
-        money: submission.metrics.money,
-        cumulativeRevenue: submission.metrics.cumulativeRevenue,
-        totalServers: submission.metrics.totalServers,
-        computeCapacity: submission.metrics.computeCapacity,
-        memoryCapacity: submission.metrics.memoryCapacity,
-        storageCapacity: submission.metrics.storageCapacity,
-        gpuCapacity: submission.metrics.gpuCapacity,
-        gameMonth: submission.gameMonth,
-        updatedAt: new Date(),
-      })
-      .where(eq(leaderboardRuns.id, existingRun.runId))
-      .returning();
-
-    return {
-      created: false,
-      run: mapLeaderboardRunRow(updated),
-    };
-  }
-
-  private async findRun(
-    playerId: string,
-    clientRunId: string,
-  ): Promise<LeaderboardRunRecord | null> {
-    const [row] = await this.#database
-      .select()
-      .from(leaderboardRuns)
-      .where(and(eq(leaderboardRuns.playerId, playerId), eq(leaderboardRuns.clientRunId, clientRunId)))
-      .limit(1);
-
-    return row ? mapLeaderboardRunRow(row) : null;
+    return rows.map((row) => mapLeaderboardRunRow(row.run));
   }
 }
 
@@ -190,19 +233,53 @@ function buildRunKey(playerId: string, clientRunId: string): string {
   return `${playerId}:${clientRunId}`;
 }
 
-function buildRunInsert(submission: LeaderboardRunSubmission): typeof leaderboardRuns.$inferInsert {
+function buildRunInsert(
+  input: CommitVerifiedRunInput,
+  runId: string,
+  submittedAt?: Date,
+): typeof leaderboardRuns.$inferInsert {
   return {
-    id: generateLeaderboardRunId(),
-    playerId: submission.playerId,
-    clientRunId: submission.clientRunId,
-    money: submission.metrics.money,
-    cumulativeRevenue: submission.metrics.cumulativeRevenue,
-    totalServers: submission.metrics.totalServers,
-    computeCapacity: submission.metrics.computeCapacity,
-    memoryCapacity: submission.metrics.memoryCapacity,
-    storageCapacity: submission.metrics.storageCapacity,
-    gpuCapacity: submission.metrics.gpuCapacity,
-    gameMonth: submission.gameMonth,
+    id: runId,
+    playerId: input.run.playerId,
+    clientRunId: input.run.clientRunId,
+    verificationStatus: input.run.verificationStatus,
+    money: input.run.metrics.money,
+    cumulativeRevenue: input.run.metrics.cumulativeRevenue,
+    totalServers: input.run.metrics.totalServers,
+    computeCapacity: input.run.metrics.computeCapacity,
+    memoryCapacity: input.run.metrics.memoryCapacity,
+    storageCapacity: input.run.metrics.storageCapacity,
+    gpuCapacity: input.run.metrics.gpuCapacity,
+    gameMonth: input.run.gameMonth,
+    submittedAt,
+    updatedAt: input.run.updatedAt,
+  };
+}
+
+function buildHeadInsert(
+  input: CommitVerifiedRunInput,
+  existingRevision: number,
+  createdAt?: Date,
+): typeof verifiedLeaderboardRunHeads.$inferInsert {
+  const updatedAt = new Date();
+
+  return {
+    playerId: input.head.playerId,
+    clientRunId: input.head.clientRunId,
+    protocolVersion: input.head.protocolVersion,
+    rulesetId: input.head.rulesetId,
+    genesisSeed: input.head.genesisDescriptor.seed,
+    genesisDifficulty: input.head.genesisDescriptor.difficulty,
+    rootHash: input.head.rootHash,
+    headHash: input.head.headHash,
+    stateHash: input.head.stateHash,
+    previousHeadHash: input.head.previousHeadHash,
+    lastRequestHash: input.head.lastRequestHash,
+    gameStateJson: JSON.stringify(input.head.authoritativeState),
+    gameMonth: input.head.gameMonth,
+    revision: existingRevision + 1,
+    createdAt,
+    updatedAt,
   };
 }
 
@@ -296,6 +373,17 @@ function resolveOrderExpressions(
   }
 }
 
+function getMetricValue(run: Pick<LeaderboardRunRecord, "metrics">, metric: LeaderboardQueryMetric): number {
+  if (metric === "totalCapacity") {
+    return run.metrics.computeCapacity
+      + run.metrics.memoryCapacity
+      + run.metrics.storageCapacity
+      + run.metrics.gpuCapacity;
+  }
+
+  return run.metrics[metric];
+}
+
 function mapLeaderboardRunRow(
   row: typeof leaderboardRuns.$inferSelect | undefined,
 ): LeaderboardRunRecord {
@@ -307,6 +395,7 @@ function mapLeaderboardRunRow(
     runId: row.id,
     playerId: row.playerId,
     clientRunId: row.clientRunId,
+    verificationStatus: row.verificationStatus as LeaderboardRunRecord["verificationStatus"],
     metrics: {
       money: Number(row.money),
       cumulativeRevenue: Number(row.cumulativeRevenue),
@@ -318,6 +407,39 @@ function mapLeaderboardRunRow(
     },
     gameMonth: Number(row.gameMonth),
     submittedAt: new Date(row.submittedAt),
+    updatedAt: new Date(row.updatedAt),
+  };
+}
+
+function mapVerifiedRunHeadRow(
+  row: typeof verifiedLeaderboardRunHeads.$inferSelect | undefined,
+): VerifiedLeaderboardRunHeadRecord {
+  if (!row) {
+    throw new Error("Expected verified leaderboard head row to be present.");
+  }
+
+  const authoritativeState = JSON.parse(row.gameStateJson) as GameState;
+
+  return {
+    playerId: row.playerId,
+    clientRunId: row.clientRunId,
+    protocolVersion: row.protocolVersion,
+    rulesetId: row.rulesetId,
+    genesisDescriptor: {
+      seed: Number(row.genesisSeed),
+      difficulty: row.genesisDifficulty as VerifiedLeaderboardRunHeadRecord["genesisDescriptor"]["difficulty"],
+      gameId: row.clientRunId as VerifiedLeaderboardRunHeadRecord["genesisDescriptor"]["gameId"],
+      playerName: authoritativeState.player.name,
+    },
+    rootHash: row.rootHash,
+    headHash: row.headHash,
+    stateHash: row.stateHash,
+    previousHeadHash: row.previousHeadHash,
+    lastRequestHash: row.lastRequestHash,
+    authoritativeState,
+    gameMonth: Number(row.gameMonth),
+    revision: Number(row.revision),
+    createdAt: new Date(row.createdAt),
     updatedAt: new Date(row.updatedAt),
   };
 }
