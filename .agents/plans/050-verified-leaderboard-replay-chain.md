@@ -9,10 +9,10 @@ owner: server, game-logic, web, cli
 
 ## Progress
 
-- [ ] **Phase 1 — Verification contract and deterministic replay primitives**
+- [x] **Phase 1 — Verification contract and deterministic replay primitives**
   - [x] 1.1 Specify the verified-run protocol, trust model, and compatibility policy
   - [x] 1.2 Make leaderboard genesis reconstructible by the server
-  - [ ] 1.3 Add a shared, tested replay projection for leaderboard verification
+  - [x] 1.3 Add a shared, tested replay projection for leaderboard verification
 - [ ] **Phase 2 — Server-side authoritative checkpointing**
   - [ ] 2.1 Persist one rolling verified head per player/run and add the migration
   - [ ] 2.2 Validate, replay, hash, and atomically commit submissions
