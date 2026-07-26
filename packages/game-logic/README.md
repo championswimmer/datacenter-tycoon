@@ -67,6 +67,7 @@ console.log(saveJson);
 Main exports from `src/index.ts`:
 
 - `newGame(seed, options?)`
+- `createVerifiedGenesisState({ seed, difficulty, gameId, playerName })`
 - `reduce(state, action)`
 - `advanceSubtick(state)`
 - `tick(state)`

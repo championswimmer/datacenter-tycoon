@@ -4,7 +4,7 @@ import test from "node:test";
 import { DIFFICULTY_CONFIG } from "../balance/difficulty.js";
 import { RELIABILITY_BASELINE_SCORE } from "../balance/reliability.js";
 import { MARKET_REFRESH_SIZE } from "../economy/constants.js";
-import { newGame } from "./newGame.js";
+import { createVerifiedGenesisState, newGame } from "./newGame.js";
 
 test("newGame creates a deterministic initial state with a primed contract market", () => {
 	const first = newGame(42);
@@ -43,9 +43,11 @@ test("newGame accepts option overrides", () => {
 		difficulty: "easy",
 		startingCash: 123_456,
 		playerName: "Alex",
+		gameId: "game-fixed" as import("../types.js").GameId,
 	});
 
 	assert.equal(state.seed, 99);
+	assert.equal(state.gameId, "game-fixed");
 	assert.equal(state.difficulty, "easy");
 	assert.equal(state.player.name, "Alex");
 	assert.equal(state.player.cash, 123_456);
@@ -72,4 +74,41 @@ test("newGame rejects invalid starting cash", () => {
 	assert.throws(() => newGame(1, { startingCash: -1 }), {
 		message: /Invalid starting cash/,
 	});
+});
+
+test("createVerifiedGenesisState is deterministic for the same descriptor", () => {
+	const descriptor = {
+		seed: 42,
+		difficulty: "easy",
+		gameId: "verified-game-1" as import("../types.js").GameId,
+		playerName: "Verifier",
+	} as const;
+
+	const first = createVerifiedGenesisState(descriptor);
+	const second = createVerifiedGenesisState(descriptor);
+
+	assert.deepEqual(first, second);
+	assert.equal(first.gameId, descriptor.gameId);
+	assert.equal(first.player.name, descriptor.playerName);
+	assert.equal(first.player.cash, DIFFICULTY_CONFIG.easy.startingCash);
+});
+
+test("createVerifiedGenesisState always uses canonical difficulty starting cash", () => {
+	const descriptor = {
+		seed: 9,
+		difficulty: "hard",
+		gameId: "verified-game-2" as import("../types.js").GameId,
+		playerName: "Verifier",
+	} as const;
+	const customCashState = newGame(descriptor.seed, {
+		difficulty: descriptor.difficulty,
+		gameId: descriptor.gameId,
+		playerName: descriptor.playerName,
+		startingCash: 99_999_999,
+	});
+	const verifiedState = createVerifiedGenesisState(descriptor);
+
+	assert.equal(customCashState.player.cash, 99_999_999);
+	assert.equal(verifiedState.player.cash, DIFFICULTY_CONFIG.hard.startingCash);
+	assert.notDeepEqual(verifiedState, customCashState);
 });
