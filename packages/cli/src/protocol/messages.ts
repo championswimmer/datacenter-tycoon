@@ -14,6 +14,7 @@ import type {
 	RackHealthStatus,
 	RackSpec,
 } from "@datacenter-tycoon/game-logic";
+import type { CliVerifiedRunState } from "../online/verified-run.js";
 
 export type RpcVersion = "2.0";
 
@@ -28,8 +29,8 @@ export enum RpcErrorCode {
 	NotSubscribed = -32002,
 }
 
-export type QueryKind = "snapshot" | "status" | "list" | "catalog";
-export type ControlOp = "pause" | "resume" | "set-speed" | "save-now" | "shutdown";
+export type QueryKind = "snapshot" | "status" | "list" | "catalog" | "verification";
+export type ControlOp = "pause" | "resume" | "set-speed" | "save-now" | "shutdown" | "set-verification";
 export type SubscriptionEventKind = "state" | "ledger" | "subtick" | "tick";
 export type RpcMethod = "hello" | "dispatch" | "query" | "subscribe" | "unsubscribe" | "control";
 
@@ -113,7 +114,11 @@ export interface CatalogQuery {
 	target: "datacenters" | "racks";
 }
 
-export type QueryParams = SnapshotQuery | StatusQuery | ListQuery | CatalogQuery;
+export interface VerificationQuery {
+	kind: "verification";
+}
+
+export type QueryParams = SnapshotQuery | StatusQuery | ListQuery | CatalogQuery | VerificationQuery;
 
 export interface SubscribeParams {
 	events: SubscriptionEventKind[];
@@ -132,7 +137,8 @@ export type ControlParams =
 	| { op: "resume" }
 	| { op: "save-now" }
 	| { op: "shutdown" }
-	| { op: "set-speed"; ticksPerSecond: number };
+	| { op: "set-speed"; ticksPerSecond: number }
+	| { op: "set-verification"; verification: CliVerifiedRunState };
 
 export type DispatchParams = Action;
 
@@ -201,7 +207,7 @@ export type CatalogResult =
 	| { kind: "datacenters"; items: DatacenterSpec[] }
 	| { kind: "racks"; items: RackSpec[] };
 
-export type QueryResult = GameState | StatusView | ListResult | CatalogResult;
+export type QueryResult = GameState | StatusView | ListResult | CatalogResult | CliVerifiedRunState;
 
 export interface DispatchResult {
 	tick: number;

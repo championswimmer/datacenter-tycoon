@@ -12,7 +12,7 @@ import { formatJsonError, formatTextError } from "./commands/common.js";
 import { runPauseCommand, runResumeCommand, runSpeedCommand } from "./commands/control.js";
 import { runTickCommand } from "./commands/tick.js";
 import { runOnlineCommand } from "./commands/online.js";
-import { GamePersistence, loadOrInit } from "./daemon/persist.js";
+import { createRuntimePersistenceSession, GamePersistence } from "./daemon/persist.js";
 import { GameRuntime } from "./daemon/runtime.js";
 import { GameDaemonServer } from "./daemon/server.js";
 import { DaemonLifecycle, waitForExit } from "./daemon/lifecycle.js";
@@ -54,8 +54,12 @@ async function runDaemon(parsed: ReturnType<typeof parseArgv>): Promise<void> {
 		socketOverride: getStringFlag(parsed, "--socket"),
 	});
 	const persistence = new GamePersistence({ savePath: paths.savePath });
-	const initialState = loadOrInit(paths.savePath, getNumericFlag(parsed, "--seed", 1));
-	const runtime = new GameRuntime({ state: initialState, paused: initialState.game.paused });
+	const initialSession = createRuntimePersistenceSession(paths.savePath, getNumericFlag(parsed, "--seed", 1));
+	const runtime = new GameRuntime({
+		state: initialSession.state,
+		verificationState: initialSession.verification.getState(),
+		paused: initialSession.state.game.paused,
+	});
 	const transport = new DaemonTransport({ socketPath: paths.socketPath });
 	const server = new GameDaemonServer({
 		transport,

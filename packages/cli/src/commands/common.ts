@@ -17,7 +17,14 @@ export interface CommandClient {
 	connect(): Promise<void>;
 	dispatch(action: Action): Promise<unknown>;
 	query(params: QueryParams): Promise<unknown>;
-	control(params: { op: "save-now" } | { op: "shutdown" } | { op: "pause" } | { op: "resume" } | { op: "set-speed"; ticksPerSecond: number }): Promise<{ ok: true }>;
+	control(params:
+		| { op: "save-now" }
+		| { op: "shutdown" }
+		| { op: "pause" }
+		| { op: "resume" }
+		| { op: "set-speed"; ticksPerSecond: number }
+		| { op: "set-verification"; verification: import("../online/verified-run.js").CliVerifiedRunState }
+	): Promise<{ ok: true }>;
 	close(): Promise<void>;
 }
 

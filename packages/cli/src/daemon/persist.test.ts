@@ -7,7 +7,8 @@ import { setTimeout as sleep } from "node:timers/promises";
 
 import { DATACENTER_CATALOG, RACK_CATALOG, reduce, type DatacenterId, type RackPlacementId } from "@datacenter-tycoon/game-logic";
 
-import { GamePersistence, loadOrInit } from "./persist.js";
+import { createInitialVerifiedRunState } from "../online/verified-run.js";
+import { GamePersistence, loadGameSession, loadOrInit } from "./persist.js";
 
 const datacenterId = (value: string): DatacenterId => value as DatacenterId;
 const rackPlacementId = (value: string): RackPlacementId => value as RackPlacementId;
@@ -51,7 +52,7 @@ test("GamePersistence flushSync round-trips state through the savefile", () => {
 	const originalState = createState(42);
 	const persistence = new GamePersistence({ savePath });
 
-	persistence.flushSync(originalState);
+	persistence.flushSync(originalState, createInitialVerifiedRunState(originalState));
 
 	const reloadedState = loadOrInit(savePath, 999);
 	assert.deepEqual(reloadedState, originalState);
@@ -64,12 +65,28 @@ test("GamePersistence scheduleAutosave debounces writes and persists the latest 
 	const firstState = createState(1);
 	const secondState = reduce(createState(2), { type: "Tick" });
 
-	persistence.scheduleAutosave(firstState);
-	persistence.scheduleAutosave(secondState);
+	persistence.scheduleAutosave(firstState, createInitialVerifiedRunState(firstState));
+	persistence.scheduleAutosave(secondState, createInitialVerifiedRunState(secondState));
 
 	await sleep(50);
 	await persistence.waitForPendingFlush();
 
 	const reloadedState = loadOrInit(savePath, 999);
 	assert.deepEqual(reloadedState, secondState);
+});
+
+test("loadGameSession preserves verification metadata alongside the state", () => {
+	const savePath = createTempSavePath();
+	const state = createState(7);
+	const verification = {
+		...createInitialVerifiedRunState(state, { onlineEligible: true }),
+		pendingActions: [{ type: "Tick" }],
+	};
+	const persistence = new GamePersistence({ savePath });
+
+	persistence.flushSync(state, verification);
+
+	const reloaded = loadGameSession(savePath, 999);
+	assert.deepEqual(reloaded.state, state);
+	assert.deepEqual(reloaded.verification, verification);
 });

@@ -1,59 +1,44 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { newGame } from "@datacenter-tycoon/game-logic";
-import {
-  buildLeaderboardRunSubmission,
-  isSubmissionUnavailableError,
-  LeaderboardSubmissionError,
-  submitLeaderboardRun,
-} from "./leaderboard.js";
+import { submitLeaderboardRun, isSubmissionUnavailableError, LeaderboardSubmissionError } from "./leaderboard.js";
+import { buildVerifiedCheckpointSubmission, createInitialVerifiedRunState } from "./verified-run.js";
+import { newGame, reduce } from "@datacenter-tycoon/game-logic";
 
-test("buildLeaderboardRunSubmission rounds shared metrics to backend-safe integers", () => {
-  const state = newGame(123, { playerName: "Acme Cloud" });
-  state.tick = 3;
-  state.player.cash = 1_500_000.75;
-  state.ledger.push({
-    id: "ledger-1" as (typeof state.ledger)[number]["id"],
-    tick: 1,
-    type: "revenue",
-    amount: 99.6,
-    reason: "contract revenue",
-  });
+test("buildVerifiedCheckpointSubmission emits action-only payloads", () => {
+  const state = reduce(newGame(123, { playerName: "Acme Cloud" }), { type: "Tick" });
+  const verification = {
+    ...createInitialVerifiedRunState(state, { onlineEligible: true }),
+    pendingActions: [{ type: "Tick" as const }],
+  };
 
-  assert.deepEqual(buildLeaderboardRunSubmission("player_abc", state), {
+  assert.deepEqual(buildVerifiedCheckpointSubmission("player_abc", verification), {
     playerId: "player_abc",
     clientRunId: state.gameId,
-    metrics: {
-      money: 1_500_001,
-      cumulativeRevenue: 100,
-      totalServers: 0,
-      computeCapacity: 0,
-      memoryCapacity: 0,
-      storageCapacity: 0,
-      gpuCapacity: 0,
+    genesis: {
+      seed: state.seed,
+      difficulty: state.difficulty,
+      rulesetId: "leaderboard-ruleset-v1",
     },
-    gameMonth: 3,
+    parentHeadHash: null,
+    actions: [{ type: "Tick" }],
   });
 });
 
-test("submitLeaderboardRun posts the shared payload to the backend", async () => {
+test("submitLeaderboardRun posts the verified checkpoint payload to the backend", async () => {
   let requestUrl = "";
   let requestInit: RequestInit | undefined;
 
   const submission = {
     playerId: "player_abc",
     clientRunId: "game-123",
-    metrics: {
-      money: 1,
-      cumulativeRevenue: 2,
-      totalServers: 3,
-      computeCapacity: 4,
-      memoryCapacity: 5,
-      storageCapacity: 6,
-      gpuCapacity: 7,
+    genesis: {
+      seed: 42,
+      difficulty: "easy" as const,
+      rulesetId: "leaderboard-ruleset-v1",
     },
-    gameMonth: 8,
+    parentHeadHash: null,
+    actions: [{ type: "Tick" as const }],
   };
 
   const result = await submitLeaderboardRun(
@@ -67,14 +52,17 @@ test("submitLeaderboardRun posts the shared payload to the backend", async () =>
 
       return new Response(JSON.stringify({
         created: true,
-        run: {
-          runId: "run_123",
-          playerId: "player_abc",
-          clientRunId: "game-123",
-          metrics: submission.metrics,
-          gameMonth: 8,
-          submittedAt: "2026-05-18T12:00:00.000Z",
-          updatedAt: "2026-05-18T12:00:00.000Z",
+        rootHash: "a".repeat(64),
+        headHash: "b".repeat(64),
+        gameMonth: 1,
+        metrics: {
+          money: 1,
+          cumulativeRevenue: 2,
+          totalServers: 3,
+          computeCapacity: 4,
+          memoryCapacity: 5,
+          storageCapacity: 6,
+          gpuCapacity: 7,
         },
       }), {
         status: 201,
@@ -87,7 +75,7 @@ test("submitLeaderboardRun posts the shared payload to the backend", async () =>
   assert.equal(requestInit?.method, "POST");
   assert.equal(requestInit?.body, JSON.stringify(submission));
   assert.equal(result.created, true);
-  assert.equal(result.run.runId, "run_123");
+  assert.equal(result.headHash, "b".repeat(64));
 });
 
 test("submitLeaderboardRun surfaces structured API and offline errors", async () => {
@@ -98,22 +86,19 @@ test("submitLeaderboardRun surfaces structured API and offline errors", async ()
         submission: {
           playerId: "player_abc",
           clientRunId: "game-123",
-          metrics: {
-            money: -1,
-            cumulativeRevenue: 2,
-            totalServers: 3,
-            computeCapacity: 4,
-            memoryCapacity: 5,
-            storageCapacity: 6,
-            gpuCapacity: 7,
+          genesis: {
+            seed: 42,
+            difficulty: "easy",
+            rulesetId: "leaderboard-ruleset-v1",
           },
-          gameMonth: 8,
+          parentHeadHash: null,
+          actions: [{ type: "Tick" }],
         },
       },
       async () => new Response(JSON.stringify({
         error: {
-          code: "INVALID_LEADERBOARD_SUBMISSION",
-          message: "metrics.money must be non-negative.",
+          code: "INVALID_VERIFIED_RUN",
+          message: "actions may contain at most 512 entries.",
         },
       }), {
         status: 400,
@@ -122,7 +107,7 @@ test("submitLeaderboardRun surfaces structured API and offline errors", async ()
     ),
     (error: unknown) => {
       assert.ok(error instanceof LeaderboardSubmissionError);
-      assert.equal(error.code, "INVALID_LEADERBOARD_SUBMISSION");
+      assert.equal(error.code, "INVALID_VERIFIED_RUN");
       assert.equal(error.status, 400);
       assert.equal(isSubmissionUnavailableError(error), false);
       return true;
@@ -135,16 +120,13 @@ test("submitLeaderboardRun surfaces structured API and offline errors", async ()
       submission: {
         playerId: "player_abc",
         clientRunId: "game-123",
-        metrics: {
-          money: 1,
-          cumulativeRevenue: 2,
-          totalServers: 3,
-          computeCapacity: 4,
-          memoryCapacity: 5,
-          storageCapacity: 6,
-          gpuCapacity: 7,
+        genesis: {
+          seed: 42,
+          difficulty: "easy",
+          rulesetId: "leaderboard-ruleset-v1",
         },
-        gameMonth: 8,
+        parentHeadHash: null,
+        actions: [{ type: "Tick" }],
       },
     }),
     (error: unknown) => {

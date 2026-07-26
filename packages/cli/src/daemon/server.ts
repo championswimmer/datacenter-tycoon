@@ -119,7 +119,7 @@ export class GameDaemonServer extends EventEmitter<{ shutdownRequested: [] }> {
 
 	async close(): Promise<void> {
 		this.runtime.stop();
-		await this.persistence.flush(this.runtime.getSnapshot());
+		await this.persistence.flush(this.runtime.getSnapshot(), this.runtime.getVerificationState());
 		this.transport.off("request", this.handleRequest);
 		this.transport.off("disconnect", this.handleDisconnect);
 		this.transport.off("invalidMessage", this.handleInvalidMessage);
@@ -156,7 +156,7 @@ export class GameDaemonServer extends EventEmitter<{ shutdownRequested: [] }> {
 	private handleRuntimeEvent(eventType: SubscriptionEventKind) {
 		return (event: SubscriptionEvent): void => {
 			if (event.type === "state") {
-				this.persistence.scheduleAutosave(event.snapshot);
+				this.persistence.scheduleAutosave(event.snapshot, this.runtime.getVerificationState());
 			}
 
 			for (const subscription of this.subscriptions.values()) {
@@ -290,14 +290,18 @@ export class GameDaemonServer extends EventEmitter<{ shutdownRequested: [] }> {
 				this.runtime.setSpeed(params.ticksPerSecond);
 				return { ok: true };
 			case "save-now":
-				await this.persistence.flush(this.runtime.getSnapshot());
+				await this.persistence.flush(this.runtime.getSnapshot(), this.runtime.getVerificationState());
 				return { ok: true };
 			case "shutdown":
-				await this.persistence.flush(this.runtime.getSnapshot());
+				await this.persistence.flush(this.runtime.getSnapshot(), this.runtime.getVerificationState());
 				queueMicrotask(() => {
 					this.emit("shutdownRequested");
 					void this.onShutdownRequest?.();
 				});
+				return { ok: true };
+			case "set-verification":
+				this.runtime.setVerificationState(params.verification);
+				await this.persistence.flush(this.runtime.getSnapshot(), this.runtime.getVerificationState());
 				return { ok: true };
 			default:
 				throw errorWithCode(RpcErrorCode.InvalidParams, `Unsupported control op: ${JSON.stringify(params)}`);

@@ -1,29 +1,9 @@
-import {
-  summarizeLeaderboardFromState,
-  type GameState,
-  type LeaderboardMetrics,
-} from "@datacenter-tycoon/game-logic";
 import { normalizeServerUrl } from "./profile.js";
-
-export interface LeaderboardRunSubmission {
-  playerId: string;
-  clientRunId: string;
-  metrics: LeaderboardMetrics;
-  gameMonth: number;
-}
-
-export interface LeaderboardSubmissionResult {
-  created: boolean;
-  run: {
-    runId: string;
-    playerId: string;
-    clientRunId: string;
-    metrics: LeaderboardMetrics;
-    gameMonth: number;
-    submittedAt: string;
-    updatedAt: string;
-  };
-}
+import type {
+  VerifiedRunCheckpointResponse as LeaderboardSubmissionResult,
+  VerifiedRunCheckpointSubmission as LeaderboardRunSubmission,
+} from "./verified-run.js";
+export type { LeaderboardSubmissionResult, LeaderboardRunSubmission };
 
 export interface SubmitLeaderboardRunOptions {
   serverUrl: string | null;
@@ -40,20 +20,6 @@ export class LeaderboardSubmissionError extends Error {
     this.code = options.code;
     this.status = options.status ?? null;
   }
-}
-
-export function buildLeaderboardRunSubmission(
-  playerId: string,
-  state: GameState,
-): LeaderboardRunSubmission {
-  const summary = summarizeLeaderboardFromState(state);
-
-  return {
-    playerId,
-    clientRunId: summary.gameId,
-    metrics: summary.metrics,
-    gameMonth: summary.gameMonth,
-  };
 }
 
 export async function submitLeaderboardRun(
@@ -119,8 +85,13 @@ export function isSubmissionUnavailableError(error: unknown): boolean {
   }
 
   if (
-    error.code === "INVALID_LEADERBOARD_SUBMISSION"
-    || error.code === "UNKNOWN_PLAYER"
+    error.code === "INVALID_VERIFIED_RUN"
+    || error.code === "PLAYER_NOT_FOUND"
+    || error.code === "UNKNOWN_RUN_HEAD"
+    || error.code === "STALE_RUN_HEAD"
+    || error.code === "RUN_RULESET_UNSUPPORTED"
+    || error.code === "RUN_TICK_GAP_EXCEEDED"
+    || error.code === "RUN_REPLAY_REJECTED"
     || error.code === "INVALID_JSON"
   ) {
     return false;
@@ -142,8 +113,9 @@ function isLeaderboardSubmissionResult(payload: unknown): payload is Leaderboard
   return Boolean(payload)
     && typeof payload === "object"
     && typeof (payload as { created?: unknown }).created === "boolean"
-    && Boolean((payload as { run?: unknown }).run)
-    && typeof (payload as { run?: { runId?: unknown } }).run?.runId === "string";
+    && typeof (payload as { rootHash?: unknown }).rootHash === "string"
+    && typeof (payload as { headHash?: unknown }).headHash === "string"
+    && typeof (payload as { gameMonth?: unknown }).gameMonth === "number";
 }
 
 function isApiErrorPayload(payload: unknown): payload is { error: { code: string; message: string } } {

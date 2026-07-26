@@ -1,6 +1,3 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-
 import type { GameState } from "@datacenter-tycoon/game-logic";
 
 import type { ParsedArgv } from "../argv.js";
@@ -10,11 +7,18 @@ import {
   type CommandPaths,
 } from "../commands/common.js";
 import {
-  buildLeaderboardRunSubmission,
   submitLeaderboardRun,
-  type LeaderboardRunSubmission,
   type LeaderboardSubmissionResult,
 } from "./leaderboard.js";
+import {
+  acknowledgeVerifiedCheckpoint,
+  buildVerifiedCheckpointSubmission,
+  getLastEligibleGameMonth,
+  getPendingTickDelta,
+  markVerifiedRunSyncFailure,
+  type CliVerifiedRunState,
+  type VerifiedRunCheckpointSubmission,
+} from "./verified-run.js";
 import {
   readOnlineProfile,
   resolveOnlineTarget,
@@ -22,18 +26,13 @@ import {
   type ResolvedOnlineTarget,
 } from "./profile.js";
 
-const ONLINE_SYNC_STATE_FILE = "online-sync-state.json";
-
-interface CliOnlineSyncState {
-  signaturesByRunKey: Record<string, string>;
-}
-
 export type CliOnlineSyncStatus = "submitted" | "warning" | "skipped";
 export type CliOnlineSyncSkipReason =
   | "not_logged_in"
   | "disabled"
   | "not_progressed"
-  | "duplicate_signature";
+  | "already_verified"
+  | "local_only";
 
 export interface CliOnlineSyncResult {
   status: CliOnlineSyncStatus;
@@ -42,32 +41,25 @@ export interface CliOnlineSyncResult {
   profile: CliOnlineProfile | null;
   target: ResolvedOnlineTarget;
   profilePath: string;
-  syncStatePath: string;
-  submission?: LeaderboardRunSubmission;
+  submission?: VerifiedRunCheckpointSubmission;
   response?: LeaderboardSubmissionResult;
+  verification?: CliVerifiedRunState;
 }
 
 export interface CliOnlineSyncDependencies {
   env?: NodeJS.ProcessEnv;
   readProfile?: typeof readOnlineProfile;
-  readSyncState?: (syncStatePath: string) => Promise<CliOnlineSyncState>;
-  writeSyncState?: (syncStatePath: string, state: CliOnlineSyncState) => Promise<void>;
   submitRun?: typeof submitLeaderboardRun;
   fetchImpl?: typeof fetch;
 }
 
-export function getOnlineSyncStatePath(paths: Pick<CommandPaths, "configDir">): string {
-  return join(paths.configDir, ONLINE_SYNC_STATE_FILE);
-}
-
 export async function syncLeaderboardFromCommand(
   parsed: ParsedArgv,
-  client: Pick<CommandClient, "query">,
-  paths: Pick<CommandPaths, "configDir" | "onlineProfilePath">,
+  client: Pick<CommandClient, "query" | "control">,
+  paths: Pick<CommandPaths, "onlineProfilePath">,
   dependencies: CliOnlineSyncDependencies = {},
 ): Promise<CliOnlineSyncResult> {
   const resolved = resolveSyncDependencies(dependencies);
-  const syncStatePath = getOnlineSyncStatePath(paths);
 
   try {
     const profile = await resolved.readProfile(paths.onlineProfilePath);
@@ -82,7 +74,6 @@ export async function syncLeaderboardFromCommand(
         "not_logged_in",
         "Online sync skipped because no CLI online profile is configured.",
         paths.onlineProfilePath,
-        syncStatePath,
         null,
         target,
       );
@@ -93,40 +84,49 @@ export async function syncLeaderboardFromCommand(
         "disabled",
         "Online sync skipped because no server URL is configured.",
         paths.onlineProfilePath,
-        syncStatePath,
         profile,
         target,
       );
     }
 
     const snapshot = (await client.query({ kind: "snapshot" })) as GameState;
-    const submission = buildLeaderboardRunSubmission(profile.playerId, snapshot);
+    const verification = (await client.query({ kind: "verification" })) as CliVerifiedRunState;
 
-    if (submission.gameMonth <= 0) {
+    if (snapshot.tick <= 0 && verification.pendingActions.length === 0) {
       return createSkippedResult(
         "not_progressed",
         "Online sync skipped because the run has not progressed beyond the opening month yet.",
         paths.onlineProfilePath,
-        syncStatePath,
         profile,
         target,
-        submission,
+        undefined,
+        verification,
       );
     }
 
-    const signature = JSON.stringify(submission);
-    const syncState = await resolved.readSyncState(syncStatePath);
-    const runKey = getSyncRunKey(profile, submission);
-
-    if (syncState.signaturesByRunKey[runKey] === signature) {
+    if (verification.status === "local-only") {
       return createSkippedResult(
-        "duplicate_signature",
-        "Online sync skipped because this leaderboard payload was already submitted.",
+        "local_only",
+        "Online sync skipped because this run is already local-only and no longer eligible for verified leaderboard submission.",
         paths.onlineProfilePath,
-        syncStatePath,
         profile,
         target,
-        submission,
+        undefined,
+        verification,
+      );
+    }
+
+    const submission = buildVerifiedCheckpointSubmission(profile.playerId, verification);
+
+    if (!submission) {
+      return createSkippedResult(
+        "already_verified",
+        "Online sync skipped because there are no pending verified actions to submit.",
+        paths.onlineProfilePath,
+        profile,
+        target,
+        undefined,
+        verification,
       );
     }
 
@@ -138,36 +138,54 @@ export async function syncLeaderboardFromCommand(
       resolved.fetchImpl,
     );
 
-    await resolved.writeSyncState(syncStatePath, {
-      signaturesByRunKey: {
-        ...syncState.signaturesByRunKey,
-        [runKey]: signature,
-      },
-    });
+    const nextVerification = acknowledgeVerifiedCheckpoint(verification, response);
+    await client.control({ op: "set-verification", verification: nextVerification });
 
     return {
       status: "submitted",
       message: response.created
-        ? `Submitted leaderboard run ${response.run.runId}.`
-        : `Updated leaderboard run ${response.run.runId}.`,
+        ? `Submitted verified leaderboard checkpoint ${response.headHash.slice(0, 12)}.`
+        : `Advanced verified leaderboard checkpoint ${response.headHash.slice(0, 12)}.`,
       profile,
       target,
       profilePath: paths.onlineProfilePath,
-      syncStatePath,
       submission,
       response,
+      verification: nextVerification,
     };
   } catch (error) {
+    const verification = await readVerificationBestEffort(client);
+    const snapshot = await readSnapshotBestEffort(client);
+    const nextVerification = verification && snapshot
+      ? markVerifiedRunSyncFailure(
+          verification,
+          error instanceof Error && "code" in error ? String((error as { code?: unknown }).code ?? "") || null : null,
+          snapshot,
+        )
+      : verification;
+    const lastEligibleMonth = nextVerification && snapshot
+      ? getLastEligibleGameMonth(nextVerification)
+      : null;
+    const pendingTicks = nextVerification && snapshot
+      ? getPendingTickDelta(nextVerification, snapshot)
+      : null;
+
+    if (nextVerification) {
+      await client.control({ op: "set-verification", verification: nextVerification });
+    }
+
     return {
       status: "warning",
-      message: error instanceof Error ? error.message : String(error),
+      message: nextVerification && lastEligibleMonth !== null && pendingTicks !== null
+        ? `${error instanceof Error ? error.message : String(error)} (month ${pendingTicks} pending; reconnect before month ${lastEligibleMonth})`
+        : error instanceof Error ? error.message : String(error),
       profile: null,
       target: {
         serverUrl: null,
         source: "disabled",
       },
       profilePath: paths.onlineProfilePath,
-      syncStatePath,
+      verification: nextVerification ?? undefined,
     };
   }
 }
@@ -204,32 +222,12 @@ export function formatOnlineSyncNote(
   return null;
 }
 
-export async function readOnlineSyncState(syncStatePath: string): Promise<CliOnlineSyncState> {
-  try {
-    const rawState = await readFile(syncStatePath, "utf8");
-    const parsedState = JSON.parse(rawState) as unknown;
-    return parseOnlineSyncState(parsedState);
-  } catch {
-    return {
-      signaturesByRunKey: {},
-    };
-  }
-}
-
-export async function writeOnlineSyncState(syncStatePath: string, state: CliOnlineSyncState): Promise<void> {
-  const normalizedState = parseOnlineSyncState(state);
-  await mkdir(dirname(syncStatePath), { recursive: true });
-  await writeFile(syncStatePath, `${JSON.stringify(normalizedState, null, 2)}\n`, "utf8");
-}
-
 function resolveSyncDependencies(
   dependencies: CliOnlineSyncDependencies,
 ): Required<CliOnlineSyncDependencies> {
   return {
     env: dependencies.env ?? process.env,
     readProfile: dependencies.readProfile ?? readOnlineProfile,
-    readSyncState: dependencies.readSyncState ?? readOnlineSyncState,
-    writeSyncState: dependencies.writeSyncState ?? writeOnlineSyncState,
     submitRun: dependencies.submitRun ?? submitLeaderboardRun,
     fetchImpl: dependencies.fetchImpl ?? fetch,
   };
@@ -239,10 +237,10 @@ function createSkippedResult(
   reason: CliOnlineSyncSkipReason,
   message: string,
   profilePath: string,
-  syncStatePath: string,
   profile: CliOnlineProfile | null,
   target: ResolvedOnlineTarget,
-  submission?: LeaderboardRunSubmission,
+  submission?: VerifiedRunCheckpointSubmission,
+  verification?: CliVerifiedRunState,
 ): CliOnlineSyncResult {
   return {
     status: "skipped",
@@ -251,32 +249,29 @@ function createSkippedResult(
     profile,
     target,
     profilePath,
-    syncStatePath,
     submission,
+    verification,
   };
 }
 
-function getSyncRunKey(profile: CliOnlineProfile, submission: LeaderboardRunSubmission): string {
-  return `${profile.playerId}:${submission.clientRunId}`;
+async function readVerificationBestEffort(
+  client: Pick<CommandClient, "query" | "control">,
+): Promise<CliVerifiedRunState | null> {
+  try {
+    return (await client.query({ kind: "verification" })) as CliVerifiedRunState;
+  } catch {
+    return null;
+  }
 }
 
-function parseOnlineSyncState(payload: unknown): CliOnlineSyncState {
-  if (!payload || typeof payload !== "object") {
-    return { signaturesByRunKey: {} };
+async function readSnapshotBestEffort(
+  client: Pick<CommandClient, "query" | "control">,
+): Promise<GameState | null> {
+  try {
+    return (await client.query({ kind: "snapshot" })) as GameState;
+  } catch {
+    return null;
   }
-
-  const signaturesByRunKey = (payload as { signaturesByRunKey?: unknown }).signaturesByRunKey;
-  if (!signaturesByRunKey || typeof signaturesByRunKey !== "object") {
-    return { signaturesByRunKey: {} };
-  }
-
-  return {
-    signaturesByRunKey: Object.fromEntries(
-      Object.entries(signaturesByRunKey).filter(
-        (entry): entry is [string, string] => typeof entry[0] === "string" && typeof entry[1] === "string",
-      ),
-    ),
-  };
 }
 
 function attachOnlineSyncData<TData>(

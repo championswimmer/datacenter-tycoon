@@ -79,6 +79,17 @@ dct online logout
 - `--no-daemon` — fail instead of auto-spawning the daemon
 - `--quiet` — suppress non-JSON success text output
 
+## Verified leaderboard sync
+
+When a CLI online profile is configured, the daemon now keeps verified-run sync metadata inside the same savefile as the game snapshot.
+
+- gameplay-affecting actions are journaled at the daemon boundary, including manual `tick` advancement;
+- `dct online submit` and post-command auto-sync submit replay checkpoints, not client-computed score summaries;
+- successful acknowledgements compact the journal and persist the new head cursor atomically with the save;
+- if the journal exceeds the allowed month gap, the run becomes **local-only/unverified** and is no longer submitted.
+
+This hardens the leaderboard against fabricated final states, but it still does **not** prove human play or protect a stolen bearer `playerId`.
+
 ## Savefile and runtime paths
 
 Defaults:
