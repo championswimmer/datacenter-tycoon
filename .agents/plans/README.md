@@ -11,6 +11,7 @@ See [`../skills/planning/SKILL.md`](../skills/planning/SKILL.md) for the full fo
 - [043 — Server Migration to Bun, Elysia, and Drizzle](./043-server-migration-to-bun-elysia-and-drizzle.md) — status: completed
 - [049 — Finance History and Leaderboard Polish](./049-finance-history-and-leaderboard-polish.md) — status: created
 - [050 — Verified Leaderboard Replay Chain](./050-verified-leaderboard-replay-chain.md) — status: completed
+- [051 — Leaderboard Verification Visibility Toggle](./051-leaderboard-verification-visibility-toggle.md) — status: completed
 
 ## Archive
 

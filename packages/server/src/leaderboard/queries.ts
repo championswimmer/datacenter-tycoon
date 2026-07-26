@@ -10,11 +10,13 @@ export const LEADERBOARD_QUERY_METRICS = [
 
 export type LeaderboardQueryMetric = (typeof LEADERBOARD_QUERY_METRICS)[number];
 export type LeaderboardPeriod = "all-time";
+export type LeaderboardVisibility = "verified" | "all";
 
 export interface LeaderboardQuery {
   metric: LeaderboardQueryMetric;
   period: LeaderboardPeriod;
   limit: number;
+  visibility: LeaderboardVisibility;
 }
 
 export interface LeaderboardEntry {
@@ -41,6 +43,7 @@ export function parseLeaderboardQuery(searchParams: URLSearchParams): Leaderboar
   const metric = searchParams.get("metric") ?? "money";
   const period = searchParams.get("period") ?? "all-time";
   const rawLimit = searchParams.get("limit") ?? "10";
+  const visibility = searchParams.get("visibility") ?? "verified";
 
   if (!LEADERBOARD_QUERY_METRICS.includes(metric as LeaderboardQueryMetric)) {
     throw new LeaderboardQueryValidationError(`Unsupported leaderboard metric: ${metric}`);
@@ -56,10 +59,15 @@ export function parseLeaderboardQuery(searchParams: URLSearchParams): Leaderboar
     throw new LeaderboardQueryValidationError("limit must be an integer between 1 and 100.");
   }
 
+  if (visibility !== "verified" && visibility !== "all") {
+    throw new LeaderboardQueryValidationError(`Unsupported leaderboard visibility: ${visibility}`);
+  }
+
   return {
     metric: metric as LeaderboardQueryMetric,
     period,
     limit,
+    visibility,
   };
 }
 

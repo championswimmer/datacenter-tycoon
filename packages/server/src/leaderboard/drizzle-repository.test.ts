@@ -83,9 +83,20 @@ test("DrizzleLeaderboardRepository commits verified heads and lists only verifie
     metric: "money",
     period: "all-time",
     limit: 5,
+    visibility: "verified",
+  });
+  const allListed = await leaderboard.listRuns({
+    metric: "money",
+    period: "all-time",
+    limit: 5,
+    visibility: "all",
   });
 
   assert.deepEqual(listed.map((run) => [run.playerId, run.verificationStatus]), [
+    [alpha.playerId, "verified"],
+  ]);
+  assert.deepEqual(allListed.map((run) => [run.playerId, run.verificationStatus]), [
+    [beta.playerId, "unverified"],
     [alpha.playerId, "verified"],
   ]);
 

@@ -1,7 +1,11 @@
 import type { Difficulty } from "@datacenter-tycoon/game-logic";
 import type { StoredPlayerIdentity } from "../../store/playerIdentity.js";
 import { formatGameDateShort, tickToGameDate } from "../../store/gameTime.js";
-import type { LeaderboardListResult, LeaderboardQueryMetric } from "../../online/leaderboard.js";
+import type {
+  LeaderboardListResult,
+  LeaderboardQueryMetric,
+  LeaderboardVisibility,
+} from "../../online/leaderboard.js";
 import type { SaveInfo } from "../../store/persist.js";
 import gameBannerUrl from "@assets/images/game-banner-001.jpg";
 import gameBannerMobileUrl from "@assets/images/game-banner-001-mobile.jpg";
@@ -24,12 +28,14 @@ interface StartScreenProps {
   onNewGame: () => void | Promise<void>;
   isLeaderboardOpen: boolean;
   activeLeaderboardMetric: LeaderboardQueryMetric;
+  activeLeaderboardVisibility: LeaderboardVisibility;
   isLeaderboardLoading: boolean;
   leaderboardResult: LeaderboardListResult | null;
   leaderboardError: string | null;
   onOpenLeaderboard: () => void;
   onCloseLeaderboard: () => void;
   onSelectLeaderboardMetric: (metric: LeaderboardQueryMetric) => void;
+  onSelectLeaderboardVisibility: (visibility: LeaderboardVisibility) => void;
   onRetryLeaderboard: () => void;
 }
 
@@ -60,12 +66,14 @@ export function StartScreen({
   onNewGame,
   isLeaderboardOpen,
   activeLeaderboardMetric,
+  activeLeaderboardVisibility,
   isLeaderboardLoading,
   leaderboardResult,
   leaderboardError,
   onOpenLeaderboard,
   onCloseLeaderboard,
   onSelectLeaderboardMetric,
+  onSelectLeaderboardVisibility,
   onRetryLeaderboard,
 }: StartScreenProps) {
   const latestSaveDate = latestSave
@@ -243,11 +251,13 @@ export function StartScreen({
       {isLeaderboardOpen && (
         <LeaderboardDialog
           activeMetric={activeLeaderboardMetric}
+          activeVisibility={activeLeaderboardVisibility}
           result={leaderboardResult}
           isLoading={isLeaderboardLoading}
           errorMessage={leaderboardError}
           onClose={onCloseLeaderboard}
           onSelectMetric={onSelectLeaderboardMetric}
+          onSelectVisibility={onSelectLeaderboardVisibility}
           onRetry={onRetryLeaderboard}
         />
       )}

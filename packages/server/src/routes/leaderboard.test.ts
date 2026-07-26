@@ -376,12 +376,14 @@ test("GET /leaderboard returns ranked verified entries for a selected metric", a
     metric: string;
     period: string;
     limit: number;
+    visibility: string;
     entries: Array<{ rank: number; username: string; value: number }>;
   }>(app, "/leaderboard?metric=money&period=all-time&limit=2");
 
   assert.equal(response.status, 200);
   assert.equal(json?.metric, "money");
   assert.equal(json?.limit, 2);
+  assert.equal(json?.visibility, "verified");
   assert.deepEqual(json?.entries.map((entry) => ({
     rank: entry.rank,
     username: entry.username,
@@ -438,15 +440,103 @@ test("GET /leaderboard applies deterministic tie-breaking for equal metric value
   ]);
 });
 
+test("GET /leaderboard can return all or only verified runs", async () => {
+  const players = new InMemoryPlayersRepository();
+  const alpha = await players.createPlayer({ username: "Alpha Cloud" });
+  const beta = await players.createPlayer({ username: "Beta Cloud" });
+
+  const verifiedRun = createLeaderboardRunRecord({
+    runId: "run-verified",
+    playerId: alpha.playerId,
+    clientRunId: "run-alpha",
+    verificationStatus: "verified",
+    metrics: {
+      money: 900,
+      cumulativeRevenue: 900,
+      totalServers: 9,
+      computeCapacity: 90,
+      memoryCapacity: 90,
+      storageCapacity: 90,
+      gpuCapacity: 0,
+    },
+    gameMonth: 9,
+    submittedAt: new Date("2026-05-18T12:00:00.000Z"),
+  });
+  const unverifiedRun = createLeaderboardRunRecord({
+    runId: "run-unverified",
+    playerId: beta.playerId,
+    clientRunId: "run-beta",
+    verificationStatus: "unverified",
+    metrics: {
+      money: 1_200,
+      cumulativeRevenue: 1_200,
+      totalServers: 12,
+      computeCapacity: 120,
+      memoryCapacity: 120,
+      storageCapacity: 120,
+      gpuCapacity: 0,
+    },
+    gameMonth: 12,
+    submittedAt: new Date("2026-05-17T12:00:00.000Z"),
+  });
+
+  class VisibilityAwareLeaderboardRepository implements LeaderboardRepository {
+    async findRunHead() {
+      return null;
+    }
+
+    async commitVerifiedRun() {
+      throw new Error("not implemented");
+    }
+
+    async listRuns(query: { visibility: string }) {
+      return query.visibility === "all" ? [unverifiedRun, verifiedRun] : [verifiedRun];
+    }
+  }
+
+  const { app } = createLeaderboardApp({
+    players,
+    leaderboard: new VisibilityAwareLeaderboardRepository(),
+  });
+  const verifiedOnly = await apiRequest<{
+    visibility: string;
+    entries: Array<{ username: string; value: number }>;
+  }>(app, "/leaderboard?metric=money&period=all-time&limit=5");
+  const allRuns = await apiRequest<{
+    visibility: string;
+    entries: Array<{ username: string; value: number }>;
+  }>(app, "/leaderboard?metric=money&period=all-time&limit=5&visibility=all");
+
+  assert.equal(verifiedOnly.response.status, 200);
+  assert.equal(verifiedOnly.json?.visibility, "verified");
+  assert.deepEqual(verifiedOnly.json?.entries.map((entry) => entry.username), ["Alpha Cloud"]);
+
+  assert.equal(allRuns.response.status, 200);
+  assert.equal(allRuns.json?.visibility, "all");
+  assert.deepEqual(allRuns.json?.entries.map((entry) => ({
+    username: entry.username,
+    value: entry.value,
+  })), [
+    { username: "Beta Cloud", value: 1_200 },
+    { username: "Alpha Cloud", value: 900 },
+  ]);
+});
+
 test("GET /leaderboard rejects invalid query parameters", async () => {
   const { app } = createLeaderboardApp();
   const { response, json } = await apiRequest<{ error: { code: string; message: string } }>(
     app,
     "/leaderboard?metric=bogus&period=all-time&limit=10",
   );
+  const invalidVisibility = await apiRequest<{ error: { code: string; message: string } }>(
+    app,
+    "/leaderboard?metric=money&period=all-time&limit=10&visibility=legacy",
+  );
 
   assert.equal(response.status, 400);
   assert.equal(json?.error.code, "INVALID_LEADERBOARD_QUERY");
+  assert.equal(invalidVisibility.response.status, 400);
+  assert.equal(invalidVisibility.json?.error.code, "INVALID_LEADERBOARD_QUERY");
 });
 
 test("POST /leaderboard/runs rate-limits repeated submissions from the same client", async () => {

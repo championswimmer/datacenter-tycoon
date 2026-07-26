@@ -79,6 +79,11 @@
   background: linear-gradient(180deg, rgba(10, 14, 22, 0.98), rgba(10, 14, 22, 0.94));
 }
 
+.controlStack {
+  display: grid;
+  gap: var(--space-3);
+}
+
 .tabScroller {
   min-width: 0;
   overflow-x: auto;
@@ -86,6 +91,12 @@
   padding: 1.25rem;
   margin: -1.25rem;
   scrollbar-width: thin;
+}
+
+.visibilityList {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
 .body {
