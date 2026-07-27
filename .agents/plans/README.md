@@ -12,6 +12,7 @@ See [`../skills/planning/SKILL.md`](../skills/planning/SKILL.md) for the full fo
 - [049 — Finance History and Leaderboard Polish](./049-finance-history-and-leaderboard-polish.md) — status: created
 - [050 — Verified Leaderboard Replay Chain](./050-verified-leaderboard-replay-chain.md) — status: completed
 - [051 — Leaderboard Verification Visibility Toggle](./051-leaderboard-verification-visibility-toggle.md) — status: completed
+- [052 — Leaderboard Hide Zero-Revenue Runs](./052-leaderboard-hide-zero-revenue-runs.md) — status: completed
 
 ## Archive
 

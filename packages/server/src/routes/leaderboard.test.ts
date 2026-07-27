@@ -442,62 +442,81 @@ test("GET /leaderboard applies deterministic tie-breaking for equal metric value
 
 test("GET /leaderboard can return all or only verified runs", async () => {
   const players = new InMemoryPlayersRepository();
+  const leaderboard = new InMemoryLeaderboardRepository();
   const alpha = await players.createPlayer({ username: "Alpha Cloud" });
   const beta = await players.createPlayer({ username: "Beta Cloud" });
+  const gamma = await players.createPlayer({ username: "Gamma Cloud" });
 
-  const verifiedRun = createLeaderboardRunRecord({
-    runId: "run-verified",
+  await seedVerifiedRun(leaderboard, {
     playerId: alpha.playerId,
     clientRunId: "run-alpha",
-    verificationStatus: "verified",
-    metrics: {
-      money: 900,
-      cumulativeRevenue: 900,
-      totalServers: 9,
-      computeCapacity: 90,
-      memoryCapacity: 90,
-      storageCapacity: 90,
-      gpuCapacity: 0,
-    },
+    money: 900,
+    cumulativeRevenue: 900,
+    totalServers: 9,
+    computeCapacity: 90,
+    memoryCapacity: 90,
+    storageCapacity: 90,
+    gpuCapacity: 0,
     gameMonth: 9,
-    submittedAt: new Date("2026-05-18T12:00:00.000Z"),
   });
-  const unverifiedRun = createLeaderboardRunRecord({
-    runId: "run-unverified",
-    playerId: beta.playerId,
-    clientRunId: "run-beta",
-    verificationStatus: "unverified",
-    metrics: {
-      money: 1_200,
-      cumulativeRevenue: 1_200,
-      totalServers: 12,
-      computeCapacity: 120,
-      memoryCapacity: 120,
-      storageCapacity: 120,
-      gpuCapacity: 0,
+  await seedVerifiedRun(leaderboard, {
+    playerId: gamma.playerId,
+    clientRunId: "run-gamma",
+    money: 5_000,
+    cumulativeRevenue: 0,
+    totalServers: 1,
+    computeCapacity: 10,
+    memoryCapacity: 10,
+    storageCapacity: 10,
+    gpuCapacity: 0,
+    gameMonth: 6,
+  });
+  await leaderboard.commitVerifiedRun({
+    expectedParentHeadHash: null,
+    run: createLeaderboardRunRecord({
+      runId: "run-unverified",
+      playerId: beta.playerId,
+      clientRunId: "run-beta",
+      verificationStatus: "unverified",
+      metrics: {
+        money: 1_200,
+        cumulativeRevenue: 1_200,
+        totalServers: 12,
+        computeCapacity: 120,
+        memoryCapacity: 120,
+        storageCapacity: 120,
+        gpuCapacity: 0,
+      },
+      gameMonth: 12,
+      submittedAt: new Date("2026-05-17T12:00:00.000Z"),
+    }),
+    head: {
+      playerId: beta.playerId,
+      clientRunId: "run-beta",
+      protocolVersion: "verified-run-v1",
+      rulesetId: "leaderboard-ruleset-v1",
+      genesisDescriptor: {
+        seed: 42,
+        difficulty: "easy",
+        gameId: "run-beta" as never,
+        playerName: "Beta Cloud",
+      },
+      rootHash: "e".repeat(64),
+      headHash: "f".repeat(64),
+      stateHash: "a".repeat(64),
+      previousHeadHash: null,
+      lastRequestHash: "b".repeat(64),
+      authoritativeState: createVerifiedGenesisState({
+        seed: 42,
+        difficulty: "easy",
+        gameId: "run-beta" as never,
+        playerName: "Beta Cloud",
+      }),
+      gameMonth: 12,
     },
-    gameMonth: 12,
-    submittedAt: new Date("2026-05-17T12:00:00.000Z"),
   });
 
-  class VisibilityAwareLeaderboardRepository implements LeaderboardRepository {
-    async findRunHead() {
-      return null;
-    }
-
-    async commitVerifiedRun() {
-      throw new Error("not implemented");
-    }
-
-    async listRuns(query: { visibility: string }) {
-      return query.visibility === "all" ? [unverifiedRun, verifiedRun] : [verifiedRun];
-    }
-  }
-
-  const { app } = createLeaderboardApp({
-    players,
-    leaderboard: new VisibilityAwareLeaderboardRepository(),
-  });
+  const { app } = createLeaderboardApp({ players, leaderboard });
   const verifiedOnly = await apiRequest<{
     visibility: string;
     entries: Array<{ username: string; value: number }>;
@@ -509,7 +528,12 @@ test("GET /leaderboard can return all or only verified runs", async () => {
 
   assert.equal(verifiedOnly.response.status, 200);
   assert.equal(verifiedOnly.json?.visibility, "verified");
-  assert.deepEqual(verifiedOnly.json?.entries.map((entry) => entry.username), ["Alpha Cloud"]);
+  assert.deepEqual(verifiedOnly.json?.entries.map((entry) => ({
+    username: entry.username,
+    value: entry.value,
+  })), [
+    { username: "Alpha Cloud", value: 900 },
+  ]);
 
   assert.equal(allRuns.response.status, 200);
   assert.equal(allRuns.json?.visibility, "all");
@@ -520,6 +544,7 @@ test("GET /leaderboard can return all or only verified runs", async () => {
     { username: "Beta Cloud", value: 1_200 },
     { username: "Alpha Cloud", value: 900 },
   ]);
+  assert.ok(allRuns.json?.entries.every((entry) => entry.username !== "Gamma Cloud"));
 });
 
 test("GET /leaderboard rejects invalid query parameters", async () => {

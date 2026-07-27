@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
 import type { GameState } from "@datacenter-tycoon/game-logic";
 import type { ServerDrizzleDatabase } from "../db/client.js";
 import type { ServerDatabaseConnection } from "../db/database.js";
@@ -99,6 +99,7 @@ export class InMemoryLeaderboardRepository implements LeaderboardRepository {
 
   async listRuns(query: LeaderboardQuery): Promise<LeaderboardRunRecord[]> {
     return [...this.#runsByKey.values()]
+      .filter((run) => run.metrics.cumulativeRevenue > 0)
       .filter((run) => {
         if (query.visibility === "all") {
           return true;
@@ -224,6 +225,7 @@ export class DrizzleLeaderboardRepository implements LeaderboardRepository {
       const rows = await this.#database
         .select()
         .from(leaderboardRuns)
+        .where(gt(leaderboardRuns.cumulativeRevenue, 0))
         .orderBy(...orderBy)
         .limit(query.limit);
 
@@ -240,7 +242,12 @@ export class DrizzleLeaderboardRepository implements LeaderboardRepository {
           eq(verifiedLeaderboardRunHeads.clientRunId, leaderboardRuns.clientRunId),
         ),
       )
-      .where(eq(leaderboardRuns.verificationStatus, "verified"))
+      .where(
+        and(
+          eq(leaderboardRuns.verificationStatus, "verified"),
+          gt(leaderboardRuns.cumulativeRevenue, 0),
+        ),
+      )
       .orderBy(...orderBy)
       .limit(query.limit);
 

@@ -13,6 +13,7 @@ test("DrizzleLeaderboardRepository commits verified heads and lists only verifie
   const leaderboard = new DrizzleLeaderboardRepository(database);
   const alpha = await players.createPlayer({ username: "Alpha Cloud" });
   const beta = await players.createPlayer({ username: "Beta Cloud" });
+  const gamma = await players.createPlayer({ username: "Gamma Cloud" });
   const now = new Date("2026-07-26T12:00:00.000Z");
 
   const committed = await leaderboard.commitVerifiedRun({
@@ -79,6 +80,51 @@ test("DrizzleLeaderboardRepository commits verified heads and lists only verifie
     gameMonth: 9,
   });
 
+  await leaderboard.commitVerifiedRun({
+    expectedParentHeadHash: null,
+    run: createLeaderboardRunRecord({
+      runId: "placeholder-2",
+      playerId: gamma.playerId,
+      clientRunId: "run-gamma",
+      verificationStatus: "verified",
+      metrics: {
+        money: 999,
+        cumulativeRevenue: 0,
+        totalServers: 99,
+        computeCapacity: 999,
+        memoryCapacity: 999,
+        storageCapacity: 999,
+        gpuCapacity: 0,
+      },
+      gameMonth: 6,
+      updatedAt: now,
+    }),
+    head: {
+      playerId: gamma.playerId,
+      clientRunId: "run-gamma",
+      protocolVersion: "verified-run-v1",
+      rulesetId: "leaderboard-ruleset-v1",
+      genesisDescriptor: {
+        seed: 84,
+        difficulty: "easy",
+        gameId: "run-gamma" as never,
+        playerName: "Gamma Cloud",
+      },
+      rootHash: "d".repeat(64),
+      headHash: "e".repeat(64),
+      stateHash: "f".repeat(64),
+      previousHeadHash: null,
+      lastRequestHash: "1".repeat(64),
+      authoritativeState: createVerifiedGenesisState({
+        seed: 84,
+        difficulty: "easy",
+        gameId: "run-gamma" as never,
+        playerName: "Gamma Cloud",
+      }),
+      gameMonth: 6,
+    },
+  });
+
   const listed = await leaderboard.listRuns({
     metric: "money",
     period: "all-time",
@@ -99,6 +145,8 @@ test("DrizzleLeaderboardRepository commits verified heads and lists only verifie
     [beta.playerId, "unverified"],
     [alpha.playerId, "verified"],
   ]);
+  assert.ok(listed.every((run) => run.metrics.cumulativeRevenue > 0));
+  assert.ok(allListed.every((run) => run.metrics.cumulativeRevenue > 0));
 
   await database.close();
 });
