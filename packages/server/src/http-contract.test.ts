@@ -298,6 +298,7 @@ test("GET /leaderboard preserves query-validation and response-envelope behavior
     metric: string;
     period: string;
     limit: number;
+    visibility: string;
     entries: Array<{
       rank: number;
       playerId: string;
@@ -316,6 +317,7 @@ test("GET /leaderboard preserves query-validation and response-envelope behavior
     metric: "money",
     period: "all-time",
     limit: 2,
+    visibility: "verified",
     entries: [
       {
         rank: 1,
