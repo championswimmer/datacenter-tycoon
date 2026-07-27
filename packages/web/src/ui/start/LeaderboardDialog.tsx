@@ -130,25 +130,42 @@ export function LeaderboardDialog({
               </div>
             </div>
 
-            <div className={styles.visibilityList} aria-label="Leaderboard visibility">
-              {([
-                ["all", "All"],
-                ["verified", "Verified"],
-              ] as const).map(([visibility, label]) => {
-                const isActive = visibility === activeVisibility;
-
-                return (
-                  <button
-                    key={visibility}
-                    type="button"
-                    className={[styles.tabButton, isActive ? styles.tabButtonActive : ""].join(" ")}
-                    aria-pressed={isActive}
-                    onClick={() => onSelectVisibility(visibility)}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
+            <div className={styles.visibilityControl}>
+              <span id="leaderboard-visibility-label" className={styles.visibilityLabel}>
+                Leaderboard visibility
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={activeVisibility === "verified"}
+                aria-labelledby="leaderboard-visibility-label"
+                className={styles.visibilityToggle}
+                onClick={() => onSelectVisibility(activeVisibility === "all" ? "verified" : "all")}
+              >
+                <span
+                  aria-hidden="true"
+                  className={[
+                    styles.visibilityThumb,
+                    activeVisibility === "verified" ? styles.visibilityThumbChecked : "",
+                  ].join(" ")}
+                />
+                <span
+                  className={[
+                    styles.visibilityOption,
+                    activeVisibility === "all" ? styles.visibilityOptionActive : "",
+                  ].join(" ")}
+                >
+                  All
+                </span>
+                <span
+                  className={[
+                    styles.visibilityOption,
+                    activeVisibility === "verified" ? styles.visibilityOptionActive : "",
+                  ].join(" ")}
+                >
+                  Verified
+                </span>
+              </button>
             </div>
           </div>
         </div>

@@ -395,7 +395,7 @@ describe("App start flow", () => {
     expect(screen.getAllByText("Servers")).toHaveLength(2);
     expect(screen.getByText("12")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Cash" })).toBeNull();
-    expect(screen.getByRole("button", { name: "All" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("switch", { name: "Leaderboard visibility" }).getAttribute("aria-checked")).toBe("false");
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.dctycoon.test/leaderboard?metric=cumulativeRevenue&period=all-time&limit=10&visibility=all",
     );
@@ -416,14 +416,14 @@ describe("App start flow", () => {
       "https://api.dctycoon.test/leaderboard?metric=totalServers&period=all-time&limit=10&visibility=all",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Verified" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Leaderboard visibility" }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         "https://api.dctycoon.test/leaderboard?metric=totalServers&period=all-time&limit=10&visibility=verified",
       );
     });
-    expect(screen.getByRole("button", { name: "Verified" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("switch", { name: "Leaderboard visibility" }).getAttribute("aria-checked")).toBe("true");
 
     const fetchCallCount = fetchMock.mock.calls.length;
     fireEvent.click(screen.getByRole("button", { name: "Revenue" }));
@@ -435,10 +435,11 @@ describe("App start flow", () => {
     );
 
     const verifiedFetchCallCount = fetchMock.mock.calls.length;
-    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Leaderboard visibility" }));
 
     expect(await screen.findByRole("dialog", { name: "Revenue Leaderboard" })).toBeTruthy();
     expect(await screen.findByText("$900,000")).toBeTruthy();
+    expect(screen.getByRole("switch", { name: "Leaderboard visibility" }).getAttribute("aria-checked")).toBe("false");
     expect(fetchMock.mock.calls).toHaveLength(verifiedFetchCallCount);
 
     fireEvent.click(screen.getByRole("button", { name: "Close leaderboard" }));

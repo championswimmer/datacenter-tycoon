@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { LeaderboardDialog } from "./LeaderboardDialog.js";
 import type { LeaderboardListResult } from "../../online/leaderboard.js";
 
@@ -51,5 +51,45 @@ describe("LeaderboardDialog", () => {
     expect(screen.getByText("Played Through")).toBeTruthy();
     expect(screen.getByText("1 year 11 months")).toBeTruthy();
     expect(screen.queryByText("Month 23")).toBeNull();
+  });
+
+  it("renders leaderboard visibility as a switch-style toggle", () => {
+    const onSelectVisibility = vi.fn();
+
+    const { rerender } = render(
+      <LeaderboardDialog
+        activeMetric="cumulativeRevenue"
+        activeVisibility="all"
+        result={buildResult()}
+        isLoading={false}
+        errorMessage={null}
+        onClose={vi.fn()}
+        onSelectMetric={vi.fn()}
+        onSelectVisibility={onSelectVisibility}
+        onRetry={vi.fn()}
+      />,
+    );
+
+    const toggle = screen.getByRole("switch", { name: "Leaderboard visibility" });
+    expect(toggle.getAttribute("aria-checked")).toBe("false");
+
+    fireEvent.click(toggle);
+    expect(onSelectVisibility).toHaveBeenCalledWith("verified");
+
+    rerender(
+      <LeaderboardDialog
+        activeMetric="cumulativeRevenue"
+        activeVisibility="verified"
+        result={{ ...buildResult(), visibility: "verified" }}
+        isLoading={false}
+        errorMessage={null}
+        onClose={vi.fn()}
+        onSelectMetric={vi.fn()}
+        onSelectVisibility={onSelectVisibility}
+        onRetry={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("switch", { name: "Leaderboard visibility" }).getAttribute("aria-checked")).toBe("true");
   });
 });
