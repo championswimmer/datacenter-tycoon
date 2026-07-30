@@ -115,12 +115,15 @@ export function loadServerConfig(
     ),
     maxTickDelta: parsePositiveInteger(
       env.LEADERBOARD_VERIFICATION_MAX_TICK_DELTA,
-      5,
+      15,
       "LEADERBOARD_VERIFICATION_MAX_TICK_DELTA",
     ),
+    // Clients submit one Subtick action per game day, so the tick allowance
+    // alone accounts for maxTickDelta * DAYS_PER_TICK (15 * 30 = 450) actions
+    // before a single player action fits. Keep well clear of that floor.
     maxActionCount: parsePositiveInteger(
       env.LEADERBOARD_VERIFICATION_MAX_ACTION_COUNT,
-      512,
+      1_024,
       "LEADERBOARD_VERIFICATION_MAX_ACTION_COUNT",
     ),
     maxRequestBodyBytes: parsePositiveInteger(

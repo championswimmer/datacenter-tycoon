@@ -23,8 +23,8 @@ The server binds every accepted run to a protocol version and verifier ruleset i
 | --- | --- | --- |
 | `LEADERBOARD_VERIFICATION_PROTOCOL_VERSION` | `verified-run-v1` | Stable wire/hash format version. |
 | `LEADERBOARD_VERIFICATION_RULESET_ID` | `leaderboard-ruleset-v1` | Server replay ruleset / season identifier. |
-| `LEADERBOARD_VERIFICATION_MAX_TICK_DELTA` | `5` | Maximum completed monthly ticks advanced by one accepted checkpoint. |
-| `LEADERBOARD_VERIFICATION_MAX_ACTION_COUNT` | `512` | Hard cap on validated replay actions in one request. |
+| `LEADERBOARD_VERIFICATION_MAX_TICK_DELTA` | `15` | Maximum completed monthly ticks advanced by one accepted checkpoint. |
+| `LEADERBOARD_VERIFICATION_MAX_ACTION_COUNT` | `1024` | Hard cap on validated replay actions in one request. Clients send one `Subtick` per game day, so the tick allowance alone accounts for `15 × 30 = 450` actions. |
 | `LEADERBOARD_VERIFICATION_MAX_REQUEST_BODY_BYTES` | `262144` | Hard cap on raw JSON request bytes. |
 
 These limits are intentionally independent. The server rejects oversized bodies and overly large action arrays even if a batch does not advance time.

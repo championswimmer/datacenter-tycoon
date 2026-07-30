@@ -7,7 +7,13 @@ import type {
 import { LEADERBOARD_VERIFICATION_ACTION_TYPES } from "@datacenter-tycoon/game-logic";
 
 export const DEFAULT_VERIFIED_RUN_RULESET_ID = "leaderboard-ruleset-v1";
-export const DEFAULT_VERIFIED_RUN_MAX_TICK_DELTA = 5;
+/**
+ * How many completed game months a run may drift from its acknowledged
+ * checkpoint before it stops being eligible for verified submission. Mirrors
+ * the backend's LEADERBOARD_VERIFICATION_MAX_TICK_DELTA — the server replays
+ * and verifies the whole gap, so this only needs to stay in step with it.
+ */
+export const DEFAULT_VERIFIED_RUN_MAX_TICK_DELTA = 15;
 
 export type CliVerifiedRunStatus = "pending-genesis" | "verified" | "sync-pending" | "local-only";
 
@@ -97,6 +103,17 @@ export function createLegacyLocalOnlyVerifiedRunState(gameState: GameState): Cli
     ...createInitialVerifiedRunState(gameState, { onlineEligible: false }),
     status: "local-only",
   };
+}
+
+/**
+ * Saves written before the allowance was raised carry the older, stricter
+ * ceiling. The backend decides what it will actually verify, so lift a stale
+ * value instead of stranding an in-progress run at the limit it was saved with.
+ */
+export function restoreVerifiedRunState(state: CliVerifiedRunState): CliVerifiedRunState {
+  return state.maxTickDelta >= DEFAULT_VERIFIED_RUN_MAX_TICK_DELTA
+    ? state
+    : { ...state, maxTickDelta: DEFAULT_VERIFIED_RUN_MAX_TICK_DELTA };
 }
 
 export function createVerifiedRunController(initialState: CliVerifiedRunState): CliVerifiedRunController {

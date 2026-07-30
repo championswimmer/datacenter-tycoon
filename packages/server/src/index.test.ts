@@ -102,8 +102,8 @@ test("loadServerConfig defaults global, leaderboard submission, and verification
   assert.deepEqual(config.leaderboardVerification, {
     protocolVersion: "verified-run-v1",
     rulesetId: "leaderboard-ruleset-v1",
-    maxTickDelta: 5,
-    maxActionCount: 512,
+    maxTickDelta: 15,
+    maxActionCount: 1_024,
     maxRequestBodyBytes: 262_144,
   });
 });
@@ -114,7 +114,7 @@ test("loadServerConfig accepts explicit leaderboard verification settings", () =
     LEADERBOARD_VERIFICATION_PROTOCOL_VERSION: "verified-run-v2",
     LEADERBOARD_VERIFICATION_RULESET_ID: "season-2026-07",
     LEADERBOARD_VERIFICATION_MAX_TICK_DELTA: "7",
-    LEADERBOARD_VERIFICATION_MAX_ACTION_COUNT: "1024",
+    LEADERBOARD_VERIFICATION_MAX_ACTION_COUNT: "2048",
     LEADERBOARD_VERIFICATION_MAX_REQUEST_BODY_BYTES: "524288",
   });
 
@@ -122,7 +122,7 @@ test("loadServerConfig accepts explicit leaderboard verification settings", () =
     protocolVersion: "verified-run-v2",
     rulesetId: "season-2026-07",
     maxTickDelta: 7,
-    maxActionCount: 1024,
+    maxActionCount: 2048,
     maxRequestBodyBytes: 524_288,
   });
 });

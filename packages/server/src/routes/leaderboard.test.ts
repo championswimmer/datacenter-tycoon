@@ -245,6 +245,32 @@ test("POST /leaderboard/runs advances an existing verified run from the current 
   assert.notEqual(second.json?.headHash, first.json?.headHash);
 });
 
+test("POST /leaderboard/runs verifies a full 15-month catch-up submission", async () => {
+  const { app } = createLeaderboardApp();
+  const player = await registerPlayer(app);
+  const genesis = await apiRequest<{ headHash: string }>(app, "/leaderboard/runs", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(buildGenesisPayload(player!.playerId, "run-backlog")),
+  });
+
+  // A client that lost the backend for 15 months replays the whole gap at once,
+  // as subticks — the same shape the web/CLI clients actually queue up.
+  const backlog = await apiRequest<{ gameMonth: number }>(app, "/leaderboard/runs", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      playerId: player!.playerId,
+      clientRunId: "run-backlog",
+      parentHeadHash: genesis.json!.headHash,
+      actions: Array.from({ length: 15 * 30 }, () => ({ type: "Subtick" })),
+    }),
+  });
+
+  assert.equal(backlog.response.status, 200);
+  assert.equal(backlog.json?.gameMonth, 15);
+});
+
 test("POST /leaderboard/runs rejects stale parents and oversized tick gaps", async () => {
   const { app } = createLeaderboardApp();
   const player = await registerPlayer(app);
@@ -281,7 +307,7 @@ test("POST /leaderboard/runs rejects stale parents and oversized tick gaps", asy
       playerId: player!.playerId,
       clientRunId: "run-branch",
       parentHeadHash: second.json!.headHash,
-      actions: Array.from({ length: 6 }, () => ({ type: "Tick" })),
+      actions: Array.from({ length: 16 }, () => ({ type: "Tick" })),
     }),
   });
 

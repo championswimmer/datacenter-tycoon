@@ -52,8 +52,8 @@ Copy `packages/server/.env.example` into your own local env file or export the v
 | `LEADERBOARD_SUBMISSION_RATE_LIMIT_MAX_REQUESTS` | optional | Max leaderboard submissions per client IP within the window. Defaults to `1`. |
 | `LEADERBOARD_VERIFICATION_PROTOCOL_VERSION` | optional | Stable verified-run wire/hash format version. Defaults to `verified-run-v1`. |
 | `LEADERBOARD_VERIFICATION_RULESET_ID` | optional | Active verified leaderboard ruleset/season id. Defaults to `leaderboard-ruleset-v1`. |
-| `LEADERBOARD_VERIFICATION_MAX_TICK_DELTA` | optional | Maximum completed monthly ticks one checkpoint may advance. Defaults to `5`. |
-| `LEADERBOARD_VERIFICATION_MAX_ACTION_COUNT` | optional | Maximum replay actions accepted in a single checkpoint. Defaults to `512`. |
+| `LEADERBOARD_VERIFICATION_MAX_TICK_DELTA` | optional | Maximum completed monthly ticks one checkpoint may advance. Defaults to `15`. |
+| `LEADERBOARD_VERIFICATION_MAX_ACTION_COUNT` | optional | Maximum replay actions accepted in a single checkpoint. Defaults to `1024`. |
 | `LEADERBOARD_VERIFICATION_MAX_REQUEST_BODY_BYTES` | optional | Maximum JSON body size for a verified checkpoint request. Defaults to `262144`. |
 
 ## Postgres provisioning

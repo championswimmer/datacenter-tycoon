@@ -21,6 +21,10 @@ import {
   inspectSaveStorage,
   invalidateSaveIndexCache,
 } from "./persist.js";
+import {
+  createInitialVerifiedRunState,
+  DEFAULT_VERIFIED_RUN_MAX_TICK_DELTA,
+} from "../online/verified-run.js";
 import { createGameStore } from "./gameStore.js";
 
 // ── localStorage mock ──────────────────────────────────────────────────────────
@@ -314,6 +318,19 @@ describe("session creation helpers", () => {
 
   it("returns null when no saved session exists", () => {
     expect(createLoadedSession("missing-save")).toBeNull();
+  });
+
+  it("lifts a save's stale tick allowance to the current limit", () => {
+    const state = reduce(newGame(77), { type: "Tick" });
+    writeSave(state, {}, {
+      ...createInitialVerifiedRunState(state, { onlineEligible: true }),
+      maxTickDelta: 5, // what saves written before the allowance was raised carry
+    });
+
+    const session = createLoadedSession(state.gameId);
+
+    expect(session?.verification.getState().maxTickDelta)
+      .toBe(DEFAULT_VERIFIED_RUN_MAX_TICK_DELTA);
   });
 });
 

@@ -9,6 +9,7 @@ import {
   createInitialVerifiedRunState,
   createLegacyLocalOnlyVerifiedRunState,
   createVerifiedRunController,
+  restoreVerifiedRunState,
   type WebVerifiedRunController,
   type WebVerifiedRunState,
 } from "../online/verified-run.js";
@@ -166,7 +167,7 @@ function deserializeSaveData(raw: string): SaveData {
   if (isAppSaveEnvelope(parsed)) {
     return {
       state: deserialize(JSON.stringify(parsed.save)),
-      verification: parsed.verification ?? null,
+      verification: parsed.verification ? restoreVerifiedRunState(parsed.verification) : null,
     };
   }
 

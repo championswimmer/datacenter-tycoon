@@ -7,6 +7,7 @@ import {
   createInitialVerifiedRunState,
   createLegacyLocalOnlyVerifiedRunState,
   createVerifiedRunController,
+  restoreVerifiedRunState,
   type CliVerifiedRunController,
   type CliVerifiedRunState,
 } from "../online/verified-run.js";
@@ -67,7 +68,7 @@ function deserializeSession(raw: string): PersistedGameSession {
 	if (isPersistedGameEnvelope(parsed)) {
 		return {
 			state: deserialize(JSON.stringify(parsed.save)),
-			verification: parsed.verification ?? null,
+			verification: parsed.verification ? restoreVerifiedRunState(parsed.verification) : null,
 		};
 	}
 

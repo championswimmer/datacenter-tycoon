@@ -7,7 +7,10 @@ import { setTimeout as sleep } from "node:timers/promises";
 
 import { DATACENTER_CATALOG, RACK_CATALOG, reduce, type DatacenterId, type RackPlacementId } from "@datacenter-tycoon/game-logic";
 
-import { createInitialVerifiedRunState } from "../online/verified-run.js";
+import {
+	createInitialVerifiedRunState,
+	DEFAULT_VERIFIED_RUN_MAX_TICK_DELTA,
+} from "../online/verified-run.js";
 import { GamePersistence, loadGameSession, loadOrInit } from "./persist.js";
 
 const datacenterId = (value: string): DatacenterId => value as DatacenterId;
@@ -89,4 +92,18 @@ test("loadGameSession preserves verification metadata alongside the state", () =
 	const reloaded = loadGameSession(savePath, 999);
 	assert.deepEqual(reloaded.state, state);
 	assert.deepEqual(reloaded.verification, verification);
+});
+
+test("loadGameSession lifts a save's stale tick allowance to the current limit", () => {
+	const savePath = createTempSavePath();
+	const state = createState(7);
+	const persistence = new GamePersistence({ savePath });
+
+	persistence.flushSync(state, {
+		...createInitialVerifiedRunState(state, { onlineEligible: true }),
+		maxTickDelta: 5, // what saves written before the allowance was raised carry
+	});
+
+	const reloaded = loadGameSession(savePath, 999);
+	assert.equal(reloaded.verification?.maxTickDelta, DEFAULT_VERIFIED_RUN_MAX_TICK_DELTA);
 });
