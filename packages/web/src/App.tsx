@@ -56,6 +56,10 @@ const LEADERBOARD_SYNC_UNAVAILABLE_NOTICE = "Online leaderboard verification is 
 const LOCAL_ONLY_RUN_NOTICE = "This run is local-only and will not appear on the verified leaderboard.";
 const LEADERBOARD_QUERY_FAILED_MESSAGE = "Could not load the online leaderboard right now.";
 const TRANSIENT_STATUS_MESSAGE_DURATION_MS = 3_000;
+/** Submit a verified checkpoint at least this often in game months. */
+const CHECKPOINT_SUBMIT_EVERY_TICKS = 5;
+/** …and at least this often in wall-clock time, so paused/slow runs still sync. */
+const CHECKPOINT_SUBMIT_INTERVAL_MS = 15_000;
 
 function createAppSession(
   choice: StartChoice,
@@ -306,16 +310,31 @@ function useAppSession(): AppSessionController {
     }
 
     let cancelled = false;
-    let timeout: ReturnType<typeof setTimeout> | null = null;
+    let inFlight = false;
+    // Cadence anchors: a checkpoint is due once either the tick budget or the
+    // wall-clock budget since the last attempt is exhausted.
+    let lastAttemptTick = session.store.getState().tick;
+    let lastAttemptAt = Date.now();
 
     const submitCheckpoint = async () => {
+      if (inFlight) {
+        return;
+      }
+
       const state = session.store.getState();
       const verification = session.verification.getState();
       const submission = buildVerifiedCheckpointSubmission(playerIdentity.playerId, verification);
 
+      // Reopen the cadence window even when there is nothing to send, so an idle
+      // run does not re-evaluate on every subtick.
+      lastAttemptTick = state.tick;
+      lastAttemptAt = Date.now();
+
       if (!submission) {
         return;
       }
+
+      inFlight = true;
 
       try {
         const response = await submitLeaderboardRun(submission);
@@ -358,27 +377,36 @@ function useAppSession(): AppSessionController {
         setStatusMessage(
           `${LEADERBOARD_SYNC_UNAVAILABLE_NOTICE} Reconnect before month ${lastEligibleMonth} (${pendingTicks} of ${nextVerification.maxTickDelta} months pending, ${remainingTicks} remaining).`,
         );
+      } finally {
+        inFlight = false;
       }
     };
 
-    const scheduleSubmission = () => {
-      if (timeout) {
-        clearTimeout(timeout);
-      }
+    // The store notifies on every daily subtick (30 per game month, as little as
+    // ~83ms apart at 3× speed), so this must be a cadence gate rather than a
+    // debounce — a debounce would be reset forever and never fire while playing.
+    const submitIfDue = () => {
+      const ticksSinceAttempt = session.store.getState().tick - lastAttemptTick;
+      const msSinceAttempt = Date.now() - lastAttemptAt;
 
-      timeout = setTimeout(() => {
+      if (
+        ticksSinceAttempt >= CHECKPOINT_SUBMIT_EVERY_TICKS
+        || msSinceAttempt >= CHECKPOINT_SUBMIT_INTERVAL_MS
+      ) {
         void submitCheckpoint();
-      }, 750);
+      }
     };
 
-    scheduleSubmission();
-    const unsubscribe = session.store.subscribe(scheduleSubmission);
+    // Establish the genesis checkpoint (or flush a restored save's backlog) now
+    // rather than waiting out the first cadence window.
+    void submitCheckpoint();
+    const unsubscribe = session.store.subscribe(submitIfDue);
+    // Keeps the wall-clock cadence honest while paused, when no subticks arrive.
+    const interval = setInterval(submitIfDue, CHECKPOINT_SUBMIT_INTERVAL_MS);
 
     return () => {
       cancelled = true;
-      if (timeout) {
-        clearTimeout(timeout);
-      }
+      clearInterval(interval);
       unsubscribe();
     };
   }, [playerIdentity, session]);

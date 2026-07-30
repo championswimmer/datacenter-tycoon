@@ -1,10 +1,16 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { newGame } from "@datacenter-tycoon/game-logic";
+import { DAYS_PER_TICK, newGame } from "@datacenter-tycoon/game-logic";
 import type { Difficulty, GameState } from "@datacenter-tycoon/game-logic";
-import { createInitialVerifiedRunState, createVerifiedRunController } from "./online/verified-run.js";
+import {
+  appendVerificationAction,
+  createInitialVerifiedRunState,
+  createVerifiedRunController,
+  type WebVerifiedRunState,
+} from "./online/verified-run.js";
 import { createGameStore } from "./store/gameStore.js";
 import type { SaveInfo, StoreSession } from "./store/persist.js";
+import { SPEED_INTERVALS_MS } from "./store/tickDriver.js";
 
 interface FreshSessionOptions {
   difficulty?: Difficulty;
@@ -51,6 +57,90 @@ function makeSession(
     stopAutosave: vi.fn(),
     isFreshStart: kind === "fresh",
   };
+}
+
+/**
+ * Mirrors createStoreSession()'s wiring so dispatches actually accumulate
+ * verification actions — makeSession() leaves the store and the verification
+ * controller unconnected, which hides checkpoint-cadence regressions.
+ */
+function makeVerifiedSession(
+  overrides: Partial<WebVerifiedRunState> = {},
+): StoreSession {
+  const state = newGame(22);
+  const verification = createVerifiedRunController({
+    ...createInitialVerifiedRunState(state, { onlineEligible: true }),
+    ...overrides,
+  });
+  const store = createGameStore(state, {
+    onDispatch(action) {
+      verification.update((current) => appendVerificationAction(current, action));
+    },
+  });
+
+  return { store, verification, stopAutosave: vi.fn(), isFreshStart: false };
+}
+
+/** Subtick spacing the real tick driver produces at each speed, in whole ms. */
+const SUBTICK_MS_AT_SPEED = {
+  1: Math.round(SPEED_INTERVALS_MS[1] / DAYS_PER_TICK), // 333ms — 1 month / 10s
+  3: Math.round(SPEED_INTERVALS_MS[3] / DAYS_PER_TICK), // 83ms  — 1 month / 2.5s
+} as const;
+
+/** Lets pending fetch/microtask chains settle without moving the fake clock. */
+async function flushPromises(): Promise<void> {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+/**
+ * Drives `subticks` store dispatches spaced `intervalMs` of fake time apart,
+ * the way the rAF tick driver does during real play. Dispatching without also
+ * advancing the clock would let a debounce drain in the gap and mask the very
+ * regression these tests exist for.
+ */
+async function runSubticks(
+  session: StoreSession,
+  subticks: number,
+  intervalMs: number,
+): Promise<void> {
+  for (let start = 0; start < subticks; start += DAYS_PER_TICK) {
+    const end = Math.min(start + DAYS_PER_TICK, subticks);
+    await act(async () => {
+      for (let i = start; i < end; i++) {
+        session.store.dispatch({ type: "Subtick" });
+        vi.advanceTimersByTime(intervalMs);
+      }
+    });
+    await flushPromises();
+  }
+}
+
+function checkpointResponse(): Response {
+  return new Response(JSON.stringify({
+    created: true,
+    rootHash: "a".repeat(64),
+    headHash: "b".repeat(64),
+    gameMonth: 0,
+    metrics: {
+      money: 0,
+      cumulativeRevenue: 0,
+      totalServers: 0,
+      computeCapacity: 0,
+      memoryCapacity: 0,
+      storageCapacity: 0,
+      gpuCapacity: 0,
+    },
+  }), { status: 201, headers: { "content-type": "application/json" } });
+}
+
+function countCheckpointPosts(): number {
+  return fetchMock.mock.calls.filter(
+    ([url]) => String(url) === "https://api.dctycoon.test/leaderboard/runs",
+  ).length;
 }
 
 const PLAYER_IDENTITY_KEY = "datacenter-tycoon:player-identity-v1";
@@ -533,6 +623,75 @@ describe("App start flow", () => {
       parentHeadHash: null,
       actions: [{ type: "Tick" }],
     });
+  });
+
+  it("keeps checkpointing every 5 game months while the game is running", async () => {
+    vi.useFakeTimers();
+    localStorage.setItem(
+      PLAYER_IDENTITY_KEY,
+      JSON.stringify({ playerId: CLOUD_ATLAS_PLAYER_ID, username: "Cloud Atlas" }),
+    );
+    persistMocks.latestSave = savedGameInfo;
+
+    let session!: StoreSession;
+    persistMocks.createLoadedSession.mockImplementation(() => {
+      session = makeVerifiedSession({ pendingActions: [{ type: "Tick" }] });
+      return session;
+    });
+    fetchMock.mockImplementation(async () => checkpointResponse());
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Load Game" }));
+
+    // The genesis checkpoint goes out as soon as the run has a pending action.
+    await flushPromises();
+    expect(countCheckpointPosts()).toBe(1);
+
+    // Play at 3× — 5 months takes 12.5s, so the tick budget is what fires here,
+    // not the 15s wall clock.
+    const speed = SUBTICK_MS_AT_SPEED[3];
+
+    // Four months must NOT trigger another submission…
+    await runSubticks(session, 4 * DAYS_PER_TICK, speed);
+    expect(countCheckpointPosts()).toBe(1);
+
+    // …but the fifth one must.
+    await runSubticks(session, DAYS_PER_TICK, speed);
+    expect(countCheckpointPosts()).toBe(2);
+
+    // And the cadence repeats rather than firing once.
+    await runSubticks(session, 5 * DAYS_PER_TICK, speed);
+    expect(countCheckpointPosts()).toBe(3);
+  });
+
+  it("checkpoints on the 15 second wall clock when ticks are too slow to trigger", async () => {
+    vi.useFakeTimers();
+    localStorage.setItem(
+      PLAYER_IDENTITY_KEY,
+      JSON.stringify({ playerId: CLOUD_ATLAS_PLAYER_ID, username: "Cloud Atlas" }),
+    );
+    persistMocks.latestSave = savedGameInfo;
+
+    let session!: StoreSession;
+    persistMocks.createLoadedSession.mockImplementation(() => {
+      session = makeVerifiedSession();
+      return session;
+    });
+    fetchMock.mockImplementation(async () => checkpointResponse());
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Load Game" }));
+
+    // At 1× a month takes 10s, so 5 months is 50s away — only the wall clock
+    // can push a checkpoint out inside this window.
+    const speed = SUBTICK_MS_AT_SPEED[1];
+
+    await runSubticks(session, 40, speed); // ~13.3s elapsed, 1 game month
+    expect(countCheckpointPosts()).toBe(0);
+
+    await runSubticks(session, 10, speed); // ~16.7s elapsed, still 1 game month
+    expect(countCheckpointPosts()).toBe(1);
+    expect(session.store.getState().tick).toBeLessThan(5);
   });
 
   it("uses the explicit production API override for leaderboard sync", async () => {
