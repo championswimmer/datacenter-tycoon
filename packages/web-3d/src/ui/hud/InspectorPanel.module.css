@@ -1,0 +1,164 @@
+.panel {
+  position: absolute;
+  top: 76px;
+  right: 14px;
+  z-index: 25;
+  width: 288px;
+  max-height: calc(100vh - 175px);
+  overflow-y: auto;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(8, 13, 22, 0.88);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.kicker {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--neon-cyan);
+  letter-spacing: 0.08em;
+}
+
+.title {
+  margin: 2px 0 0;
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  color: var(--fg-0);
+}
+
+.closeBtn {
+  border: none;
+  background: transparent;
+  color: var(--fg-2);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.kvGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 7px;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.kvGrid span {
+  display: block;
+  font-size: 0.58rem;
+  color: var(--fg-3);
+}
+
+.kvGrid strong {
+  color: var(--fg-0);
+}
+
+.hint {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--fg-2);
+}
+
+.brushBox {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 7px;
+  background: rgba(0, 245, 212, 0.08);
+  border: 1px solid rgba(0, 245, 212, 0.25);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.alertBox {
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(255, 77, 109, 0.14);
+  border: 1px solid rgba(255, 77, 109, 0.4);
+  color: var(--neon-red);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.staffRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: rgba(15, 23, 42, 0.7);
+}
+
+.staffControls {
+  display: flex;
+  gap: 4px;
+}
+
+.miniBtn {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(15, 23, 42, 0.9);
+  color: var(--fg-0);
+  cursor: pointer;
+}
+
+.miniBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.primaryBtn,
+.secondaryBtn,
+.dangerBtn {
+  border-radius: 7px;
+  padding: 7px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primaryBtn {
+  background: rgba(0, 245, 212, 0.18);
+  border: 1px solid rgba(0, 245, 212, 0.55);
+  color: var(--neon-cyan);
+}
+
+.secondaryBtn {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: var(--fg-1);
+}
+
+.dangerBtn {
+  background: rgba(255, 77, 109, 0.15);
+  border: 1px solid rgba(255, 77, 109, 0.45);
+  color: var(--neon-red);
+}

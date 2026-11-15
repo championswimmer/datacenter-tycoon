@@ -45,7 +45,10 @@ export interface ServerDatabaseRuntimeInfo {
 }
 
 export const DEFAULT_DEV_CORS_ALLOWED_ORIGINS = ["http://localhost:5173"] as const;
-export const FIRST_PARTY_PRODUCTION_CORS_ALLOWED_ORIGINS = ["https://dctycoon.arnav.tech"] as const;
+export const FIRST_PARTY_PRODUCTION_CORS_ALLOWED_ORIGINS = [
+  "https://dctycoon.arnav.tech",
+  "https://dctycoon-3d.up.railway.app",
+] as const;
 
 export class ConfigError extends Error {
   readonly code = "CONFIG_ERROR";

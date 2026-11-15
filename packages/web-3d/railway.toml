@@ -1,0 +1,19 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "packages/web-3d/Dockerfile"
+watchPatterns = [
+  "packages/web-3d/**",
+  "packages/web/**",
+  "packages/game-logic/**",
+  "assets/**",
+  "package.json",
+  "package-lock.json",
+  "tsconfig.json"
+]
+
+[deploy]
+startCommand = "node packages/web-3d/scripts/serve-prod.mjs"
+healthcheckPath = "/healthz"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

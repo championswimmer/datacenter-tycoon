@@ -1,0 +1,37 @@
+{
+  "name": "@datacenter-tycoon/web-3d",
+  "version": "0.1.0",
+  "description": "Isometric 3D Cities: Skylines-style web client for Datacenter Tycoon — Canvas 2D isometric engine + React 18 HUD.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite --port 5174",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --port 4174",
+    "start": "node ./scripts/serve-prod.mjs",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:ci": "mkdir -p coverage && vitest run --coverage --reporter=default --reporter=junit --outputFile.junit=coverage/junit.xml",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@datacenter-tycoon/game-logic": "*",
+    "@datacenter-tycoon/web": "*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.5.1",
+    "@vitest/coverage-v8": "^3.2.4",
+    "jsdom": "^26.1.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vite": "^6.3.4",
+    "vitest": "^3.1.3"
+  }
+}
