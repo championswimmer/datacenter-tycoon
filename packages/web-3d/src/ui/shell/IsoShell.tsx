@@ -406,6 +406,9 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
           onEnterFacility={enterFacility}
           onOpenBuildDcModal={(regionId) => setBuildDcRegionId(regionId)}
           onActionFeedback={showToast}
+          onOpenUpgrades={() =>
+            viewDispatch({ type: "SET_ACTIVE_DRAWER", drawer: "upgrades" })
+          }
           speed={speed}
         />
 

@@ -89,6 +89,8 @@ export interface IsoViewportCanvasProps {
   onEnterFacility: (dcId: DatacenterId, regionId?: RegionId) => void;
   onOpenBuildDcModal: (regionId: RegionId) => void;
   onActionFeedback?: (message: string) => void;
+  /** Called when facility infrastructure equipment (PDU/CRAC/NOC/generator) is clicked. */
+  onOpenUpgrades?: (dcId: DatacenterId) => void;
   /** Simulation speed (0 = paused). Scene animations only advance while speed > 0. */
   speed?: number;
 }
@@ -106,6 +108,7 @@ export function IsoViewportCanvas({
   onEnterFacility,
   onOpenBuildDcModal,
   onActionFeedback,
+  onOpenUpgrades,
   speed = 1,
 }: IsoViewportCanvasProps) {
   const dispatch = useGameDispatch();
@@ -465,6 +468,7 @@ export function IsoViewportCanvas({
         handleSlotActivate(hit.row, hit.position);
       } else {
         onSelect({ kind: "datacenter", dcId: facilityDc.id });
+        if (hit.kind === "equipment") onOpenUpgrades?.(facilityDc.id);
       }
     } else if (effectiveRegion) {
       const hit = pickTopHitTarget(pt.x, pt.y, cityHitsRef.current);
