@@ -1,3 +1,5 @@
+import { BACKEND_API_URL } from "./backend.js";
+
 export interface OnlineApiEnvironment {
   readonly DEV?: boolean;
   readonly MODE?: string;
@@ -19,7 +21,11 @@ export function resolveOnlineApiBaseUrl(
     return DEFAULT_DEV_API_BASE_URL;
   }
 
-  if (env.MODE === "production" || env.MODE === "test") {
+  if (env.MODE === "production") {
+    return normalizeOptionalBaseUrl(BACKEND_API_URL);
+  }
+
+  if (env.MODE === "test") {
     return null;
   }
 

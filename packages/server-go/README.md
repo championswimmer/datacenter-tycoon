@@ -114,3 +114,10 @@ The Go server is a **separate Railway service** from the TS server, with its own
 - Set `NODE_ENV=production`, `DATABASE_URL`, and `CORS_ALLOWED_ORIGINS` on the Go service.
 - Use a **separate database by default**, not the TS service's database. Both services run the same baseline migrations, but the two schemas are not shared unless you point `DATABASE_URL` at the same database on purpose.
 - The endpoints are identical, so the web client switches servers by changing its API base URL.
+
+## Live v2 deployment
+
+- Railway service `dctycoon-api-v2` (project `datacenter-tycoon`, production): https://dctycoon-api-v2-production.up.railway.app
+- It shares the existing `Postgres` service with the TS `dctycoon-api` (`DATABASE_URL=${{Postgres.DATABASE_URL}}`). Both servers use the same `schema_migrations` table, so either can migrate it.
+- Build uses `RAILWAY_DOCKERFILE_PATH=packages/server-go/Dockerfile`. Deploy from the CLI with a staged directory containing `packages/server-go/` and its `railway.toml` at the root (so the TS root `railway.toml` isn't applied), or set the service's config-as-code path to `packages/server-go/railway.toml` in the dashboard to get the `/app/migrate` pre-deploy step and healthcheck.
+- The web client picks its backend via `BACKEND_API_URL` in `packages/web/src/online/backend.ts` (`BACKEND_API_URLS.v1` = TS, `.v2` = Go).

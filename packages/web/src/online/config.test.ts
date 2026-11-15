@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { BACKEND_API_URL } from "./backend.js";
 import {
   DEFAULT_DEV_API_BASE_URL,
   ONLINE_API_BASE_URL_ENV,
@@ -34,13 +35,20 @@ describe("resolveOnlineApiBaseUrl", () => {
     expect(resolveOnlineApiBaseUrl({
       DEV: true,
       MODE: "production",
-    })).toBeNull();
+    })).toBe(BACKEND_API_URL);
   });
 
-  it("keeps production offline when no API URL is configured", () => {
+  it("defaults production to the BACKEND_API_URL constant when no override is configured", () => {
     expect(resolveOnlineApiBaseUrl({
       DEV: false,
       MODE: "production",
+    })).toBe(BACKEND_API_URL);
+  });
+
+  it("keeps test mode offline when no API URL is configured", () => {
+    expect(resolveOnlineApiBaseUrl({
+      DEV: false,
+      MODE: "test",
     })).toBeNull();
   });
 });
