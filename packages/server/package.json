@@ -17,6 +17,7 @@
     "start": "bun run dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
+    "test:blackbox": "SERVER_BASE_URL=${SERVER_BASE_URL:-http://127.0.0.1:3000} bun test src/http-contract.test.ts src/routes/health.test.ts src/routes/players.test.ts src/routes/leaderboard.test.ts",
     "test:ci": "rm -rf coverage && bun test --coverage --coverage-reporter=text --coverage-reporter=lcov --coverage-dir=coverage --reporter=junit --reporter-outfile=coverage/junit.xml",
     "clean": "rm -rf dist *.tsbuildinfo coverage"
   },

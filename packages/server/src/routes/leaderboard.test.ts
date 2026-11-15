@@ -14,9 +14,12 @@ import {
   type LeaderboardRepository,
 } from "../leaderboard/repository.js";
 import { createLeaderboardRunRecord } from "../leaderboard/types.js";
-import { apiRequest, createTestApp } from "../test-utils/app.js";
+import { apiRequest, createTestApp, inProcessTest, uniqueSuffix } from "../test-utils/app.js";
 
-async function registerPlayer(app: ReturnType<typeof createTestApp>["app"], username = "Acme Cloud") {
+async function registerPlayer(
+  app: ReturnType<typeof createTestApp>["app"],
+  username = `Acme Cloud${uniqueSuffix()}`,
+) {
   const response = await apiRequest<{ playerId: string; username: string }>(app, "/players", {
     method: "POST",
     body: JSON.stringify({ username }),
@@ -317,7 +320,7 @@ test("POST /leaderboard/runs rejects stale parents and oversized tick gaps", asy
   assert.equal(tooFar.json?.error.code, "RUN_TICK_GAP_EXCEEDED");
 });
 
-test("POST /leaderboard/runs surfaces repository failures as internal errors", async () => {
+inProcessTest("POST /leaderboard/runs surfaces repository failures as internal errors", async () => {
   class BrokenLeaderboardRepository implements LeaderboardRepository {
     async findRunHead() {
       return null;
@@ -353,7 +356,7 @@ test("POST /leaderboard/runs surfaces repository failures as internal errors", a
   assert.match(json?.error.message ?? "", /database unavailable/);
 });
 
-test("GET /leaderboard returns ranked verified entries for a selected metric", async () => {
+inProcessTest("GET /leaderboard returns ranked verified entries for a selected metric", async () => {
   const players = new InMemoryPlayersRepository();
   const leaderboard = new InMemoryLeaderboardRepository();
   const alpha = await players.createPlayer({ username: "Alpha Cloud" });
@@ -420,7 +423,7 @@ test("GET /leaderboard returns ranked verified entries for a selected metric", a
   ]);
 });
 
-test("GET /leaderboard applies deterministic tie-breaking for equal metric values", async () => {
+inProcessTest("GET /leaderboard applies deterministic tie-breaking for equal metric values", async () => {
   const fixedSubmittedAt = new Date("2026-05-18T12:00:00.000Z");
   const players = new InMemoryPlayersRepository();
   const leaderboard = new InMemoryLeaderboardRepository(() => fixedSubmittedAt);
@@ -466,7 +469,7 @@ test("GET /leaderboard applies deterministic tie-breaking for equal metric value
   ]);
 });
 
-test("GET /leaderboard can return all or only verified runs", async () => {
+inProcessTest("GET /leaderboard can return all or only verified runs", async () => {
   const players = new InMemoryPlayersRepository();
   const leaderboard = new InMemoryLeaderboardRepository();
   const alpha = await players.createPlayer({ username: "Alpha Cloud" });
@@ -590,7 +593,7 @@ test("GET /leaderboard rejects invalid query parameters", async () => {
   assert.equal(invalidVisibility.json?.error.code, "INVALID_LEADERBOARD_QUERY");
 });
 
-test("POST /leaderboard/runs rate-limits repeated submissions from the same client", async () => {
+inProcessTest("POST /leaderboard/runs rate-limits repeated submissions from the same client", async () => {
   class DenyAllRateLimiter implements RateLimiter {
     consume(_scope: string, _key: string, _rule: RateLimitRule) {
       return {
@@ -623,7 +626,7 @@ test("POST /leaderboard/runs rate-limits repeated submissions from the same clie
   assert.match(json?.error.message ?? "", /Retry after 15 seconds/);
 });
 
-test("POST /leaderboard/runs allows one submission per second for the same client IP", async () => {
+inProcessTest("POST /leaderboard/runs allows one submission per second for the same client IP", async () => {
   const { app } = createLeaderboardApp({
     config: {
       rateLimits: {

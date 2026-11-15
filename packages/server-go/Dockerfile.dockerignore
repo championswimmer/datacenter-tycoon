@@ -1,0 +1,6 @@
+# BuildKit uses this file instead of the root .dockerignore when building packages/server-go/Dockerfile
+# (repo-root context), so the root Dockerfile's context is unaffected.
+**/node_modules
+.git
+**/dist
+**/coverage

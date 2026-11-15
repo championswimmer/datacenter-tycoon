@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "bun:test";
 import type { ServerConfig } from "../config.js";
 import { createElysiaServerApp } from "../server/elysia-app.js";
-import { apiRequest, createTestDependencies } from "../test-utils/app.js";
+import {
+  apiRequest,
+  createTestDependencies,
+  expectedHealthBody,
+  inProcessTest,
+} from "../test-utils/app.js";
 import { registerHealthRoutes } from "./health.js";
 
 function createHealthApp(config?: Partial<ServerConfig>) {
@@ -27,18 +32,24 @@ test("GET /healthz returns liveness information", async () => {
   }>(app, "/healthz");
 
   assert.equal(response.status, 200);
-  assert.deepEqual(json, {
-    status: "ok",
-    environment: "test",
-    runtime: "bun",
-    framework: "elysia",
-    databaseMode: "pglite",
-    databaseProvider: "pglite-memory",
-    databaseConfigured: false,
-  });
+  assert.deepEqual(
+    json,
+    expectedHealthBody(
+      {
+        status: "ok",
+        environment: "test",
+        runtime: "bun",
+        framework: "elysia",
+        databaseMode: "pglite",
+        databaseProvider: "pglite-memory",
+        databaseConfigured: false,
+      },
+      json,
+    ),
+  );
 });
 
-test("GET /healthz reports file-backed PGlite metadata for development configs", async () => {
+inProcessTest("GET /healthz reports file-backed PGlite metadata for development configs", async () => {
   const app = createHealthApp({
     environment: "development",
     database: {
@@ -58,7 +69,7 @@ test("GET /healthz reports file-backed PGlite metadata for development configs",
   assert.equal(json?.databaseConfigured, true);
 });
 
-test("GET /healthz reports Bun SQL metadata for production Postgres configs", async () => {
+inProcessTest("GET /healthz reports Bun SQL metadata for production Postgres configs", async () => {
   const app = createHealthApp({
     environment: "production",
     database: {

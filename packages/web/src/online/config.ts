@@ -1,3 +1,5 @@
+import { BACKEND_API_URL } from "./backend.js";
+
 export interface OnlineApiEnvironment {
   readonly DEV?: boolean;
   readonly MODE?: string;
@@ -19,7 +21,14 @@ export function resolveOnlineApiBaseUrl(
     return DEFAULT_DEV_API_BASE_URL;
   }
 
-  if (env.MODE === "production" || env.MODE === "test") {
+  if (env.MODE === "production") {
+    // An explicitly blank VITE_API_BASE_URL still means "offline build"; only an unset one falls back to the constant.
+    return env[ONLINE_API_BASE_URL_ENV] === undefined
+      ? normalizeOptionalBaseUrl(BACKEND_API_URL)
+      : null;
+  }
+
+  if (env.MODE === "test") {
     return null;
   }
 

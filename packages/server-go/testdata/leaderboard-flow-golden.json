@@ -1,0 +1,88 @@
+{
+ "username": "Acme Cloud",
+ "actions": [
+  {
+   "type": "BuildDatacenter",
+   "specId": "warehouse",
+   "dcId": "dc-verified-1",
+   "regionId": "us_east"
+  },
+  {
+   "type": "PlaceRack",
+   "dcId": "dc-verified-1",
+   "specId": "C2",
+   "row": 0,
+   "position": 0,
+   "placementId": "rack-c2-1"
+  },
+  {
+   "type": "PlaceRack",
+   "dcId": "dc-verified-1",
+   "specId": "C2",
+   "row": 0,
+   "position": 1,
+   "placementId": "rack-c2-2"
+  },
+  {
+   "type": "PlaceRack",
+   "dcId": "dc-verified-1",
+   "specId": "M1",
+   "row": 0,
+   "position": 2,
+   "placementId": "rack-m1-1"
+  },
+  {
+   "type": "PlaceRack",
+   "dcId": "dc-verified-1",
+   "specId": "S2",
+   "row": 1,
+   "position": 0,
+   "placementId": "rack-s2-1"
+  },
+  {
+   "type": "AcceptContract",
+   "contractId": "contract-cdn_edge-91af9",
+   "dcId": "dc-verified-1"
+  },
+  {
+   "type": "Tick"
+  },
+  {
+   "type": "Tick"
+  }
+ ],
+ "first": {
+  "created": true,
+  "rootHash": "40d1968bad5925a2e9ef956e0c8c6b06f88c8aba49ccc7964685d41925a190ef",
+  "headHash": "884b693fae515aa1964bf4e28b8542c31a88b1fa9f9d60875daccc0b95cb718a",
+  "gameMonth": 0,
+  "metrics": {
+   "money": 8000000,
+   "cumulativeRevenue": 0,
+   "totalServers": 0,
+   "computeCapacity": 0,
+   "memoryCapacity": 0,
+   "storageCapacity": 0,
+   "gpuCapacity": 0
+  }
+ },
+ "second": {
+  "created": false,
+  "rootHash": "40d1968bad5925a2e9ef956e0c8c6b06f88c8aba49ccc7964685d41925a190ef",
+  "headHash": "754d866a1b04352513ed47829dbe58c1b99010be2abdc421236a23d721f2f334",
+  "gameMonth": 2,
+  "metrics": {
+   "money": 6080358,
+   "cumulativeRevenue": 84600,
+   "totalServers": 4,
+   "computeCapacity": 592,
+   "memoryCapacity": 3968,
+   "storageCapacity": 1268,
+   "gpuCapacity": 0
+  }
+ },
+ "boardValues": [
+  5828
+ ],
+ "rejected": "Unknown datacenter: nope|RUN_REPLAY_REJECTED"
+}

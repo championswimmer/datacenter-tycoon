@@ -1,58 +1,66 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
-import { apiRequest, createTestApp } from "../test-utils/app.js";
+import {
+  apiRequest,
+  createTestApp,
+  inProcessTest,
+  uniqueSuffix,
+} from "../test-utils/app.js";
 import type { PlayersRepository, RegisterPlayerInput } from "../players/repository.js";
 import { UsernameUnavailableError } from "../players/repository.js";
 import type { RateLimiter, RateLimitRule } from "../rate-limit/fixed-window.js";
 
 test("GET /players/availability reports a username as available", async () => {
   const { app } = createTestApp();
+  const suffix = uniqueSuffix();
   const { response, json } = await apiRequest<{
     username: string;
     available: boolean;
-  }>(app, "/players/availability?username=Acme%20Cloud");
+  }>(app, `/players/availability?username=Acme%20Cloud${encodeURIComponent(suffix)}`);
 
   assert.equal(response.status, 200);
   assert.deepEqual(json, {
-    username: "Acme Cloud",
+    username: `Acme Cloud${suffix}`,
     available: true,
   });
 });
 
 test("GET /players/availability reports duplicate normalized usernames as unavailable", async () => {
   const { app } = createTestApp();
+  const suffix = uniqueSuffix();
 
   await apiRequest(app, "/players", {
     method: "POST",
-    body: JSON.stringify({ username: "Acme Cloud" }),
+    body: JSON.stringify({ username: `Acme Cloud${suffix}` }),
     headers: { "content-type": "application/json" },
   });
 
   const { response, json } = await apiRequest<{
     username: string;
     available: boolean;
-  }>(app, "/players/availability?username=  acme   cloud  ");
+  }>(app, `/players/availability?username=  acme   cloud${suffix}  `);
 
   assert.equal(response.status, 200);
   assert.deepEqual(json, {
-    username: "acme cloud",
+    username: `acme cloud${suffix}`,
     available: false,
   });
 });
 
 test("POST /players registers a username and returns the new player identity", async () => {
   const { app } = createTestApp();
+  const suffix = uniqueSuffix();
   const { response, json } = await apiRequest<{
     playerId: string;
     username: string;
   }>(app, "/players", {
     method: "POST",
-    body: JSON.stringify({ username: "  Acme Cloud  " }),
+    body: JSON.stringify({ username: `  Acme Cloud${suffix}  ` }),
     headers: { "content-type": "application/json" },
   });
 
   assert.equal(response.status, 201);
-  assert.equal(json?.username, "Acme Cloud");
+  assert.equal(json?.username, `Acme Cloud${suffix}`);
   assert.match(
     json?.playerId ?? "",
     /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
@@ -61,10 +69,11 @@ test("POST /players registers a username and returns the new player identity", a
 
 test("POST /players rejects duplicate usernames after case and whitespace normalization", async () => {
   const { app } = createTestApp();
+  const suffix = uniqueSuffix();
 
   await apiRequest(app, "/players", {
     method: "POST",
-    body: JSON.stringify({ username: "John Doe123" }),
+    body: JSON.stringify({ username: `John Doe123${suffix}` }),
     headers: { "content-type": "application/json" },
   });
 
@@ -72,7 +81,7 @@ test("POST /players rejects duplicate usernames after case and whitespace normal
     error: { code: string; message: string };
   }>(app, "/players", {
     method: "POST",
-    body: JSON.stringify({ username: "  john   doe123  " }),
+    body: JSON.stringify({ username: `  john   doe123${suffix}  ` }),
     headers: { "content-type": "application/json" },
   });
 
@@ -95,7 +104,7 @@ test("POST /players rejects invalid usernames", async () => {
   assert.equal(json?.error.code, "INVALID_USERNAME");
 });
 
-test("POST /players surfaces persistence failures as internal errors", async () => {
+inProcessTest("POST /players surfaces persistence failures as internal errors", async () => {
   class BrokenPlayersRepository implements PlayersRepository {
     async findByNormalizedUsername(): Promise<null> {
       return null;
@@ -140,7 +149,7 @@ test("GET /players/availability rejects invalid usernames", async () => {
   assert.equal(json?.error.code, "INVALID_USERNAME");
 });
 
-test("POST /players rate-limits repeated registration attempts from the same client", async () => {
+inProcessTest("POST /players rate-limits repeated registration attempts from the same client", async () => {
   class DenyAllRateLimiter implements RateLimiter {
     consume(_scope: string, _key: string, _rule: RateLimitRule) {
       return {
