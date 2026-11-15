@@ -101,7 +101,7 @@ export function UpgradePanel({ dcId, focus }: UpgradePanelProps) {
     : allResourceColumns;
 
   return (
-    <section className={styles.section}>
+    <section className={`${styles.section} ${focus ? styles.focused : ""}`}>
       <div className={styles.header}>
         <div>
           <h3 className={styles.title}>UPGRADE TRACKS</h3>

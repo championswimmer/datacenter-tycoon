@@ -306,3 +306,23 @@
     grid-column: 2;
   }
 }
+
+/* Focused single-track mode (used in narrow dialogs) */
+.focused .infrastructureGrid,
+.focused .trackGrid {
+  grid-template-columns: 1fr;
+}
+
+.focused .trackHeader {
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.focused .ladderNode {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.focused .ladderBadge {
+  grid-column: auto;
+  justify-self: end;
+}
