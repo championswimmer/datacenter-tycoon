@@ -381,6 +381,7 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
           onEnterFacility={enterFacility}
           onOpenBuildDcModal={(regionId) => setBuildDcRegionId(regionId)}
           onActionFeedback={showToast}
+          speed={speed}
         />
 
         <InfoOverlayDock

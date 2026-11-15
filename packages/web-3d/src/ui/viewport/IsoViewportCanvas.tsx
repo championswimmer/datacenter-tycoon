@@ -89,6 +89,8 @@ export interface IsoViewportCanvasProps {
   onEnterFacility: (dcId: DatacenterId, regionId?: RegionId) => void;
   onOpenBuildDcModal: (regionId: RegionId) => void;
   onActionFeedback?: (message: string) => void;
+  /** Simulation speed (0 = paused). Scene animations only advance while speed > 0. */
+  speed?: number;
 }
 
 export function IsoViewportCanvas({
@@ -104,6 +106,7 @@ export function IsoViewportCanvas({
   onEnterFacility,
   onOpenBuildDcModal,
   onActionFeedback,
+  speed = 1,
 }: IsoViewportCanvasProps) {
   const dispatch = useGameDispatch();
   const fullState = useFullGameState();
@@ -281,6 +284,10 @@ export function IsoViewportCanvas({
     return () => ro.disconnect();
   }, []);
 
+  const speedRef = useRef(speed);
+  speedRef.current = speed;
+  const animClockRef = useRef({ simMs: 0, lastMs: 0 });
+
   // Main render loop (also renders immediately on state/camera/tool change)
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -299,8 +306,16 @@ export function IsoViewportCanvas({
     let rafId = 0;
     const startMs = performance.now();
 
+    // Animation clock: persists across effect re-runs and only advances while the game is running,
+    // scaled by sim speed, so traffic/pulses/blinks freeze on pause instead of drifting on wall-clock.
+    const clock = animClockRef.current;
+    clock.lastMs = startMs;
+
     const drawFrame = (nowMs: number) => {
-      const timeSec = (nowMs - startMs) * 0.001;
+      const speedFactor = speedRef.current;
+      if (speedFactor > 0) clock.simMs += Math.max(0, nowMs - clock.lastMs) * speedFactor;
+      clock.lastMs = nowMs;
+      const timeSec = clock.simMs * 0.001;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       if (viewMode === "facility" && facilityDc && facilityInfrastructure) {
