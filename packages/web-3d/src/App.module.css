@@ -13,15 +13,38 @@
 
 .statusBanner {
   position: fixed;
-  top: max(var(--space-4), var(--safe-area-top));
+  /* Sits just below the 3D top HUD bar instead of covering it. */
+  top: 76px;
   left: 50%;
   z-index: calc(var(--z-overlay) + 1);
-  width: min(calc(100% - (2 * var(--space-4))), 720px);
-  padding: var(--space-3) var(--space-4);
+  width: min(calc(100% - (2 * var(--space-4))), 520px);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 10px 7px 12px;
   border: 1px solid rgba(255, 196, 82, 0.4);
-  border-radius: 14px;
+  border-radius: 10px;
   background: rgba(53, 34, 5, 0.92);
   color: #ffe3a6;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.4;
   box-shadow: var(--shadow-float);
   transform: translateX(-50%);
+}
+
+.statusBanner span {
+  flex: 1;
+}
+
+.statusDismiss {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.statusDismiss:hover {
+  opacity: 1;
 }

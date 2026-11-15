@@ -92,4 +92,13 @@ describe("camera", () => {
     expect(focused.centerY).toBe(3);
     expect(focused.zoom).toBe(1.4);
   });
+
+  it("centers fitted grids inside the area left by HUD insets", () => {
+    const cam = createCameraState(12, 12);
+    const insets = { left: 200, right: 300, top: 70, bottom: 110 };
+    const fitted = fitCameraToGrid(cam, 12, 12, 1440, 900, 3.2, 0.92, insets);
+    const projected = projectIso({ gx: 6, gy: 6, gz: 0 }, toCameraTransform(fitted, 12, 12), 1440, 900);
+    expect(projected.x).toBeCloseTo(720 + (200 - 300) / 2, 0);
+    expect(projected.y).toBeCloseTo(450 + (70 - 110) / 2, 0);
+  });
 });

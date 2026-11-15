@@ -298,7 +298,7 @@ export function InspectorPanel({
         <div className={styles.actions}>
           {activeDcId === datacenter.id ? (
             <button type="button" className={styles.secondaryBtn} onClick={onEnterCity}>
-              🏙 Return to Region Map
+              🏙 Return to Region View
             </button>
           ) : (
             <button type="button" className={styles.primaryBtn} onClick={() => onEnterFacility(datacenter.id)}>

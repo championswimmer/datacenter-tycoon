@@ -82,7 +82,8 @@
   padding: 5px 8px;
   font-family: var(--font-mono);
   font-size: 0.72rem;
-  max-width: 190px;
+  max-width: 230px;
+  text-overflow: ellipsis;
 }
 
 .telemetrySection {

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { StartScreen, StoreProvider, useAppSession } from "@datacenter-tycoon/web";
 import { IsoShell } from "./ui/shell/IsoShell.js";
 import styles from "./App.module.css";
@@ -29,6 +30,8 @@ export function App() {
     selectLeaderboardVisibility,
     retryLeaderboard,
   } = useAppSession();
+
+  const [dismissedNotice, setDismissedNotice] = useState<string | null>(null);
 
   if (!session) {
     return (
@@ -63,9 +66,17 @@ export function App() {
 
   return (
     <>
-      {statusMessage && (
+      {statusMessage && statusMessage !== dismissedNotice && (
         <div className={styles.statusBanner} role="status">
-          {statusMessage}
+          <span>{statusMessage}</span>
+          <button
+            type="button"
+            className={styles.statusDismiss}
+            aria-label="Dismiss notice"
+            onClick={() => setDismissedNotice(statusMessage)}
+          >
+            ✕
+          </button>
         </div>
       )}
       <StoreProvider store={session.store}>
