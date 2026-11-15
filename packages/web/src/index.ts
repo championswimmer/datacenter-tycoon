@@ -52,6 +52,7 @@ export { CompletedList } from "./ui/contracts/CompletedList.js";
 export { FinancesPage } from "./ui/finances/FinancesPage.js";
 export { PowerView } from "./ui/stats/PowerView.js";
 export { UpgradePanel } from "./ui/stats/UpgradePanel.js";
+export type { UpgradePanelFocus } from "./ui/stats/UpgradePanel.js";
 export { ResourceBars } from "./ui/stats/ResourceBars.js";
 export { CapacityTiles } from "./ui/stats/CapacityTiles.js";
 export { LogFeed } from "./ui/log/LogFeed.js";

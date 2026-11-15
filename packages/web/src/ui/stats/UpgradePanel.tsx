@@ -30,11 +30,15 @@ function ladderNodeClassName(status: DatacenterUpgradeTrackLadderNodeView["statu
   ].filter(Boolean).join(" ");
 }
 
+export type UpgradePanelFocus = "power" | "cooling" | "network";
+
 interface UpgradePanelProps {
   dcId: DatacenterId;
+  /** When set, only the matching upgrade track is shown (e.g. a focused single-track dialog). */
+  focus?: UpgradePanelFocus;
 }
 
-export function UpgradePanel({ dcId }: UpgradePanelProps) {
+export function UpgradePanel({ dcId, focus }: UpgradePanelProps) {
   const cash = useSelector(selectCash);
   const infrastructure = useSelector((state) => selectDatacenterInfrastructureSummary(state, dcId));
   const upgrades = useSelector((state) => selectDatacenterUpgradeSummary(state, dcId));
@@ -69,7 +73,7 @@ export function UpgradePanel({ dcId }: UpgradePanelProps) {
   }
 
   const trackById = new Map(upgrades.tracks.map((track) => [track.trackId, track] as const));
-  const resourceColumns = [
+  const allResourceColumns = [
     {
       key: "power",
       infrastructureLabel: "POWER ENVELOPE",
@@ -92,6 +96,9 @@ export function UpgradePanel({ dcId }: UpgradePanelProps) {
       track: trackById.get("networkType") ?? null,
     },
   ] as const;
+  const resourceColumns = focus
+    ? allResourceColumns.filter((column) => column.key === focus)
+    : allResourceColumns;
 
   return (
     <section className={styles.section}>

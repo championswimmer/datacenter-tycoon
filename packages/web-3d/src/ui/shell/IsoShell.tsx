@@ -33,6 +33,7 @@ import {
   useSelector,
   useTickDriver,
   type Speed,
+  type UpgradePanelFocus,
 } from "@datacenter-tycoon/web";
 import {
   createCameraState,
@@ -56,6 +57,7 @@ import { InspectorPanel } from "../hud/InspectorPanel.js";
 import { BuildDock } from "../hud/BuildDock.js";
 import { TopHudBar } from "../hud/TopHudBar.js";
 import { IsoViewportCanvas } from "../viewport/IsoViewportCanvas.js";
+import { InfrastructureUpgradeDialog } from "../modals/InfrastructureUpgradeDialog.js";
 import styles from "./IsoShell.module.css";
 
 export interface IsoShellProps {
@@ -105,8 +107,11 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
       ),
   );
 
-  // Datacenter whose upgrades are shown when the drawer is opened from a city landmark
-  const [upgradeDcId, setUpgradeDcId] = useState<DatacenterId | null>(null);
+  // Focused single-track upgrade dialog opened from 3D equipment / city landmarks
+  const [upgradeDialog, setUpgradeDialog] = useState<{
+    dcId: DatacenterId;
+    focus: UpgradePanelFocus;
+  } | null>(null);
 
   const [camera, setCamera] = useState<IsoCameraState>(() => {
     const initialDc = datacenters[0];
@@ -345,9 +350,6 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
     showResetModal,
   ]);
 
-  const upgradeDrawerDcId =
-    state.viewMode === "city" ? (upgradeDcId ?? state.activeDcId) : state.activeDcId;
-
   const fallbackRegionId = state.activeRegionId ?? regions[0]?.id ?? null;
 
   return (
@@ -396,8 +398,10 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
               const target =
                 regionDcs.find((dc) => dc.id === state.activeDcId) ?? regionDcs[0];
               if (target) {
-                setUpgradeDcId(target.id);
-                viewDispatch({ type: "SET_ACTIVE_DRAWER", drawer: "upgrades" });
+                setUpgradeDialog({
+                  dcId: target.id,
+                  focus: selection.landmarkId === "power_substation" ? "power" : "network",
+                });
               } else {
                 showToast("Build a datacenter in this region to purchase power or fiber upgrades.");
               }
@@ -406,8 +410,12 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
           onEnterFacility={enterFacility}
           onOpenBuildDcModal={(regionId) => setBuildDcRegionId(regionId)}
           onActionFeedback={showToast}
-          onOpenUpgrades={() =>
-            viewDispatch({ type: "SET_ACTIVE_DRAWER", drawer: "upgrades" })
+          onOpenEquipmentUpgrade={(dcId, equipmentId) =>
+            setUpgradeDialog({
+              dcId,
+              focus:
+                equipmentId === "crac" ? "cooling" : equipmentId === "noc" ? "network" : "power",
+            })
           }
           speed={speed}
         />
@@ -502,8 +510,8 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
                 {state.activeDrawer === "map" && <MapView />}
                 {state.activeDrawer === "log" && <LogFeed />}
                 {state.activeDrawer === "upgrades" &&
-                  (upgradeDrawerDcId ? (
-                    <PowerView dcId={upgradeDrawerDcId} />
+                  (state.activeDcId ? (
+                    <PowerView dcId={state.activeDcId} />
                   ) : (
                     <p className={styles.emptyDrawerNote}>
                       Build or select a datacenter first to configure Power, Cooling, Fiber, and Onsite Generation upgrades.
@@ -514,6 +522,14 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
           </section>
         )}
       </main>
+
+      {upgradeDialog && (
+        <InfrastructureUpgradeDialog
+          dcId={upgradeDialog.dcId}
+          focus={upgradeDialog.focus}
+          onClose={() => setUpgradeDialog(null)}
+        />
+      )}
 
       {rackPickerTarget && rackPickerDc && (
         <RackPicker
