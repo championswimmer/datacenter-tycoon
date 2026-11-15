@@ -21,7 +21,13 @@ import {
   internalImplementationDetailsFreeToChange,
   stableTransportContractDetails,
 } from "./test-utils/contracts.js";
-import { apiRequest, createTestApp } from "./test-utils/app.js";
+import {
+  apiRequest,
+  createTestApp,
+  expectedHealthBody,
+  inProcessTest,
+  uniqueSuffix,
+} from "./test-utils/app.js";
 
 function assertJsonContentType(response: Response): void {
   assert.match(
@@ -39,7 +45,7 @@ async function registerPlayer(app: ReturnType<typeof createTestApp>["app"]) {
   const result = await apiRequest<{ playerId: string; username: string }>(app, "/players", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ username: "Acme Cloud" }),
+    body: JSON.stringify({ username: `Acme Cloud${uniqueSuffix()}` }),
   });
 
   assert.equal(result.response.status, frozenEndpointContracts.registerPlayer.successStatus);
@@ -174,15 +180,21 @@ test("GET /healthz preserves its status code, body shape, content type, and curr
   assert.equal(response.status, frozenEndpointContracts.healthz.successStatus);
   assertJsonContentType(response);
   assertCurrentCorsBehavior(response);
-  assert.deepEqual(json, {
-    status: "ok",
-    environment: "test",
-    runtime: "bun",
-    framework: "elysia",
-    databaseMode: "pglite",
-    databaseProvider: "pglite-memory",
-    databaseConfigured: false,
-  });
+  assert.deepEqual(
+    json,
+    expectedHealthBody(
+      {
+        status: "ok",
+        environment: "test",
+        runtime: "bun",
+        framework: "elysia",
+        databaseMode: "pglite",
+        databaseProvider: "pglite-memory",
+        databaseConfigured: false,
+      },
+      json,
+    ),
+  );
 });
 
 test("GET /version preserves its status code and JSON payload shape", async () => {
@@ -201,15 +213,16 @@ test("GET /version preserves its status code and JSON payload shape", async () =
 
 test("GET /players/availability preserves the success payload contract", async () => {
   const { app } = createContractTestApp();
+  const suffix = uniqueSuffix();
   const { response, json } = await apiRequest<{
     username: string;
     available: boolean;
-  }>(app, "/players/availability?username=Acme%20Cloud");
+  }>(app, `/players/availability?username=Acme%20Cloud${encodeURIComponent(suffix)}`);
 
   assert.equal(response.status, frozenEndpointContracts.playerAvailability.successStatus);
   assertJsonContentType(response);
   assert.deepEqual(json, {
-    username: "Acme Cloud",
+    username: `Acme Cloud${suffix}`,
     available: true,
   });
 });
@@ -234,15 +247,16 @@ test("POST /players preserves INVALID_JSON error semantics for malformed request
 
 test("POST /players preserves success and duplicate-username contracts", async () => {
   const { app } = createContractTestApp();
+  const suffix = uniqueSuffix();
   const created = await apiRequest<{ playerId: string; username: string }>(app, "/players", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ username: "  Acme Cloud  " }),
+    body: JSON.stringify({ username: `  Acme Cloud${suffix}  ` }),
   });
 
   assert.equal(created.response.status, frozenEndpointContracts.registerPlayer.successStatus);
   assertJsonContentType(created.response);
-  assert.equal(created.json?.username, "Acme Cloud");
+  assert.equal(created.json?.username, `Acme Cloud${suffix}`);
   assert.match(
     created.json?.playerId ?? "",
     /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
@@ -251,7 +265,7 @@ test("POST /players preserves success and duplicate-username contracts", async (
   const duplicate = await apiRequest<{ error: { code: string; message: string } }>(app, "/players", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ username: "acme cloud" }),
+    body: JSON.stringify({ username: `acme cloud${suffix}` }),
   });
 
   assert.equal(duplicate.response.status, 409);
@@ -259,7 +273,7 @@ test("POST /players preserves success and duplicate-username contracts", async (
   assert.match(duplicate.json?.error.message ?? "", /already taken/i);
 });
 
-test("GET /leaderboard preserves query-validation and response-envelope behavior", async () => {
+inProcessTest("GET /leaderboard preserves query-validation and response-envelope behavior", async () => {
   const fixedSubmittedAt = new Date("2026-05-29T12:00:00.000Z");
   const players = new InMemoryPlayersRepository();
   const leaderboard = new InMemoryLeaderboardRepository(() => fixedSubmittedAt);
@@ -406,7 +420,7 @@ test("POST /leaderboard/runs preserves success, idempotent retry, and player-not
   assert.equal(missingPlayer.json?.error.code, "PLAYER_NOT_FOUND");
 });
 
-test("global backend throttling applies to all routes after 10 requests in one second", async () => {
+inProcessTest("global backend throttling applies to all routes after 10 requests in one second", async () => {
   const { app } = createContractTestApp({
     config: {
       rateLimits: {
@@ -429,7 +443,7 @@ test("global backend throttling applies to all routes after 10 requests in one s
   assert.match(limited.json?.error.message ?? "", /backend requests/i);
 });
 
-test("rate-limited requests preserve 429/RATE_LIMITED bodies and current header behavior", async () => {
+inProcessTest("rate-limited requests preserve 429/RATE_LIMITED bodies and current header behavior", async () => {
   class DenyAllRateLimiter implements RateLimiter {
     consume(_scope: string, _key: string, _rule: RateLimitRule) {
       return {

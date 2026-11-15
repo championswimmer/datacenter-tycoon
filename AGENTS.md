@@ -17,7 +17,8 @@ datacenter-tycoon/
 │   ├── web/          # Web frontend
 │   ├── cli/          # Local daemon + one-shot commands + interactive terminal UI
 │   ├── desktop/      # Electron app (planned, not yet implemented)
-│   └── server/       # Scoring, leaderboard, multiplayer backend
+│   ├── server/       # Scoring, leaderboard, multiplayer backend (TS, Bun + Elysia)
+│   └── server-go/    # Go port of `server` (net/http); runs game-logic via an embedded goja bundle
 ├── .agents/
 │   ├── plans/        # Numbered implementation plans
 │   └── skills/       # Project-local agent skills (SKILL.md format)
@@ -56,6 +57,8 @@ npm run dev:cli            # run the CLI package in watch/dev mode
 3. **Serializable state**: All game state must be JSON-serializable for save/load and network sync.
 4. **No circular deps** between packages. Dependency direction: `web`/`desktop`/`server` → `game-logic`.
 5. **Shared gameplay queries stay in `game-logic`**. If multiple interfaces need the same derived domain answer — e.g. contract market/live/history buckets, contract-fit checks, datacenter available capacity, maintenance staffing affordances, legal rack-move targets, or effective datacenter upgrade/infrastructure views — add/export a read-only helper in `game-logic` and have consumers call it. Do not duplicate those reducers/filters in `web` or `cli`.
+
+**Go server decision:** `packages/server-go` does not reimplement game rules. `game-logic` stays TypeScript and is bundled into `packages/server-go/jsbridge/bundle.js` (built by `scripts/build-bundle.sh`, committed, and checked for drift in CI), then executed in Go via goja. Rule 1 still applies to the Go port.
 
 ## Domain Vocabulary
 
