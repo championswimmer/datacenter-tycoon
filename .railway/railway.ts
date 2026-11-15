@@ -33,6 +33,7 @@ export default defineRailway(() => {
     replicas: { "us-west2": 1 },
     env: { CORS_ALLOWED_ORIGINS: preserve(), DATABASE_URL: preserve(), NODE_ENV: preserve() },
   });
+  // Isometric 3D web client (packages/web-3d). Replaces packages/web-3d/railway.toml.
   const dctycoon3d = service("dctycoon-3d", {
     source: datacenterTycoon,
     build: {
@@ -46,7 +47,7 @@ export default defineRailway(() => {
         "assets/**",
         "package.json",
         "package-lock.json",
-        "tsconfig.json",
+        "tsconfig*.json",
       ],
     },
     deploy: {
@@ -59,7 +60,6 @@ export default defineRailway(() => {
     replicas: { "us-west2": 1 },
     env: {
       NODE_ENV: "production",
-      RAILWAY_DOCKERFILE_PATH: "packages/web-3d/Dockerfile",
       VITE_API_BASE_URL: "https://dctycoon-api-production.up.railway.app",
     },
   });
