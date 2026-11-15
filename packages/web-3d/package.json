@@ -1,7 +1,7 @@
 {
   "name": "@datacenter-tycoon/web-3d",
   "version": "0.1.0",
-  "description": "Isometric 3D Cities: Skylines-style web client for Datacenter Tycoon — Canvas 2D isometric engine + React 18 HUD.",
+  "description": "Isometric 3D web client for Datacenter Tycoon — Canvas 2D isometric engine + React 18 HUD.",
   "type": "module",
   "private": true,
   "scripts": {

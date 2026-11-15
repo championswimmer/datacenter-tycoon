@@ -53,7 +53,7 @@ export function InfoOverlayDock({
   onToggleCutaway,
 }: InfoOverlayDockProps) {
   return (
-    <aside className={styles.dock} aria-label="Cities: Skylines Info Views & Camera Controls">
+    <aside className={styles.dock} aria-label="Info Views & Camera Controls">
       <div className={styles.card}>
         <div className={styles.sectionTitle}>INFO VIEWS</div>
         <div className={styles.overlayList} role="radiogroup" aria-label="3D Info Overlays">

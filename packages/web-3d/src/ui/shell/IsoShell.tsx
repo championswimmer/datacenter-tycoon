@@ -37,6 +37,7 @@ import {
 import {
   createCameraState,
   fitCameraToGrid,
+  type ViewportInsets,
   panCameraGrid,
   rotateCameraCCW,
   rotateCameraCW,
@@ -52,7 +53,7 @@ import {
 } from "../../state/viewportState.js";
 import { InfoOverlayDock } from "../hud/InfoOverlayDock.js";
 import { InspectorPanel } from "../hud/InspectorPanel.js";
-import { SkylinesBuildDock } from "../hud/SkylinesBuildDock.js";
+import { BuildDock } from "../hud/BuildDock.js";
 import { TopHudBar } from "../hud/TopHudBar.js";
 import { IsoViewportCanvas } from "../viewport/IsoViewportCanvas.js";
 import styles from "./IsoShell.module.css";
@@ -76,6 +77,16 @@ const DRAWER_TITLES = {
   map: "🌍 Global Regions & Optical Fabric",
   log: "📜 Activity & Transaction Ledger",
 } as const;
+
+/** Screen margins covered by HUD panels (left info dock, right inspector, top bar, bottom build dock). */
+const HUD_INSETS: ViewportInsets = { left: 204, right: 312, top: 72, bottom: 112 };
+
+/** Trailing arguments for fitCameraToGrid so scenes fit the unobstructed viewport area. */
+function hudFitArgs(): [number, number, number, number, ViewportInsets] {
+  const w = typeof window !== "undefined" && window.innerWidth ? window.innerWidth : 1280;
+  const h = typeof window !== "undefined" && window.innerHeight ? window.innerHeight : 720;
+  return [w, h, 3.2, 0.92, HUD_INSETS];
+}
 
 export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
   const dispatch = useGameDispatch();
@@ -101,16 +112,14 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
         createCameraState(initialDc.spec.positionsPerRow, initialDc.spec.rows),
         initialDc.spec.positionsPerRow,
         initialDc.spec.rows,
-        1280,
-        720,
+        ...hudFitArgs(),
       );
     }
     return fitCameraToGrid(
       createCameraState(CITY_GRID_SIZE, CITY_GRID_SIZE),
       CITY_GRID_SIZE,
       CITY_GRID_SIZE,
-      1280,
-      720,
+      ...hudFitArgs(),
     );
   });
 
@@ -190,8 +199,7 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
             },
             dc.spec.positionsPerRow,
             dc.spec.rows,
-            window.innerWidth || 1280,
-            window.innerHeight || 720,
+            ...hudFitArgs(),
           ),
         );
       } else {
@@ -204,8 +212,7 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
             },
             CITY_GRID_SIZE,
             CITY_GRID_SIZE,
-            window.innerWidth || 1280,
-            window.innerHeight || 720,
+            ...hudFitArgs(),
           ),
         );
       }
@@ -263,7 +270,7 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
   const gridRows =
     state.viewMode === "facility" && activeDc ? activeDc.spec.rows : CITY_GRID_SIZE;
 
-  // Global Cities: Skylines camera & overlay hotkeys
+  // Global camera & overlay hotkeys
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target;
@@ -425,7 +432,7 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
           }
         />
 
-        <SkylinesBuildDock
+        <BuildDock
           viewMode={state.viewMode}
           buildTool={state.buildTool}
           activeDrawer={state.activeDrawer}

@@ -531,7 +531,7 @@ function drawStylizedTree(
   });
 }
 
-function drawSkylineBuilding(
+function drawTowerBuilding(
   ctx: CanvasRenderingContext2D,
   transform: CameraTransform,
   vw: number,
@@ -1451,7 +1451,7 @@ function drawDatacenterComplex(
       sideRightColor: "#475569",
     });
 
-    // Skyline rooftop crowns
+    // Rooftop crowns
     for (const hallX of [tileX + 0.26, tileX + 1.22]) {
       drawIsoBox(ctx, transform, vw, vh, {
         gx: hallX,
@@ -1595,7 +1595,7 @@ function drawVacantLot(
 }
 
 /**
- * Render the 12x12 Cities: Skylines-inspired isometric district view for a region.
+ * Render the 12x12 Isometric district view for a region.
  * Returns front-to-back depth-sorted interactive hit targets for picking.
  */
 export function renderCityScene(
@@ -1727,7 +1727,7 @@ export function renderCityScene(
   const hitTargets: CityHitTarget[] = [];
   const pendingBadges: PendingBadge[] = [];
 
-  // 5a. Procedural urban skyline buildings & park trees
+  // 5a. Procedural urban tower buildings & park trees
   for (let gx = 0; gx < CITY_GRID_SIZE; gx++) {
     for (let gy = 0; gy < CITY_GRID_SIZE; gy++) {
       const key = cellKey(gx, gy);
@@ -1746,7 +1746,7 @@ export function renderCityScene(
       renderables.push({
         depth,
         draw: () =>
-          drawSkylineBuilding(
+          drawTowerBuilding(
             ctx,
             transform,
             viewportWidth,

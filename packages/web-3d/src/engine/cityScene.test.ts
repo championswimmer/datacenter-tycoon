@@ -29,7 +29,7 @@ describe("cityScene", () => {
   it("renders a 12x12 district with datacenters, vacant lots, municipal hubs, and hit targets", () => {
     const ctx = createCanvasCtx();
     const initial = newGame(101, {
-      playerName: "Skyline Corp",
+      playerName: "Metro Corp",
       difficulty: "easy",
       startingCash: 50_000_000,
     });

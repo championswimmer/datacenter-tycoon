@@ -82,7 +82,7 @@ export function TopHudBar({
     : datacenters;
 
   return (
-    <header className={styles.wrapper} aria-label="Cities: Skylines 3D Top Telemetry">
+    <header className={styles.wrapper} aria-label="3D Top Telemetry">
       <div className={styles.bar}>
         {/* Left: View Switcher & Breadcrumb */}
         <div className={styles.brandSection}>
@@ -93,7 +93,7 @@ export function TopHudBar({
               className={[styles.modeBtn, viewMode === "city" ? styles.modeBtnActive : ""].filter(Boolean).join(" ")}
               onClick={onEnterCity}
             >
-              🏙 City Skyline
+              🏙 Region View
             </button>
             {datacenters.length > 0 && (
               <button

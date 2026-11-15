@@ -197,7 +197,19 @@ export function focusCameraOnCell(
   };
 }
 
-/** Auto-fit camera zoom and center so the entire 3D grid fits inside the viewport with breathing room. */
+/** Screen-space margins (px) occupied by HUD chrome that the fitted scene should avoid. */
+export interface ViewportInsets {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+/**
+ * Auto-fit camera zoom and center so the entire 3D grid fits inside the viewport with breathing room.
+ * When `insets` is given, the grid is fitted into (and centered within) the area left over after
+ * subtracting those HUD margins, so panels never cover the scene.
+ */
 export function fitCameraToGrid(
   camera: IsoCameraState,
   gridCols: number,
@@ -206,6 +218,7 @@ export function fitCameraToGrid(
   viewportHeight: number,
   maxHeightUnits = 3.2,
   paddingFactor = 0.8,
+  insets?: ViewportInsets,
 ): IsoCameraState {
   const centerX = gridCols * 0.5;
   const centerY = gridRows * 0.5;
@@ -214,14 +227,27 @@ export function fitCameraToGrid(
     (gridCols + gridRows) * (DEFAULT_TILE_HEIGHT * 0.5) +
     maxHeightUnits * DEFAULT_UNIT_HEIGHT_PX;
 
-  const usableW = Math.max(240, viewportWidth) * paddingFactor;
-  const usableH = Math.max(180, viewportHeight) * paddingFactor;
+  const insetW = insets ? Math.min(insets.left + insets.right, viewportWidth * 0.6) : 0;
+  const insetH = insets ? Math.min(insets.top + insets.bottom, viewportHeight * 0.6) : 0;
+  const usableW = Math.max(240, viewportWidth - insetW) * paddingFactor;
+  const usableH = Math.max(180, viewportHeight - insetH) * paddingFactor;
   const zoom = clampZoom(Math.min(usableW / Math.max(spanX, 1), usableH / Math.max(spanY, 1)));
 
-  return {
-    ...camera,
-    centerX,
-    centerY,
-    zoom,
-  };
+  const fitted: IsoCameraState = { ...camera, centerX, centerY, zoom };
+  if (!insets || (insetW === 0 && insetH === 0)) return fitted;
+
+  // Shift the camera so the grid center lands at the middle of the unobstructed area.
+  const scaleW = insets.left + insets.right > 0 ? insetW / (insets.left + insets.right) : 0;
+  const scaleH = insets.top + insets.bottom > 0 ? insetH / (insets.top + insets.bottom) : 0;
+  const shiftX = ((insets.left - insets.right) * scaleW) / 2;
+  const shiftY = ((insets.top - insets.bottom) * scaleH) / 2;
+  const target = unprojectIso(
+    viewportWidth * 0.5 - shiftX,
+    viewportHeight * 0.5 - shiftY,
+    toCameraTransform(fitted, gridCols, gridRows),
+    viewportWidth,
+    viewportHeight,
+    0,
+  );
+  return { ...fitted, centerX: target.gx, centerY: target.gy };
 }

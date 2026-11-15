@@ -10,11 +10,11 @@ import {
 import { createGameStore, StoreProvider } from "@datacenter-tycoon/web";
 import { TopHudBar } from "./TopHudBar.js";
 import { InfoOverlayDock } from "./InfoOverlayDock.js";
-import { SkylinesBuildDock } from "./SkylinesBuildDock.js";
+import { BuildDock } from "./BuildDock.js";
 import { InspectorPanel } from "./InspectorPanel.js";
 
 function createTestStoreWithDc() {
-  const state = newGame(42, { playerName: "Skyline Ops", difficulty: "easy" });
+  const state = newGame(42, { playerName: "Metro Ops", difficulty: "easy" });
   const store = createGameStore(state);
   const regionId = state.map.regions[0]!.id;
   const dcId = "dc-test-1" as DatacenterId;
@@ -28,7 +28,7 @@ function createTestStoreWithDc() {
   return { store, regionId, dcId };
 }
 
-describe("Cities: Skylines HUD components", () => {
+describe("3D HUD components", () => {
   it("renders formatted calendar date, speed buttons, and mode switcher in TopHudBar", async () => {
     const user = userEvent.setup();
     const { store, regionId, dcId } = createTestStoreWithDc();
@@ -54,14 +54,14 @@ describe("Cities: Skylines HUD components", () => {
       </StoreProvider>,
     );
 
-    expect(screen.getByText("Skyline Ops")).toBeTruthy();
+    expect(screen.getByText("Metro Ops")).toBeTruthy();
     expect(screen.queryByText(/Tick/i)).toBeNull();
     expect(screen.getByText(/Jan/i)).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: /3x/i }));
     expect(onSpeedChange).toHaveBeenCalledWith(3);
 
-    await user.click(screen.getByRole("button", { name: /City Skyline/i }));
+    await user.click(screen.getByRole("button", { name: /Region View/i }));
     expect(onEnterCity).toHaveBeenCalledTimes(1);
   });
 
@@ -98,16 +98,16 @@ describe("Cities: Skylines HUD components", () => {
     expect(onToggleCutaway).toHaveBeenCalledTimes(1);
   });
 
-  it("selects rack brushes and management drawers in SkylinesBuildDock", async () => {
+  it("selects rack brushes and management drawers in BuildDock", async () => {
     const user = userEvent.setup();
-    const state = newGame(42, { playerName: "Skyline Ops", difficulty: "easy" });
+    const state = newGame(42, { playerName: "Metro Ops", difficulty: "easy" });
     const store = createGameStore(state);
     const onSelectTool = vi.fn();
     const onToggleDrawer = vi.fn();
 
     render(
       <StoreProvider store={store}>
-        <SkylinesBuildDock
+        <BuildDock
           viewMode="facility"
           buildTool={{ mode: "select" }}
           activeDrawer="none"

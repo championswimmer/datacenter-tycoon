@@ -7,9 +7,9 @@ import {
 import { selectCash, useSelector } from "@datacenter-tycoon/web";
 import { RACK_KIND_PALETTES } from "../../engine/rackModels3d.js";
 import type { ActiveDrawer, BuildTool, CameraViewMode } from "../../state/viewportState.js";
-import styles from "./SkylinesBuildDock.module.css";
+import styles from "./BuildDock.module.css";
 
-export interface SkylinesBuildDockProps {
+export interface BuildDockProps {
   viewMode: CameraViewMode;
   buildTool: BuildTool;
   activeDrawer: ActiveDrawer;
@@ -46,14 +46,14 @@ function primaryCapacityLabel(spec: RackSpec): string {
   }
 }
 
-export function SkylinesBuildDock({
+export function BuildDock({
   viewMode,
   buildTool,
   activeDrawer,
   onSelectTool,
   onToggleDrawer,
   onOpenBuildDcModal,
-}: SkylinesBuildDockProps) {
+}: BuildDockProps) {
   const cash = useSelector(selectCash);
   const [openKind, setOpenKind] = useState<RackKind | null>(null);
 
@@ -117,7 +117,7 @@ export function SkylinesBuildDock({
         </div>
       )}
 
-      <nav className={styles.dock} aria-label="Cities: Skylines Build & Management Dock">
+      <nav className={styles.dock} aria-label="Build & Management Dock">
         <div className={styles.toolGroup}>
           <button
             type="button"

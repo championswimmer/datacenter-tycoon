@@ -12,7 +12,7 @@ import { IsoShell } from "./IsoShell.js";
 describe("IsoShell integration", () => {
   it("supports switching city/facility 3D views, placing & bulldozing racks, switching overlays, and opening drawers", async () => {
     const user = userEvent.setup();
-    const initial = newGame(2025, { playerName: "Skyline Integration", difficulty: "easy" });
+    const initial = newGame(2025, { playerName: "Metro Integration", difficulty: "easy" });
     const store = createGameStore(initial);
     const regionId = initial.map.regions[0]!.id;
     const dcId = "dc-shell-1" as DatacenterId;
@@ -33,7 +33,7 @@ describe("IsoShell integration", () => {
     // Starts in Facility 3D mode when a datacenter already exists
     expect(screen.getByLabelText(/Isometric 3D Datacenter Cutaway Canvas/i)).toBeTruthy();
 
-    // Select Compute brush from SkylinesBuildDock and place C0 on Row 1 Bay 1
+    // Select Compute brush from BuildDock and place C0 on Row 1 Bay 1
     await user.click(screen.getByRole("button", { name: /^Compute$/i }));
     await user.click(screen.getByRole("button", { name: /Empty Slot Row 1 Bay 1/i }));
     expect(store.getState().datacenters[0]!.placements).toHaveLength(1);
@@ -52,8 +52,8 @@ describe("IsoShell integration", () => {
     await user.click(screen.getByRole("button", { name: /Close Drawer/i }));
     expect(screen.queryByRole("dialog", { name: /Contracts Market/i })).toBeNull();
 
-    // Switch back to City Skyline view and re-enter Facility via canvas overlay
-    await user.click(screen.getByRole("button", { name: /🏙 City Skyline/i }));
+    // Switch back to Region View view and re-enter Facility via canvas overlay
+    await user.click(screen.getByRole("button", { name: /🏙 Region View/i }));
     expect(screen.getByLabelText(/Isometric 3D City District Canvas/i)).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: /Enter Garage Datacenter 3D Cutaway/i }));

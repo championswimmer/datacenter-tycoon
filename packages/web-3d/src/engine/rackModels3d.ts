@@ -99,7 +99,7 @@ export function rackHeightByTier(tier: RackTier, kind: RackKind): number {
   return baseByTier[tier] + (kind === "gpu" ? 0.1 : 0);
 }
 
-/** Compute Cities: Skylines Info-Lens tinting for a single rack. */
+/** Compute Info-Lens tinting for a single rack. */
 export function resolveRackOverlayColors(params: RackRenderParams): {
   topColor: string;
   leftColor: string;
