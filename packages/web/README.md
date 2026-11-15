@@ -8,7 +8,7 @@ The web app resolves its online API target like this:
 
 1. `VITE_API_BASE_URL` when it is explicitly set.
 2. Otherwise `http://localhost:3000` during Vite development.
-3. Otherwise the checked-in production default from `packages/web/.env.production` (`https://dctycoon-api-production.up.railway.app`) for production builds in this repo.
+3. Otherwise the checked-in production default from `packages/web/.env.production` (`https://dctycoon-api-v2-production.up.railway.app`) for production builds in this repo.
 4. Otherwise no online API target in non-development builds, which keeps local/offline play available as a rollback path.
 
 Typical local flow:
@@ -31,7 +31,7 @@ Production builds from this repository now default to the live Railway backend:
 
 ```bash
 npm run build:web
-# resolves to https://dctycoon-api-production.up.railway.app via packages/web/.env.production
+# resolves to https://dctycoon-api-v2-production.up.railway.app via packages/web/.env.production
 ```
 
 Override `VITE_API_BASE_URL` only if you need a different staging/production backend:

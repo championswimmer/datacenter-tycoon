@@ -1,3 +1,13 @@
+> # ⚠️ DEPRECATED — legacy v1 API (not used anymore)
+>
+> This TypeScript (Bun + Elysia) server is the **old v1 API**. It has been **replaced by the Go server in [`packages/server-go`](../server-go)**, which is now the default and only deployed API
+> (`https://dctycoon-api-v2-production.up.railway.app`).
+>
+> - It is **no longer deployed** — the `dctycoon-api` service was removed from `.railway/railway.ts`.
+> - No frontend (`web`, `web-3d`, `cli`) targets it by default.
+> - The code is kept only for reference and as a local-dev/test fixture. **Do not add features here**; make API changes in `packages/server-go`.
+> - Any Railway/deployment instructions below are historical.
+
 # @datacenter-tycoon/server
 
 Backend service for Datacenter Tycoon leaderboards and lightweight player registration.

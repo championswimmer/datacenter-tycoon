@@ -120,12 +120,12 @@ The Go server is a **separate Railway service** from the TS server, with its own
 - Railway service `dctycoon-api-v2` (project `datacenter-tycoon`, production): https://dctycoon-api-v2-production.up.railway.app
 - It shares the existing `Postgres` service with the TS `dctycoon-api` (`DATABASE_URL=${{Postgres.DATABASE_URL}}`). Both servers use the same `schema_migrations` table, so either can migrate it.
 - Build uses `RAILWAY_DOCKERFILE_PATH=packages/server-go/Dockerfile`. Deploy from the CLI with a staged directory containing `packages/server-go/` and its `railway.toml` at the root (so the TS root `railway.toml` isn't applied), or set the service's config-as-code path to `packages/server-go/railway.toml` in the dashboard to get the `/app/migrate` pre-deploy step and healthcheck.
-- The web client picks its backend via `BACKEND_API_URL` in `packages/web/src/online/backend.ts` (`BACKEND_API_URLS.v1` = TS, `.v2` = Go).
+- The web client picks its backend via `BACKEND_API_URL` in `packages/web/src/online/backend.ts` (`BACKEND_API_URLS.v2` = Go (default); `.v1` = deprecated TS).
 
 ## Railway deployment (Infrastructure as Code)
 
-Both API services are defined in `.railway/railway.ts` (`dctycoon-api` = TS v1, `dctycoon-api-v2` = this Go server). Each deploys from GitHub `main`
-with its own Dockerfile, watch paths, pre-deploy migration, start command and healthcheck, and both share the one `Postgres` service
+The API service is defined in `.railway/railway.ts` (`dctycoon-api-v2` = this Go server, the default API; the legacy TS `dctycoon-api` is no longer deployed). It deploys from GitHub `main`
+with its own Dockerfile, watch paths, pre-deploy migration, start command and healthcheck, and uses the `Postgres` service
 (same `schema_migrations` table). Changes to `.railway/**` are planned on PRs and applied on merge by `.github/workflows/railway-iac.yml`
 (needs a `RAILWAY_TOKEN` project token secret); locally use `railway config plan` / `railway config apply`.
 

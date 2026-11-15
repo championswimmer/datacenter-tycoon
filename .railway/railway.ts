@@ -6,33 +6,6 @@ export default defineRailway(() => {
   const Postgres = postgres("Postgres", { region: "us-west2" });
   Postgres.networking = { privateNetworkEndpoint: "postgres", tcpProxies: { "5432": {} } };
   const postgresVolume = volume("postgres-volume", { alerts: { usage: { "100": {}, "80": {}, "95": {} } }, allowOnlineResize: true, region: "us-west2", sizeMB: 5000 });
-  // v1 — TypeScript server (Bun + Elysia). Replaces the root railway.toml.
-  const dctycoonApi = service("dctycoon-api", {
-    source: datacenterTycoon,
-    build: {
-      buildEnvironment: "V3",
-      builder: "DOCKERFILE",
-      dockerfilePath: "Dockerfile",
-      watchPatterns: [
-        "packages/server/**",
-        "packages/game-logic/**",
-        "Dockerfile",
-        "package.json",
-        "package-lock.json",
-        "tsconfig*.json",
-      ],
-    },
-    deploy: {
-      preDeployCommand: ["bun run packages/server/dist/db/migrate.js"],
-      startCommand: "bun run packages/server/dist/index.js",
-      healthcheckPath: "/healthz",
-      healthcheckTimeout: 100,
-      restartPolicyType: "ON_FAILURE",
-      restartPolicyMaxRetries: 10,
-    },
-    replicas: { "us-west2": 1 },
-    env: { CORS_ALLOWED_ORIGINS: preserve(), DATABASE_URL: preserve(), NODE_ENV: preserve() },
-  });
   // Isometric 3D web client (packages/web-3d). Replaces packages/web-3d/railway.toml.
   const dctycoon3d = service("dctycoon-3d", {
     source: datacenterTycoon,
@@ -60,10 +33,10 @@ export default defineRailway(() => {
     replicas: { "us-west2": 1 },
     env: {
       NODE_ENV: "production",
-      VITE_API_BASE_URL: "https://dctycoon-api-production.up.railway.app",
+      VITE_API_BASE_URL: "https://dctycoon-api-v2-production.up.railway.app",
     },
   });
-  // v2 — Go server (packages/server-go). Shares the Postgres service (and schema_migrations table) with v1.
+  // Default API — Go server (packages/server-go). The legacy TS server (packages/server, former `dctycoon-api`) is no longer deployed.
   const dctycoonApiV2 = service("dctycoon-api-v2", {
     source: datacenterTycoon,
     build: {
@@ -87,6 +60,6 @@ export default defineRailway(() => {
 
   return project("datacenter-tycoon", {
     variables: { managed: true },
-    resources: [dctycoonApi, Postgres, dctycoon3d, dctycoonApiV2, postgresVolume],
+    resources: [Postgres, dctycoon3d, dctycoonApiV2, postgresVolume],
   });
 });

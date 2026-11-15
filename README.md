@@ -32,7 +32,7 @@ If you are a human developer or an AI coding agent looking to contribute to the 
 
 ## Backend leaderboard service
 
-The first deployable backend now lives in [`packages/server`](./packages/server).
+The production backend is the Go server in [`packages/server-go`](./packages/server-go) (default API: `https://dctycoon-api-v2-production.up.railway.app`). The original TypeScript server in [`packages/server`](./packages/server) is **deprecated** (v1, no longer deployed) and kept only for local dev/reference.
 
 Useful commands:
 
@@ -61,7 +61,7 @@ What each package expects:
 
 - `npm run dev:server` starts the Bun + Elysia backend and defaults to file-backed PGlite.
 - `npm run dev:web` targets `http://localhost:3000` automatically in development when `VITE_API_BASE_URL` is omitted.
-- Production web builds from this repo now default to `https://dctycoon-api-production.up.railway.app` via `packages/web/.env.production`; override `VITE_API_BASE_URL` only when you need a different backend or intentionally want an offline build.
+- Production web builds from this repo now default to `https://dctycoon-api-v2-production.up.railway.app` via `packages/web/.env.production`; override `VITE_API_BASE_URL` only when you need a different backend or intentionally want an offline build.
 - `dct online login --username <name> --server http://localhost:3000` registers a CLI identity against the same local backend, and subsequent mutating CLI commands can auto-sync leaderboard summaries.
 
-Deployment notes, environment variables, Railway setup, and the release checklist are documented in [`packages/server/README.md`](./packages/server/README.md).
+Deployment notes for the live API are in [`packages/server-go/README.md`](./packages/server-go/README.md). The legacy TS server's docs ([`packages/server/README.md`](./packages/server/README.md)) are historical.
