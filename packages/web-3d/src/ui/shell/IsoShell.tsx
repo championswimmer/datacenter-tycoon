@@ -105,6 +105,9 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
       ),
   );
 
+  // Datacenter whose upgrades are shown when the drawer is opened from a city landmark
+  const [upgradeDcId, setUpgradeDcId] = useState<DatacenterId | null>(null);
+
   const [camera, setCamera] = useState<IsoCameraState>(() => {
     const initialDc = datacenters[0];
     if (initialDc) {
@@ -342,6 +345,9 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
     showResetModal,
   ]);
 
+  const upgradeDrawerDcId =
+    state.viewMode === "city" ? (upgradeDcId ?? state.activeDcId) : state.activeDcId;
+
   const fallbackRegionId = state.activeRegionId ?? regions[0]?.id ?? null;
 
   return (
@@ -377,7 +383,26 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
           overlayMode={state.overlayMode}
           buildTool={state.buildTool}
           selection={state.selection}
-          onSelect={(selection) => viewDispatch({ type: "SET_SELECTION", selection })}
+          onSelect={(selection) => {
+            viewDispatch({ type: "SET_SELECTION", selection });
+            if (
+              selection.kind === "landmark" &&
+              (selection.landmarkId === "power_substation" ||
+                selection.landmarkId === "fiber_exchange")
+            ) {
+              const regionDcs = datacenters.filter(
+                (dc) => dc.regionId === fallbackRegionId,
+              );
+              const target =
+                regionDcs.find((dc) => dc.id === state.activeDcId) ?? regionDcs[0];
+              if (target) {
+                setUpgradeDcId(target.id);
+                viewDispatch({ type: "SET_ACTIVE_DRAWER", drawer: "upgrades" });
+              } else {
+                showToast("Build a datacenter in this region to purchase power or fiber upgrades.");
+              }
+            }
+          }}
           onEnterFacility={enterFacility}
           onOpenBuildDcModal={(regionId) => setBuildDcRegionId(regionId)}
           onActionFeedback={showToast}
@@ -474,8 +499,8 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
                 {state.activeDrawer === "map" && <MapView />}
                 {state.activeDrawer === "log" && <LogFeed />}
                 {state.activeDrawer === "upgrades" &&
-                  (state.activeDcId ? (
-                    <PowerView dcId={state.activeDcId} />
+                  (upgradeDrawerDcId ? (
+                    <PowerView dcId={upgradeDrawerDcId} />
                   ) : (
                     <p className={styles.emptyDrawerNote}>
                       Build or select a datacenter first to configure Power, Cooling, Fiber, and Onsite Generation upgrades.
