@@ -1,3 +1,16 @@
+# ⚠️ DEPRECATED — read first
+
+`@datacenter-tycoon/server` is the **legacy v1 API** and is **deprecated and unused in production**. The default (and only deployed) API is the Go server in `packages/server-go` (`dctycoon-api-v2`).
+
+Rules for agents:
+
+- **Do not** add features, fix behaviour, or deploy from this package. Make backend changes in `packages/server-go`.
+- **Do not** re-add this package to `.railway/railway.ts` or point frontends at `dctycoon-api-production`.
+- Touch this package only for repo-wide maintenance (e.g. keeping typecheck/tests green after `game-logic` changes), or if the user explicitly asks to revive/remove it.
+- The remainder of this file describes the package as it was and is kept for historical reference.
+
+---
+
 # AGENTS.md — `@datacenter-tycoon/server`
 
 Backend workspace for Datacenter Tycoon online services.

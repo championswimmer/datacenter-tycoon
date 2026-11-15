@@ -4,7 +4,7 @@ FROM node:22-slim AS build
 WORKDIR /app
 ENV CI=true
 
-ARG VITE_API_BASE_URL=https://dctycoon-api-production.up.railway.app
+ARG VITE_API_BASE_URL=https://dctycoon-api-v2-production.up.railway.app
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 COPY . .
