@@ -89,7 +89,7 @@ type LeaderboardResultCache = Partial<Record<LeaderboardCacheKey, LeaderboardLis
 type LeaderboardErrorCache = Partial<Record<LeaderboardCacheKey, string>>;
 type LeaderboardLoadingCache = Partial<Record<LeaderboardCacheKey, boolean>>;
 
-interface AppSessionController {
+export interface AppSessionController {
   session: StoreSession | null;
   hasSavedGame: boolean;
   latestSave: SaveInfo | null;
@@ -116,7 +116,7 @@ interface AppSessionController {
   retryLeaderboard: () => void;
 }
 
-function useAppSession(): AppSessionController {
+export function useAppSession(): AppSessionController {
   const [session, setSession] = useState<StoreSession | null>(null);
   const [latestSave, setLatestSave] = useState<SaveInfo | null>(() => getLatestSaveInfo());
   const [playerIdentity, setPlayerIdentity] = useState<StoredPlayerIdentity | null>(
