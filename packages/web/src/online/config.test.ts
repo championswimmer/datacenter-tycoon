@@ -45,6 +45,14 @@ describe("resolveOnlineApiBaseUrl", () => {
     })).toBe(BACKEND_API_URL);
   });
 
+  it("keeps production offline when VITE_API_BASE_URL is explicitly blank", () => {
+    expect(resolveOnlineApiBaseUrl({
+      DEV: false,
+      MODE: "production",
+      [ONLINE_API_BASE_URL_ENV]: "",
+    })).toBeNull();
+  });
+
   it("keeps test mode offline when no API URL is configured", () => {
     expect(resolveOnlineApiBaseUrl({
       DEV: false,

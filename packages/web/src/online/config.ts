@@ -22,7 +22,10 @@ export function resolveOnlineApiBaseUrl(
   }
 
   if (env.MODE === "production") {
-    return normalizeOptionalBaseUrl(BACKEND_API_URL);
+    // An explicitly blank VITE_API_BASE_URL still means "offline build"; only an unset one falls back to the constant.
+    return env[ONLINE_API_BASE_URL_ENV] === undefined
+      ? normalizeOptionalBaseUrl(BACKEND_API_URL)
+      : null;
   }
 
   if (env.MODE === "test") {
