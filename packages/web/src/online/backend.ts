@@ -12,4 +12,4 @@ export const BACKEND_API_URLS = {
  * The backend used by production builds (GitHub Pages). Switch the API by changing this one value
  * to `BACKEND_API_URLS.v2`. A `VITE_API_BASE_URL` build-time env var still overrides it.
  */
-export const BACKEND_API_URL: string = BACKEND_API_URLS.v1;
+export const BACKEND_API_URL: string = BACKEND_API_URLS.v2;
