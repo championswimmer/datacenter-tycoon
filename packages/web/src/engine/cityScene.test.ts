@@ -6,11 +6,11 @@ import {
   type DatacenterId,
   type DatacenterSpecId,
 } from "@datacenter-tycoon/game-logic";
+import { createGameStore } from "../store/gameStore.js";
 import {
-  createGameStore,
   selectDatacenterFabricSummary,
   selectRegionFabricSummary,
-} from "@datacenter-tycoon/web";
+} from "../store/selectors.js";
 import { createCameraState, rotateCameraCW } from "./camera.js";
 import { CITY_GRID_SIZE, renderCityScene, type CityDatacenterSummary } from "./cityScene.js";
 import { pickTopHitTarget, projectIso } from "./isoMath.js";

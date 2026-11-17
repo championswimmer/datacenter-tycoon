@@ -10,8 +10,19 @@
 | Bundler / dev | **Vite** | Fast HMR, native ESM, minimal config, matches repo's ESM-first stance. |
 | Styling | **Vanilla CSS + CSS variables + CSS Modules** | Zero runtime, intentional neon design, no Tailwind. |
 | State | **Custom store** over `reduce()` from `game-logic` + `useSyncExternalStore` | Game state is already a pure reducer; no Redux/Zustand needed. |
-| Routing | **Hash-based mini-router** | Single-screen app, no `react-router` dependency. |
+| Routing | **Pathname view mode + hash-based mini-router** | `/2d` and `/3d` pathnames select the shell (`Shell` vs lazy `IsoShell`), while `#/...` routes views inside the active shell with no `react-router` dependency. |
 | Tests | **Vitest** (components) + `node --test` for pure modules | De-facto Vite pairing. |
+
+## Unified 2D / Isometric 3D Shell & Modules
+
+- **View mode routing & persistence (`src/store/viewModePreference.ts`)**: `/2d` and `/3d` pathnames select between the classic 2D `Shell` and the isometric 3D `IsoShell`, persisted in `localStorage` under `datacenter-tycoon:view-mode-v1` (defaulting to `"2d"` when neither URL nor stored preference is set).
+- **Isometric 3D modules**:
+  - `src/engine/` — isometric projection math (`isoMath.ts`), camera controller (`camera.ts`), 3D canvas primitives/rack models (`primitives3d.ts`, `rackModels3d.ts`), and city/floor renderers (`cityScene.ts`, `floorScene.ts`).
+  - `src/state/viewportState.ts` — UI-only camera, hover, selection, and build-tool state for the isometric canvas.
+  - `src/ui/viewport/` — interactive `IsoViewportCanvas` canvas host.
+  - `src/ui/hud/` — isometric HUD overlays (`TopHudBar`, `BuildDock`, `InspectorPanel`, `InfoOverlayDock`).
+  - `src/ui/shell/IsoShell.tsx` — lazy-loaded isometric shell wiring the viewport, HUD, and shared modals/drawers to the store.
+- Keep `src/engine/`, `src/state/viewportState.ts`, `src/ui/hud/`, `src/ui/viewport/`, and `IsoShell.tsx` free of game rules; consume `@datacenter-tycoon/game-logic` through `src/store/selectors.ts` and store actions.
 
 ## Rules
 

@@ -9,12 +9,12 @@ import {
   type RackPlacementId,
   type RackSpecId,
 } from "@datacenter-tycoon/game-logic";
+import { createGameStore } from "../store/gameStore.js";
 import {
-  createGameStore,
   selectDatacenterRackActivityViews,
   selectDatacenterRackMaintenanceViews,
   selectDatacenterUpgradeSummary,
-} from "@datacenter-tycoon/web";
+} from "../store/selectors.js";
 import { createCameraState, rotateCameraCW, toggleCutaway } from "./camera.js";
 import { pickTopHitTarget, projectIso } from "./isoMath.js";
 import { renderFloorScene } from "./floorScene.js";

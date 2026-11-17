@@ -64,7 +64,6 @@ func TestAlwaysIncludesFirstPartyProductionOrigin(t *testing.T) {
 	want := []string{
 		"https://dctycoon-api-production.up.railway.app",
 		"https://dctycoon.arnav.tech",
-		"https://dctycoon-3d.up.railway.app",
 	}
 	if !reflect.DeepEqual(c.CORSAllowedOrigins, want) {
 		t.Fatalf("%v", c.CORSAllowedOrigins)

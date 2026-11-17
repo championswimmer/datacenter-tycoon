@@ -4,7 +4,8 @@ import {
   type RackKind,
   type RackSpec,
 } from "@datacenter-tycoon/game-logic";
-import { selectCash, useSelector } from "@datacenter-tycoon/web";
+import { selectCash } from "../../store/selectors.js";
+import { useSelector } from "../../store/storeContext.js";
 import { RACK_KIND_PALETTES } from "../../engine/rackModels3d.js";
 import type { ActiveDrawer, BuildTool, CameraViewMode } from "../../state/viewportState.js";
 import styles from "./BuildDock.module.css";

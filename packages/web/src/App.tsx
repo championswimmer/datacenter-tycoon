@@ -40,6 +40,14 @@ import {
   type StoredPlayerIdentity,
 } from "./store/playerIdentity.js";
 import { StoreProvider } from "./store/storeContext.js";
+import {
+  parseViewModeFromPathname,
+  resolveInitialViewModeState,
+  syncViewModeHistory,
+  writeStoredViewModePreference,
+  type GameViewMode,
+  type ResolvedViewModeState,
+} from "./store/viewModePreference.js";
 import { Shell } from "./ui/shell/Shell.js";
 import { StartScreen } from "./ui/start/StartScreen.js";
 import styles from "./App.module.css";
@@ -47,6 +55,11 @@ import styles from "./App.module.css";
 const ThemePlayground = lazy(
   () => import("./ui/theme-playground/index.js"),
 );
+
+const IsoShell = lazy(async () => {
+  const mod = await import("./ui/shell/IsoShell.js");
+  return { default: mod.IsoShell };
+});
 
 type StartChoice = "load" | "new";
 
@@ -99,6 +112,8 @@ export interface AppSessionController {
   startError: string | null;
   isStarting: boolean;
   selectedDifficulty: Difficulty;
+  viewMode: GameViewMode;
+  hasStoredViewModePreference: boolean;
   isLeaderboardOpen: boolean;
   activeLeaderboardMetric: LeaderboardQueryMetric;
   activeLeaderboardVisibility: LeaderboardVisibility;
@@ -106,6 +121,7 @@ export interface AppSessionController {
   leaderboardResult: LeaderboardListResult | null;
   leaderboardError: string | null;
   selectDifficulty: (difficulty: Difficulty) => void;
+  selectViewMode: (mode: GameViewMode) => void;
   setUsernameDraft: (username: string) => void;
   startNewGame: () => Promise<void>;
   loadLatestGame: () => void;
@@ -126,6 +142,9 @@ export function useAppSession(): AppSessionController {
     () => getStoredPlayerIdentity()?.username ?? getLatestSaveInfo()?.playerName ?? "",
   );
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>("hard");
+  const [viewModeState, setViewModeState] = useState<ResolvedViewModeState>(
+    () => resolveInitialViewModeState(),
+  );
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
@@ -151,7 +170,51 @@ export function useAppSession(): AppSessionController {
     };
   }, []);
 
+  const selectViewMode = useCallback((mode: GameViewMode) => {
+    writeStoredViewModePreference(mode);
+    syncViewModeHistory(mode, { replace: false });
+    setViewModeState({
+      mode,
+      hasStoredPreference: true,
+      fromUrl: false,
+    });
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const nextMode = parseViewModeFromPathname(window.location.pathname);
+      if (!nextMode) {
+        return;
+      }
+      writeStoredViewModePreference(nextMode);
+      setViewModeState((current) =>
+        current.mode === nextMode && current.hasStoredPreference && current.fromUrl
+          ? current
+          : {
+              mode: nextMode,
+              hasStoredPreference: true,
+              fromUrl: true,
+            },
+      );
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
   const replaceSession = useCallback((choice: StartChoice, playerName?: string, onlineEligible = Boolean(playerIdentity)) => {
+    writeStoredViewModePreference(viewModeState.mode);
+    syncViewModeHistory(viewModeState.mode, { replace: true });
+    if (!viewModeState.hasStoredPreference) {
+      setViewModeState((current) =>
+        current.hasStoredPreference
+          ? current
+          : { ...current, hasStoredPreference: true },
+      );
+    }
+
     const nextSession = createAppSession(
       choice,
       selectedDifficulty,
@@ -165,7 +228,13 @@ export function useAppSession(): AppSessionController {
     sessionRef.current = nextSession;
     setSession(nextSession);
     setLatestSave((currentLatestSave) => currentLatestSave);
-  }, [latestSave?.gameId, playerIdentity, selectedDifficulty]);
+  }, [
+    latestSave?.gameId,
+    playerIdentity,
+    selectedDifficulty,
+    viewModeState.hasStoredPreference,
+    viewModeState.mode,
+  ]);
 
   const startNewGame = useCallback(async () => {
     setStartError(null);
@@ -421,6 +490,8 @@ export function useAppSession(): AppSessionController {
     startError,
     isStarting,
     selectedDifficulty,
+    viewMode: viewModeState.mode,
+    hasStoredViewModePreference: viewModeState.hasStoredPreference,
     isLeaderboardOpen,
     activeLeaderboardMetric,
     activeLeaderboardVisibility,
@@ -428,6 +499,7 @@ export function useAppSession(): AppSessionController {
     leaderboardResult,
     leaderboardError,
     selectDifficulty: setSelectedDifficulty,
+    selectViewMode,
     setUsernameDraft,
     startNewGame,
     loadLatestGame: () => replaceSession("load", playerIdentity?.username ?? usernameDraft.trim()),
@@ -461,6 +533,8 @@ export default function App() {
     startError,
     isStarting,
     selectedDifficulty,
+    viewMode,
+    hasStoredViewModePreference,
     isLeaderboardOpen,
     activeLeaderboardMetric,
     activeLeaderboardVisibility,
@@ -468,6 +542,7 @@ export default function App() {
     leaderboardResult,
     leaderboardError,
     selectDifficulty,
+    selectViewMode,
     setUsernameDraft,
     startNewGame,
     loadLatestGame,
@@ -477,6 +552,13 @@ export default function App() {
     selectLeaderboardVisibility,
     retryLeaderboard,
   } = useAppSession();
+  const [dismissedNotice, setDismissedNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!statusMessage) {
+      setDismissedNotice(null);
+    }
+  }, [statusMessage]);
 
   // Dev-only route — bypass shell entirely
   if (import.meta.env.DEV && window.location.hash === "#/__theme") {
@@ -498,6 +580,8 @@ export default function App() {
         startError={startError}
         isStarting={isStarting}
         selectedDifficulty={selectedDifficulty}
+        selectedViewMode={viewMode}
+        isFirstTimeViewModeChoice={!hasStoredViewModePreference}
         isLeaderboardOpen={isLeaderboardOpen}
         activeLeaderboardMetric={activeLeaderboardMetric}
         activeLeaderboardVisibility={activeLeaderboardVisibility}
@@ -505,6 +589,7 @@ export default function App() {
         leaderboardResult={leaderboardResult}
         leaderboardError={leaderboardError}
         onSelectDifficulty={selectDifficulty}
+        onSelectViewMode={selectViewMode}
         onUsernameDraftChange={setUsernameDraft}
         onPlay={startNewGame}
         onLoadGame={loadLatestGame}
@@ -520,13 +605,41 @@ export default function App() {
 
   return (
     <>
-      {statusMessage && (
-        <div className={styles.statusBanner} role="status">
-          {statusMessage}
+      {statusMessage && statusMessage !== dismissedNotice && (
+        <div
+          className={[
+            styles.statusBanner,
+            viewMode === "3d" ? styles.statusBanner3d : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          role="status"
+        >
+          <span>{statusMessage}</span>
+          <button
+            type="button"
+            className={styles.statusDismiss}
+            aria-label="Dismiss notice"
+            onClick={() => setDismissedNotice(statusMessage)}
+          >
+            ✕
+          </button>
         </div>
       )}
       <StoreProvider store={session.store}>
-        <Shell shouldAutoOpenTutorial={session.isFreshStart} />
+        {viewMode === "3d" ? (
+          <Suspense fallback={<div className={styles.loading}>Loading 3D view…</div>}>
+            <IsoShell
+              shouldAutoOpenTutorial={session.isFreshStart}
+              onSwitchTo2d={() => selectViewMode("2d")}
+            />
+          </Suspense>
+        ) : (
+          <Shell
+            shouldAutoOpenTutorial={session.isFreshStart}
+            onSwitchTo3d={() => selectViewMode("3d")}
+          />
+        )}
       </StoreProvider>
     </>
   );

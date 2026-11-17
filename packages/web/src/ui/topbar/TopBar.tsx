@@ -37,11 +37,12 @@ interface TopBarProps {
   speed: Speed;
   onSpeedChange: Dispatch<SetStateAction<Speed>>;
   onOpenTutorial?: () => void;
+  onSwitchTo3d?: () => void;
 }
 
 const SPEED_LABELS: Record<Speed, string> = { 0: "⏸", 1: "▶", 2: "▶▶", 3: "▶▶▶" };
 
-export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
+export function TopBar({ speed, onSpeedChange, onOpenTutorial, onSwitchTo3d }: TopBarProps) {
   const fraction = useTickFraction();
   const dispatch = useGameDispatch();
   const playerName = useSelector(selectPlayerName);
@@ -185,6 +186,18 @@ export function TopBar({ speed, onSpeedChange, onOpenTutorial }: TopBarProps) {
               aria-label="How to Play"
             >
               ?
+            </button>
+          )}
+
+          {onSwitchTo3d && (
+            <button
+              type="button"
+              className={styles.modeSwitchBtn}
+              onClick={onSwitchTo3d}
+              title="Switch to 3D Isometric View"
+              aria-label="Switch to 3D view"
+            >
+              3D
             </button>
           )}
 

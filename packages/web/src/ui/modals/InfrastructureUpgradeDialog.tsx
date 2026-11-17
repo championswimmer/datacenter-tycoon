@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import type { DatacenterId } from "@datacenter-tycoon/game-logic";
-import { UpgradePanel, type UpgradePanelFocus } from "@datacenter-tycoon/web";
+import { UpgradePanel, type UpgradePanelFocus } from "../stats/UpgradePanel.js";
 import styles from "./InfrastructureUpgradeDialog.module.css";
 
 const TITLES: Record<UpgradePanelFocus, string> = {

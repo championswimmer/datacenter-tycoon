@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { DatacenterId, RegionId } from "@datacenter-tycoon/game-logic";
+import { formatGameDate, tickToGameDate } from "../../store/gameTime.js";
 import {
-  formatGameDate,
   selectAllDatacenters,
   selectAudioSettings,
   selectCash,
@@ -12,11 +12,10 @@ import {
   selectReliabilitySummary,
   selectSubtick,
   selectTick,
-  tickToGameDate,
-  useSelector,
-  useTickFraction,
-  type Speed,
-} from "@datacenter-tycoon/web";
+} from "../../store/selectors.js";
+import { useSelector } from "../../store/storeContext.js";
+import type { Speed } from "../../store/tickDriver.js";
+import { useTickFraction } from "../../store/tickFractionStore.js";
 import type { CameraViewMode } from "../../state/viewportState.js";
 import styles from "./TopHudBar.module.css";
 
@@ -40,6 +39,7 @@ export interface TopHudBarProps {
   onOpenTutorial: () => void;
   onOpenAudioSettings: () => void;
   onOpenResetModal: () => void;
+  onSwitchTo2d?: () => void;
 }
 
 const SPEED_OPTIONS: { value: Speed; label: string; ariaLabel?: string; title: string }[] = [
@@ -61,6 +61,7 @@ export function TopHudBar({
   onOpenTutorial,
   onOpenAudioSettings,
   onOpenResetModal,
+  onSwitchTo2d,
 }: TopHudBarProps) {
   const fraction = useTickFraction();
   const playerName = useSelector(selectPlayerName);
@@ -226,6 +227,17 @@ export function TopHudBar({
           >
             ↺
           </button>
+          {onSwitchTo2d && (
+            <button
+              type="button"
+              className={styles.switch2dBtn}
+              onClick={onSwitchTo2d}
+              title="Switch to 2D Classic View"
+              aria-label="Switch to 2D view"
+            >
+              2D View
+            </button>
+          )}
         </div>
       </div>
     </header>

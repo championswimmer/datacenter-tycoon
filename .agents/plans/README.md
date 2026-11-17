@@ -14,6 +14,7 @@ See [`../skills/planning/SKILL.md`](../skills/planning/SKILL.md) for the full fo
 - [051 — Leaderboard Verification Visibility Toggle](./051-leaderboard-verification-visibility-toggle.md) — status: completed
 - [052 — Leaderboard Hide Zero-Revenue Runs](./052-leaderboard-hide-zero-revenue-runs.md) — status: completed
 - [053 — Isometric 3D Web Client](./053-isometric-3d-web-client.md) — status: completed
+- [054 — Unified 2D & 3D Web Frontend](./054-unified-2d-3d-web-frontend.md) — status: completed
 
 ## Archive
 

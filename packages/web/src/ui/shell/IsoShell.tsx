@@ -11,30 +11,31 @@ import type {
   RackPlacementId,
   RegionId,
 } from "@datacenter-tycoon/game-logic";
+import { navigate, useRoute } from "../../router/hashRouter.js";
 import {
-  AudioSettingsModal,
-  ContractsPage,
-  FinancesPage,
-  hasSeenTutorial,
-  LogFeed,
-  MapView,
-  MoveRackModal,
-  navigate,
-  NewDatacenterModal,
-  PowerView,
-  RackPicker,
-  ResetGameModal,
   selectAllDatacenters,
   selectDatacenter,
   selectRegions,
-  TutorialModal,
+} from "../../store/selectors.js";
+import {
   useGameDispatch,
-  useRoute,
   useSelector,
   useTickDriver,
-  type Speed,
-  type UpgradePanelFocus,
-} from "@datacenter-tycoon/web";
+} from "../../store/storeContext.js";
+import type { Speed } from "../../store/tickDriver.js";
+import { hasSeenTutorial } from "../../store/tutorialPersist.js";
+import { ContractsPage } from "../contracts/ContractsPage.js";
+import { FinancesPage } from "../finances/FinancesPage.js";
+import { MoveRackModal } from "../floor/MoveRackModal.js";
+import { RackPicker } from "../floor/RackPicker.js";
+import { TutorialModal } from "../help/TutorialModal.js";
+import { LogFeed } from "../log/LogFeed.js";
+import { MapView } from "../map/MapView.js";
+import { NewDatacenterModal } from "../onboarding/NewDatacenterModal.js";
+import { AudioSettingsModal } from "../settings/AudioSettingsModal.js";
+import { PowerView } from "../stats/PowerView.js";
+import type { UpgradePanelFocus } from "../stats/UpgradePanel.js";
+import { ResetGameModal } from "../topbar/ResetGameModal.js";
 import {
   createCameraState,
   fitCameraToGrid,
@@ -62,6 +63,7 @@ import styles from "./IsoShell.module.css";
 
 export interface IsoShellProps {
   shouldAutoOpenTutorial?: boolean;
+  onSwitchTo2d?: () => void;
 }
 
 const OVERLAY_BY_KEY: Record<string, InfoOverlayMode> = {
@@ -90,20 +92,23 @@ function hudFitArgs(): [number, number, number, number, ViewportInsets] {
   return [w, h, 3.2, 0.92, HUD_INSETS];
 }
 
-export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
+export function IsoShell({ shouldAutoOpenTutorial = false, onSwitchTo2d }: IsoShellProps) {
   const dispatch = useGameDispatch();
   const regions = useSelector(selectRegions);
   const datacenters = useSelector(selectAllDatacenters);
   const speed = useSelector((state) => state.game.speed as Speed);
   const route = useRoute();
 
+  const routeDc = route.view === "dc" ? datacenters.find((d) => d.id === route.dcId) : undefined;
+  const initialDc = routeDc ?? datacenters[0];
+
   const [state, viewDispatch] = useReducer(
     viewportReducer,
     undefined,
     () =>
       createInitialViewportState(
-        regions[0]?.id ?? null,
-        datacenters[0]?.id ?? null,
+        initialDc?.regionId ?? regions[0]?.id ?? null,
+        initialDc?.id ?? null,
       ),
   );
 
@@ -114,7 +119,6 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
   } | null>(null);
 
   const [camera, setCamera] = useState<IsoCameraState>(() => {
-    const initialDc = datacenters[0];
     if (initialDc) {
       return fitCameraToGrid(
         createCameraState(initialDc.spec.positionsPerRow, initialDc.spec.rows),
@@ -352,6 +356,14 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
 
   const fallbackRegionId = state.activeRegionId ?? regions[0]?.id ?? null;
 
+  const handleSwitchTo2d = useCallback(() => {
+    if (!onSwitchTo2d) return;
+    if (state.activeDcId) {
+      navigate({ view: "dc", dcId: state.activeDcId, tab: "floor" });
+    }
+    onSwitchTo2d();
+  }, [onSwitchTo2d, state.activeDcId]);
+
   return (
     <div className={styles.shell}>
       <TopHudBar
@@ -373,6 +385,7 @@ export function IsoShell({ shouldAutoOpenTutorial = false }: IsoShellProps) {
         onOpenTutorial={() => setShowTutorial(true)}
         onOpenAudioSettings={() => setShowAudioModal(true)}
         onOpenResetModal={() => setShowResetModal(true)}
+        onSwitchTo2d={onSwitchTo2d ? handleSwitchTo2d : undefined}
       />
 
       <main className={styles.stage} aria-label="Isometric 3D Game Viewport">

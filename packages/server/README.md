@@ -4,7 +4,7 @@
 > (`https://dctycoon-api-v2-production.up.railway.app`).
 >
 > - It is **no longer deployed** — the `dctycoon-api` service was removed from `.railway/railway.ts`.
-> - No frontend (`web`, `web-3d`, `cli`) targets it by default.
+> - No frontend (`web`, `cli`) targets it by default.
 > - The code is kept only for reference and as a local-dev/test fixture. **Do not add features here**; make API changes in `packages/server-go`.
 > - Any Railway/deployment instructions below are historical.
 

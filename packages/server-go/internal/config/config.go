@@ -36,7 +36,6 @@ var (
 	DefaultDevCORSAllowedOrigins           = []string{"http://localhost:5173"}
 	FirstPartyProductionCORSAllowedOrigins = []string{
 		"https://dctycoon.arnav.tech",
-		"https://dctycoon-3d.up.railway.app",
 	}
 	defaultServerVersion                   = "0.1.0"
 	// DefaultGameLogicVersion is overridden by main with the bundle's VERSION (jsbridge).
