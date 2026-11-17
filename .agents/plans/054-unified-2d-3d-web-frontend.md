@@ -12,7 +12,7 @@ owner: web
 - [x] **Phase 1 — Plan File & Branch Preparation**
   - [x] 1.1 Create `.agents/plans/054-unified-2d-3d-web-frontend.md` and update `.agents/plans/README.md`
 - [ ] **Phase 2 — Merge `packages/web-3d` Source & Tests into `packages/web`**
-  - [ ] 2.1 Move 3D engine, state, UI components, and tests into `packages/web/src` and update `test-setup.ts`
+  - [x] 2.1 Move 3D engine, state, UI components, and tests into `packages/web/src` and update `test-setup.ts`
   - [ ] 2.2 Rewrite `@datacenter-tycoon/web` self-imports in moved 3D files to direct relative imports and export 3D modules from `packages/web/src/index.ts`
 - [ ] **Phase 3 — View Mode Preference (`localStorage`), `/2d` & `/3d` Routing, First-Time Opt-In, and In-Game Switching**
   - [ ] 3.1 Implement `viewModePreference.ts` + unit tests (`localStorage` preference + `/2d` & `/3d` pathname helpers)
