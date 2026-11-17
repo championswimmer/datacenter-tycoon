@@ -1,6 +1,9 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import { existsSync } from "node:fs";
+import { copyFile, mkdir } from "node:fs/promises";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { defineConfig, type Plugin } from "vite";
+import react from "@vitejs/plugin-react";
 
 const gameLogicPath = fileURLToPath(
   new URL("../game-logic/src/index.ts", import.meta.url),
@@ -9,9 +12,31 @@ const assetsPath = fileURLToPath(
   new URL("../../assets", import.meta.url),
 );
 
+function githubPagesSpaRoutes(): Plugin {
+  return {
+    name: "github-pages-spa-routes",
+    async closeBundle() {
+      const distDir = fileURLToPath(new URL("./dist", import.meta.url));
+      const indexHtml = path.join(distDir, "index.html");
+      if (!existsSync(indexHtml)) {
+        return;
+      }
+      await Promise.all([
+        mkdir(path.join(distDir, "2d"), { recursive: true }),
+        mkdir(path.join(distDir, "3d"), { recursive: true }),
+      ]);
+      await Promise.all([
+        copyFile(indexHtml, path.join(distDir, "2d", "index.html")),
+        copyFile(indexHtml, path.join(distDir, "3d", "index.html")),
+        copyFile(indexHtml, path.join(distDir, "404.html")),
+      ]);
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), githubPagesSpaRoutes()],
   resolve: {
     alias: {
       "@datacenter-tycoon/game-logic": gameLogicPath,
