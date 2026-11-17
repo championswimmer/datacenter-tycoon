@@ -16,6 +16,7 @@ export * from "./store/gameTime.js";
 export * from "./store/tickFractionStore.js";
 export * from "./store/playerIdentity.js";
 export * from "./store/tutorialPersist.js";
+export * from "./store/viewModePreference.js";
 
 // Online services & platform
 export * from "./online/config.js";
