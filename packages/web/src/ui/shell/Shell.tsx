@@ -18,11 +18,12 @@ import styles from "./Shell.module.css";
 
 interface ShellProps {
   shouldAutoOpenTutorial?: boolean;
+  onSwitchTo3d?: () => void;
 }
 
 type MobileDrawer = "none" | "datacenters" | "log";
 
-export function Shell({ shouldAutoOpenTutorial = false }: ShellProps) {
+export function Shell({ shouldAutoOpenTutorial = false, onSwitchTo3d }: ShellProps) {
   const dispatch = useGameDispatch();
   const speed = useSelector(s => s.game.speed as Speed);
   const [showTutorial, setShowTutorial] = useState(false);
@@ -128,7 +129,7 @@ export function Shell({ shouldAutoOpenTutorial = false }: ShellProps) {
 
   return (
     <div className={styles.shell}>
-      <TopBar speed={speed} onSpeedChange={setSpeed} onOpenTutorial={openTutorial} />
+      <TopBar speed={speed} onSpeedChange={setSpeed} onOpenTutorial={openTutorial} onSwitchTo3d={onSwitchTo3d} />
 
       <div className={[styles.body, isPhoneViewport ? styles.bodyPhone : ""].join(" ")}>
         {/* ── Left rail ── */}

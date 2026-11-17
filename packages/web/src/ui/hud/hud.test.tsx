@@ -36,6 +36,7 @@ describe("3D HUD components", () => {
     const onSpeedChange = vi.fn();
     const onEnterCity = vi.fn();
     const onEnterFacility = vi.fn();
+    const onSwitchTo2d = vi.fn();
 
     render(
       <StoreProvider store={store}>
@@ -51,6 +52,7 @@ describe("3D HUD components", () => {
           onOpenTutorial={vi.fn()}
           onOpenAudioSettings={vi.fn()}
           onOpenResetModal={vi.fn()}
+          onSwitchTo2d={onSwitchTo2d}
         />
       </StoreProvider>,
     );
@@ -64,6 +66,9 @@ describe("3D HUD components", () => {
 
     await user.click(screen.getByRole("button", { name: /Region View/i }));
     expect(onEnterCity).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole("button", { name: "Switch to 2D view" }));
+    expect(onSwitchTo2d).toHaveBeenCalledTimes(1);
   });
 
   it("handles info overlays and camera rotation buttons in InfoOverlayDock", async () => {

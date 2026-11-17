@@ -1,5 +1,6 @@
 import type { Difficulty } from "@datacenter-tycoon/game-logic";
 import type { StoredPlayerIdentity } from "../../store/playerIdentity.js";
+import type { GameViewMode } from "../../store/viewModePreference.js";
 import { formatGameDateShort, tickToGameDate } from "../../store/gameTime.js";
 import type {
   LeaderboardListResult,
@@ -22,6 +23,9 @@ interface StartScreenProps {
   isStarting: boolean;
   selectedDifficulty: Difficulty;
   onSelectDifficulty: (difficulty: Difficulty) => void;
+  selectedViewMode?: GameViewMode;
+  isFirstTimeViewModeChoice?: boolean;
+  onSelectViewMode?: (mode: GameViewMode) => void;
   onUsernameDraftChange: (username: string) => void;
   onPlay: () => void | Promise<void>;
   onLoadGame: () => void;
@@ -60,6 +64,9 @@ export function StartScreen({
   isStarting,
   selectedDifficulty,
   onSelectDifficulty,
+  selectedViewMode = "2d",
+  isFirstTimeViewModeChoice = false,
+  onSelectViewMode,
   onUsernameDraftChange,
   onPlay,
   onLoadGame,
@@ -110,6 +117,39 @@ export function StartScreen({
           Build facilities, scale capacity, and outbid the grid while you chase the
           most profitable contracts on the map.
         </p>
+
+        <div className={styles.difficultySection}>
+          <div className={styles.saveSummaryLabel}>
+            {isFirstTimeViewModeChoice ? "Choose view mode (first-time setup)" : "View mode"}
+          </div>
+          <div className={styles.difficultyOptions} role="radiogroup" aria-label="View mode">
+            {(
+              [
+                { mode: "2d", label: "2D CLASSIC" },
+                { mode: "3d", label: "3D ISOMETRIC" },
+              ] as const
+            ).map(({ mode, label }) => (
+              <button
+                key={mode}
+                type="button"
+                role="radio"
+                aria-checked={selectedViewMode === mode}
+                className={[
+                  styles.difficultyOption,
+                  selectedViewMode === mode ? styles.difficultyOptionActive : "",
+                ].join(" ")}
+                onClick={() => onSelectViewMode?.(mode)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className={styles.difficultyHint}>
+            {selectedViewMode === "3d"
+              ? "3D Isometric renders interactive Cities: Skylines-style district and facility cutaway views (/3d). Your preference is saved in this browser."
+              : "2D Classic renders the telemetry dashboard and rack floor grid (/2d). Your preference is saved in this browser."}
+          </p>
+        </div>
 
         <div className={styles.difficultySection}>
           <div className={styles.saveSummaryLabel}>Difficulty</div>

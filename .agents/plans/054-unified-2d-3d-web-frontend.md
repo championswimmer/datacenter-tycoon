@@ -16,8 +16,8 @@ owner: web
   - [x] 2.2 Rewrite `@datacenter-tycoon/web` self-imports in moved 3D files to direct relative imports and export 3D modules from `packages/web/src/index.ts`
 - [ ] **Phase 3 — View Mode Preference (`localStorage`), `/2d` & `/3d` Routing, First-Time Opt-In, and In-Game Switching**
   - [x] 3.1 Implement `viewModePreference.ts` + unit tests (`localStorage` preference + `/2d` & `/3d` pathname helpers)
-  - [ ] 3.2 Add first-time View Mode opt-in & selector to `StartScreen.tsx`
-  - [ ] 3.3 Add Switch to 3D button in 2D (`TopBar` / `Shell`) and Switch to 2D button in 3D (`TopHudBar` / `IsoShell`) + sync active DC across switches
+  - [x] 3.2 Add first-time View Mode opt-in & selector to `StartScreen.tsx`
+  - [x] 3.3 Add Switch to 3D button in 2D (`TopBar` / `Shell`) and Switch to 2D button in 3D (`TopHudBar` / `IsoShell`) + sync active DC across switches
   - [ ] 3.4 Wire `/2d` and `/3d` routing, `localStorage` preference, and lazy `IsoShell` into `packages/web/src/App.tsx` + `App.test.tsx`
 - [ ] **Phase 4 — GitHub Pages `/2d` & `/3d` Static Entrypoints & Removing `packages/web-3d` + Railway 3D Demo**
   - [ ] 4.1 Generate `dist/2d/index.html`, `dist/3d/index.html`, and `dist/404.html` during `packages/web` Vite build

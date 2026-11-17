@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
@@ -9,6 +9,10 @@ import {
 import { createGameStore } from "../../store/gameStore.js";
 import { StoreProvider } from "../../store/storeContext.js";
 import { IsoShell } from "./IsoShell.js";
+
+afterEach(() => {
+  window.location.hash = "#/";
+});
 
 describe("IsoShell integration", () => {
   it("supports switching city/facility 3D views, placing & bulldozing racks, switching overlays, and opening drawers", async () => {
@@ -64,5 +68,34 @@ describe("IsoShell integration", () => {
     await user.click(screen.getByRole("button", { name: /Bulldoze/i }));
     await user.click(screen.getByRole("button", { name: /Rack C0 at Row 1 Bay 1/i }));
     expect(store.getState().datacenters[0]!.placements).toHaveLength(0);
+  });
+
+  it("renders 'Switch to 2D view' when onSwitchTo2d is passed, updates hash to active DC floor, and calls onSwitchTo2d", async () => {
+    const user = userEvent.setup();
+    const initial = newGame(2025, { playerName: "Metro Integration", difficulty: "easy" });
+    const store = createGameStore(initial);
+    const regionId = initial.map.regions[0]!.id;
+    const dcId = "dc-shell-1" as DatacenterId;
+
+    store.dispatch({
+      type: "BuildDatacenter",
+      specId: "garage" as DatacenterSpecId,
+      dcId,
+      regionId,
+    });
+
+    const onSwitchTo2d = vi.fn();
+
+    render(
+      <StoreProvider store={store}>
+        <IsoShell shouldAutoOpenTutorial={false} onSwitchTo2d={onSwitchTo2d} />
+      </StoreProvider>,
+    );
+
+    const switchBtn = screen.getByRole("button", { name: "Switch to 2D view" });
+    await user.click(switchBtn);
+
+    expect(window.location.hash).toBe("#/dc/dc-shell-1/floor");
+    expect(onSwitchTo2d).toHaveBeenCalledTimes(1);
   });
 });

@@ -208,4 +208,24 @@ describe("TopBar", () => {
     badge.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(window.location.hash).toBe("#/contracts");
   });
+
+  it("renders 'Switch to 3D view' button only when onSwitchTo3d is provided and calls it on click", () => {
+    const { rerender } = render(
+      <Wrapper>
+        <TopBar speed={1} onSpeedChange={() => {}} />
+      </Wrapper>,
+    );
+    expect(screen.queryByRole("button", { name: "Switch to 3D view" })).toBeNull();
+
+    const onSwitchTo3d = vi.fn();
+    rerender(
+      <Wrapper>
+        <TopBar speed={1} onSpeedChange={() => {}} onSwitchTo3d={onSwitchTo3d} />
+      </Wrapper>,
+    );
+
+    const btn = screen.getByRole("button", { name: "Switch to 3D view" });
+    btn.click();
+    expect(onSwitchTo3d).toHaveBeenCalledTimes(1);
+  });
 });

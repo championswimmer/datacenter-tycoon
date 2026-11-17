@@ -39,6 +39,7 @@ export interface TopHudBarProps {
   onOpenTutorial: () => void;
   onOpenAudioSettings: () => void;
   onOpenResetModal: () => void;
+  onSwitchTo2d?: () => void;
 }
 
 const SPEED_OPTIONS: { value: Speed; label: string; ariaLabel?: string; title: string }[] = [
@@ -60,6 +61,7 @@ export function TopHudBar({
   onOpenTutorial,
   onOpenAudioSettings,
   onOpenResetModal,
+  onSwitchTo2d,
 }: TopHudBarProps) {
   const fraction = useTickFraction();
   const playerName = useSelector(selectPlayerName);
@@ -225,6 +227,17 @@ export function TopHudBar({
           >
             ↺
           </button>
+          {onSwitchTo2d && (
+            <button
+              type="button"
+              className={styles.switch2dBtn}
+              onClick={onSwitchTo2d}
+              title="Switch to 2D Classic View"
+              aria-label="Switch to 2D view"
+            >
+              2D View
+            </button>
+          )}
         </div>
       </div>
     </header>
