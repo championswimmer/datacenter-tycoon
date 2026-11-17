@@ -14,6 +14,9 @@
   top: max(var(--space-4), var(--safe-area-top));
   left: 50%;
   z-index: calc(var(--z-overlay) + 1);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   width: min(calc(100% - (2 * var(--space-4))), 720px);
   padding: var(--space-3) var(--space-4);
   border: 1px solid rgba(255, 196, 82, 0.4);
@@ -22,4 +25,26 @@
   color: #ffe3a6;
   box-shadow: var(--shadow-float);
   transform: translateX(-50%);
+}
+
+.statusBanner3d {
+  /* Sits just below TopHudBar in 3D view instead of covering it. */
+  top: 76px;
+  max-width: 520px;
+}
+
+.statusBanner span {
+  flex: 1;
+}
+
+.statusDismiss {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.statusDismiss:hover {
+  opacity: 1;
 }

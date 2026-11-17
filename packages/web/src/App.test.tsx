@@ -34,9 +34,39 @@ vi.mock("./store/persist.js", () => ({
 }));
 
 vi.mock("./ui/shell/Shell.js", () => ({
-  Shell: ({ shouldAutoOpenTutorial = false }: { shouldAutoOpenTutorial?: boolean }) => (
+  Shell: ({
+    shouldAutoOpenTutorial = false,
+    onSwitchTo3d,
+  }: {
+    shouldAutoOpenTutorial?: boolean;
+    onSwitchTo3d?: () => void;
+  }) => (
     <div data-testid="shell" data-auto-open={String(shouldAutoOpenTutorial)}>
       shell
+      {onSwitchTo3d && (
+        <button type="button" onClick={onSwitchTo3d}>
+          Switch to 3D
+        </button>
+      )}
+    </div>
+  ),
+}));
+
+vi.mock("./ui/shell/IsoShell.js", () => ({
+  IsoShell: ({
+    shouldAutoOpenTutorial = false,
+    onSwitchTo2d,
+  }: {
+    shouldAutoOpenTutorial?: boolean;
+    onSwitchTo2d?: () => void;
+  }) => (
+    <div data-testid="iso-shell" data-auto-open={String(shouldAutoOpenTutorial)}>
+      iso-shell
+      {onSwitchTo2d && (
+        <button type="button" onClick={onSwitchTo2d}>
+          Switch to 2D
+        </button>
+      )}
     </div>
   ),
 }));
@@ -144,6 +174,7 @@ function countCheckpointPosts(): number {
 }
 
 const PLAYER_IDENTITY_KEY = "datacenter-tycoon:player-identity-v1";
+const VIEW_MODE_PREFERENCE_KEY = "datacenter-tycoon:view-mode-v1";
 const ACME_PLAYER_ID = "550e8400-e29b-41d4-a716-446655440000";
 const LOCAL_OPS_PLAYER_ID = "72f3f58a-b2eb-4f55-9d11-5f9d4d0d4f6e";
 const CLOUD_ATLAS_PLAYER_ID = "8d8f3b8f-0d43-4d7a-a2d0-8c2b6fd0d927";
@@ -157,6 +188,7 @@ const savedGameInfo: SaveInfo = {
 };
 
 beforeEach(() => {
+  window.history.replaceState(null, "", "/");
   window.location.hash = "#/";
   localStorage.clear();
   vi.stubEnv("VITE_API_BASE_URL", "https://api.dctycoon.test");
@@ -174,6 +206,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  window.history.replaceState(null, "", "/");
 });
 
 describe("App start flow", () => {
@@ -744,5 +777,136 @@ describe("App start flow", () => {
         expect.objectContaining({ method: "POST" }),
       );
     });
+  });
+});
+
+describe("App 2D/3D view mode routing & switching", () => {
+  it("offers first-time view mode setup at /, persists 3D choice, updates /3d URL, and launches IsoShell on Play", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ playerId: ACME_PLAYER_ID, username: "Acme Cloud" }), {
+        status: 201,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    render(<App />);
+
+    expect(screen.getByText("Choose view mode (first-time setup)")).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "2D CLASSIC" }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByRole("radio", { name: "3D ISOMETRIC" }).getAttribute("aria-checked")).toBe("false");
+    expect(localStorage.getItem(VIEW_MODE_PREFERENCE_KEY)).toBeNull();
+
+    fireEvent.click(screen.getByRole("radio", { name: "3D ISOMETRIC" }));
+
+    expect(localStorage.getItem(VIEW_MODE_PREFERENCE_KEY)).toBe("3d");
+    expect(window.location.pathname).toBe("/3d");
+    expect(screen.getByRole("radio", { name: "3D ISOMETRIC" }).getAttribute("aria-checked")).toBe("true");
+
+    fireEvent.change(screen.getByLabelText("Leaderboard name"), {
+      target: { value: "Acme Cloud" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+
+    const isoShell = await screen.findByTestId("iso-shell");
+    expect(isoShell.getAttribute("data-auto-open")).toBe("true");
+  });
+
+  it("redirects returning visitors from / to stored /3d preference and launches IsoShell on Load Game", async () => {
+    localStorage.setItem(VIEW_MODE_PREFERENCE_KEY, "3d");
+    persistMocks.latestSave = savedGameInfo;
+
+    render(<App />);
+
+    expect(window.location.pathname).toBe("/3d");
+    expect(screen.getByText("View mode")).toBeTruthy();
+    expect(screen.queryByText("Choose view mode (first-time setup)")).toBeNull();
+    expect(screen.getByRole("radio", { name: "3D ISOMETRIC" }).getAttribute("aria-checked")).toBe("true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Load Game" }));
+
+    const isoShell = await screen.findByTestId("iso-shell");
+    expect(isoShell.getAttribute("data-auto-open")).toBe("false");
+  });
+
+  it("applies direct /3d and /2d navigation and writes the view mode to localStorage", () => {
+    window.history.replaceState(null, "", "/3d");
+    const firstRender = render(<App />);
+
+    expect(localStorage.getItem(VIEW_MODE_PREFERENCE_KEY)).toBe("3d");
+    expect(screen.getByRole("radio", { name: "3D ISOMETRIC" }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.queryByText("Choose view mode (first-time setup)")).toBeNull();
+    firstRender.unmount();
+
+    window.history.replaceState(null, "", "/2d");
+    render(<App />);
+
+    expect(localStorage.getItem(VIEW_MODE_PREFERENCE_KEY)).toBe("2d");
+    expect(screen.getByRole("radio", { name: "2D CLASSIC" }).getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("switches mid-game between 2D and 3D while preserving the live session", async () => {
+    persistMocks.latestSave = savedGameInfo;
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Load Game" }));
+
+    expect(screen.getByTestId("shell")).toBeTruthy();
+    expect(window.location.pathname).toBe("/2d");
+    expect(localStorage.getItem(VIEW_MODE_PREFERENCE_KEY)).toBe("2d");
+    expect(persistMocks.createLoadedSession).toHaveBeenCalledTimes(1);
+    expect(persistMocks.createFreshSession).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Switch to 3D" }));
+
+    expect(await screen.findByTestId("iso-shell")).toBeTruthy();
+    expect(screen.queryByTestId("shell")).toBeNull();
+    expect(window.location.pathname).toBe("/3d");
+    expect(localStorage.getItem(VIEW_MODE_PREFERENCE_KEY)).toBe("3d");
+    expect(screen.queryByRole("button", { name: "Load Game" })).toBeNull();
+    expect(persistMocks.createLoadedSession).toHaveBeenCalledTimes(1);
+    expect(persistMocks.createFreshSession).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Switch to 2D" }));
+
+    expect(screen.getByTestId("shell")).toBeTruthy();
+    expect(screen.queryByTestId("iso-shell")).toBeNull();
+    expect(window.location.pathname).toBe("/2d");
+    expect(localStorage.getItem(VIEW_MODE_PREFERENCE_KEY)).toBe("2d");
+    expect(screen.queryByRole("button", { name: "Load Game" })).toBeNull();
+    expect(persistMocks.createLoadedSession).toHaveBeenCalledTimes(1);
+    expect(persistMocks.createFreshSession).not.toHaveBeenCalled();
+  });
+
+  it("responds to browser popstate navigation between /3d and /2d and allows dismissing status notices", async () => {
+    vi.stubEnv("MODE", "production");
+    vi.stubEnv("VITE_API_BASE_URL", "");
+
+    render(<App />);
+    fireEvent.change(screen.getByLabelText("Leaderboard name"), {
+      target: { value: "Offline Ops" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+
+    expect(await screen.findByTestId("shell")).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toMatch(/registration is disabled for this build/i);
+
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss notice" }));
+    expect(screen.queryByRole("status")).toBeNull();
+
+    act(() => {
+      window.history.replaceState(null, "", "/3d");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+
+    expect(await screen.findByTestId("iso-shell")).toBeTruthy();
+    expect(localStorage.getItem(VIEW_MODE_PREFERENCE_KEY)).toBe("3d");
+
+    act(() => {
+      window.history.replaceState(null, "", "/2d");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+
+    expect(screen.getByTestId("shell")).toBeTruthy();
+    expect(localStorage.getItem(VIEW_MODE_PREFERENCE_KEY)).toBe("2d");
   });
 });
