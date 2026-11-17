@@ -1,7 +1,7 @@
 ---
 name: Unified 2D & 3D Web Frontend
 description: Merge packages/web-3d into packages/web under /2d and /3d routes with shared localStorage game state, view preference persistence, first-time opt-in, in-game switching, GitHub Pages deployment, and removal of the Railway 3D demo.
-status: started
+status: completed
 created: 2026-11-17
 updated: 2026-11-17
 owner: web
@@ -22,9 +22,9 @@ owner: web
 - [x] **Phase 4 — GitHub Pages `/2d` & `/3d` Static Entrypoints & Removing `packages/web-3d` + Railway 3D Demo**
   - [x] 4.1 Generate `dist/2d/index.html`, `dist/3d/index.html`, and `dist/404.html` during `packages/web` Vite build
   - [x] 4.2 Remove `packages/web-3d` workspace and remove `dctycoon-3d` from `.railway/railway.ts`, backend CORS allowlists, root `package.json`, and docs
-- [ ] **Phase 5 — Full Monorepo Verification & Plan Completion**
-  - [ ] 5.1 Run `typecheck`, `test`, `go test`, `audit:query-boundary`, `build`, `perf:budgets:strict`, `lint`, and verify dist output
-  - [ ] 5.2 Mark plan completed and update `.agents/plans/README.md`
+- [x] **Phase 5 — Full Monorepo Verification & Plan Completion**
+  - [x] 5.1 Run `typecheck`, `test`, `go test`, `audit:query-boundary`, `build`, `perf:budgets:strict`, `lint`, and verify dist output
+  - [x] 5.2 Mark plan completed and update `.agents/plans/README.md`
 
 ## Overview
 
@@ -148,3 +148,4 @@ export const VIEW_MODE_PREFERENCE_KEY = "datacenter-tycoon:view-mode-v1";
 ## Changelog
 
 - 2026-11-17 — created and started on branch `feature/plan-054-unified-2d-3d`.
+- 2026-11-17 — completed all 5 phases: merged `web-3d` into `web` at `/2d` & `/3d` with `localStorage` preference, first-time opt-in, in-game switcher, GitHub Pages SPA entrypoints, and retired `packages/web-3d` & `dctycoon-3d`.
