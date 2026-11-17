@@ -1,6 +1,17 @@
 # @datacenter-tycoon/web
 
-Web frontend for Datacenter Tycoon.
+Web frontend for Datacenter Tycoon, supporting both the classic 2D dashboard (`/2d`) and the isometric 3D viewport (`/3d`).
+
+## View modes (`/2d` and `/3d`)
+
+- **Routes**: Visit `/2d` for the classic 2D dashboard (`Shell`) or `/3d` for the isometric 3D view (`IsoShell`), and switch between them at any time via the shell toggle.
+- **Preference persistence**: `src/store/viewModePreference.ts` persists the selected mode under `localStorage` key `datacenter-tycoon:view-mode-v1` and syncs browser history between `/2d` and `/3d`.
+- **Isometric 3D architecture**:
+  - `src/engine/` — isometric math, camera, primitives, rack models, and city/floor canvas scenes.
+  - `src/state/viewportState.ts` — viewport camera, selection, hover, and build-mode state.
+  - `src/ui/viewport/` — `IsoViewportCanvas` interactive renderer.
+  - `src/ui/hud/` — HUD bar, build dock, inspector panel, and info overlays.
+  - `src/ui/shell/IsoShell.tsx` — lazy-loaded 3D shell sharing the same `game-logic` store, saves, and online leaderboard sync as 2D.
 
 ## Local online development
 

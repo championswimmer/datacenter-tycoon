@@ -87,7 +87,6 @@ test("loadServerConfig always includes the first-party production web origin", (
   assert.deepEqual(config.corsAllowedOrigins, [
     "https://dctycoon-api-production.up.railway.app",
     "https://dctycoon.arnav.tech",
-    "https://dctycoon-3d.up.railway.app",
   ]);
 });
 

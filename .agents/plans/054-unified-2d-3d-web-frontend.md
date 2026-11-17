@@ -19,9 +19,9 @@ owner: web
   - [x] 3.2 Add first-time View Mode opt-in & selector to `StartScreen.tsx`
   - [x] 3.3 Add Switch to 3D button in 2D (`TopBar` / `Shell`) and Switch to 2D button in 3D (`TopHudBar` / `IsoShell`) + sync active DC across switches
   - [x] 3.4 Wire `/2d` and `/3d` routing, `localStorage` preference, and lazy `IsoShell` into `packages/web/src/App.tsx` + `App.test.tsx`
-- [ ] **Phase 4 — GitHub Pages `/2d` & `/3d` Static Entrypoints & Removing `packages/web-3d` + Railway 3D Demo**
+- [x] **Phase 4 — GitHub Pages `/2d` & `/3d` Static Entrypoints & Removing `packages/web-3d` + Railway 3D Demo**
   - [x] 4.1 Generate `dist/2d/index.html`, `dist/3d/index.html`, and `dist/404.html` during `packages/web` Vite build
-  - [ ] 4.2 Remove `packages/web-3d` workspace and remove `dctycoon-3d` from `.railway/railway.ts`, backend CORS allowlists, root `package.json`, and docs
+  - [x] 4.2 Remove `packages/web-3d` workspace and remove `dctycoon-3d` from `.railway/railway.ts`, backend CORS allowlists, root `package.json`, and docs
 - [ ] **Phase 5 — Full Monorepo Verification & Plan Completion**
   - [ ] 5.1 Run `typecheck`, `test`, `go test`, `audit:query-boundary`, `build`, `perf:budgets:strict`, `lint`, and verify dist output
   - [ ] 5.2 Mark plan completed and update `.agents/plans/README.md`
