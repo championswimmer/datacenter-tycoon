@@ -7,7 +7,8 @@ import {
   type DatacenterSpecId,
   type RackSpecId,
 } from "@datacenter-tycoon/game-logic";
-import { createGameStore, StoreProvider } from "@datacenter-tycoon/web";
+import { createGameStore } from "../../store/gameStore.js";
+import { StoreProvider } from "../../store/storeContext.js";
 import { TopHudBar } from "./TopHudBar.js";
 import { InfoOverlayDock } from "./InfoOverlayDock.js";
 import { BuildDock } from "./BuildDock.js";

@@ -6,11 +6,9 @@ import {
   type RackPlacementId,
   type RegionId,
 } from "@datacenter-tycoon/game-logic";
+import { playSound } from "../../audio/AudioEngine.js";
+import { nextRackPlacementId } from "../../store/ids.js";
 import {
-  CapacityTiles,
-  nextRackPlacementId,
-  playSound,
-  ResourceBars,
   selectAllDatacenters,
   selectAudioEnabled,
   selectCash,
@@ -23,9 +21,10 @@ import {
   selectDatacenterRackMaintenanceViews,
   selectDatacenterResourceUsage,
   selectRegionById,
-  useGameDispatch,
-  useSelector,
-} from "@datacenter-tycoon/web";
+} from "../../store/selectors.js";
+import { useGameDispatch, useSelector } from "../../store/storeContext.js";
+import { CapacityTiles } from "../stats/CapacityTiles.js";
+import { ResourceBars } from "../stats/ResourceBars.js";
 import type { BuildTool, SelectionTarget } from "../../state/viewportState.js";
 import styles from "./InspectorPanel.module.css";
 

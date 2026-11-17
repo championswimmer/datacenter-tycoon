@@ -43,7 +43,7 @@ function collectSourceFiles(dir: string): string[] {
   return results;
 }
 
-describe("web-3d query boundary compliance", () => {
+describe("web query boundary compliance", () => {
   it("never duplicates game rules, queries legacy contract buckets, or reads raw infrastructure specs", () => {
     const srcRoot = resolve(__dirname, "..");
     const files = collectSourceFiles(srcRoot);

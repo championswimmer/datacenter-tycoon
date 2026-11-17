@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { DatacenterId, RegionId } from "@datacenter-tycoon/game-logic";
+import { formatGameDate, tickToGameDate } from "../../store/gameTime.js";
 import {
-  formatGameDate,
   selectAllDatacenters,
   selectAudioSettings,
   selectCash,
@@ -12,11 +12,10 @@ import {
   selectReliabilitySummary,
   selectSubtick,
   selectTick,
-  tickToGameDate,
-  useSelector,
-  useTickFraction,
-  type Speed,
-} from "@datacenter-tycoon/web";
+} from "../../store/selectors.js";
+import { useSelector } from "../../store/storeContext.js";
+import type { Speed } from "../../store/tickDriver.js";
+import { useTickFraction } from "../../store/tickFractionStore.js";
 import type { CameraViewMode } from "../../state/viewportState.js";
 import styles from "./TopHudBar.module.css";
 

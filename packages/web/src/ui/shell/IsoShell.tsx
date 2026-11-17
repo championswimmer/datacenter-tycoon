@@ -11,30 +11,31 @@ import type {
   RackPlacementId,
   RegionId,
 } from "@datacenter-tycoon/game-logic";
+import { navigate, useRoute } from "../../router/hashRouter.js";
 import {
-  AudioSettingsModal,
-  ContractsPage,
-  FinancesPage,
-  hasSeenTutorial,
-  LogFeed,
-  MapView,
-  MoveRackModal,
-  navigate,
-  NewDatacenterModal,
-  PowerView,
-  RackPicker,
-  ResetGameModal,
   selectAllDatacenters,
   selectDatacenter,
   selectRegions,
-  TutorialModal,
+} from "../../store/selectors.js";
+import {
   useGameDispatch,
-  useRoute,
   useSelector,
   useTickDriver,
-  type Speed,
-  type UpgradePanelFocus,
-} from "@datacenter-tycoon/web";
+} from "../../store/storeContext.js";
+import type { Speed } from "../../store/tickDriver.js";
+import { hasSeenTutorial } from "../../store/tutorialPersist.js";
+import { ContractsPage } from "../contracts/ContractsPage.js";
+import { FinancesPage } from "../finances/FinancesPage.js";
+import { MoveRackModal } from "../floor/MoveRackModal.js";
+import { RackPicker } from "../floor/RackPicker.js";
+import { TutorialModal } from "../help/TutorialModal.js";
+import { LogFeed } from "../log/LogFeed.js";
+import { MapView } from "../map/MapView.js";
+import { NewDatacenterModal } from "../onboarding/NewDatacenterModal.js";
+import { AudioSettingsModal } from "../settings/AudioSettingsModal.js";
+import { PowerView } from "../stats/PowerView.js";
+import type { UpgradePanelFocus } from "../stats/UpgradePanel.js";
+import { ResetGameModal } from "../topbar/ResetGameModal.js";
 import {
   createCameraState,
   fitCameraToGrid,

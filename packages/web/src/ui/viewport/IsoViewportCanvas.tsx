@@ -18,9 +18,9 @@ import {
   type RackSpecId,
   type RegionId,
 } from "@datacenter-tycoon/game-logic";
+import { playSound } from "../../audio/AudioEngine.js";
+import { nextRackPlacementId } from "../../store/ids.js";
 import {
-  nextRackPlacementId,
-  playSound,
   selectActiveContractViews,
   selectAllDatacenters,
   selectAllDatacenterFabricSummaries,
@@ -34,10 +34,12 @@ import {
   selectRegionById,
   selectRegionFabricSummary,
   selectRegions,
+} from "../../store/selectors.js";
+import {
   useFullGameState,
   useGameDispatch,
   useSelector,
-} from "@datacenter-tycoon/web";
+} from "../../store/storeContext.js";
 import {
   panCameraByScreenDelta,
   zoomCameraAtPoint,

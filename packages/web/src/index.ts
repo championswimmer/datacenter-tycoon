@@ -58,3 +58,13 @@ export { CapacityTiles } from "./ui/stats/CapacityTiles.js";
 export { LogFeed } from "./ui/log/LogFeed.js";
 export { MapView } from "./ui/map/MapView.js";
 export { RegionPanel } from "./ui/map/RegionPanel.js";
+
+// Isometric 3D engine & shell
+export * from "./engine/isoMath.js";
+export * from "./engine/camera.js";
+export * from "./engine/primitives3d.js";
+export * from "./engine/rackModels3d.js";
+export * from "./engine/floorScene.js";
+export * from "./engine/cityScene.js";
+export * from "./state/viewportState.js";
+export { IsoShell } from "./ui/shell/IsoShell.js";
